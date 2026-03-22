@@ -80,7 +80,7 @@ Coming soon.
 
 ```bash
 # Clone the repo
-git clone https://github.com/yourusername/studydesk.git
+git clone https://github.com/Limekana/studydesk.git
 cd studydesk
 
 # Install dependencies
