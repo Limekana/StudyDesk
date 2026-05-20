@@ -62,11 +62,10 @@ dependencies {
 
 apply from: 'capacitor.build.gradle'
 
-try {
-    def servicesJSON = file('google-services.json')
-    if (servicesJSON.text) {
-        apply plugin: 'com.google.gms.google-services'
-    }
-} catch(Exception e) {
-    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
-}
+// NOTE: Intentionally NO Google Play Services / google-services plugin block here.
+// StudyDesk is built to be F-Droid compatible — no GMS, no Firebase, no GSF.
+// Google sign-in is implemented as a pure AppAuth-style web OAuth flow via
+// @capacitor/browser + a custom URI scheme deep link (see AndroidManifest).
+// Local notifications use the AOSP AlarmManager / NotificationManager, not FCM.
+// If FCM is ever needed, gate it behind a product flavor so the OSS flavor
+// stays GMS-free.

@@ -1,0 +1,67 @@
+# F-Droid build metadata for StudyDesk.
+# Spec: https://f-droid.org/en/docs/Build_Metadata_Reference/
+#
+# Submit by opening a merge request against fdroiddata that points
+# at this file with the canonical applicationId com.StudyDesk.app.
+
+Categories:
+  - Science & Education
+License: MIT
+AuthorName: Emil Holmberg
+AuthorEmail: noreply@limekana.dev
+WebSite: https://github.com/Limekana/StudyDesk
+SourceCode: https://github.com/Limekana/StudyDesk
+IssueTracker: https://github.com/Limekana/StudyDesk/issues
+
+AutoName: StudyDesk
+Description: |-
+  A mobile-first study planner that tells you what to study next instead of
+  asking you to figure it out. Tracks courses, assignments, exams, grades
+  (IB and US GPA), Pomodoro focus sessions, and a "Lock In" deep-focus mode.
+
+  Optional cloud sync via a Supabase backend keeps data consistent across
+  devices. Sync is opt-in (sign-in required) — the app works entirely
+  offline if you skip sign-in.
+
+  Notifications are local-only (uses Android's AlarmManager — no Firebase
+  Cloud Messaging, no Google Play Services dependency).
+
+  Google sign-in, when used, opens the standard Google web consent page in
+  a Chrome Custom Tab and catches the OAuth callback via a custom URI
+  scheme deep link. No Google Sign-In SDK is bundled. Users who prefer no
+  Google contact at all can use email/password instead.
+
+# AntiFeatures declared because the default build points at the developer's
+# hosted Supabase project for sync. Self-hosting is supported at build time
+# via the VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY env vars (see
+# .env.example), but the released APK in F-Droid still ships with defaults.
+AntiFeatures:
+  - NonFreeNet  # default build talks to a developer-hosted Supabase project
+
+RepoType: git
+Repo: https://github.com/Limekana/StudyDesk.git
+
+Builds:
+  - versionName: '1.0'
+    versionCode: 1
+    commit: HEAD
+    sudo:
+      - apt-get update
+      - apt-get install -y nodejs npm
+    init:
+      - npm ci
+    subdir: android
+    gradle:
+      - yes
+    output: app/build/outputs/apk/release/app-release-unsigned.apk
+    prebuild:
+      - cd .. && npm run build && npx cap sync android
+    scanignore:
+      - node_modules
+      - dist
+      - android/app/src/main/assets/public
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: '1.0'
+CurrentVersionCode: 1

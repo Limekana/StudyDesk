@@ -490,6 +490,38 @@ const css4 = `
 @keyframes ring-pulse{0%{transform:scale(1);}45%{transform:scale(1.05);}100%{transform:scale(1);}}
 .pomo-time-flash{animation:time-flash 0.7s ease;}
 @keyframes time-flash{0%{opacity:1;}35%{opacity:0.2;}100%{opacity:1;}}
+
+/* ── Lock In: entry button on the regular timer ── */
+.lockin-enter{margin-top:18px;background:#1a1814;color:#faf8f4;border:1px solid #1a1814;padding:10px 22px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;border-radius:99px;transition:transform 0.1s,opacity 0.1s;}
+.lockin-enter:hover{opacity:0.85;transform:scale(1.02);}
+.lockin-enter:active{transform:scale(0.98);}
+
+/* ── Lock In takeover (full-screen, dark, distraction-stripped) ── */
+.lockin-wrap{position:fixed;inset:0;z-index:50;background:radial-gradient(ellipse at center, #1f1c17 0%, #0e0c09 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:40px 20px;color:#faf8f4;animation:lockin-fade 0.3s ease;}
+@keyframes lockin-fade{from{opacity:0;}to{opacity:1;}}
+.lockin-top{position:absolute;top:32px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;}
+.lockin-badge{font-family:var(--font-mono);font-size:10px;letter-spacing:0.35em;color:rgba(250,248,244,0.45);}
+.lockin-task{font-family:var(--font-display);font-size:18px;color:rgba(250,248,244,0.85);max-width:80vw;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.lockin-ring{width:260px;height:260px;margin:0;}
+.lockin-ring .pomo-time{font-size:56px;letter-spacing:-0.02em;}
+.lockin-task-input{background:transparent;border:none;border-bottom:1px solid rgba(250,248,244,0.15);color:#faf8f4;padding:10px 4px;font-family:var(--font-display);font-size:17px;text-align:center;width:min(360px,80vw);outline:none;transition:border-color 0.15s;}
+.lockin-task-input:focus{border-bottom-color:rgba(250,248,244,0.45);}
+.lockin-task-input::placeholder{color:rgba(250,248,244,0.3);}
+.lockin-controls{display:flex;justify-content:center;}
+.lockin-btn-main{background:#faf8f4;color:#1a1814;border:none;width:72px;height:72px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.1s,opacity 0.1s;box-shadow:0 4px 24px rgba(0,0,0,0.5);}
+.lockin-btn-main:hover{opacity:0.9;transform:scale(1.04);}
+.lockin-btn-main:active{transform:scale(0.96);}
+.lockin-presets{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.lockin-preset{background:transparent;color:rgba(250,248,244,0.5);border:1px solid rgba(250,248,244,0.2);padding:6px 14px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;border-radius:99px;cursor:pointer;transition:all 0.1s;}
+.lockin-preset.active{background:rgba(250,248,244,0.12);color:#faf8f4;border-color:rgba(250,248,244,0.4);}
+.lockin-preset:disabled{opacity:0.3;cursor:not-allowed;}
+.lockin-exit{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);background:transparent;border:1px solid rgba(250,248,244,0.18);color:rgba(250,248,244,0.55);padding:9px 22px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;cursor:pointer;border-radius:99px;transition:all 0.15s;}
+.lockin-exit:hover{color:#faf8f4;border-color:rgba(250,248,244,0.45);}
+
+/* While locked in, hide the desktop sidebar and mobile tab bar so nothing pulls focus */
+body.locked-in .sidebar,body.locked-in .mobile-tabbar,body.locked-in .topbar{display:none !important;}
+body.locked-in .main{padding:0;}
+body.locked-in .content{padding:0;max-width:none;}
 `;
 
 // ── Root App ──────────────────────────────────────────────────────────────────
@@ -889,6 +921,9 @@ function TimerView({ state, onTimerComplete }) {
   const [focusDone, setFocusDone] = useState(_saved.focusDone||0); // total focus sessions today
   const [task, setTask] = useState(_saved.task||"");
   const [timerDone, setTimerDone] = useState(false);
+  // Lock In: a no-break, no-nav, no-distraction focus mode. Persists
+  // across tab switches so coming back to Timer keeps you in flow.
+  const [lockedIn, setLockedIn] = useState(_saved.lockedIn || false);
   // Track when the current focus phase started, so SaveSessionSheet
   // can write an accurate `started_at` timestamp to Supabase.
   const phaseStartedAtRef = useRef(_saved.phaseStartedAt || null);
@@ -908,13 +943,13 @@ function TimerView({ state, onTimerComplete }) {
   useEffect(() => {
     try {
       localStorage.setItem('sd-timer', JSON.stringify({
-        customFocus, phase, secsLeft, running, session, focusDone, task,
+        customFocus, phase, secsLeft, running, session, focusDone, task, lockedIn,
         startedAt: startedAtRef.current,
         secsAtStart: secsAtStartRef.current,
         phaseStartedAt: phaseStartedAtRef.current,
       }));
     } catch {}
-  }, [customFocus, phase, secsLeft, running, session, focusDone, task]);
+  }, [customFocus, phase, secsLeft, running, session, focusDone, task, lockedIn]);
 
   // Background-safe elapsed tracking refs
   const startedAtRef = useRef(null);
@@ -937,6 +972,9 @@ function TimerView({ state, onTimerComplete }) {
     } catch(_) {}
   }, []);
 
+  const lockedInRef = useRef(lockedIn);
+  useEffect(()=>{ lockedInRef.current = lockedIn; }, [lockedIn]);
+
   const handlePhaseEnd = useCallback(() => {
     clearInterval(intervalRef.current);
     startedAtRef.current = null;
@@ -957,11 +995,18 @@ function TimerView({ state, onTimerComplete }) {
         startedAt: startedAtIso,
       });
       phaseStartedAtRef.current = null;
-      const nextSession=(sess+1)%4;
-      setSession(nextSession);
-      const nextPhase=nextSession===0?'long':'short';
-      setPhase(nextPhase);
-      setSecsLeft(nextPhase==='long'?LONG_SECS:SHORT_SECS);
+      // Lock In skips break cycling — stays on focus, ready for the next block.
+      // Regular Pomodoro cycles short / long breaks every 4 focus sessions.
+      if (lockedInRef.current) {
+        setPhase('focus');
+        setSecsLeft(cf*60);
+      } else {
+        const nextSession=(sess+1)%4;
+        setSession(nextSession);
+        const nextPhase=nextSession===0?'long':'short';
+        setPhase(nextPhase);
+        setSecsLeft(nextPhase==='long'?LONG_SECS:SHORT_SECS);
+      }
     } else {
       setPhase('focus');
       setSecsLeft(cf*60);
@@ -1000,6 +1045,8 @@ function TimerView({ state, onTimerComplete }) {
     if (running) {
       startedAtRef.current = Date.now();
       secsAtStartRef.current = secsLeft;
+      // The actual 1s tick — without this the timer doesn't advance.
+      intervalRef.current = setInterval(tick, 1000);
       // Capture the phase start so onTimerComplete can report an accurate started_at.
       // For focus phases, only set this if we're actually beginning a fresh phase
       // (not resuming from a pause mid-phase). Approximation: if secsLeft equals
@@ -1026,6 +1073,76 @@ function TimerView({ state, onTimerComplete }) {
     else { setPhase("focus"); setSecsLeft(customFocus*60); }
   };
   const changeCustom = (v) => { if(!running){ setCustomFocus(v); if(phase==="focus") setSecsLeft(v*60); } };
+
+  // Toggle Lock In: force a clean focus phase, hide nav, no breaks.
+  // Exiting Lock In stops the timer cleanly so the user explicitly chooses
+  // whether to keep going in regular mode.
+  const toggleLockIn = () => {
+    setLockedIn(li => {
+      const next = !li;
+      if (next) {
+        // Entering Lock In — reset to a fresh focus block at current custom duration.
+        setPhase("focus");
+        setSecsLeft(customFocus * 60);
+        setSession(0);
+      } else {
+        // Exiting Lock In — stop and let the user reorient.
+        setRunning(false);
+      }
+      return next;
+    });
+  };
+
+  // While locked in we add a body class so the bottom mobile tab bar and
+  // desktop sidebar can hide via CSS. Cleans up on unmount / toggle-off.
+  useEffect(() => {
+    if (lockedIn) document.body.classList.add('locked-in');
+    else document.body.classList.remove('locked-in');
+    return () => document.body.classList.remove('locked-in');
+  }, [lockedIn]);
+
+  // ── Lock In takeover view ───────────────────────────────────────────────
+  if (lockedIn) {
+    return <div className="lockin-wrap">
+      <div className="lockin-top">
+        <span className="lockin-badge">LOCK IN</span>
+        <span className="lockin-task">{task || "Deep focus"}</span>
+      </div>
+      <div className={"pomo-ring-wrap lockin-ring"+(timerDone?" pomo-ring-done":"")}>
+        <svg className="pomo-ring-svg" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="110" cy="110" r={R} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="6"/>
+          <circle cx="110" cy="110" r={R} fill="none"
+            stroke="#faf8f4" strokeWidth="6" strokeLinecap="round"
+            strokeDasharray={CIRC}
+            strokeDashoffset={CIRC*(1-pct)}
+            transform="rotate(-90 110 110)"/>
+        </svg>
+        <div className="pomo-ring-label">
+          <div className={"pomo-time"+(timerDone?" pomo-time-flash":"")} style={{color:"#faf8f4"}}>{fmtMMSS(secsLeft)}</div>
+          <div className="pomo-phase" style={{color:"rgba(250,248,244,0.5)"}}>FOCUS · {focusDone} done</div>
+        </div>
+      </div>
+      <input
+        type="text"
+        className="lockin-task-input"
+        placeholder="What are you locking in on?"
+        value={task}
+        onChange={e=>setTask(e.target.value)}
+      />
+      <div className="lockin-controls">
+        <button className="lockin-btn-main" onClick={toggle} aria-label={running?"Pause":"Start"}>
+          {running
+            ? <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><rect x="5" y="4" width="4" height="16" rx="1"/><rect x="15" y="4" width="4" height="16" rx="1"/></svg>
+            : <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><polygon points="6,3 20,12 6,21"/></svg>
+          }
+        </button>
+      </div>
+      <div className="lockin-presets">
+        {[25,45,60,90].map(m=><button key={m} className={"lockin-preset"+(customFocus===m?" active":"")} onClick={()=>changeCustom(m)} disabled={running}>{m}m</button>)}
+      </div>
+      <button className="lockin-exit" onClick={toggleLockIn}>End session</button>
+    </div>;
+  }
 
   return <div style={{display:"flex",flexDirection:"column",alignItems:"center",paddingTop:24,paddingBottom:32}}>
     <div className={"pomo-ring-wrap"+(timerDone?" pomo-ring-done":"")}>
@@ -1062,6 +1179,9 @@ function TimerView({ state, onTimerComplete }) {
     {phase==="focus"&&<div className="pomo-presets">
       {[15,20,25,30,45,60].map(m=><button key={m} className={"pomo-preset-btn"+(customFocus===m?" active":"")} onClick={()=>changeCustom(m)}>{m}m</button>)}
     </div>}
+    <button className="lockin-enter" onClick={toggleLockIn} title="Strip breaks, hide nav, deep focus only">
+      🔒 Lock in
+    </button>
     <div className="pomo-task-row">
       <div className="pomo-task-label">Studying</div>
       <input type="text" placeholder="What are you working on? (optional)" value={task} onChange={e=>setTask(e.target.value)} style={{fontSize:14,padding:"10px 12px"}}/>

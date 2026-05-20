@@ -2,8 +2,16 @@ import { createClient } from '@supabase/supabase-js';
 import { Preferences } from '@capacitor/preferences';
 import { Capacitor } from '@capacitor/core';
 
-const SUPABASE_URL = 'https://hkktorzhaqnfqsnlstda.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_ykHLJ4QuFm2HKXACygwezw_c_cvR_yf';
+// Supabase backend — overridable at build time via Vite env vars so the app
+// can be re-built against a self-hosted Supabase instance without forking
+// (see `.env.example`). The defaults below point at the canonical StudyDesk
+// project shared with Nexus Command Center, so the public build keeps working.
+const SUPABASE_URL =
+  import.meta.env.VITE_SUPABASE_URL ||
+  'https://hkktorzhaqnfqsnlstda.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  'sb_publishable_ykHLJ4QuFm2HKXACygwezw_c_cvR_yf';
 
 // Capacitor Preferences uses Android SharedPreferences — more durable than
 // WebView localStorage, which Android can evict under memory pressure.

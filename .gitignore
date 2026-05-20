@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Env files — only .env.example is committed (template). Real values
+# (.env, .env.local, .env.production) stay local even though the anon key
+# is "publicly publishable", so a fork can't accidentally check in their
+# own overrides on top of ours.
+.env
+.env.production
+.env.development
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

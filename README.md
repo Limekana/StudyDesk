@@ -11,6 +11,7 @@ Positioning: competitors answer *"what do I have to do?"*. StudyDesk answers *"w
 - **Next Up** — rule-based decision eliminator that surfaces the single highest-priority study action across all your courses, ranked into TODAY / THIS WEEK / LATER buckets
 - **Courses / Assignments / Exams** — full CRUD with difficulty-aware study-start dates and topic checklists per exam
 - **Pomodoro Timer** — focus / short break / long break cycles with background-safe drift correction (recomputes elapsed time on app resume so the timer doesn't reset when you switch away)
+- **Lock In mode** — distraction-stripped deep focus: hides nav, kills break cycling (every block is a focus block), full-screen dark takeover until you tap *End session*
 - **Grade Tracking** — per-subject grade rows with weighted GPA. Defaults to IB (1–7 scale); one-tap toggle to US (0–100 → 4.0). Multiple grade rows per subject (midterm + final + project), all factored into the GPA
 - **Study Session Logging** — finish a focus phase → opt-in "Save session?" sheet → lands in the synced history with a flat-list-grouped-by-date view (TODAY / YESTERDAY / etc.)
 - **Local Notifications** — daily Next Up digest at 9am, exam day-of and 2-days-before alerts, assignment due-tomorrow reminders. All on-device, no push server
@@ -121,6 +122,36 @@ Local state stores camelCase shapes; `src/lib/merge.js` handles the snake_case �
 
 ---
 
+## Privacy & Google sign-in (transparency)
+
+Google sign-in opens the **standard Google web consent page** in a Chrome Custom Tab — no Google Sign-In SDK is bundled, no Google Play Services are linked. After consent, Google redirects back to `com.studydesk.app://login-callback?code=…`, Android hands the URL to the app via an intent filter, and the app exchanges the code for a Supabase session.
+
+Users who prefer **no Google contact at all** can use email/password instead — that path never opens a browser and touches only your Supabase project's auth endpoint.
+
+## F-Droid compatibility
+
+StudyDesk is built to be F-Droid hostable: **no Google Play Services, no Firebase, no proprietary trackers, no ad SDKs.**
+
+- Notifications use Android's native `AlarmManager` + `NotificationManager`, not FCM
+- Auth uses Supabase's web OAuth flow via `@capacitor/browser` (Chrome Custom Tab) — pure AppAuth-style, no GMS
+- All Capacitor plugins used are AOSP-only (`@capacitor/app`, `@capacitor/browser`, `@capacitor/local-notifications`, `@capacitor/preferences`)
+- The `google-services` Gradle plugin is intentionally **not** applied (see `android/app/build.gradle`)
+
+Build metadata for F-Droid lives in `.fdroid.yml` at the repo root. The default build ships pointing at the developer-hosted Supabase project, which is declared as the `NonFreeNet` antifeature — self-hosters can rebuild with their own backend via the env vars in `.env.example`.
+
+## Self-hosting the backend
+
+Both the Supabase URL and the publishable anon key are overridable at build time:
+
+```bash
+cp .env.example .env
+# edit .env with your Supabase project URL + anon key
+npm run build
+npx cap sync android
+```
+
+If `.env` is absent, the build falls back to the public StudyDesk project, so the default `npm run build` keeps working out of the box.
+
 ## License
 
-Not yet declared. Treat as proprietary unless / until a `LICENSE` file is added.
+MIT — see [`LICENSE`](LICENSE). Forks, redistributions, and F-Droid packaging are all welcome.
