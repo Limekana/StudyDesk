@@ -86,16 +86,6 @@ npx cap open android
 
 The Supabase publishable key in `src/lib/supabase.js` is the **anon/publishable key** (safe to ship client-side). RLS gates all data; the service-role key is never exposed.
 
----
-
-## Supabase setup (one-time, before Google sign-in works)
-
-1. Open the project in the Supabase dashboard → **Authentication → URL Configuration → Redirect URLs**
-2. Add: `com.studydesk.app://login-callback` (lowercase scheme)
-3. **Authentication → Providers → Email** → toggle **"Confirm email" OFF** for instant access (or leave on if you want email verification)
-4. **Authentication → Providers → Google** → already enabled at the project level (shared with Nexus)
-
-Email/password works without step 2; only Google OAuth needs it.
 
 ---
 
