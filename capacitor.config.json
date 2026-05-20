@@ -1,0 +1,17 @@
+{
+  "appId": "com.StudyDesk.app",
+  "appName": "StudyDesk",
+  "webDir": "dist",
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "StatusBar": {
+      "overlaysWebView": false,
+      "style": "DARK",
+      "backgroundColor": "#F5F2ED"
+    }
+  }
+}

@@ -1,0 +1,47 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Android signing — NEVER commit keystores or signing credentials
+*.jks
+*.keystore
+*.p12
+*.pfx
+keystore.properties
+release-signing.properties
+
+# One-shot patch scripts from earlier sessions — kept locally, not in repo
+patch-*.cjs
+finalize.ps1
+
+# IDE / AI-tool local config — user-specific, not for shared repo
+.claude/
+.continue/
+.kombai/
+
+# Capacitor copies the web bundle into android/app/src/main/assets/public
+# on `cap sync`. That's a build artifact derived from dist/, so ignore it.
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json

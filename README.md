@@ -1,31 +1,22 @@
 # StudyDesk
 
-**Stop deciding what to study. StudyDesk tells you.**
+> A mobile-first study planner for Android that tells you **what to study next** instead of asking you to figure it out. Bidirectionally synced with [Nexus Command Center](https://github.com/Limekana) for a single source of truth across devices.
 
-StudyDesk is a mobile-first study execution app for Android. You enter your deadlines — assignments, exams, topics — and it surfaces a ranked list of what to work on right now. No AI, no dashboards, no accounts. Just a clear answer to the question students ask every time they sit down to study: *where do I start?*
-
----
-
-## What it does
-
-Most study apps are filing systems. They help you organise what you have to do but leave you to figure out what to do *right now*. That gap — between knowing your deadlines and knowing your next action — is where procrastination lives.
-
-StudyDesk closes that gap with a single surface: **Next Up**.
-
-Enter your courses, deadlines, and exams. StudyDesk ranks your study actions into three tiers — TODAY, THIS WEEK, and LATER — and updates them as deadlines shift. No manual sorting. No decision cost.
+Positioning: competitors answer *"what do I have to do?"*. StudyDesk answers *"what do I do right now?"*.
 
 ---
 
 ## Features
 
-- **Next Up** — ranked study actions generated from your deadlines, rule-based and transparent
-- **Assignment tracking** — due dates, course links, overdue flagging
-- **Exam calendar** — exam dates with auto-calculated study-start dates
-- **Topic checklist** — per-exam topic lists with completion tracking surfaced in Next Up
-- **Focus timer** — Pomodoro and freeform, with session logging
-- **Course management** — colour-coded, compact by default
-- **Push notifications** — daily study reminders tied to your Next Up list
-- **Offline-first** — all data stored locally, no account required, nothing leaves your device
+- **Next Up** — rule-based decision eliminator that surfaces the single highest-priority study action across all your courses, ranked into TODAY / THIS WEEK / LATER buckets
+- **Courses / Assignments / Exams** — full CRUD with difficulty-aware study-start dates and topic checklists per exam
+- **Pomodoro Timer** — focus / short break / long break cycles with background-safe drift correction (recomputes elapsed time on app resume so the timer doesn't reset when you switch away)
+- **Grade Tracking** — per-subject grade rows with weighted GPA. Defaults to IB (1–7 scale); one-tap toggle to US (0–100 → 4.0). Multiple grade rows per subject (midterm + final + project), all factored into the GPA
+- **Study Session Logging** — finish a focus phase → opt-in "Save session?" sheet → lands in the synced history with a flat-list-grouped-by-date view (TODAY / YESTERDAY / etc.)
+- **Local Notifications** — daily Next Up digest at 9am, exam day-of and 2-days-before alerts, assignment due-tomorrow reminders. All on-device, no push server
+- **Cloud Sync** — bidirectional realtime sync with Nexus via Supabase. Add a course in either app, it shows up in the other within ~2s
+- **Auth** — email/password or Google OAuth (PKCE flow, durable session storage via Capacitor Preferences)
+- **Soft-delete + LWW merge** — never hard-deletes; tombstones with `deleted_at` so multi-device edits resolve correctly
 
 ---
 
@@ -33,108 +24,113 @@ Enter your courses, deadlines, and exams. StudyDesk ranks your study actions int
 
 | Layer | Technology |
 |---|---|
-| Frontend | React + Vite |
-| Mobile wrapper | Capacitor 8 |
-| Storage | localStorage — offline-first, zero server dependency |
-| Notifications | Capacitor LocalNotifications — fully on-device |
-| Distribution | Google Play Store (pending) / Direct APK |
-| Target platform | Android |
+| Frontend | React 19 + Vite 7 |
+| Mobile wrapper | Capacitor 8 (Android) |
+| Auth + cloud DB + realtime | Supabase (Postgres, RLS, postgres_changes) |
+| Local persistence | localStorage (offline-first cache) + Capacitor Preferences (auth session) |
+| Notifications | Capacitor LocalNotifications (on-device, no push server) |
+| Styling | Inline `<style>` blocks, self-hosted Playfair Display + DM Mono + DM Sans (offline-capable), paper-grain SVG texture overlay |
+| Distribution | Google Play Store |
+
+**Bundle ID:** `com.StudyDesk.app`
+**OAuth deep-link scheme:** `com.studydesk.app://login-callback` (lowercase — Supabase normalizes URI schemes per RFC 3986, Android scheme matching is case-sensitive)
 
 ---
 
-## Privacy
+## Project structure
 
-No account. No server. No analytics. No data collection of any kind.
+```
+src/
+├── App.jsx                          # Root component + reducer (single-file core)
+├── main.jsx
+├── index.css                        # Globals + CSS variables
+├── lib/
+│   ├── supabase.js                  # Client + Capacitor Preferences storage
+│   ├── sync.js                      # Push fns, pullAllStudyData, startRealtime
+│   ├── gpa.js                       # GPA + grade-mode helpers (matches Nexus)
+│   └── merge.js                     # LWW reducer-friendly merge utilities
+└── features/
+    ├── auth/AuthGate.jsx            # Login / signup / Google + deep-link handler
+    ├── grades/GradesView.jsx        # IB+US GPA toggle, per-subject expand
+    └── sessions/
+        ├── SaveSessionSheet.jsx     # Opt-in post-timer save modal
+        └── SessionsView.jsx         # History grouped by date
 
-Everything you enter — courses, assignments, exams, topics — is stored exclusively on your device using local storage. Uninstalling the app removes all data permanently. There is nothing to delete server-side because nothing was ever sent there.
-
-This is a deliberate design decision, not a limitation.
+android/                             # Capacitor-generated Android project
+public/fonts/                        # Self-hosted typeface stack
+```
 
 ---
 
-
-
-## Installation
-
-### Direct APK 
-
-1. Download the latest APK from [Releases]
-2. On your Android device go to **Settings → Install unknown apps** and allow installs from your browser or file manager
-3. Open the downloaded APK and tap Install
-
-### Google Play Store
-
-Coming soon.
-
----
-
-## Build from source
-
-### Prerequisites
-
-- Node.js 18+
-- Android Studio with Android SDK
-- Java 17+
-
-### Steps
+## Local development
 
 ```bash
-# Clone the repo
-git clone https://github.com/Limekana/studydesk.git
-cd studydesk
-
-# Install dependencies
+# 1. Install
 npm install
 
-# Build the web app
+# 2. Dev server (browser, no native plugins)
+npm run dev
+
+# 3. Lint
+npm run lint
+
+# 4. Production build
 npm run build
 
-# Sync to Android
-npx cap sync
+# 5. Sync into Android project
+npx cap sync android
 
-# Open in Android Studio
+# 6. Open in Android Studio (or use cap run)
 npx cap open android
 ```
 
-From Android Studio: **Build → Generate Signed APK/AAB** to produce a release build.
-
-### Environment
-
-No environment variables required. There is no backend, no API keys, and no external services.
+The Supabase publishable key in `src/lib/supabase.js` is the **anon/publishable key** (safe to ship client-side). RLS gates all data; the service-role key is never exposed.
 
 ---
 
-## Project status
+## Supabase setup (one-time, before Google sign-in works)
 
-Currently in pre-launch beta. Core features are complete and stable:
+1. Open the project in the Supabase dashboard → **Authentication → URL Configuration → Redirect URLs**
+2. Add: `com.studydesk.app://login-callback` (lowercase scheme)
+3. **Authentication → Providers → Email** → toggle **"Confirm email" OFF** for instant access (or leave on if you want email verification)
+4. **Authentication → Providers → Google** → already enabled at the project level (shared with Nexus)
 
-- [x] Course management
-- [x] Assignment tracking
-- [x] Exam calendar with study-start date logic
-- [x] Topic checklist
-- [x] Next Up execution layer
-- [x] Push notifications
-- [x] Focus timer with session logging
-- [x] Offline-first localStorage persistence
-
-In progress / planned:
-
-- [ ] Google Play Store release
-- [ ] Home screen widget
-- [ ] Streak / habit loop mechanic
-- [ ] Export / backup
-- [ ] iOS (v2 — pending Android traction)
+Email/password works without step 2; only Google OAuth needs it.
 
 ---
 
-## Developer
+## Data model
 
-Built by **Limeform Studio** — a solo indie project.
+Shared schema with Nexus — do **not** add columns without a coordinated migration on both apps.
 
-If you find StudyDesk useful and want to support continued development, a voluntary support purchase will be available in the app once it hits the Play Store.
+| Table | Key fields |
+|---|---|
+| `subjects` | `id`, `user_id`, `name`, `credits`, `semester`, `updated_at`, `deleted_at` |
+| `grades` | `id`, `user_id`, `subject_id` (FK), `grade`, `weight`, `date`, `updated_at`, `deleted_at` |
+| `study_sessions` | `id`, `user_id`, `subject_id` (nullable FK), `started_at`, `duration_minutes`, `notes`, `updated_at`, `deleted_at` |
+
+Local state stores camelCase shapes; `src/lib/merge.js` handles the snake_case ↔ camelCase translation on pull.
 
 ---
 
-## Licence
+## Architecture notes
 
-All rights reserved. Source is published for transparency and portfolio purposes. You may not redistribute, rebrand, or publish derivative versions without permission.
+- **Single-file core** — `App.jsx` holds the reducer + all the legacy views (Plan, Actions, Timer, Onboarding). New features live in their own modules under `src/features/`. The reducer is the single source of truth.
+- **Write-direct sync (v1)** — UI handlers dispatch a local reducer action first (instant feedback), then call the matching push function in `sync.js`. Failures surface as a toast. An outbox queue for offline tolerance can come later.
+- **1.5s coalesce on Realtime** — `postgres_changes` events are debounced before triggering a full pull, so a multi-row write on Nexus doesn't fire five separate pulls.
+- **Soft delete only** — every delete sets `deleted_at = now()`. Hard delete would leave the other app thinking the row still exists until the next full pull.
+
+---
+
+## Status
+
+- ✅ Cloud sync + auth + grades + sessions shipped
+- ✅ Production build green; lint clean for new code
+- ⏳ On-device verification pass against the Done Criteria checklist
+- ⏳ Play Store publishing — keystore staged, listing assets ready
+
+---
+
+## License
+
+Not yet declared. Treat as proprietary unless / until a `LICENSE` file is added.
