@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Python bytecode cache
+__pycache__/
+*.pyc
+
 # Env files — only .env.example is committed (template). Real values
 # (.env, .env.local, .env.production) stay local even though the anon key
 # is "publicly publishable", so a fork can't accidentally check in their

@@ -111,21 +111,87 @@ def strip_cream_background(src: Image.Image) -> Image.Image:
 
 def make_monochrome(src: Image.Image, size: int = 432) -> Image.Image:
     """
-    Monochrome silhouette for Android 13+ themed icons.
-    The launcher will tint this dynamically based on the user's wallpaper —
-    so the file just needs to be a white-on-transparent silhouette of the logo.
+    Solid-filled monochrome silhouette for Android 13+ themed icons.
+
+    Algorithm:
+      1. Build a binary mask where bright/low-chroma cream pixels = "background candidate"
+         and dark or saturated content pixels = "content."
+      2. Flood-fill from all 4 image corners through the background-candidate region
+         — anything reachable from the edge is genuinely "outside" the shape.
+      3. The silhouette is then: every pixel that is NOT marked as "outside."
+         That includes both the dark strokes AND the cream paper enclosed by them
+         (e.g. the book's open pages), giving us a solid filled shape.
+      4. Render the silhouette as white-on-transparent so the launcher can tint it.
+
+    Result is a chunky filled book+pencil shape, not a thin outline.
     """
-    stripped = strip_cream_background(src)
-    # Resize to safe-zone within target canvas
+    src_rgba = src.convert("RGBA")
+    w, h = src_rgba.size
+    src_pixels = src_rgba.load()
+
+    # Step 1: background-candidate mask. 255 = candidate (cream-ish or transparent),
+    # 0 = content. The source uses a warm cream (~RGB 248,231,212 near edges) with
+    # chroma up to ~40, so we use a permissive chroma threshold of 60.
+    # Brightness threshold is set low (190) to also capture slightly-shadowed
+    # corner/edge cream while still excluding the dark strokes (which are ~90 RGB).
+    bg = Image.new("L", (w, h), 0)
+    bg_pixels = bg.load()
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = src_pixels[x, y]
+            if a < 32:
+                bg_pixels[x, y] = 255  # transparent counts as background
+                continue
+            bright = min(r, g, b) >= 190
+            warm_cream = max(r, g, b) - min(r, g, b) <= 60
+            if bright and warm_cream:
+                bg_pixels[x, y] = 255
+
+    # Step 1.5: seal narrow gaps in the bg-mask so the flood can't leak through
+    # the V-shaped opening at the top of an open book (where outer cream connects
+    # to inner-page cream through a 10-20px gap between the page edges).
+    # MinFilter shrinks the 255 region (= dilates the strokes), sealing gaps
+    # narrower than the kernel diameter.
+    bg = bg.filter(ImageFilter.MinFilter(15))
+
+    # Step 2: flood-fill from all four corners. Reachable bg pixels (255) become 128.
+    # Anything still 255 after the fills is "enclosed background" = part of the shape.
+    for seed in [(0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)]:
+        if bg.getpixel(seed) == 255:
+            ImageDraw.floodfill(bg, seed, 128, thresh=20)
+
+    # Step 3: silhouette = NOT 128. Both 0 (content) and 255 (enclosed) become white.
+    silhouette = Image.new("L", (w, h), 0)
+    sil_pixels = silhouette.load()
+    fill_pixels = bg.load()
+    for y in range(h):
+        for x in range(w):
+            if fill_pixels[x, y] != 128:
+                sil_pixels[x, y] = 255
+
+    # Light morphological closing — the bg-mask sealing already filled the
+    # inner pages; here we just smooth out tiny anti-aliasing artifacts on
+    # the silhouette edges without losing the book's internal page-line detail.
+    silhouette = silhouette.filter(ImageFilter.MaxFilter(3))
+    silhouette = silhouette.filter(ImageFilter.MinFilter(3))
+    silhouette = silhouette.filter(ImageFilter.GaussianBlur(0.6))
+    silhouette = silhouette.point(lambda v: 255 if v > 96 else 0, mode="L")
+
+    # Step 4: resize to safe-zone fraction of target canvas
     content = int(size * SAFE_ZONE)
-    resized = stripped.resize((content, content), Image.LANCZOS)
-    # Convert non-transparent pixels to opaque white (alpha preserved from source)
-    r, g, b, a = resized.split()
-    white = Image.new("L", resized.size, 255)
-    mono = Image.merge("RGBA", (white, white, white, a))
+    sil_resized = silhouette.resize((content, content), Image.LANCZOS)
+
+    # White-on-transparent: alpha channel comes from the silhouette
+    white_layer = Image.new("RGBA", sil_resized.size, (255, 255, 255, 0))
+    wp = white_layer.load()
+    srp = sil_resized.load()
+    for y in range(sil_resized.size[1]):
+        for x in range(sil_resized.size[0]):
+            wp[x, y] = (255, 255, 255, srp[x, y])
+
     canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     offset = (size - content) // 2
-    canvas.paste(mono, (offset, offset), mono)
+    canvas.paste(white_layer, (offset, offset), white_layer)
     return canvas
 
 
