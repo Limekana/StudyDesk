@@ -23,7 +23,7 @@ function todayISO() { return new Date().toISOString().slice(0, 10); }
 
 // ── subjects (courses) ───────────────────────────────────────────────────────
 
-export async function upsertSubject({ id, name, credits, semester }) {
+export async function upsertSubject({ id, name, credits, semester, color }) {
   const userId = await currentUserId();
   const { error } = await supabase.from('subjects').upsert({
     id,
@@ -31,6 +31,10 @@ export async function upsertSubject({ id, name, credits, semester }) {
     name,
     credits: credits ?? 1,
     semester: semester ?? null,
+    // v1.0.3 — color is shared with Nexus-Command-Center. Pass through whatever
+    // the local course has (StudyDesk's color picker writes COURSE_COLORS values);
+    // null is acceptable if unset. LWW resolution on updated_at.
+    color: color ?? null,
     updated_at: nowISO(),
   });
   if (error) throw error;

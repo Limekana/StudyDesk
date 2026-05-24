@@ -662,7 +662,7 @@ export default function App() {
     dispatch({type:"ADD_COURSE", id, name, color});
     setColorIdx(i=>i+1); setNewCourseName(""); setShowAddCourse(false); showFlash("Course added");
     if (session) {
-      sync.upsertSubject({ id, name }).catch(e => showFlash("Sync failed: " + e.message));
+      sync.upsertSubject({ id, name, color }).catch(e => showFlash("Sync failed: " + e.message));
     }
   };
 
@@ -778,7 +778,7 @@ export default function App() {
       onSave={(name,color,credits,semester)=>{
         dispatch({type:"EDIT_COURSE",id:editingCourse.id,name,color,credits,semester});
         setEditingCourse(null); showFlash("Course updated");
-        if (session) sync.upsertSubject({ id:editingCourse.id, name, credits, semester }).catch(e=>showFlash("Sync failed: "+e.message));
+        if (session) sync.upsertSubject({ id:editingCourse.id, name, credits, semester, color }).catch(e=>showFlash("Sync failed: "+e.message));
       }}
       onDelete={()=>{
         const id=editingCourse.id;

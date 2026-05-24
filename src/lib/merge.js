@@ -12,26 +12,39 @@ function newer(remoteIso, localIso) {
   return remoteIso > localIso;
 }
 
-/** DB subject row → local-shaped object. Preserves any local-only fields (color, notes). */
+/**
+ * DB subject row → local-shaped object.
+ *
+ * v1.0.3: `color` is now a synced DB column (was local-only in v1.0.2). LWW on
+ * the whole row by updated_at — including color. Nexus-Command-Center also
+ * writes color, so the newer side wins. If remote color is null and local has
+ * one, the local color is preserved (we don't clobber a useful value with null
+ * unless the remote row is genuinely newer AND explicitly set color=null).
+ *
+ * `notes` stays local-only (not a Nexus-known field).
+ */
 export function mergeSubject(localCourse, remoteRow) {
   const remote = {
     id: remoteRow.id,
     name: remoteRow.name,
     credits: remoteRow.credits ?? 1,
     semester: remoteRow.semester ?? null,
+    color: remoteRow.color || null,
     updatedAt: remoteRow.updated_at || null,
     deletedAt: remoteRow.deleted_at || null,
   };
   if (!localCourse) {
-    // New subject discovered remotely — fill in defaults for the local-only fields.
-    return { ...remote, color: '#7a7570', notes: [] };
+    // New subject discovered remotely — use remote color if set, gray default otherwise.
+    return { ...remote, color: remote.color || '#7a7570', notes: [] };
   }
-  // LWW: keep newer side. Color/notes/extra local fields always preserved from local.
   if (newer(remote.updatedAt, localCourse.updatedAt)) {
     return {
       ...localCourse,
       ...remote,
-      color: localCourse.color,
+      // If remote is newer but didn't include a color value, fall back to local
+      // (avoids wiping a user's color picker choice just because NCC sent an
+      // edit that didn't touch color).
+      color: remote.color || localCourse.color,
       notes: localCourse.notes ?? [],
     };
   }
