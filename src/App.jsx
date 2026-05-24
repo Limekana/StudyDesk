@@ -8,6 +8,7 @@ import { applyRemotePull } from "./lib/merge.js";
 import GradesView from "./features/grades/GradesView.jsx";
 import SessionsView from "./features/sessions/SessionsView.jsx";
 import SaveSessionSheet from "./features/sessions/SaveSessionSheet.jsx";
+import SettingsView from "./features/settings/SettingsView.jsx";
 
 const BUCKETS = ["today", "this_week", "later"];
 const BUCKET_LABELS = { today: "TODAY", this_week: "THIS WEEK", later: "LATER" };
@@ -666,11 +667,12 @@ export default function App() {
   };
 
   const views = [
-    {id:"actions", label:"Study",   icon:"◎"},
-    {id:"plan",    label:"Plan",    icon:"◈"},
-    {id:"grades",  label:"Grades",  icon:"⌗"},
-    {id:"timer",   label:"Timer",   icon:"◉"},
-    {id:"log",     label:"Log",     icon:"≡"},
+    {id:"actions",  label:"Study",   icon:"◎"},
+    {id:"plan",     label:"Plan",    icon:"◈"},
+    {id:"grades",   label:"Grades",  icon:"⌗"},
+    {id:"timer",    label:"Timer",   icon:"◉"},
+    {id:"log",      label:"Log",     icon:"≡"},
+    {id:"settings", label:"Settings",icon:"⚙"},
   ];
   const activeView = views.find(v=>v.id===state.view);
 
@@ -747,6 +749,7 @@ export default function App() {
           {state.view==="grades"  &&<GradesView  state={state} dispatch={dispatch} showFlash={showFlash} session={session}/>}
           {state.view==="timer"   &&<TimerView   state={state} dispatch={dispatch} session={session} showFlash={showFlash} onTimerComplete={(payload)=>setPendingSession(payload)}/>}
           {state.view==="log"     &&<SessionsView state={state} dispatch={dispatch} showFlash={showFlash} session={session}/>}
+          {state.view==="settings"&&<SettingsView state={state} dispatch={dispatch} showFlash={showFlash} session={session}/>}
         </div>
       </main>
 
