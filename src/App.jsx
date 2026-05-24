@@ -26,6 +26,13 @@ const POMO_PRESETS = { focus:25, short:5, long:15 };
 
 const TODAY = new Date(); TODAY.setHours(0,0,0,0);
 function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+// IDs that flow into Supabase MUST be proper UUIDs — the columns are typed `uuid`.
+// `uid()` above produces short nanoid-style strings (~12 chars) which Postgres rejects.
+// Keep `uid()` for local-only entities (assignments, exams, exam topics, actions);
+// use `newSyncId()` for everything that crosses the sync boundary (subjects, grades,
+// study sessions). Browser-native, no extra dep.
+function newSyncId() { return crypto.randomUUID(); }
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function parseLocalDate(s){ if(!s) return null; const[y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); }
 function toLocalISO(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function daysUntil(s){ if(!s) return null; return Math.round((parseLocalDate(s)-TODAY)/86400000); }
@@ -137,7 +144,7 @@ const cssOnboard = `
 
 function reducer(state, action) {
   switch(action.type) {
-    case "ADD_COURSE":    { const id=action.id||uid(); return {...state,courses:{...state.courses,[id]:{id,name:action.name,color:action.color,notes:[],credits:action.credits??1,semester:action.semester??null,updatedAt:action.updatedAt||new Date().toISOString(),deletedAt:null}}}; }
+    case "ADD_COURSE":    { const id=action.id||newSyncId(); return {...state,courses:{...state.courses,[id]:{id,name:action.name,color:action.color,notes:[],credits:action.credits??1,semester:action.semester??null,updatedAt:action.updatedAt||new Date().toISOString(),deletedAt:null}}}; }
     case "EDIT_COURSE":  return {...state,courses:{...state.courses,[action.id]:{...state.courses[action.id],name:action.name,color:action.color,credits:action.credits!==undefined?action.credits:state.courses[action.id]?.credits,semester:action.semester!==undefined?action.semester:state.courses[action.id]?.semester,updatedAt:new Date().toISOString()}}};
     case "DELETE_COURSE":{
       // Soft-delete the course in local state (mirrors what we push to Supabase).
@@ -173,12 +180,12 @@ function reducer(state, action) {
     case "SET_VIEW":      return {...state,view:action.view,activeCourse:action.course!==undefined?action.course:state.activeCourse};
 
     // ── Grades (new schema: per-grade rows linked to a subject) ──
-    case "ADD_GRADE":    { const g={id:action.id||uid(),subjectId:action.subjectId,grade:Number(action.grade),weight:Number(action.weight??1),date:action.date||new Date().toISOString().slice(0,10),updatedAt:action.updatedAt||new Date().toISOString(),deletedAt:null}; return {...state,grades:[...(state.grades||[]),g]}; }
+    case "ADD_GRADE":    { const g={id:action.id||newSyncId(),subjectId:action.subjectId,grade:Number(action.grade),weight:Number(action.weight??1),date:action.date||new Date().toISOString().slice(0,10),updatedAt:action.updatedAt||new Date().toISOString(),deletedAt:null}; return {...state,grades:[...(state.grades||[]),g]}; }
     case "EDIT_GRADE":   return {...state,grades:(state.grades||[]).map(g=>g.id===action.id?{...g,subjectId:action.subjectId??g.subjectId,grade:action.grade!==undefined?Number(action.grade):g.grade,weight:action.weight!==undefined?Number(action.weight):g.weight,date:action.date??g.date,updatedAt:new Date().toISOString()}:g)};
     case "DELETE_GRADE": { const stamp=new Date().toISOString(); return {...state,grades:(state.grades||[]).map(g=>g.id===action.id?{...g,deletedAt:stamp,updatedAt:stamp}:g)}; }
 
     // ── Study sessions ──
-    case "ADD_SESSION":    { const s={id:action.id||uid(),subjectId:action.subjectId||null,startedAt:action.startedAt,durationMinutes:Math.max(1,Math.min(1440,Math.round(action.durationMinutes))),notes:action.notes||null,updatedAt:action.updatedAt||new Date().toISOString(),deletedAt:null}; return {...state,studySessions:[...(state.studySessions||[]),s]}; }
+    case "ADD_SESSION":    { const s={id:action.id||newSyncId(),subjectId:action.subjectId||null,startedAt:action.startedAt,durationMinutes:Math.max(1,Math.min(1440,Math.round(action.durationMinutes))),notes:action.notes||null,updatedAt:action.updatedAt||new Date().toISOString(),deletedAt:null}; return {...state,studySessions:[...(state.studySessions||[]),s]}; }
     case "EDIT_SESSION":   return {...state,studySessions:(state.studySessions||[]).map(s=>s.id===action.id?{...s,subjectId:action.subjectId!==undefined?(action.subjectId||null):s.subjectId,startedAt:action.startedAt??s.startedAt,durationMinutes:action.durationMinutes!==undefined?Math.max(1,Math.min(1440,Math.round(action.durationMinutes))):s.durationMinutes,notes:action.notes!==undefined?(action.notes||null):s.notes,updatedAt:new Date().toISOString()}:s)};
     case "DELETE_SESSION": { const stamp=new Date().toISOString(); return {...state,studySessions:(state.studySessions||[]).map(s=>s.id===action.id?{...s,deletedAt:stamp,updatedAt:stamp}:s)}; }
 
@@ -546,12 +553,84 @@ export default function App() {
       const gradeMode = (() => {
         try { return localStorage.getItem("studydesk-grade-mode") === "us" ? "us" : "ib"; } catch { return "ib"; }
       })();
+
+      // ── v1.0.4 UUID migration ────────────────────────────────────────────────
+      // Earlier versions used short uid() strings for IDs. Supabase columns are
+      // `uuid` type and reject them ("invalid input syntax for type uuid: ...").
+      // This pass detects non-UUID local IDs and rewrites them — keeping all
+      // cross-references intact (grade.subjectId, session.subjectId,
+      // assignment.courseId, exam.courseId, action.courseId, activeCourse).
+      // Marks `studydesk-needs-initial-push` so the App runs a one-shot push
+      // of the migrated rows after auth lands.
+      let needsPush = localStorage.getItem("studydesk-needs-initial-push") === "1";
+      const subjectIdMap = {};
+      const migratedCourses = {};
+      for (const [oldId, c] of Object.entries(courses)) {
+        if (UUID_RE.test(oldId)) {
+          migratedCourses[oldId] = c;
+          subjectIdMap[oldId] = oldId;
+        } else {
+          const newId = crypto.randomUUID();
+          subjectIdMap[oldId] = newId;
+          migratedCourses[newId] = { ...c, id: newId };
+          needsPush = true;
+        }
+      }
+      const migratedGrades = (saved.grades || []).map(g => {
+        const idOk = UUID_RE.test(g.id);
+        const subjIdMapped = subjectIdMap[g.subjectId];
+        const subjOk = !subjIdMapped || subjIdMapped === g.subjectId;
+        if (idOk && subjOk) return g;
+        needsPush = true;
+        return {
+          ...g,
+          id: idOk ? g.id : crypto.randomUUID(),
+          subjectId: subjIdMapped || g.subjectId,
+        };
+      });
+      const migratedSessions = (saved.studySessions || []).map(s => {
+        const idOk = UUID_RE.test(s.id);
+        const subjIdMapped = s.subjectId ? subjectIdMap[s.subjectId] : null;
+        const subjOk = !s.subjectId || subjIdMapped === s.subjectId;
+        if (idOk && subjOk) return s;
+        needsPush = true;
+        return {
+          ...s,
+          id: idOk ? s.id : crypto.randomUUID(),
+          subjectId: s.subjectId ? (subjIdMapped || s.subjectId) : null,
+        };
+      });
+      // Assignments, exams, actions are local-only but reference courseId — update.
+      const migratedAssignments = (saved.assignments || []).map(a =>
+        subjectIdMap[a.courseId] && subjectIdMap[a.courseId] !== a.courseId
+          ? { ...a, courseId: subjectIdMap[a.courseId] }
+          : a);
+      const migratedExams = (saved.exams || []).map(e =>
+        subjectIdMap[e.courseId] && subjectIdMap[e.courseId] !== e.courseId
+          ? { ...e, courseId: subjectIdMap[e.courseId] }
+          : e);
+      const migratedActions = (saved.actions || []).map(a =>
+        a.courseId && subjectIdMap[a.courseId] && subjectIdMap[a.courseId] !== a.courseId
+          ? { ...a, courseId: subjectIdMap[a.courseId] }
+          : a);
+      const migratedActiveCourse = saved.activeCourse && subjectIdMap[saved.activeCourse]
+        ? subjectIdMap[saved.activeCourse]
+        : saved.activeCourse || null;
+
+      if (needsPush) {
+        try { localStorage.setItem("studydesk-needs-initial-push", "1"); } catch {}
+      }
+
       return {
         ...init,
         ...saved,
-        courses,
-        grades: Array.isArray(saved.grades) ? saved.grades : [],
-        studySessions: Array.isArray(saved.studySessions) ? saved.studySessions : [],
+        courses: migratedCourses,
+        assignments: migratedAssignments,
+        exams: migratedExams,
+        actions: migratedActions,
+        grades: migratedGrades,
+        studySessions: migratedSessions,
+        activeCourse: migratedActiveCourse,
         gradeMode,
         view: "actions",
       };
@@ -633,6 +712,53 @@ export default function App() {
   // ── Save-session sheet (raised when timer's focus phase ends) ───────────────
   const [pendingSession, setPendingSession] = useState(null); // { durationMinutes, task, startedAt } | null
 
+  // ── v1.0.4 one-shot post-migration push ─────────────────────────────────────
+  // The UUID migration in the reducer init may have rewritten local IDs. Those
+  // rewritten rows have never reached Supabase (the old short-ID pushes were
+  // failing silently). Push everything once after sign-in. Subjects must go
+  // before grades (FK), grades before sessions doesn't matter (no FK between).
+  // Fire-and-forget per row, log failures — next user edit will retry.
+  useEffect(() => {
+    if (!session) return;
+    if (localStorage.getItem("studydesk-needs-initial-push") !== "1") return;
+    let cancelled = false;
+    (async () => {
+      let pushed = 0, failed = 0;
+      const courses = Object.values(state.courses).filter(c => !c.deletedAt);
+      for (const c of courses) {
+        if (cancelled) return;
+        try {
+          await sync.upsertSubject({ id: c.id, name: c.name, credits: c.credits, semester: c.semester, color: c.color });
+          pushed++;
+        } catch (e) { failed++; console.error("[StudyDesk] initial push subject failed:", c.id, e); }
+      }
+      const grades = (state.grades || []).filter(g => !g.deletedAt);
+      for (const g of grades) {
+        if (cancelled) return;
+        try {
+          await sync.upsertGrade({ id: g.id, subjectId: g.subjectId, grade: g.grade, weight: g.weight, date: g.date });
+          pushed++;
+        } catch (e) { failed++; console.error("[StudyDesk] initial push grade failed:", g.id, e); }
+      }
+      const sessions = (state.studySessions || []).filter(s => !s.deletedAt);
+      for (const s of sessions) {
+        if (cancelled) return;
+        try {
+          await sync.logStudySession({ id: s.id, subjectId: s.subjectId, startedAt: s.startedAt, durationMinutes: s.durationMinutes, notes: s.notes });
+          pushed++;
+        } catch (e) { failed++; console.error("[StudyDesk] initial push session failed:", s.id, e); }
+      }
+      if (failed === 0) {
+        try { localStorage.removeItem("studydesk-needs-initial-push"); } catch {}
+        if (pushed > 0) showFlash(`Synced ${pushed} legacy items`);
+      } else {
+        showFlash(`${pushed} synced, ${failed} failed — will retry`);
+      }
+    })();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id]);
+
   const signOut = useCallback(async () => {
     try { await supabase.auth.signOut(); } catch (e) { showFlash("Sign-out failed: "+e.message); }
   }, [showFlash]);
@@ -656,7 +782,7 @@ export default function App() {
   const urgentExams = state.exams.filter(e=>!e.done&&daysUntil(e.dueDate)!==null&&daysUntil(e.dueDate)<=3);
   const addCourse = () => {
     if(!newCourseName.trim()) return;
-    const id = uid();
+    const id = newSyncId();
     const name = newCourseName.trim();
     const color = COURSE_COLORS[colorIdx%COURSE_COLORS.length];
     dispatch({type:"ADD_COURSE", id, name, color});
@@ -793,7 +919,7 @@ export default function App() {
         courses={courses}
         onClose={()=>setPendingSession(null)}
         onSave={async ({subjectId, durationMinutes, notes, startedAt}) => {
-          const id = uid();
+          const id = newSyncId();
           dispatch({type:"ADD_SESSION", id, subjectId: subjectId||null, startedAt, durationMinutes, notes});
           setPendingSession(null);
           showFlash(`Logged ${durationMinutes}m`);

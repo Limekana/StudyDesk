@@ -2,8 +2,11 @@ import { useMemo, useState } from 'react';
 import { calculateGPA, subjectEffectiveGrade, subjectsWithEffectiveGrades } from '../../lib/gpa.js';
 import * as sync from '../../lib/sync.js';
 
-// Stable random id — kept tiny to mirror App.jsx's uid() shape.
-function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+// Grade rows go straight to Supabase, where `id` is a strict UUID column.
+// crypto.randomUUID() is browser-native (since Chromium 92 / 2021) — Capacitor's
+// WebView is well above that. Don't use a short nanoid here, Postgres rejects
+// non-UUID strings with "invalid input syntax for type uuid".
+function uid() { return crypto.randomUUID(); }
 
 const css = `
 .gv-wrap{padding:16px 24px 80px;max-width:980px;margin:0 auto;}

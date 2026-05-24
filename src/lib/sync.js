@@ -88,7 +88,11 @@ export async function deleteGrade(id) {
 export async function logStudySession({ id, subjectId, startedAt, durationMinutes, notes }) {
   const userId = await currentUserId();
   const duration = Math.max(1, Math.min(1440, Math.round(durationMinutes)));
-  const { error } = await supabase.from('study_sessions').insert({
+  // Idempotent UPSERT (was INSERT) so the v1.0.4 post-migration push can
+  // safely retry every row without duplicate-key conflicts. Normal session
+  // creation still works the same — id is generated client-side via
+  // crypto.randomUUID() so collisions are vanishingly unlikely.
+  const { error } = await supabase.from('study_sessions').upsert({
     id,
     user_id: userId,
     subject_id: subjectId || null,
