@@ -1,9 +1,13 @@
 import { useState, useReducer, useEffect, useCallback, useRef } from "react";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { App as CapApp } from "@capacitor/app";
+import { Capacitor } from "@capacitor/core";
 import { supabase } from "./lib/supabase.js";
 import AuthGate from "./features/auth/AuthGate.jsx";
+import { isGuestMode, setGuestMode } from "./lib/guestMode.js";
+import { inheritFromNexus } from "./lib/suiteSso.js";
 import * as sync from "./lib/sync.js";
+import * as outbox from "./lib/outbox.js";
 import { applyRemotePull } from "./lib/merge.js";
 import GradesView from "./features/grades/GradesView.jsx";
 import SessionsView from "./features/sessions/SessionsView.jsx";
@@ -45,10 +49,38 @@ function studyStartDate(e){ return addDays(e.dueDate,-DIFFICULTY_DAYS[e.difficul
 function fmtMMSS(sec){ return String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0"); }
 
 // ── Notifications ─────────────────────────────────────────────────────────────
+// Action-type IDs for tap-action buttons. Registered once at app start via
+// registerActionTypesOnce() and attached per-notification via actionTypeId.
+// The button click surfaces as a localNotificationActionPerformed event whose
+// actionId === ACTION_DONE_ID and whose notification.extra carries the
+// assignmentId to dispatch TOGGLE_ASSIGNMENT against.
+const ASSIGNMENT_ACTION_TYPE = "assignment-reminder";
+const ACTION_DONE_ID = "done";
+let _actionTypesRegistered = false;
+async function registerActionTypesOnce() {
+  if (_actionTypesRegistered) return;
+  try {
+    await LocalNotifications.registerActionTypes({
+      types: [
+        {
+          id: ASSIGNMENT_ACTION_TYPE,
+          actions: [{ id: ACTION_DONE_ID, title: "Mark done" }],
+        },
+      ],
+    });
+    _actionTypesRegistered = true;
+  } catch (e) {
+    console.warn("[StudyDesk] registerActionTypes failed:", e);
+  }
+}
+
 async function scheduleNotifications(exams, assignments, courses) {
   try {
     const perm = await LocalNotifications.requestPermissions();
     if (perm.display !== "granted") return;
+    // Register action types before scheduling — must be set up before any
+    // notification with actionTypeId fires or the button won't render.
+    await registerActionTypesOnce();
     // Cancel all previously scheduled notifications before rescheduling
     const pending = await LocalNotifications.getPending();
     if (pending.notifications.length > 0) {
@@ -69,7 +101,7 @@ async function scheduleNotifications(exams, assignments, courses) {
       for (let day = 0; day < 30; day++) {
         const at = new Date(); at.setHours(9,0,0,0); at.setDate(at.getDate() + day);
         if (at.getTime() > now) {
-          notes.push({ id: id++, title: "📚 StudyDesk — Next Up", body: topLabel, schedule: { at }, smallIcon: "ic_notification" });
+          notes.push({ id: id++, title: "📚 StudyDesk — Next Up", body: topLabel, schedule: { at }, smallIcon: "ic_stat_studydesk", iconColor: "#8b4a62" });
         }
       }
     }
@@ -81,13 +113,13 @@ async function scheduleNotifications(exams, assignments, courses) {
       const label = c ? `${exam.title} — ${c.name}` : exam.title;
       // Study start day at 9am
       const startAt = parseLocalDate(studyStartDate(exam)); startAt.setHours(9,0,0,0);
-      if (startAt.getTime() > now) notes.push({ id: id++, title: "📚 Time to start studying", body: `${label} — ${DIFFICULTY_DAYS[exam.difficulty||"medium"]}d to go`, schedule: { at: startAt }, smallIcon: "ic_notification" });
+      if (startAt.getTime() > now) notes.push({ id: id++, title: "📚 Time to start studying", body: `${label} — ${DIFFICULTY_DAYS[exam.difficulty||"medium"]}d to go`, schedule: { at: startAt }, smallIcon: "ic_stat_studydesk", iconColor: "#8b4a62" });
       // 2 days before at 9am
       const twoDay = parseLocalDate(addDays(exam.dueDate,-2)); twoDay.setHours(9,0,0,0);
-      if (twoDay.getTime() > now) notes.push({ id: id++, title: "⚠️ Exam in 2 days", body: label, schedule: { at: twoDay }, smallIcon: "ic_notification" });
+      if (twoDay.getTime() > now) notes.push({ id: id++, title: "⚠️ Exam in 2 days", body: label, schedule: { at: twoDay }, smallIcon: "ic_stat_studydesk", iconColor: "#8b4a62" });
       // Exam day at 7am
       const examDay = parseLocalDate(exam.dueDate); examDay.setHours(7,0,0,0);
-      if (examDay.getTime() > now) notes.push({ id: id++, title: "📝 Exam today — good luck", body: label, schedule: { at: examDay }, smallIcon: "ic_notification" });
+      if (examDay.getTime() > now) notes.push({ id: id++, title: "📝 Exam today — good luck", body: label, schedule: { at: examDay }, smallIcon: "ic_stat_studydesk", iconColor: "#8b4a62" });
     });
 
     // ── Assignment-specific notifications ──
@@ -95,12 +127,15 @@ async function scheduleNotifications(exams, assignments, courses) {
       if (asgn.done || !asgn.dueDate) return;
       const c = courses[asgn.courseId];
       const label = c ? `${asgn.title} — ${c.name}` : asgn.title;
-      // Day before at 6pm
+      // Day before at 6pm. Action button "Mark done" → TOGGLE_ASSIGNMENT
+      // (see App-level useEffect listener). extra.assignmentId carries the
+      // target id; both reminders for the same assignment share that id so
+      // either notification can mark it done.
       const dayBefore = parseLocalDate(addDays(asgn.dueDate,-1)); dayBefore.setHours(18,0,0,0);
-      if (dayBefore.getTime() > now) notes.push({ id: id++, title: "📋 Due tomorrow", body: label, schedule: { at: dayBefore }, smallIcon: "ic_notification" });
+      if (dayBefore.getTime() > now) notes.push({ id: id++, title: "📋 Due tomorrow", body: label, schedule: { at: dayBefore }, smallIcon: "ic_stat_studydesk", iconColor: "#8b4a62", actionTypeId: ASSIGNMENT_ACTION_TYPE, extra: { assignmentId: asgn.id } });
       // Due day at 9am
       const dueDay = parseLocalDate(asgn.dueDate); dueDay.setHours(9,0,0,0);
-      if (dueDay.getTime() > now) notes.push({ id: id++, title: "📋 Due today", body: label, schedule: { at: dueDay }, smallIcon: "ic_notification" });
+      if (dueDay.getTime() > now) notes.push({ id: id++, title: "📋 Due today", body: label, schedule: { at: dueDay }, smallIcon: "ic_stat_studydesk", iconColor: "#8b4a62", actionTypeId: ASSIGNMENT_ACTION_TYPE, extra: { assignmentId: asgn.id } });
     });
 
     if (notes.length > 0) await LocalNotifications.schedule({ notifications: notes });
@@ -144,8 +179,46 @@ const cssOnboard = `
 
 function reducer(state, action) {
   switch(action.type) {
-    case "ADD_COURSE":    { const id=action.id||newSyncId(); return {...state,courses:{...state.courses,[id]:{id,name:action.name,color:action.color,notes:[],credits:action.credits??1,semester:action.semester??null,updatedAt:action.updatedAt||new Date().toISOString(),deletedAt:null}}}; }
+    case "ADD_COURSE":    { const id=action.id||newSyncId(); return {...state,courses:{...state.courses,[id]:{id,name:action.name,color:action.color,notes:[],credits:action.credits??1,semester:action.semester??null,archivedAt:null,updatedAt:action.updatedAt||new Date().toISOString(),deletedAt:null}}}; }
     case "EDIT_COURSE":  return {...state,courses:{...state.courses,[action.id]:{...state.courses[action.id],name:action.name,color:action.color,credits:action.credits!==undefined?action.credits:state.courses[action.id]?.credits,semester:action.semester!==undefined?action.semester:state.courses[action.id]?.semester,updatedAt:new Date().toISOString()}}};
+    // v1.2 — semester archiving. ARCHIVE_SEMESTER stamps archivedAt on
+    // every active course matching the semester string; RESTORE_SEMESTER
+    // clears it. Per-course variants for the case where the user wants
+    // to hide just one course without archiving its whole semester
+    // (e.g. dropped a class mid-term). Updating archivedAt bumps
+    // updatedAt so LWW wins against any concurrent stale write.
+    case "ARCHIVE_SEMESTER": {
+      const stamp = action.stamp || new Date().toISOString();
+      const next = { ...state.courses };
+      for (const c of Object.values(state.courses || {})) {
+        if (!c.deletedAt && !c.archivedAt && c.semester === action.semester) {
+          next[c.id] = { ...c, archivedAt: stamp, updatedAt: stamp };
+        }
+      }
+      return { ...state, courses: next };
+    }
+    case "RESTORE_SEMESTER": {
+      const stamp = action.stamp || new Date().toISOString();
+      const next = { ...state.courses };
+      for (const c of Object.values(state.courses || {})) {
+        if (!c.deletedAt && c.archivedAt && c.semester === action.semester) {
+          next[c.id] = { ...c, archivedAt: null, updatedAt: stamp };
+        }
+      }
+      return { ...state, courses: next };
+    }
+    case "ARCHIVE_COURSE": {
+      const stamp = action.stamp || new Date().toISOString();
+      const c = state.courses[action.id];
+      if (!c) return state;
+      return { ...state, courses: { ...state.courses, [action.id]: { ...c, archivedAt: stamp, updatedAt: stamp } } };
+    }
+    case "RESTORE_COURSE": {
+      const stamp = action.stamp || new Date().toISOString();
+      const c = state.courses[action.id];
+      if (!c) return state;
+      return { ...state, courses: { ...state.courses, [action.id]: { ...c, archivedAt: null, updatedAt: stamp } } };
+    }
     case "DELETE_COURSE":{
       // Soft-delete the course in local state (mirrors what we push to Supabase).
       // Also tombstone any grades for the subject so the GPA recalculates,
@@ -203,7 +276,7 @@ function reducer(state, action) {
 const css = `
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 h1,h2,h3,h4,h5,h6{font-weight:inherit;font-size:inherit;}
-:root{--bg:#f5f2ed;--surface:#faf8f4;--surface2:#f0ece4;--border:#e0d9cf;--border2:#cfc8bc;--text:#1a1814;--muted:#6b6560;--muted2:#7a7570;--font-display:'Playfair Display',serif;--font-mono:'DM Mono',monospace;--font-sans:'DM Sans',sans-serif;--shadow:0 1px 3px rgba(0,0,0,0.08);--shadow-md:0 4px 12px rgba(0,0,0,0.08);}
+:root{--bg:#f5f2ed;--surface:#faf8f4;--surface2:#f0ece4;--border:#e0d9cf;--border2:#cfc8bc;--text:#1a1814;--muted:#6b6560;--muted2:#7a7570;--danger:#c0392b;--danger-bg:#fee;--danger-border:#fcc;--danger-on:#fff;--warning:#b5470b;--warning-bg:#fff4e6;--warning-border:#f0d4a0;--font-display:'Playfair Display',serif;--font-mono:'DM Mono',monospace;--font-sans:'DM Sans',sans-serif;--shadow:0 1px 3px rgba(0,0,0,0.08);--shadow-md:0 4px 12px rgba(0,0,0,0.08);}
 html,body,#root{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-sans);overscroll-behavior:none;}
 /* Paper grain texture overlay */
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:0.035;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");background-repeat:repeat;background-size:128px 128px;}
@@ -539,6 +612,7 @@ export default function App() {
       const raw = localStorage.getItem("studydesk-v1");
       const saved = raw ? JSON.parse(raw) : {};
       // Normalize legacy course rows that pre-date credits/semester/timestamps.
+      // v1.2 adds archivedAt — defaults to null (active) on rehydration.
       const courses = {};
       for (const [id, c] of Object.entries(saved.courses || {})) {
         courses[id] = {
@@ -547,6 +621,7 @@ export default function App() {
           semester: null,
           updatedAt: null,
           deletedAt: null,
+          archivedAt: null,
           ...c,
         };
       }
@@ -661,6 +736,63 @@ export default function App() {
       scheduleNotifications(state.exams, state.assignments, state.courses);
     }
   }, [onboarded, state.exams, state.assignments]);
+
+  // v1.3 — outbox drain triggers. The outbox holds pending Supabase writes
+  // when the device is offline or a sync call failed; this effect re-runs
+  // drain on three signals:
+  //
+  //   1. App cold-start (mount) — catches anything queued in a prior
+  //      session that hadn't drained yet.
+  //   2. `online` window event — fires when the OS detects network
+  //      restoration. Capacitor surfaces this in the Android WebView.
+  //   3. `visibilitychange` → visible — fires when the app comes back to
+  //      the foreground after being backgrounded. Capacitor maps Android's
+  //      onResume here. Useful when the device was online but the user
+  //      was away long enough for a retry to make sense.
+  //
+  // drain() is single-flight inside the outbox (coalesces overlapping
+  // calls) so firing it from all three paths is safe.
+  useEffect(() => {
+    // One-shot on mount.
+    void outbox.drain();
+    function onOnline() { void outbox.drain(); }
+    function onVisibility() {
+      if (document.visibilityState === 'visible') void outbox.drain();
+    }
+    window.addEventListener('online', onOnline);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('online', onOnline);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, []);
+
+  // Listen for "Mark done" action-button taps on assignment reminders.
+  // The handler dispatches TOGGLE_ASSIGNMENT — since reschedules filter out
+  // assignments where done===true, the next scheduling pass naturally drops
+  // any further reminders for the just-completed assignment. The reducer's
+  // toggle (rather than a one-way mark-done) is fine here because Android
+  // auto-dismisses the notification on action tap, so accidental
+  // double-taps that would un-toggle aren't reachable.
+  useEffect(() => {
+    let handle = null;
+    (async () => {
+      try {
+        handle = await LocalNotifications.addListener(
+          "localNotificationActionPerformed",
+          (event) => {
+            if (event.actionId !== ACTION_DONE_ID) return;
+            const assignmentId = event.notification?.extra?.assignmentId;
+            if (!assignmentId) return;
+            dispatch({ type: "TOGGLE_ASSIGNMENT", id: assignmentId });
+          },
+        );
+      } catch (e) {
+        console.warn("[StudyDesk] action listener failed:", e);
+      }
+    })();
+    return () => { if (handle) handle.remove(); };
+  }, []);
   // Notifications are only scheduled after onboarding completes — never on first open
   const handleOnboardingComplete = useCallback((courseData) => {
     if (courseData) {
@@ -683,10 +815,68 @@ export default function App() {
 
   // ── Auth session ─────────────────────────────────────────────────────────────
   const [session, setSession] = useState(undefined); // undefined = loading; null = signed out; object = signed in
+  // v1.1 — guest mode flag. When `session === null` AND `guest === true`, the
+  // app renders normally with cloud sync disabled (Supabase realtime + outbox
+  // are already session-gated, so this is a pure UI bypass — no other code
+  // changes needed). When the user signs in or signs out, the flag is cleared.
+  const [guest, setGuest] = useState(() => isGuestMode());
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
-    return () => sub.subscription.unsubscribe();
+    let cancelled = false;
+    (async () => {
+      let { data } = await supabase.auth.getSession();
+
+      // v1.1 — auto-inherit from NCC on cold start when no local session.
+      //
+      // Why: Supabase rotates refresh_tokens on every refresh. NCC and
+      // StudyDesk share ONE logical session via the SSO bundle but each
+      // app's supabase client persists its own copy. When NCC's background
+      // auto-refresh rotates the token, StudyDesk's stored refresh_token
+      // becomes stale; its next refresh attempt fails; onAuthStateChange
+      // fires SIGNED_OUT. Symptom: every cold start lands the user on
+      // AuthGate needing to tap Continue with Nexus again.
+      //
+      // Fix: when getSession() returns null, probe NCC's ContentProvider
+      // and silently inherit. As long as NCC is signed in, this re-syncs
+      // StudyDesk to the latest published bundle without user-visible
+      // re-auth. Guest mode and the web platform short-circuit this path.
+      if (!data.session && !isGuestMode() && Capacitor.isNativePlatform()) {
+        try {
+          const result = await inheritFromNexus();
+          if (result.ok) {
+            ({ data } = await supabase.auth.getSession());
+          }
+        } catch (e) {
+          console.warn("[studydesk] auto-inherit on init failed:", e);
+        }
+      }
+
+      if (!cancelled) setSession(data.session);
+    })();
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      setSession(s);
+      // v1.1 — any successful sign-in clears guestMode so the user resumes
+      // normal session-based flow. Without this, a user who signed out
+      // (which sets guestMode=true to prevent next-launch auto-inherit
+      // undoing the sign-out) and later signs back in would keep
+      // guestMode=true. The gate would still work (session wins), but if
+      // the session expired the next cold start would silently land them
+      // in guest mode rather than attempting auto-inherit. Centralizing
+      // the clear here means every sign-in path (Nexus inherit, Google,
+      // email, restored session) converges to the same state.
+      if (event === "SIGNED_IN") {
+        setGuestMode(false);
+        window.dispatchEvent(new CustomEvent("studydesk:guest-mode-changed"));
+      }
+    });
+    return () => { cancelled = true; sub.subscription.unsubscribe(); };
+  }, []);
+  // Listen for guest-mode flag changes triggered by AuthGate (set) or the
+  // sign-out path below (clear). localStorage doesn't emit change events
+  // within the same tab, so we use a CustomEvent contract on `window`.
+  useEffect(() => {
+    const onChange = () => setGuest(isGuestMode());
+    window.addEventListener("studydesk:guest-mode-changed", onChange);
+    return () => window.removeEventListener("studydesk:guest-mode-changed", onChange);
   }, []);
 
   // ── Sync: initial pull + Realtime, gated on sign-in ─────────────────────────
@@ -759,9 +949,40 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id]);
 
+  // v1.1 — the topbar button is dual-mode (label flips between "Sign out"
+  // and "Sign in" based on whether we have a session). The handler must
+  // branch accordingly:
+  //   - Signed in → sign out + set guestMode=true. Setting guestMode TRUE
+  //     (not false) prevents the next cold start's auto-inherit logic from
+  //     silently re-signing-them-in via NCC's still-active session — bug
+  //     report 2026-05-28 "sign out buttons don't seem to do anything"
+  //     traced back to that loop. The user lands in guest mode (app stays
+  //     usable, no AuthGate flash); to re-sign-in they tap the now-flipped
+  //     "Sign in" button below, which routes to AuthGate.
+  //   - Guest mode → clear guestMode and dispatch. App.jsx re-renders to
+  //     AuthGate where the user picks a sign-in method.
   const signOut = useCallback(async () => {
-    try { await supabase.auth.signOut(); } catch (e) { showFlash("Sign-out failed: "+e.message); }
-  }, [showFlash]);
+    if (session?.user) {
+      // Clear the outbox BEFORE the auth round-trip so a queued retry
+      // can't race with sign-out and push the about-to-be-signed-out
+      // user's writes. Anything not yet drained is forfeit — that's the
+      // right trade vs. potentially leaking writes to the next signed-in
+      // user.
+      outbox.clear();
+      setGuestMode(true);
+      window.dispatchEvent(new CustomEvent("studydesk:guest-mode-changed"));
+      try {
+        await supabase.auth.signOut();
+        showFlash("Signed out · local mode");
+      } catch (e) {
+        showFlash("Sign-out failed: " + e.message);
+      }
+    } else {
+      // Guest mode — exit to AuthGate so the user can pick a sign-in path.
+      setGuestMode(false);
+      window.dispatchEvent(new CustomEvent("studydesk:guest-mode-changed"));
+    }
+  }, [showFlash, session]);
 
   // #26 — Android back button: dismiss modals first, then navigate home, then exit
   useEffect(() => {
@@ -787,9 +1008,7 @@ export default function App() {
     const color = COURSE_COLORS[colorIdx%COURSE_COLORS.length];
     dispatch({type:"ADD_COURSE", id, name, color});
     setColorIdx(i=>i+1); setNewCourseName(""); setShowAddCourse(false); showFlash("Course added");
-    if (session) {
-      sync.upsertSubject({ id, name, color }).catch(e => showFlash("Sync failed: " + e.message));
-    }
+    if (session) outbox.enqueue("upsert_subject", { id, name, color });
   };
 
   const views = [
@@ -807,7 +1026,10 @@ export default function App() {
   if (session === undefined) {
     return <><style>{css+css2+css3+css4+cssOnboard}</style><div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",letterSpacing:"0.1em"}}>LOADING…</div></>;
   }
-  if (session === null) {
+  // v1.1 — bypass AuthGate when the user opted into guest mode. The rest of
+  // the app runs identically; cloud sync remains gated on `session` which is
+  // still null, so realtime stays off and outbox enqueue calls are no-ops.
+  if (session === null && !guest) {
     return <><style>{css+css2+css3+css4+cssOnboard}</style><AuthGate/></>;
   }
 
@@ -853,11 +1075,22 @@ export default function App() {
           <h1 className="topbar-title">{state.view==="actions"?"Next Up":activeView?.label}</h1>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             <div className="topbar-date">{todayStr}</div>
+            {/* v1.1 — guest-mode users see "Sign in" instead of "Sign out".
+                The handler is the same (clear guest flag → bounce to AuthGate),
+                but the label communicates intent: leaving guest mode means
+                going to the sign-in screen, not signing out of anything.
+                UI/UX review #19: was 4px×10px padding + 10px font (~22px tall);
+                now 8px×12px + 11px font + 36px min-height. Still chrome-density
+                appropriate for a topbar action but reliably tappable. */}
             <button
               onClick={signOut}
-              title={`Sign out (${session?.user?.email || "signed in"})`}
-              style={{background:"none",border:"1px solid var(--border2)",color:"var(--muted)",padding:"4px 10px",borderRadius:4,fontFamily:"var(--font-mono)",fontSize:10,letterSpacing:"0.08em",textTransform:"uppercase",cursor:"pointer"}}>
-              Sign out
+              title={
+                session?.user?.email
+                  ? `Sign out (${session.user.email})`
+                  : "Sign in to enable sync"
+              }
+              style={{background:"none",border:"1px solid var(--border2)",color:"var(--muted)",padding:"8px 12px",minHeight:36,borderRadius:4,fontFamily:"var(--font-mono)",fontSize:11,letterSpacing:"0.08em",textTransform:"uppercase",cursor:"pointer"}}>
+              {session?.user?.email ? "Sign out" : "Sign in"}
             </button>
           </div>
         </div>
@@ -904,13 +1137,13 @@ export default function App() {
       onSave={(name,color,credits,semester)=>{
         dispatch({type:"EDIT_COURSE",id:editingCourse.id,name,color,credits,semester});
         setEditingCourse(null); showFlash("Course updated");
-        if (session) sync.upsertSubject({ id:editingCourse.id, name, credits, semester, color }).catch(e=>showFlash("Sync failed: "+e.message));
+        if (session) outbox.enqueue("upsert_subject", { id:editingCourse.id, name, credits, semester, color });
       }}
       onDelete={()=>{
         const id=editingCourse.id;
         dispatch({type:"DELETE_COURSE",id});
         setEditingCourse(null); showFlash("Course deleted");
-        if (session) sync.deleteSubject(id).catch(e=>showFlash("Sync failed: "+e.message));
+        if (session) outbox.enqueue("delete_subject", { id });
       }}
       onClose={()=>setEditingCourse(null)}/>}
     {pendingSession && (
@@ -923,10 +1156,7 @@ export default function App() {
           dispatch({type:"ADD_SESSION", id, subjectId: subjectId||null, startedAt, durationMinutes, notes});
           setPendingSession(null);
           showFlash(`Logged ${durationMinutes}m`);
-          if (session) {
-            sync.logStudySession({id, subjectId, startedAt, durationMinutes, notes})
-              .catch(e=>showFlash("Sync failed: "+e.message));
-          }
+          if (session) outbox.enqueue("log_session", { id, subjectId, startedAt, durationMinutes, notes });
         }}
       />
     )}

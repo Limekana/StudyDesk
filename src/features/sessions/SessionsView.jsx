@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import * as sync from '../../lib/sync.js';
+import * as outbox from '../../lib/outbox.js';
 
 const css = `
 .sv-wrap{padding:16px 24px 80px;max-width:780px;margin:0 auto;}
@@ -66,12 +66,10 @@ export default function SessionsView({ state, dispatch, showFlash, session }) {
 
   const [editing, setEditing] = useState(null);
 
-  async function delSession(id) {
+  function delSession(id) {
     dispatch({ type: 'DELETE_SESSION', id });
     showFlash('Session deleted');
-    if (session) {
-      try { await sync.deleteStudySession(id); } catch (e) { showFlash('Sync failed: ' + e.message); }
-    }
+    if (session) outbox.enqueue('delete_session', { id });
   }
 
   return (
@@ -129,14 +127,11 @@ export default function SessionsView({ state, dispatch, showFlash, session }) {
             session={editing}
             courses={Object.values(state.courses).filter((c) => !c.deletedAt)}
             onClose={() => setEditing(null)}
-            onSave={async (patch) => {
+            onSave={(patch) => {
               dispatch({ type: 'EDIT_SESSION', id: editing.id, ...patch });
               setEditing(null);
               showFlash('Session updated');
-              if (session) {
-                try { await sync.updateStudySession({ id: editing.id, ...patch }); }
-                catch (e) { showFlash('Sync failed: ' + e.message); }
-              }
+              if (session) outbox.enqueue('update_session', { id: editing.id, ...patch });
             }}
           />
         )}

@@ -23,7 +23,7 @@ function todayISO() { return new Date().toISOString().slice(0, 10); }
 
 // ── subjects (courses) ───────────────────────────────────────────────────────
 
-export async function upsertSubject({ id, name, credits, semester, color }) {
+export async function upsertSubject({ id, name, credits, semester, color, archivedAt }) {
   const userId = await currentUserId();
   const { error } = await supabase.from('subjects').upsert({
     id,
@@ -35,10 +35,72 @@ export async function upsertSubject({ id, name, credits, semester, color }) {
     // the local course has (StudyDesk's color picker writes COURSE_COLORS values);
     // null is acceptable if unset. LWW resolution on updated_at.
     color: color ?? null,
+    // v1.2 — archived_at carries semester archive state. Null means active.
+    // The "archive semester" UI batches by semester but each row pushes
+    // individually here. archivedAt === undefined preserves prior value
+    // (don't pass through to the upsert), null/ISO string sets it.
+    ...(archivedAt !== undefined ? { archived_at: archivedAt } : {}),
     updated_at: nowISO(),
   });
   if (error) throw error;
   return id;
+}
+
+/**
+ * Batch-archive every subject (course) tagged with the given semester.
+ *
+ * Walks the local courses list to know which IDs to touch — Supabase
+ * doesn't have a "WHERE semester = X AND user_id = me" upsert path that
+ * preserves other columns, so we hit each row individually. Fire all
+ * upserts in parallel; per-row failures don't poison the batch.
+ *
+ * Returns { archived, failed } counts so the UI can flash an accurate
+ * confirmation. Caller is responsible for dispatching the corresponding
+ * local reducer action first (instant feedback).
+ */
+export async function archiveSemester(courses, semester) {
+  const stamp = nowISO();
+  const targets = Object.values(courses || {}).filter(
+    (c) => !c.deletedAt && !c.archivedAt && c.semester === semester,
+  );
+  const results = await Promise.allSettled(
+    targets.map((c) =>
+      upsertSubject({
+        id: c.id,
+        name: c.name,
+        credits: c.credits,
+        semester: c.semester,
+        color: c.color,
+        archivedAt: stamp,
+      }),
+    ),
+  );
+  const failed = results.filter((r) => r.status === 'rejected').length;
+  return { archived: targets.length - failed, failed };
+}
+
+/**
+ * Restore every archived subject tagged with the given semester. Inverse
+ * of archiveSemester. Same per-row semantics.
+ */
+export async function restoreSemester(courses, semester) {
+  const targets = Object.values(courses || {}).filter(
+    (c) => !c.deletedAt && c.archivedAt && c.semester === semester,
+  );
+  const results = await Promise.allSettled(
+    targets.map((c) =>
+      upsertSubject({
+        id: c.id,
+        name: c.name,
+        credits: c.credits,
+        semester: c.semester,
+        color: c.color,
+        archivedAt: null,
+      }),
+    ),
+  );
+  const failed = results.filter((r) => r.status === 'rejected').length;
+  return { restored: targets.length - failed, failed };
 }
 
 export async function deleteSubject(id) {

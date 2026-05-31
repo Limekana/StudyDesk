@@ -60,4 +60,13 @@
     <!-- Required for exact-time alarms (study reminders, deadline warnings) -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+
+    <!-- v1.1.1 — Android 11+ package visibility for cross-app SSO. NCC's
+         SessionContentProvider validates the caller package internally via
+         an allowlist — no custom permission needed. The <queries> entry is
+         still required to make the provider visible to ContentResolver on
+         API 30+. -->
+    <queries>
+        <provider android:authorities="com.limecore.nexus.session" />
+    </queries>
 </manifest>

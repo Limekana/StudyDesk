@@ -30,6 +30,9 @@ export function mergeSubject(localCourse, remoteRow) {
     credits: remoteRow.credits ?? 1,
     semester: remoteRow.semester ?? null,
     color: remoteRow.color || null,
+    // v1.2 — archived_at piggybacks on updated_at like every other column.
+    // Null means active; ISO string means archived at that moment.
+    archivedAt: remoteRow.archived_at || null,
     updatedAt: remoteRow.updated_at || null,
     deletedAt: remoteRow.deleted_at || null,
   };

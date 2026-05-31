@@ -3,6 +3,8 @@ import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { App as CapApp } from '@capacitor/app';
 import { supabase, OAUTH_REDIRECT_URL } from '../../lib/supabase.js';
+import { inheritFromNexus } from '../../lib/suiteSso.js';
+import { setGuestMode } from '../../lib/guestMode.js';
 
 const authCss = `
 .auth-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px 20px;background:var(--bg);}
@@ -11,17 +13,43 @@ const authCss = `
 .auth-tagline{font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:center;letter-spacing:0.08em;margin-bottom:28px;}
 .auth-title{font-family:var(--font-display);font-size:20px;margin-bottom:6px;text-align:center;}
 .auth-sub{font-size:12px;color:var(--muted);text-align:center;margin-bottom:22px;}
-.auth-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;background:#fff;color:#1a1814;border:1px solid var(--border2);padding:11px 14px;border-radius:6px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;transition:all 0.1s;font-weight:500;}
+/* v1.1 — UI/UX review #20: padding 11px → 14px and added min-height: 44px
+   so the primary Google CTA meets WCAG 2.5.5. */
+.auth-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:44px;background:#fff;color:#1a1814;border:1px solid var(--border2);padding:14px 14px;border-radius:6px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;transition:all 0.1s;font-weight:500;}
 .auth-google:hover{border-color:var(--text);}
 .auth-google:disabled{opacity:0.5;cursor:not-allowed;}
 .auth-google-icon{width:16px;height:16px;flex-shrink:0;}
+/* v1.4 — Nexus SSO button. Inverted-card treatment marks it as the
+   suite-native path, visually distinct from Google's white-card. Matches
+   the editorial palette: dark text-color background with the bg as type. */
+/* v1.1 — UI/UX review #20: padding 11px → 14px and added min-height: 44px
+   so the primary suite-native CTA meets WCAG 2.5.5. */
+.auth-nexus{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:44px;background:var(--text);color:var(--bg);border:1px solid var(--text);padding:14px 14px;border-radius:6px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;transition:all 0.1s;font-weight:500;margin-bottom:10px;}
+.auth-nexus:hover{opacity:0.88;}
+.auth-nexus:disabled{opacity:0.5;cursor:not-allowed;}
+.auth-nexus-glyph{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;font-family:var(--font-display);font-weight:600;font-size:14px;line-height:1;}
+.auth-nexus-note{margin-top:-4px;margin-bottom:10px;font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;color:var(--muted2);text-align:center;}
 .auth-divider{display:flex;align-items:center;gap:10px;margin:22px 0;color:var(--muted2);font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;}
 .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border);}
 .auth-submit{width:100%;margin-top:8px;padding:11px 18px;font-size:12px;}
-.auth-toggle{text-align:center;margin-top:18px;font-size:12px;color:var(--muted);}
-.auth-toggle button{background:none;border:none;color:var(--text);cursor:pointer;font:inherit;text-decoration:underline;padding:0;}
-.auth-error{background:#fee;border:1px solid #fcc;color:#c0392b;padding:10px 12px;border-radius:4px;font-size:12px;margin-bottom:14px;}
+.auth-toggle{text-align:center;margin-top:18px;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;}
+/* v1.1 — UI/UX review #16 (Blocker): padding:0 produced a ~16px tap target on the
+   ONLY way to switch between sign-in / sign-up. Now: 12px padding + 44px min-height
+   meets WCAG 2.5.5; underline lifted with stronger weight + offset for tap clarity (#22). */
+.auth-toggle button{background:none;border:none;color:var(--text);cursor:pointer;font:inherit;font-weight:600;text-decoration:underline;text-underline-offset:3px;padding:12px 10px;min-height:44px;display:inline-flex;align-items:center;border-radius:4px;}
+.auth-toggle button:hover{background:var(--surface2);}
+/* v1.1 — UI/UX review #17: tokenized error palette (was hardcoded #fee/#fcc/#c0392b).
+   Tokens live in :root in App.jsx so the editorial palette controls destructive surfaces too. */
+.auth-error{background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger);padding:10px 12px;border-radius:4px;font-size:12px;margin-bottom:14px;}
 .auth-info{background:var(--surface2);border:1px solid var(--border);color:var(--muted);padding:10px 12px;border-radius:4px;font-size:12px;margin-bottom:14px;}
+/* v1.1 auth UX — Continue as guest. Lives outside auth-card, visually distinct
+   from the sign-in options so it doesn't read as a third login method. The
+   caption below explains the local-only trade-off. */
+.auth-guest{margin-top:18px;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.auth-guest button{background:none;border:none;color:var(--muted);font:inherit;font-size:13px;cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:6px 10px;}
+.auth-guest button:hover{color:var(--text);}
+.auth-guest button:disabled{opacity:0.5;cursor:not-allowed;}
+.auth-guest-note{font-family:var(--font-mono);font-size:10px;letter-spacing:0.06em;color:var(--muted2);text-align:center;margin:0 12px;line-height:1.4;}
 `;
 
 function GoogleIcon() {
@@ -42,6 +70,54 @@ export default function AuthGate() {
   const [err, setErr] = useState('');
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
+  const [nexusAvailable, setNexusAvailable] = useState(false);
+  const [nexusReason, setNexusReason] = useState('');
+
+  // v1.4 — probe NCC's session provider on mount. If a session is available,
+  // show the "Continue with Nexus" affordance as the primary option. Probe is
+  // silent on failure — falls back to Google/email without complaint.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { inheritFromNexus: _probe } = await import('../../lib/suiteSso.js');
+        // We can't call inheritFromNexus to probe because it would set the
+        // session. Instead, run the underlying query directly via the same
+        // plugin and only display the button — the button's onClick is what
+        // does the actual inherit.
+        const { registerPlugin } = await import('@capacitor/core');
+        const SuiteSso = registerPlugin('SuiteSso');
+        const result = await SuiteSso.getNexusSession();
+        if (cancelled) return;
+        if (result.available) {
+          setNexusAvailable(true);
+        } else {
+          setNexusReason(result.reason || '');
+        }
+        void _probe; // silence unused import warning (kept as docs anchor)
+      } catch {
+        // Plugin missing or errored — fall back to Google/email silently.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  async function onNexus() {
+    setErr(''); setInfo(''); setLoading(true);
+    try {
+      const result = await inheritFromNexus();
+      if (!result.ok) {
+        setErr(result.reason || 'Could not inherit Nexus session.');
+      }
+      // On success, supabase.auth.onAuthStateChange fires and App.jsx
+      // takes over — no further action needed here.
+    } catch (e) {
+      setErr(e?.message || 'Nexus sign-in failed');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   // Deep-link listener (native only) — exchange the OAuth code that
   // Supabase appends to the redirect URL after Google sign-in.
@@ -124,7 +200,10 @@ export default function AuthGate() {
       <div className="auth-wrap">
         <div className="auth-card">
           <div className="auth-wordmark">StudyDesk</div>
-          <div className="auth-tagline">SIGN IN TO SYNC WITH NEXUS</div>
+          {/* v1.1 — UI/UX review #21: was "SIGN IN TO SYNC WITH NEXUS", which
+              now misleads guest-mode users (they explicitly opt out of sign-in).
+              Neutral framing reads as a tagline rather than instruction. */}
+          <div className="auth-tagline">ACADEMIC FOCUS · OPTIONAL SYNC</div>
 
           <div className="auth-title">{mode === 'signup' ? 'Create account' : 'Welcome back'}</div>
           <div className="auth-sub">
@@ -133,6 +212,16 @@ export default function AuthGate() {
 
           {err && <div className="auth-error">{err}</div>}
           {info && <div className="auth-info">{info}</div>}
+
+          {nexusAvailable && (
+            <>
+              <button type="button" className="auth-nexus" onClick={onNexus} disabled={loading}>
+                <span className="auth-nexus-glyph">◈</span>
+                Continue with Nexus
+              </button>
+              <div className="auth-nexus-note">SIGNED IN TO NEXUS COMMAND CENTER ON THIS DEVICE</div>
+            </>
+          )}
 
           <button type="button" className="auth-google" onClick={onGoogle} disabled={loading}>
             <GoogleIcon />
@@ -175,6 +264,26 @@ export default function AuthGate() {
             ) : (
               <>New here? <button onClick={() => { setMode('signup'); setErr(''); setInfo(''); }}>Create account</button></>
             )}
+          </div>
+        </div>
+
+        {/* v1.1 auth UX — Continue as guest. Lets users skip auth and run
+            StudyDesk fully locally. Cloud sync (Supabase realtime + outbox)
+            is already gated on `session`, so a guest-mode user gets the full
+            local feature set with sync turned off. */}
+        <div className="auth-guest">
+          <button
+            type="button"
+            onClick={() => {
+              setGuestMode(true);
+              window.dispatchEvent(new CustomEvent('studydesk:guest-mode-changed'));
+            }}
+            disabled={loading}
+          >
+            Continue as guest
+          </button>
+          <div className="auth-guest-note">
+            LOCAL ONLY · NO CLOUD SYNC · YOU CAN SIGN IN LATER
           </div>
         </div>
       </div>
