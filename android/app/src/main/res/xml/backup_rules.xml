@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    v1.1.1 — Android 6-11 Auto Backup opt-out.
+
+    StudyDesk persists academic record data in WebView localStorage:
+    course list, grades, GPA history, study session logs, and the
+    pending-sync outbox. None of that should be silently shipped to the
+    user's Google Drive. Excluding every WebView storage path
+    neutralises Auto Backup for everything StudyDesk persists.
+
+    Pairs with android:allowBackup="false" on the application element and
+    android:dataExtractionRules for Android 12+ (data_extraction_rules.xml).
+-->
+<full-backup-content>
+    <exclude domain="root" path="." />
+    <exclude domain="file" path="." />
+    <exclude domain="database" path="." />
+    <exclude domain="sharedpref" path="." />
+    <exclude domain="external" path="." />
+</full-backup-content>

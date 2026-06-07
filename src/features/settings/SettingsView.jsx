@@ -76,6 +76,16 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
     if (!confirm('Sign out of StudyDesk? Your synced data stays in the cloud and will reappear when you sign back in.')) return;
     setSigningOut(true);
     try {
+      // v1.1.1 — drain the outbox BEFORE the auth round-trip so a queued
+      // retry can't race with sign-out and push the about-to-be-signed-out
+      // user's writes against the NEXT signed-in user. Mirrors the
+      // App.jsx topbar signOut posture (added 2026-05-28 alongside the
+      // guestMode flip) — the Settings panel signOut never picked up that
+      // clear and could replay pending grades/sessions to user B if the
+      // device changed users before drain succeeded. Anything not yet
+      // drained is forfeit, which is the right trade vs. cross-user
+      // leakage. Fix lands as part of the v1.2.1 / v1.1.1 security pass.
+      outbox.clear();
       // v1.1 — set guestMode TRUE alongside the supabase signOut. Without
       // this, the App.jsx session-init's auto-inherit logic would silently
       // re-sign-the-user-in from NCC on the next cold start (NCC stays
