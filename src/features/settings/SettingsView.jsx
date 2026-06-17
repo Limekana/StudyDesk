@@ -86,6 +86,14 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
       // drained is forfeit, which is the right trade vs. cross-user
       // leakage. Fix lands as part of the v1.2.1 / v1.1.1 security pass.
       outbox.clear();
+      // v1.3 AUDIT-SD-FSG-2 — wipe the reducer state (courses, assignments,
+      // exams, grades, study sessions, GPA history) BEFORE the auth round-trip
+      // so the next signed-in user on a shared device doesn't inherit user A's
+      // academic record. The persist effect in App.jsx writes INITIAL to
+      // localStorage after the dispatch, clearing the studydesk-v1 blob.
+      // Mirrors the App.jsx topbar signOut posture so both paths converge on
+      // the same "leave no trace" contract.
+      dispatch({ type: "RESET_AFTER_SIGNOUT" });
       // v1.1 — set guestMode TRUE alongside the supabase signOut. Without
       // this, the App.jsx session-init's auto-inherit logic would silently
       // re-sign-the-user-in from NCC on the next cold start (NCC stays
@@ -103,7 +111,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
     } finally {
       setSigningOut(false);
     }
-  }, [showFlash]);
+  }, [showFlash, dispatch]);
 
   const onPullNow = useCallback(async () => {
     if (!session) {

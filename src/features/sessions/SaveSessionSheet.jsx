@@ -4,10 +4,14 @@ import { useState } from 'react';
  * Raised after a focus phase ends. The user explicitly opts in to logging
  * the session — per the brief, "don't log anything until the user taps Save."
  */
+const FOCUS_LABELS = ['', 'Scattered', 'Distracted', 'Okay', 'Focused', 'Locked in'];
+
 export default function SaveSessionSheet({ pending, courses, onSave, onClose }) {
   const [subjectId, setSubjectId] = useState('');
   const [duration, setDuration] = useState(String(pending.durationMinutes));
   const [notes, setNotes] = useState(pending.task || '');
+  // v1.3 (BUG-22) — optional focus quality. null = skipped (the default).
+  const [focus, setFocus] = useState(null);
 
   function submit() {
     const d = parseInt(duration, 10);
@@ -17,6 +21,7 @@ export default function SaveSessionSheet({ pending, courses, onSave, onClose }) 
       durationMinutes: d,
       notes: notes.trim() || null,
       startedAt: pending.startedAt,
+      focusRating: focus,
     });
   }
 
@@ -57,6 +62,46 @@ export default function SaveSessionSheet({ pending, courses, onSave, onClose }) 
         <div className="input-group">
           <div className="input-label">Notes (optional)</div>
           <input type="text" placeholder="What did you work on?" value={notes} onChange={(e) => setNotes(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} autoFocus />
+        </div>
+
+        <div className="input-group">
+          <div className="input-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <span>How focused were you? (optional)</span>
+            {focus != null && (
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.04em' }}>
+                {FOCUS_LABELS[focus]}
+              </span>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {[1, 2, 3, 4, 5].map((n) => {
+              const active = focus === n;
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  aria-label={`Focus ${n} — ${FOCUS_LABELS[n]}`}
+                  aria-pressed={active}
+                  onClick={() => setFocus(active ? null : n)}
+                  style={{
+                    flex: 1,
+                    padding: '9px 0',
+                    fontFamily: 'var(--font-display)',
+                    fontSize: 15,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    borderRadius: 8,
+                    border: active ? '1px solid var(--text)' : '1px solid var(--border2)',
+                    background: active ? 'var(--text)' : 'transparent',
+                    color: active ? 'var(--bg)' : 'var(--muted)',
+                    transition: 'all 120ms var(--ease-page-turn, ease)',
+                  }}
+                >
+                  {n}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>

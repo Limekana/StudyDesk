@@ -147,7 +147,16 @@ export async function deleteGrade(id) {
 
 // ── study sessions ───────────────────────────────────────────────────────────
 
-export async function logStudySession({ id, subjectId, startedAt, durationMinutes, notes }) {
+// v1.3 (BUG-22) — focus_rating is an optional 1–5 quality score. null = skipped.
+// Clamp defensively so a corrupt local value can't violate the DB CHECK constraint.
+function clampFocus(focusRating) {
+  if (focusRating == null) return null;
+  const n = Math.round(Number(focusRating));
+  if (!Number.isFinite(n)) return null;
+  return Math.max(1, Math.min(5, n));
+}
+
+export async function logStudySession({ id, subjectId, startedAt, durationMinutes, notes, focusRating }) {
   const userId = await currentUserId();
   const duration = Math.max(1, Math.min(1440, Math.round(durationMinutes)));
   // Idempotent UPSERT (was INSERT) so the v1.0.4 post-migration push can
@@ -161,13 +170,14 @@ export async function logStudySession({ id, subjectId, startedAt, durationMinute
     started_at: startedAt,
     duration_minutes: duration,
     notes: notes || null,
+    focus_rating: clampFocus(focusRating),
     updated_at: nowISO(),
   });
   if (error) throw error;
   return id;
 }
 
-export async function updateStudySession({ id, subjectId, startedAt, durationMinutes, notes }) {
+export async function updateStudySession({ id, subjectId, startedAt, durationMinutes, notes, focusRating }) {
   const patch = { updated_at: nowISO() };
   if (subjectId !== undefined) patch.subject_id = subjectId || null;
   if (startedAt !== undefined) patch.started_at = startedAt;
@@ -175,6 +185,7 @@ export async function updateStudySession({ id, subjectId, startedAt, durationMin
     patch.duration_minutes = Math.max(1, Math.min(1440, Math.round(durationMinutes)));
   }
   if (notes !== undefined) patch.notes = notes || null;
+  if (focusRating !== undefined) patch.focus_rating = clampFocus(focusRating);
   const { error } = await supabase.from('study_sessions').update(patch).eq('id', id);
   if (error) throw error;
 }

@@ -1,0 +1,4 @@
+#!/bin/bash
+# Quiet Gradle build — filters to show only errors and final BUILD status
+# Usage: ./gradlew-quiet assembleDebug
+cd "$(dirname "$0")" && ./gradlew -q "$@" 2>&1 | grep -E "^>|ERROR|FAIL|BUILD|error:|warning:" || true

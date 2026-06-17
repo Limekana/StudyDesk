@@ -15,6 +15,12 @@ const css = `
 .sv-item-title{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .sv-item-meta{font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:0.04em;}
 .sv-item-dur{font-family:var(--font-mono);font-size:11px;color:var(--muted);white-space:nowrap;}
+.sv-focus{display:inline-flex;gap:3px;margin-left:8px;vertical-align:middle;}
+.sv-focus-pip{width:5px;height:5px;border-radius:50%;background:var(--border2);}
+.sv-focus-pip.on{background:var(--text);}
+.sv-focus-row{display:flex;gap:6px;}
+.sv-focus-row button{flex:1;padding:9px 0;font-family:var(--font-display);font-size:15px;font-weight:600;cursor:pointer;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--muted);transition:all 120ms var(--ease-page-turn,ease);}
+.sv-focus-row button.on{border-color:var(--text);background:var(--text);color:var(--bg);}
 .sv-item-actions{display:flex;gap:4px;}
 .sv-item-actions button{background:none;border:none;color:var(--muted2);cursor:pointer;padding:2px 6px;font-size:14px;}
 .sv-item-actions button:hover{color:var(--text);}
@@ -108,6 +114,13 @@ export default function SessionsView({ state, dispatch, showFlash, session }) {
                       <div className="sv-item-meta">
                         {fmtTime(s.startedAt)}
                         {course && s.notes ? ` · ${s.notes}` : ''}
+                        {s.focusRating != null && (
+                          <span className="sv-focus" title={`Focus ${s.focusRating}/5`} aria-label={`Focus ${s.focusRating} of 5`}>
+                            {[1, 2, 3, 4, 5].map((n) => (
+                              <span key={n} className={'sv-focus-pip' + (n <= s.focusRating ? ' on' : '')} />
+                            ))}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <span className="sv-item-dur">{s.durationMinutes}m</span>
@@ -144,6 +157,7 @@ function SessionEditModal({ session, courses, onClose, onSave }) {
   const [subjectId, setSubjectId] = useState(session.subjectId || '');
   const [duration, setDuration] = useState(String(session.durationMinutes));
   const [notes, setNotes] = useState(session.notes || '');
+  const [focus, setFocus] = useState(session.focusRating ?? null);
 
   function submit() {
     const d = parseInt(duration, 10);
@@ -152,6 +166,7 @@ function SessionEditModal({ session, courses, onClose, onSave }) {
       subjectId: subjectId || null,
       durationMinutes: d,
       notes: notes.trim() || null,
+      focusRating: focus,
     });
   }
 
@@ -173,6 +188,22 @@ function SessionEditModal({ session, courses, onClose, onSave }) {
         <div className="input-group">
           <div className="input-label">Notes</div>
           <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} />
+        </div>
+        <div className="input-group">
+          <div className="input-label">Focus quality (optional)</div>
+          <div className="sv-focus-row">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                className={focus === n ? 'on' : ''}
+                aria-pressed={focus === n}
+                onClick={() => setFocus(focus === n ? null : n)}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
           <button className="btn" onClick={submit}>Save</button>

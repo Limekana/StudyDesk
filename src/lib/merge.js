@@ -76,6 +76,8 @@ export function mergeSession(localSession, remoteRow) {
     startedAt: remoteRow.started_at,
     durationMinutes: remoteRow.duration_minutes,
     notes: remoteRow.notes || null,
+    // v1.3 (BUG-22) — focus_rating is nullable; older rows have none.
+    focusRating: remoteRow.focus_rating ?? null,
     updatedAt: remoteRow.updated_at || null,
     deletedAt: remoteRow.deleted_at || null,
   };

@@ -12,6 +12,7 @@ import { applyRemotePull } from "./lib/merge.js";
 import GradesView from "./features/grades/GradesView.jsx";
 import SessionsView from "./features/sessions/SessionsView.jsx";
 import SaveSessionSheet from "./features/sessions/SaveSessionSheet.jsx";
+import StatsView from "./features/stats/StatsView.jsx";
 import SettingsView from "./features/settings/SettingsView.jsx";
 
 const BUCKETS = ["today", "this_week", "later"];
@@ -258,8 +259,8 @@ function reducer(state, action) {
     case "DELETE_GRADE": { const stamp=new Date().toISOString(); return {...state,grades:(state.grades||[]).map(g=>g.id===action.id?{...g,deletedAt:stamp,updatedAt:stamp}:g)}; }
 
     // ── Study sessions ──
-    case "ADD_SESSION":    { const s={id:action.id||newSyncId(),subjectId:action.subjectId||null,startedAt:action.startedAt,durationMinutes:Math.max(1,Math.min(1440,Math.round(action.durationMinutes))),notes:action.notes||null,updatedAt:action.updatedAt||new Date().toISOString(),deletedAt:null}; return {...state,studySessions:[...(state.studySessions||[]),s]}; }
-    case "EDIT_SESSION":   return {...state,studySessions:(state.studySessions||[]).map(s=>s.id===action.id?{...s,subjectId:action.subjectId!==undefined?(action.subjectId||null):s.subjectId,startedAt:action.startedAt??s.startedAt,durationMinutes:action.durationMinutes!==undefined?Math.max(1,Math.min(1440,Math.round(action.durationMinutes))):s.durationMinutes,notes:action.notes!==undefined?(action.notes||null):s.notes,updatedAt:new Date().toISOString()}:s)};
+    case "ADD_SESSION":    { const s={id:action.id||newSyncId(),subjectId:action.subjectId||null,startedAt:action.startedAt,durationMinutes:Math.max(1,Math.min(1440,Math.round(action.durationMinutes))),notes:action.notes||null,focusRating:action.focusRating!=null?Math.max(1,Math.min(5,Math.round(action.focusRating))):null,updatedAt:action.updatedAt||new Date().toISOString(),deletedAt:null}; return {...state,studySessions:[...(state.studySessions||[]),s]}; }
+    case "EDIT_SESSION":   return {...state,studySessions:(state.studySessions||[]).map(s=>s.id===action.id?{...s,subjectId:action.subjectId!==undefined?(action.subjectId||null):s.subjectId,startedAt:action.startedAt??s.startedAt,durationMinutes:action.durationMinutes!==undefined?Math.max(1,Math.min(1440,Math.round(action.durationMinutes))):s.durationMinutes,notes:action.notes!==undefined?(action.notes||null):s.notes,focusRating:action.focusRating!==undefined?(action.focusRating!=null?Math.max(1,Math.min(5,Math.round(action.focusRating))):null):s.focusRating,updatedAt:new Date().toISOString()}:s)};
     case "DELETE_SESSION": { const stamp=new Date().toISOString(); return {...state,studySessions:(state.studySessions||[]).map(s=>s.id===action.id?{...s,deletedAt:stamp,updatedAt:stamp}:s)}; }
 
     // ── Settings ──
@@ -267,6 +268,16 @@ function reducer(state, action) {
 
     // ── Sync: bulk merge from Supabase pull (LWW logic in merge.js) ──
     case "MERGE_REMOTE":   return applyRemotePull(state, action.remote);
+
+    // v1.3 AUDIT-SD-FSG-2 — full reducer wipe on sign-out so the next signed-in
+    // user on a shared device doesn't see user A's courses / assignments /
+    // grades / study sessions residing in WebView memory or the persisted
+    // localStorage blob. Cloud-side scoping is already correct (outbox.clear
+    // runs before the auth round-trip), so this only closes the LOCAL view-only
+    // leak. The persist effect re-runs after this dispatch and writes the
+    // INITIAL state to studydesk-v1, naturally clearing the previous user's
+    // payload from localStorage.
+    case "RESET_AFTER_SIGNOUT": return INITIAL;
 
     default: return state;
   }
@@ -276,7 +287,7 @@ function reducer(state, action) {
 const css = `
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 h1,h2,h3,h4,h5,h6{font-weight:inherit;font-size:inherit;}
-:root{--bg:#f5f2ed;--surface:#faf8f4;--surface2:#f0ece4;--border:#e0d9cf;--border2:#cfc8bc;--text:#1a1814;--muted:#6b6560;--muted2:#7a7570;--danger:#c0392b;--danger-bg:#fee;--danger-border:#fcc;--danger-on:#fff;--warning:#b5470b;--warning-bg:#fff4e6;--warning-border:#f0d4a0;--font-display:'Playfair Display',serif;--font-mono:'DM Mono',monospace;--font-sans:'DM Sans',sans-serif;--shadow:0 1px 3px rgba(0,0,0,0.08);--shadow-md:0 4px 12px rgba(0,0,0,0.08);}
+:root{--bg:#f5f2ed;--surface:#faf8f4;--surface2:#f0ece4;--border:#e0d9cf;--border2:#cfc8bc;--text:#1a1814;--muted:#6b6560;--muted2:#7a7570;--danger:#c0392b;--danger-bg:#fee;--danger-border:#fcc;--danger-on:#fff;--warning:#b5470b;--warning-bg:#fff4e6;--warning-border:#f0d4a0;--font-display:'Playfair Display',serif;--font-mono:'DM Mono',monospace;--font-sans:'DM Sans',sans-serif;--shadow:0 1px 3px rgba(0,0,0,0.08);--shadow-md:0 4px 12px rgba(0,0,0,0.08);--ease-paper:cubic-bezier(0.4,0,0.2,1);--ease-page-turn:cubic-bezier(0.3,0,0.2,1);--ease-settle:cubic-bezier(0.16,1,0.3,1);}
 html,body,#root{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-sans);overscroll-behavior:none;}
 /* Paper grain texture overlay */
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:0.035;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");background-repeat:repeat;background-size:128px 128px;}
@@ -413,10 +424,12 @@ textarea{resize:vertical;min-height:80px;line-height:1.6;}select{cursor:pointer;
 .bucket-header{font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:10px;}
 .bucket-header::after{content:'';flex:1;height:1px;background:var(--border);}
 .bucket-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
-.modal-overlay{position:fixed;inset:0;background:rgba(26,24,20,0.5);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeOverlay 0.15s ease;}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:28px;width:500px;max-width:94vw;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-md);animation:slideModal 0.15s ease;}
+.modal-overlay{position:fixed;inset:0;background:rgba(26,24,20,0.32);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeOverlay 200ms var(--ease-paper);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);}
+.modal{background:rgba(250,248,244,0.82);backdrop-filter:blur(16px) saturate(1.05);-webkit-backdrop-filter:blur(16px) saturate(1.05);border:1px solid var(--border);border-top:1px solid rgba(250,248,244,0.95);border-radius:8px;padding:28px;width:500px;max-width:94vw;max-height:90vh;overflow-y:auto;box-shadow:0 12px 36px rgba(26,24,20,0.18),0 1px 0 rgba(255,255,255,0.7) inset;animation:slideModal 280ms var(--ease-settle);}
 @keyframes fadeOverlay{from{opacity:0;}to{opacity:1;}}
 @keyframes slideModal{from{opacity:0;transform:translateY(10px) scale(0.98);}to{opacity:1;transform:translateY(0) scale(1);}}
+@keyframes page-turn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+.page-turn{animation:page-turn 160ms var(--ease-page-turn);}
 .modal-title{font-family:var(--font-display);font-size:18px;margin-bottom:20px;}
 .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .urgent-banner{background:rgba(192,57,43,0.08);border:1px solid rgba(192,57,43,0.25);border-radius:5px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px;font-size:13px;}
@@ -781,6 +794,19 @@ export default function App() {
         handle = await LocalNotifications.addListener(
           "localNotificationActionPerformed",
           (event) => {
+            // v1.3.1 BUG-14 — body-tap navigation. @capacitor/local-notifications
+            // fires this same event for both the "Mark done" action button AND
+            // a tap on the notification body itself (actionId === 'tap'). The
+            // existing handler only acted on 'done'; body taps fell through and
+            // the app opened on whatever screen it was last on instead of the
+            // relevant assignments view. Route body taps to the plan view so
+            // the user lands on the full assignment list — same target as the
+            // ActionsView ("Next Up") would imply but "plan" surfaces all
+            // upcoming work, which matches the tap intent better.
+            if (event.actionId === "tap") {
+              dispatch({ type: "SET_VIEW", view: "plan" });
+              return;
+            }
             if (event.actionId !== ACTION_DONE_ID) return;
             const assignmentId = event.notification?.extra?.assignmentId;
             if (!assignmentId) return;
@@ -969,6 +995,13 @@ export default function App() {
       // right trade vs. potentially leaking writes to the next signed-in
       // user.
       outbox.clear();
+      // v1.3 AUDIT-SD-FSG-2 — wipe the reducer state (courses, assignments,
+      // exams, grades, study sessions, GPA history) BEFORE the auth round-trip
+      // so the next signed-in user on a shared device doesn't inherit user A's
+      // academic record in the UI. The persist effect re-runs after this
+      // dispatch and writes INITIAL to localStorage, clearing the studydesk-v1
+      // blob. Parallel pattern to NCC AUDIT-FSG-2b + LimeLog AUDIT-LL-FSG-2.
+      dispatch({ type: "RESET_AFTER_SIGNOUT" });
       setGuestMode(true);
       window.dispatchEvent(new CustomEvent("studydesk:guest-mode-changed"));
       try {
@@ -1017,6 +1050,7 @@ export default function App() {
     {id:"grades",   label:"Grades",  icon:"⌗"},
     {id:"timer",    label:"Timer",   icon:"◉"},
     {id:"log",      label:"Log",     icon:"≡"},
+    {id:"stats",    label:"Stats",   icon:"▦"},
     {id:"settings", label:"Settings",icon:"⚙"},
   ];
   const activeView = views.find(v=>v.id===state.view);
@@ -1103,12 +1137,18 @@ export default function App() {
               {urgent.map((a,i)=><span key={a.id}>{a.title}{i<urgent.length-1?", ":""}</span>)}
             </div></div>
           )}
+          {/* v1.3 — keyed wrapper triggers the page-turn cross-fade on view switch.
+              The urgent banner above stays sticky (lives outside the wrapper), so
+              only the routed view animates. */}
+          <div className="page-turn" key={state.view}>
           {state.view==="plan"   &&<PlanView    state={state} dispatch={dispatch} showFlash={showFlash} onAddAsgn={()=>setShowAddAsgn(true)} onAddExam={()=>setShowAddExam(true)} onAddCourse={()=>setShowAddCourse(true)} onEditCourse={(c)=>setEditingCourse(c)}/>}
           {state.view==="actions" &&<ActionsView state={state} dispatch={dispatch} showFlash={showFlash}/>}
           {state.view==="grades"  &&<GradesView  state={state} dispatch={dispatch} showFlash={showFlash} session={session}/>}
           {state.view==="timer"   &&<TimerView   state={state} dispatch={dispatch} session={session} showFlash={showFlash} onTimerComplete={(payload)=>setPendingSession(payload)}/>}
           {state.view==="log"     &&<SessionsView state={state} dispatch={dispatch} showFlash={showFlash} session={session}/>}
+          {state.view==="stats"   &&<StatsView    state={state}/>}
           {state.view==="settings"&&<SettingsView state={state} dispatch={dispatch} showFlash={showFlash} session={session}/>}
+          </div>
         </div>
       </main>
 
@@ -1151,12 +1191,12 @@ export default function App() {
         pending={pendingSession}
         courses={courses}
         onClose={()=>setPendingSession(null)}
-        onSave={async ({subjectId, durationMinutes, notes, startedAt}) => {
+        onSave={async ({subjectId, durationMinutes, notes, startedAt, focusRating}) => {
           const id = newSyncId();
-          dispatch({type:"ADD_SESSION", id, subjectId: subjectId||null, startedAt, durationMinutes, notes});
+          dispatch({type:"ADD_SESSION", id, subjectId: subjectId||null, startedAt, durationMinutes, notes, focusRating});
           setPendingSession(null);
           showFlash(`Logged ${durationMinutes}m`);
-          if (session) outbox.enqueue("log_session", { id, subjectId, startedAt, durationMinutes, notes });
+          if (session) outbox.enqueue("log_session", { id, subjectId, startedAt, durationMinutes, notes, focusRating });
         }}
       />
     )}
