@@ -4,23 +4,59 @@ import { setGuestMode } from '../../lib/guestMode.js';
 import * as sync from '../../lib/sync.js';
 import * as outbox from '../../lib/outbox.js';
 
+// v1.3.1 — initials for the account avatar (mirrors App.jsx's topbar avatar).
+function avatarInitials(session) {
+  const email = session?.user?.email;
+  if (!email) return '·';
+  const local = email.split('@')[0] || '';
+  const parts = local.split(/[.\-_]+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return local.slice(0, 2).toUpperCase() || '·';
+}
+
 const css = `
 .sv2-wrap{padding:16px 24px 80px;max-width:680px;margin:0 auto;}
-.sv2-section{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:14px;}
+.sv2-section{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:14px;}
 .sv2-section-title{font-family:var(--font-mono);font-size:10px;letter-spacing:0.18em;color:var(--muted2);text-transform:uppercase;margin-bottom:14px;}
-.sv2-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;font-size:14px;}
+
+/* Account hero */
+.sv2-hero{display:flex;align-items:center;gap:14px;}
+.sv2-avatar{width:52px;height:52px;min-width:52px;border-radius:50%;border:1px solid var(--border2);background:var(--bg);color:var(--text);font-family:var(--font-display);font-size:21px;font-weight:600;display:flex;align-items:center;justify-content:center;text-transform:uppercase;}
+.sv2-hero-info{min-width:0;flex:1;}
+.sv2-hero-name{font-family:var(--font-display);font-size:18px;font-weight:600;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sv2-hero-status{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:12px;color:var(--muted);}
+.sv2-dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+/* Stat chips */
+.sv2-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:6px;}
+.sv2-stat{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-align:center;}
+.sv2-stat-num{font-family:var(--font-display);font-size:22px;font-weight:600;line-height:1;}
+.sv2-stat-lbl{font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted2);margin-top:5px;}
+
+.sv2-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;font-size:14px;}
 .sv2-row + .sv2-row{border-top:1px solid var(--border);}
-.sv2-row-label{color:var(--muted);font-size:12px;}
-.sv2-row-value{font-family:var(--font-mono);font-size:12px;color:var(--text);text-align:right;word-break:break-all;}
+.sv2-row-label{color:var(--muted);font-size:13px;}
+.sv2-row-value{font-size:13px;color:var(--text);text-align:right;display:flex;align-items:center;gap:6px;}
 .sv2-mode{display:inline-flex;border:1px solid var(--border2);border-radius:6px;overflow:hidden;}
 .sv2-mode button{background:transparent;border:none;padding:6px 14px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;color:var(--muted);}
 .sv2-mode button.active{background:var(--text);color:var(--bg);}
-.sv2-action{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;}
-/* v1.1 — UI/UX review #18: tokenized destructive color (was hardcoded #c0392b/#fff). */
-.sv2-signout{background:var(--danger);color:var(--danger-on);border:none;padding:9px 18px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:4px;font-weight:500;}
+.sv2-action{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;}
+.sv2-signout{background:var(--danger);color:var(--danger-on);border:none;padding:10px 18px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:6px;font-weight:500;}
 .sv2-signout:hover{opacity:0.85;}
-.sv2-status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle;}
-.sv2-link{color:var(--text);text-decoration:underline;font-size:12px;font-family:var(--font-mono);}
+.sv2-signin{background:var(--text);color:var(--bg);border:none;padding:10px 18px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:6px;font-weight:500;}
+.sv2-signin:hover{opacity:0.88;}
+.sv2-note{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.55;}
+
+/* Technical details — quiet, monospace, clearly secondary */
+.sv2-tech{margin-top:4px;}
+.sv2-tech summary{font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted2);cursor:pointer;list-style:none;padding:4px 0;}
+.sv2-tech summary::-webkit-details-marker{display:none;}
+.sv2-tech summary::before{content:"▸ ";color:var(--muted2);}
+.sv2-tech[open] summary::before{content:"▾ ";}
+.sv2-tech-grid{margin-top:8px;display:flex;flex-direction:column;gap:6px;}
+.sv2-tech-item{display:flex;justify-content:space-between;gap:10px;font-family:var(--font-mono);font-size:11px;color:var(--muted);}
+.sv2-tech-item span:last-child{color:var(--muted2);text-align:right;word-break:break-all;}
+.sv2-link{color:var(--muted);text-decoration:underline;}
 `;
 
 function fmtTime(iso) {
@@ -41,11 +77,6 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
   const [signingOut, setSigningOut] = useState(false);
   const [draining, setDraining] = useState(false);
 
-  // v1.3 — subscribe to outbox state changes. useSyncExternalStore re-renders
-  // this component whenever the outbox dispatches its CHANGE_EVENT (every
-  // enqueue, drain step, or clear). getStatus returns a fresh snapshot.
-  // The third arg (server snapshot) returns the same shape since we have no
-  // SSR; React 19 requires it but it's effectively a no-op here.
   const outboxStatus = useSyncExternalStore(
     outbox.subscribe,
     outbox.getStatus,
@@ -56,11 +87,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
     setDraining(true);
     try {
       const remaining = await outbox.drain();
-      if (remaining === 0) {
-        showFlash('Queue drained');
-      } else {
-        showFlash(`${remaining} item${remaining === 1 ? '' : 's'} still pending`);
-      }
+      showFlash(remaining === 0 ? 'Queue drained' : `${remaining} item${remaining === 1 ? '' : 's'} still pending`);
     } finally {
       setDraining(false);
     }
@@ -76,32 +103,12 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
     if (!confirm('Sign out of StudyDesk? Your synced data stays in the cloud and will reappear when you sign back in.')) return;
     setSigningOut(true);
     try {
-      // v1.1.1 — drain the outbox BEFORE the auth round-trip so a queued
-      // retry can't race with sign-out and push the about-to-be-signed-out
-      // user's writes against the NEXT signed-in user. Mirrors the
-      // App.jsx topbar signOut posture (added 2026-05-28 alongside the
-      // guestMode flip) — the Settings panel signOut never picked up that
-      // clear and could replay pending grades/sessions to user B if the
-      // device changed users before drain succeeded. Anything not yet
-      // drained is forfeit, which is the right trade vs. cross-user
-      // leakage. Fix lands as part of the v1.2.1 / v1.1.1 security pass.
+      // Drain-then-wipe order preserved from the v1.1.1 / AUDIT-SD-FSG-2 work:
+      // clear the outbox + reset reducer state BEFORE the auth round-trip so a
+      // queued retry can't replay user A's writes against the next user, and a
+      // shared device shows no residue.
       outbox.clear();
-      // v1.3 AUDIT-SD-FSG-2 — wipe the reducer state (courses, assignments,
-      // exams, grades, study sessions, GPA history) BEFORE the auth round-trip
-      // so the next signed-in user on a shared device doesn't inherit user A's
-      // academic record. The persist effect in App.jsx writes INITIAL to
-      // localStorage after the dispatch, clearing the studydesk-v1 blob.
-      // Mirrors the App.jsx topbar signOut posture so both paths converge on
-      // the same "leave no trace" contract.
-      dispatch({ type: "RESET_AFTER_SIGNOUT" });
-      // v1.1 — set guestMode TRUE alongside the supabase signOut. Without
-      // this, the App.jsx session-init's auto-inherit logic would silently
-      // re-sign-the-user-in from NCC on the next cold start (NCC stays
-      // signed in even if StudyDesk signs out). Setting guestMode lands
-      // the user in guest mode (still in the app, sync disabled, AuthGate
-      // skipped), which is the stable "I signed out" state. The topbar
-      // "Sign in" button or the guest-mode message in Settings can later
-      // bring them back to AuthGate. Bug report 2026-05-28.
+      dispatch({ type: 'RESET_AFTER_SIGNOUT' });
       setGuestMode(true);
       window.dispatchEvent(new CustomEvent('studydesk:guest-mode-changed'));
       await supabase.auth.signOut();
@@ -113,11 +120,15 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
     }
   }, [showFlash, dispatch]);
 
+  // v1.3.1 — guests sign in from here now that the topbar button is gone.
+  // Flipping guestMode off routes the app back to AuthGate.
+  const onSignIn = useCallback(() => {
+    setGuestMode(false);
+    window.dispatchEvent(new CustomEvent('studydesk:guest-mode-changed'));
+  }, []);
+
   const onPullNow = useCallback(async () => {
-    if (!session) {
-      showFlash('Not signed in');
-      return;
-    }
+    if (!session) { showFlash('Not signed in'); return; }
     setPulling(true);
     try {
       const remote = await sync.pullAllStudyData();
@@ -135,113 +146,65 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
   const userId = session?.user?.id;
   const userIdShort = userId ? `${userId.slice(0, 8)}…${userId.slice(-4)}` : '—';
   const provider = session?.user?.app_metadata?.provider || 'email';
+  const appVersion = '1.3.1';
 
   return (
     <>
       <style>{css}</style>
       <div className="sv2-wrap">
-        {/* ── Account ── */}
+        {/* ── Account hero ── */}
         <div className="sv2-section">
-          <div className="sv2-section-title">Account</div>
-          {!session ? (
-            <>
-              <div className="sv2-row">
-                <span className="sv2-row-label">Status</span>
-                <span className="sv2-row-value">
-                  {/* v1.1 — was hardcoded #c0392b, now tokenized to match the
-                      Settings palette and the rest of the destructive surfaces. */}
-                  <span className="sv2-status-dot" style={{ background: 'var(--danger)' }} />
-                  Guest · local only
-                </span>
+          <div className="sv2-hero">
+            <div className="sv2-avatar">{avatarInitials(session)}</div>
+            <div className="sv2-hero-info">
+              <div className="sv2-hero-name">{session ? userEmail : 'Guest'}</div>
+              <div className="sv2-hero-status">
+                <span className="sv2-dot" style={{ background: session ? '#2e7d52' : 'var(--muted2)' }} />
+                {session ? `Signed in · ${provider}` : 'Local only · not signed in'}
               </div>
-              {/* v1.1 — copy updated to reflect the v1.1 auth model: sign-out
-                  drops the user into guest mode (not AuthGate). To sign in,
-                  use the topbar "Sign in" button which flips guestMode off
-                  and routes to AuthGate. */}
-              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 10, lineHeight: 1.5 }}>
-                Local data stays on this device only. To sync your courses, grades, and study sessions with Nexus Command Center, tap <strong>Sign in</strong> in the top right.
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="sv2-row">
-                <span className="sv2-row-label">Status</span>
-                <span className="sv2-row-value">
-                  <span className="sv2-status-dot" style={{ background: '#2e7d52' }} />
-                  Signed in
-                </span>
-              </div>
-              <div className="sv2-row">
-                <span className="sv2-row-label">Email</span>
-                <span className="sv2-row-value">{userEmail}</span>
-              </div>
-              <div className="sv2-row">
-                <span className="sv2-row-label">Provider</span>
-                <span className="sv2-row-value">{provider}</span>
-              </div>
-              <div className="sv2-row">
-                <span className="sv2-row-label">User ID</span>
-                <span className="sv2-row-value" title={userId}>{userIdShort}</span>
-              </div>
-              <div className="sv2-action">
-                <button className="sv2-signout" onClick={onSignOut} disabled={signingOut}>
-                  {signingOut ? 'Signing out…' : 'Sign out'}
-                </button>
-              </div>
-            </>
+            </div>
+          </div>
+          <div className="sv2-action">
+            {session ? (
+              <button className="sv2-signout" onClick={onSignOut} disabled={signingOut}>
+                {signingOut ? 'Signing out…' : 'Sign out'}
+              </button>
+            ) : (
+              <button className="sv2-signin" onClick={onSignIn}>Sign in to sync</button>
+            )}
+          </div>
+          {!session && (
+            <div className="sv2-note">
+              Your courses, grades and study sessions stay on this device. Sign in to sync them
+              with Nexus Command Center across your devices.
+            </div>
           )}
         </div>
 
-        {/* ── Sync ── */}
+        {/* ── Cloud sync ── */}
         <div className="sv2-section">
           <div className="sv2-section-title">Cloud sync</div>
+          <div className="sv2-stats">
+            <div className="sv2-stat"><div className="sv2-stat-num">{subjects.length}</div><div className="sv2-stat-lbl">Subjects</div></div>
+            <div className="sv2-stat"><div className="sv2-stat-num">{grades.length}</div><div className="sv2-stat-lbl">Grades</div></div>
+            <div className="sv2-stat"><div className="sv2-stat-num">{sessions.length}</div><div className="sv2-stat-lbl">Sessions</div></div>
+          </div>
           <div className="sv2-row">
             <span className="sv2-row-label">Connection</span>
             <span className="sv2-row-value">
-              <span
-                className="sv2-status-dot"
-                style={{ background: session ? '#2e7d52' : '#7a7570' }}
-              />
+              <span className="sv2-dot" style={{ background: session ? '#2e7d52' : 'var(--muted2)' }} />
               {session ? 'Realtime active' : 'Offline (local only)'}
             </span>
           </div>
           <div className="sv2-row">
-            <span className="sv2-row-label">Subjects</span>
-            <span className="sv2-row-value">{subjects.length}</span>
-          </div>
-          <div className="sv2-row">
-            <span className="sv2-row-label">Grades</span>
-            <span className="sv2-row-value">{grades.length}</span>
-          </div>
-          <div className="sv2-row">
-            <span className="sv2-row-label">Sessions</span>
-            <span className="sv2-row-value">{sessions.length}</span>
-          </div>
-          <div className="sv2-row">
-            <span className="sv2-row-label">Last manual pull</span>
-            <span className="sv2-row-value">{fmtTime(lastPullAt)}</span>
-          </div>
-
-          {/* v1.3 — outbox queue status. The outbox holds pending writes
-              when the device was offline or a sync call failed. Auto-
-              drains on network restore / app resume; this panel surfaces
-              what's pending and gives a manual Retry button. */}
-          <div className="sv2-row">
             <span className="sv2-row-label">Pending queue</span>
             <span className="sv2-row-value">
               {outboxStatus.pending === 0 ? (
-                <>
-                  <span className="sv2-status-dot" style={{ background: '#2e7d52' }} />
-                  All synced
-                </>
+                <><span className="sv2-dot" style={{ background: '#2e7d52' }} />All synced</>
               ) : (
                 <>
-                  <span
-                    className="sv2-status-dot"
-                    style={{ background: outboxStatus.stuck > 0 ? '#c0392b' : '#d4860a' }}
-                  />
-                  {outboxStatus.pending} pending
-                  {outboxStatus.stuck > 0 && ` (${outboxStatus.stuck} stuck)`}
+                  <span className="sv2-dot" style={{ background: outboxStatus.stuck > 0 ? 'var(--danger)' : '#d4860a' }} />
+                  {outboxStatus.pending} pending{outboxStatus.stuck > 0 && ` (${outboxStatus.stuck} stuck)`}
                 </>
               )}
             </span>
@@ -250,15 +213,18 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
             <span className="sv2-row-label">Last successful push</span>
             <span className="sv2-row-value">{fmtTime(outboxStatus.lastSuccessAt)}</span>
           </div>
+          {lastPullAt && (
+            <div className="sv2-row">
+              <span className="sv2-row-label">Last manual pull</span>
+              <span className="sv2-row-value">{fmtTime(lastPullAt)}</span>
+            </div>
+          )}
           {outboxStatus.lastError && (
             <div className="sv2-row">
               <span className="sv2-row-label">Last error</span>
-              <span className="sv2-row-value" style={{ color: '#c0392b', fontSize: 11 }}>
-                {outboxStatus.lastError}
-              </span>
+              <span className="sv2-row-value" style={{ color: 'var(--danger)', fontSize: 11 }}>{outboxStatus.lastError}</span>
             </div>
           )}
-
           {session && (
             <div className="sv2-action">
               <button className="btn-outline" onClick={onPullNow} disabled={pulling}>
@@ -271,9 +237,9 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
               )}
             </div>
           )}
-          <div style={{ fontSize: 11, color: 'var(--muted2)', marginTop: 10, lineHeight: 1.5 }}>
-            Realtime pushes inbound changes within ~1.5 seconds. Outbound writes go through a
-            local outbox that retries automatically on network restore and app resume.
+          <div className="sv2-note">
+            Realtime pushes inbound changes within ~1.5s. Outbound writes go through a local
+            outbox that retries automatically on network restore and app resume.
           </div>
         </div>
 
@@ -281,23 +247,17 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
         <div className="sv2-section">
           <div className="sv2-section-title">Grades</div>
           <div className="sv2-row">
-            <span className="sv2-row-label">Grade mode</span>
+            <span className="sv2-row-label">Grade scale</span>
             <span className="sv2-row-value">
               <span className="sv2-mode">
-                <button
-                  className={mode === 'ib' ? 'active' : ''}
-                  onClick={() => dispatch({ type: 'SET_GRADE_MODE', mode: 'ib' })}
-                >IB</button>
-                <button
-                  className={mode === 'us' ? 'active' : ''}
-                  onClick={() => dispatch({ type: 'SET_GRADE_MODE', mode: 'us' })}
-                >US</button>
+                <button className={mode === 'ib' ? 'active' : ''} onClick={() => dispatch({ type: 'SET_GRADE_MODE', mode: 'ib' })}>IB</button>
+                <button className={mode === 'us' ? 'active' : ''} onClick={() => dispatch({ type: 'SET_GRADE_MODE', mode: 'us' })}>US</button>
               </span>
             </span>
           </div>
-          <div style={{ fontSize: 11, color: 'var(--muted2)', marginTop: 6, lineHeight: 1.5 }}>
-            IB: weighted average on the 1–7 scale. US: per-course percent → 4.0 grade points via the
-            standard letter-grade ladder, then credit-weighted. Stored locally — does not sync with Nexus.
+          <div className="sv2-note">
+            IB: weighted average on the 1–7 scale. US: per-course percent → 4.0 grade points,
+            then credit-weighted. Stored locally — does not sync.
           </div>
         </div>
 
@@ -305,31 +265,19 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
         <div className="sv2-section">
           <div className="sv2-section-title">About</div>
           <div className="sv2-row">
-            <span className="sv2-row-label">App</span>
-            <span className="sv2-row-value">StudyDesk</span>
+            <span className="sv2-row-label">StudyDesk</span>
+            <span className="sv2-row-value">v{appVersion}</span>
           </div>
-          <div className="sv2-row">
-            <span className="sv2-row-label">Bundle ID</span>
-            <span className="sv2-row-value">com.StudyDesk.app</span>
-          </div>
-          <div className="sv2-row">
-            <span className="sv2-row-label">Backend</span>
-            <span className="sv2-row-value" style={{ fontSize: 11 }}>
-              hkktorzhaqnfqsnlstda.supabase.co
-            </span>
-          </div>
-          <div className="sv2-row">
-            <span className="sv2-row-label">Source</span>
-            <span className="sv2-row-value">
-              <a className="sv2-link" href="https://github.com/Limekana/StudyDesk" target="_blank" rel="noopener noreferrer">
-                github.com/Limekana/StudyDesk
-              </a>
-            </span>
-          </div>
-          <div className="sv2-row">
-            <span className="sv2-row-label">License</span>
-            <span className="sv2-row-value">MIT</span>
-          </div>
+          <details className="sv2-tech">
+            <summary>Technical details</summary>
+            <div className="sv2-tech-grid">
+              <div className="sv2-tech-item"><span>Bundle</span><span>com.StudyDesk.app</span></div>
+              <div className="sv2-tech-item"><span>Backend</span><span>Supabase (hkktorzh…)</span></div>
+              {userId && <div className="sv2-tech-item"><span>User ID</span><span title={userId}>{userIdShort}</span></div>}
+              <div className="sv2-tech-item"><span>Source</span><span><a className="sv2-link" href="https://github.com/Limekana/StudyDesk" target="_blank" rel="noopener noreferrer">github.com/Limekana/StudyDesk</a></span></div>
+              <div className="sv2-tech-item"><span>License</span><span>MIT</span></div>
+            </div>
+          </details>
         </div>
       </div>
     </>

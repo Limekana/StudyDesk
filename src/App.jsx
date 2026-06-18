@@ -15,6 +15,17 @@ import SaveSessionSheet from "./features/sessions/SaveSessionSheet.jsx";
 import StatsView from "./features/stats/StatsView.jsx";
 import SettingsView from "./features/settings/SettingsView.jsx";
 
+// v1.3.1 — initials for the top-right profile avatar (opens Settings, like NCC).
+// Derives 1–2 letters from the signed-in email's local part; guests get "·".
+function avatarInitials(session) {
+  const email = session?.user?.email;
+  if (!email) return "·";
+  const local = email.split("@")[0] || "";
+  const parts = local.split(/[.\-_]+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return local.slice(0, 2).toUpperCase() || "·";
+}
+
 const BUCKETS = ["today", "this_week", "later"];
 const BUCKET_LABELS = { today: "TODAY", this_week: "THIS WEEK", later: "LATER" };
 const BUCKET_COLORS = {
@@ -323,6 +334,9 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 .main{flex:1;overflow-y:auto;display:flex;flex-direction:column;background:var(--bg);}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 32px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:10;}
 .topbar-title{font-family:var(--font-display);font-size:22px;font-weight:500;}
+.topbar-avatar{width:36px;height:36px;min-width:36px;border-radius:50%;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-family:var(--font-display);font-size:14px;font-weight:600;letter-spacing:0.02em;cursor:pointer;display:flex;align-items:center;justify-content:center;text-transform:uppercase;transition:all 0.12s var(--ease-paper,ease);-webkit-tap-highlight-color:transparent;}
+.topbar-avatar:hover{border-color:var(--text);}
+.topbar-avatar.active{background:var(--text);color:var(--bg);border-color:var(--text);}
 .topbar-date{font-family:var(--font-mono);font-size:11px;color:var(--muted);}
 .content{padding:32px;flex:1;max-width:900px;width:100%;margin:0 auto;}
 @media(max-width:768px){
@@ -430,6 +444,10 @@ textarea{resize:vertical;min-height:80px;line-height:1.6;}select{cursor:pointer;
 @keyframes slideModal{from{opacity:0;transform:translateY(10px) scale(0.98);}to{opacity:1;transform:translateY(0) scale(1);}}
 @keyframes page-turn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
 .page-turn{animation:page-turn 160ms var(--ease-page-turn);}
+.timer-subtabs{display:flex;gap:0;border:1px solid var(--border2);border-radius:6px;overflow:hidden;max-width:340px;margin:16px auto 4px;}
+.timer-subtab{flex:1;background:transparent;border:none;padding:8px 10px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;color:var(--muted);transition:all 0.1s;border-right:1px solid var(--border2);}
+.timer-subtab:last-child{border-right:none;}
+.timer-subtab.active{background:var(--text);color:var(--bg);}
 .modal-title{font-family:var(--font-display);font-size:18px;margin-bottom:20px;}
 .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .urgent-banner{background:rgba(192,57,43,0.08);border:1px solid rgba(192,57,43,0.25);border-radius:5px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px;font-size:13px;}
@@ -927,6 +945,18 @@ export default function App() {
 
   // ── Save-session sheet (raised when timer's focus phase ends) ───────────────
   const [pendingSession, setPendingSession] = useState(null); // { durationMinutes, task, startedAt } | null
+  // v1.3 — sub-tab within the Timer view (Timer / Log / Stats), so Log + Stats
+  // don't need their own bottom-bar slots.
+  const [timerSub, setTimerSub] = useState("timer");
+  // Stale persisted nav: pre-v1.3 builds could have state.view === "log"/"stats"
+  // (now removed as top-level views). Re-home them into the Timer hub so the
+  // routed area never renders blank after upgrading.
+  useEffect(() => {
+    if (state.view === "log" || state.view === "stats") {
+      setTimerSub(state.view);
+      dispatch({ type: "SET_VIEW", view: "timer" });
+    }
+  }, [state.view]);
 
   // ── v1.0.4 one-shot post-migration push ─────────────────────────────────────
   // The UUID migration in the reducer init may have rewritten local IDs. Those
@@ -1048,10 +1078,11 @@ export default function App() {
     {id:"actions",  label:"Study",   icon:"◎"},
     {id:"plan",     label:"Plan",    icon:"◈"},
     {id:"grades",   label:"Grades",  icon:"⌗"},
+    // v1.3 — Timer now hosts Log + Stats as sub-tabs (see TimerView), so they
+    // no longer take their own bottom-bar slots — keeps the nav uncrowded.
     {id:"timer",    label:"Timer",   icon:"◉"},
-    {id:"log",      label:"Log",     icon:"≡"},
-    {id:"stats",    label:"Stats",   icon:"▦"},
-    {id:"settings", label:"Settings",icon:"⚙"},
+    // v1.3.1 — Settings is no longer a nav tab; it opens from the top-right
+    // profile avatar (matches NCC/LimeLog). Still a valid `state.view`.
   ];
   const activeView = views.find(v=>v.id===state.view);
 
@@ -1109,22 +1140,14 @@ export default function App() {
           <h1 className="topbar-title">{state.view==="actions"?"Next Up":activeView?.label}</h1>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             <div className="topbar-date">{todayStr}</div>
-            {/* v1.1 — guest-mode users see "Sign in" instead of "Sign out".
-                The handler is the same (clear guest flag → bounce to AuthGate),
-                but the label communicates intent: leaving guest mode means
-                going to the sign-in screen, not signing out of anything.
-                UI/UX review #19: was 4px×10px padding + 10px font (~22px tall);
-                now 8px×12px + 11px font + 36px min-height. Still chrome-density
-                appropriate for a topbar action but reliably tappable. */}
+            {/* v1.3.1 — profile avatar opens Settings (matches NCC/LimeLog).
+                Sign in / sign out now live inside Settings. Guests show "·". */}
             <button
-              onClick={signOut}
-              title={
-                session?.user?.email
-                  ? `Sign out (${session.user.email})`
-                  : "Sign in to enable sync"
-              }
-              style={{background:"none",border:"1px solid var(--border2)",color:"var(--muted)",padding:"8px 12px",minHeight:36,borderRadius:4,fontFamily:"var(--font-mono)",fontSize:11,letterSpacing:"0.08em",textTransform:"uppercase",cursor:"pointer"}}>
-              {session?.user?.email ? "Sign out" : "Sign in"}
+              className={"topbar-avatar"+(state.view==="settings"?" active":"")}
+              onClick={()=>dispatch({type:"SET_VIEW",view:"settings"})}
+              title={session?.user?.email ? `Settings · ${session.user.email}` : "Settings"}
+              aria-label="Open settings">
+              {avatarInitials(session)}
             </button>
           </div>
         </div>
@@ -1144,9 +1167,22 @@ export default function App() {
           {state.view==="plan"   &&<PlanView    state={state} dispatch={dispatch} showFlash={showFlash} onAddAsgn={()=>setShowAddAsgn(true)} onAddExam={()=>setShowAddExam(true)} onAddCourse={()=>setShowAddCourse(true)} onEditCourse={(c)=>setEditingCourse(c)}/>}
           {state.view==="actions" &&<ActionsView state={state} dispatch={dispatch} showFlash={showFlash}/>}
           {state.view==="grades"  &&<GradesView  state={state} dispatch={dispatch} showFlash={showFlash} session={session}/>}
-          {state.view==="timer"   &&<TimerView   state={state} dispatch={dispatch} session={session} showFlash={showFlash} onTimerComplete={(payload)=>setPendingSession(payload)}/>}
-          {state.view==="log"     &&<SessionsView state={state} dispatch={dispatch} showFlash={showFlash} session={session}/>}
-          {state.view==="stats"   &&<StatsView    state={state}/>}
+          {state.view==="timer"   &&(
+            <>
+              <div className="timer-subtabs" role="tablist" aria-label="Timer sections">
+                {[["timer","Timer"],["log","Log"],["stats","Stats"]].map(([id,label])=>(
+                  <button key={id} type="button" role="tab" aria-selected={timerSub===id}
+                    className={"timer-subtab"+(timerSub===id?" active":"")}
+                    onClick={()=>setTimerSub(id)}>{label}</button>
+                ))}
+              </div>
+              <div className="page-turn" key={timerSub}>
+                {timerSub==="timer" &&<TimerView   state={state} dispatch={dispatch} session={session} showFlash={showFlash} onTimerComplete={(payload)=>setPendingSession(payload)}/>}
+                {timerSub==="log"   &&<SessionsView state={state} dispatch={dispatch} showFlash={showFlash} session={session}/>}
+                {timerSub==="stats" &&<StatsView    state={state}/>}
+              </div>
+            </>
+          )}
           {state.view==="settings"&&<SettingsView state={state} dispatch={dispatch} showFlash={showFlash} session={session}/>}
           </div>
         </div>
