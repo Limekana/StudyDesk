@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase.js';
 import { setGuestMode } from '../../lib/guestMode.js';
 import * as sync from '../../lib/sync.js';
 import * as outbox from '../../lib/outbox.js';
+import pkg from '../../../package.json';
 
 // v1.3.1 — initials for the account avatar (mirrors App.jsx's topbar avatar).
 function avatarInitials(session) {
@@ -146,7 +147,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
   const userId = session?.user?.id;
   const userIdShort = userId ? `${userId.slice(0, 8)}…${userId.slice(-4)}` : '—';
   const provider = session?.user?.app_metadata?.provider || 'email';
-  const appVersion = '1.3.1';
+  const appVersion = pkg.version;
 
   return (
     <>
