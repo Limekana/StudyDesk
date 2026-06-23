@@ -162,12 +162,33 @@ export default function StatsView({ state }) {
     return { points, min: Math.min(...vals), max: Math.max(...vals) };
   }, [state.courses, state.grades, mode]);
 
+  // ── v1.4 AI debrief insights: avg comprehension + recurring confusion ──────
+  const aiInsights = useMemo(() => {
+    const weekAgo = Date.now() - 7 * 86400000;
+    const week = sessions.filter((s) => new Date(s.startedAt).getTime() >= weekAgo);
+    const comps = week.map((s) => s.aiComprehension).filter((c) => typeof c === 'number');
+    const avgComprehension = comps.length >= 2
+      ? comps.reduce((a, b) => a + b, 0) / comps.length
+      : null;
+    // Confusion terms repeated across ≥2 sessions this week.
+    const counts = new Map();
+    for (const s of week) {
+      const flags = Array.isArray(s.aiConfusionFlags) ? s.aiConfusionFlags : [];
+      for (const f of new Set(flags.map((x) => String(x).toLowerCase().trim()).filter(Boolean))) {
+        counts.set(f, (counts.get(f) || 0) + 1);
+      }
+    }
+    const recurring = [...counts.entries()].filter(([, n]) => n >= 2).sort((a, b) => b[1] - a[1]);
+    return { avgComprehension, comprehensionCount: comps.length, recurring };
+  }, [sessions]);
+
   const fmtH = (mins) => (mins / 60).toFixed(1);
   const deltaPct = weekly.priorAvg > 0
     ? Math.round(((weekly.current - weekly.priorAvg) / weekly.priorAvg) * 100)
     : null;
 
   const hasAnySessions = sessions.length > 0;
+  const hasAiInsights = aiInsights.avgComprehension != null || aiInsights.recurring.length > 0;
 
   return (
     <>
@@ -203,6 +224,46 @@ export default function StatsView({ state }) {
             })}
           </div>
         </div>
+
+        {/* v1.4 — AI debrief insights */}
+        {hasAiInsights && (
+          <div className="st-card">
+            <div className="st-card-head">
+              <span className="st-card-title">Study debrief</span>
+              <span className="st-card-note">last 7 days · AI</span>
+            </div>
+            {aiInsights.avgComprehension != null && (
+              <div className="st-hero" style={{ marginBottom: 4 }}>
+                <span className="st-hero-val">{aiInsights.avgComprehension.toFixed(1)}</span>
+                <span className="st-hero-unit">/5 avg comprehension</span>
+              </div>
+            )}
+            {aiInsights.recurring.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                {aiInsights.recurring.map(([term, n]) => (
+                  <span
+                    key={term}
+                    style={{
+                      fontSize: 12,
+                      padding: '4px 9px',
+                      borderRadius: 999,
+                      border: '1px solid var(--border2)',
+                      color: 'var(--text)',
+                    }}
+                    title={`Flagged ${n} times this week`}
+                  >
+                    {term} · {n}×
+                  </span>
+                ))}
+              </div>
+            )}
+            {aiInsights.recurring.length > 0 && (
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>
+                Concepts you've flagged as confusing more than once — worth a focused review.
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Subject split */}
         <div className="st-card">

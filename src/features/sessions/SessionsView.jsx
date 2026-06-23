@@ -110,7 +110,27 @@ export default function SessionsView({ state, dispatch, showFlash, session }) {
                   <div key={s.id} className="sv-item">
                     <span className="sv-item-pip" style={{ background: course?.color || 'var(--border2)' }} />
                     <div className="sv-item-body">
-                      <div className="sv-item-title">{course?.name || s.notes || 'General study'}</div>
+                      <div className="sv-item-title">
+                        {course?.name || s.notes || 'General study'}
+                        {s.aiSessionSummary && (
+                          <span
+                            title="AI debrief"
+                            style={{
+                              marginLeft: 6,
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: 9,
+                              letterSpacing: '0.08em',
+                              padding: '1px 5px',
+                              borderRadius: 4,
+                              border: '1px solid var(--border2)',
+                              color: 'var(--muted)',
+                              verticalAlign: 'middle',
+                            }}
+                          >
+                            AI
+                          </span>
+                        )}
+                      </div>
                       <div className="sv-item-meta">
                         {fmtTime(s.startedAt)}
                         {course && s.notes ? ` · ${s.notes}` : ''}
@@ -122,6 +142,12 @@ export default function SessionsView({ state, dispatch, showFlash, session }) {
                           </span>
                         )}
                       </div>
+                      {s.aiSessionSummary && (
+                        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>
+                          {s.aiSessionSummary}
+                          {s.aiComprehension != null ? ` · ${s.aiComprehension}/5` : ''}
+                        </div>
+                      )}
                     </div>
                     <span className="sv-item-dur">{s.durationMinutes}m</span>
                     <span className="sv-item-actions">

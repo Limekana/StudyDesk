@@ -156,7 +156,7 @@ function clampFocus(focusRating) {
   return Math.max(1, Math.min(5, n));
 }
 
-export async function logStudySession({ id, subjectId, startedAt, durationMinutes, notes, focusRating }) {
+export async function logStudySession({ id, subjectId, startedAt, durationMinutes, notes, focusRating, aiDebriefRaw, aiSubjectCovered, aiComprehension, aiConfusionFlags, aiSessionSummary }) {
   const userId = await currentUserId();
   const duration = Math.max(1, Math.min(1440, Math.round(durationMinutes)));
   // Idempotent UPSERT (was INSERT) so the v1.0.4 post-migration push can
@@ -171,13 +171,19 @@ export async function logStudySession({ id, subjectId, startedAt, durationMinute
     duration_minutes: duration,
     notes: notes || null,
     focus_rating: clampFocus(focusRating),
+    // v1.4 — optional AI debrief fields (all null when the user skipped it).
+    ai_debrief_raw: aiDebriefRaw ?? null,
+    ai_subject_covered: aiSubjectCovered ?? null,
+    ai_comprehension: aiComprehension ?? null,
+    ai_confusion_flags: Array.isArray(aiConfusionFlags) ? aiConfusionFlags : null,
+    ai_session_summary: aiSessionSummary ?? null,
     updated_at: nowISO(),
   });
   if (error) throw error;
   return id;
 }
 
-export async function updateStudySession({ id, subjectId, startedAt, durationMinutes, notes, focusRating }) {
+export async function updateStudySession({ id, subjectId, startedAt, durationMinutes, notes, focusRating, aiDebriefRaw, aiSubjectCovered, aiComprehension, aiConfusionFlags, aiSessionSummary }) {
   const patch = { updated_at: nowISO() };
   if (subjectId !== undefined) patch.subject_id = subjectId || null;
   if (startedAt !== undefined) patch.started_at = startedAt;
@@ -186,6 +192,11 @@ export async function updateStudySession({ id, subjectId, startedAt, durationMin
   }
   if (notes !== undefined) patch.notes = notes || null;
   if (focusRating !== undefined) patch.focus_rating = clampFocus(focusRating);
+  if (aiDebriefRaw !== undefined) patch.ai_debrief_raw = aiDebriefRaw ?? null;
+  if (aiSubjectCovered !== undefined) patch.ai_subject_covered = aiSubjectCovered ?? null;
+  if (aiComprehension !== undefined) patch.ai_comprehension = aiComprehension ?? null;
+  if (aiConfusionFlags !== undefined) patch.ai_confusion_flags = Array.isArray(aiConfusionFlags) ? aiConfusionFlags : null;
+  if (aiSessionSummary !== undefined) patch.ai_session_summary = aiSessionSummary ?? null;
   const { error } = await supabase.from('study_sessions').update(patch).eq('id', id);
   if (error) throw error;
 }

@@ -270,8 +270,8 @@ function reducer(state, action) {
     case "DELETE_GRADE": { const stamp=new Date().toISOString(); return {...state,grades:(state.grades||[]).map(g=>g.id===action.id?{...g,deletedAt:stamp,updatedAt:stamp}:g)}; }
 
     // ── Study sessions ──
-    case "ADD_SESSION":    { const s={id:action.id||newSyncId(),subjectId:action.subjectId||null,startedAt:action.startedAt,durationMinutes:Math.max(1,Math.min(1440,Math.round(action.durationMinutes))),notes:action.notes||null,focusRating:action.focusRating!=null?Math.max(1,Math.min(5,Math.round(action.focusRating))):null,updatedAt:action.updatedAt||new Date().toISOString(),deletedAt:null}; return {...state,studySessions:[...(state.studySessions||[]),s]}; }
-    case "EDIT_SESSION":   return {...state,studySessions:(state.studySessions||[]).map(s=>s.id===action.id?{...s,subjectId:action.subjectId!==undefined?(action.subjectId||null):s.subjectId,startedAt:action.startedAt??s.startedAt,durationMinutes:action.durationMinutes!==undefined?Math.max(1,Math.min(1440,Math.round(action.durationMinutes))):s.durationMinutes,notes:action.notes!==undefined?(action.notes||null):s.notes,focusRating:action.focusRating!==undefined?(action.focusRating!=null?Math.max(1,Math.min(5,Math.round(action.focusRating))):null):s.focusRating,updatedAt:new Date().toISOString()}:s)};
+    case "ADD_SESSION":    { const s={id:action.id||newSyncId(),subjectId:action.subjectId||null,startedAt:action.startedAt,durationMinutes:Math.max(1,Math.min(1440,Math.round(action.durationMinutes))),notes:action.notes||null,focusRating:action.focusRating!=null?Math.max(1,Math.min(5,Math.round(action.focusRating))):null,aiDebriefRaw:action.aiDebriefRaw??null,aiSubjectCovered:action.aiSubjectCovered??null,aiComprehension:action.aiComprehension!=null?Math.max(1,Math.min(5,Math.round(action.aiComprehension))):null,aiConfusionFlags:Array.isArray(action.aiConfusionFlags)?action.aiConfusionFlags:null,aiSessionSummary:action.aiSessionSummary??null,updatedAt:action.updatedAt||new Date().toISOString(),deletedAt:null}; return {...state,studySessions:[...(state.studySessions||[]),s]}; }
+    case "EDIT_SESSION":   return {...state,studySessions:(state.studySessions||[]).map(s=>s.id===action.id?{...s,subjectId:action.subjectId!==undefined?(action.subjectId||null):s.subjectId,startedAt:action.startedAt??s.startedAt,durationMinutes:action.durationMinutes!==undefined?Math.max(1,Math.min(1440,Math.round(action.durationMinutes))):s.durationMinutes,notes:action.notes!==undefined?(action.notes||null):s.notes,focusRating:action.focusRating!==undefined?(action.focusRating!=null?Math.max(1,Math.min(5,Math.round(action.focusRating))):null):s.focusRating,aiDebriefRaw:action.aiDebriefRaw!==undefined?action.aiDebriefRaw:s.aiDebriefRaw,aiSubjectCovered:action.aiSubjectCovered!==undefined?action.aiSubjectCovered:s.aiSubjectCovered,aiComprehension:action.aiComprehension!==undefined?(action.aiComprehension!=null?Math.max(1,Math.min(5,Math.round(action.aiComprehension))):null):s.aiComprehension,aiConfusionFlags:action.aiConfusionFlags!==undefined?(Array.isArray(action.aiConfusionFlags)?action.aiConfusionFlags:null):s.aiConfusionFlags,aiSessionSummary:action.aiSessionSummary!==undefined?action.aiSessionSummary:s.aiSessionSummary,updatedAt:new Date().toISOString()}:s)};
     case "DELETE_SESSION": { const stamp=new Date().toISOString(); return {...state,studySessions:(state.studySessions||[]).map(s=>s.id===action.id?{...s,deletedAt:stamp,updatedAt:stamp}:s)}; }
 
     // ── Settings ──
@@ -1226,13 +1226,14 @@ export default function App() {
       <SaveSessionSheet
         pending={pendingSession}
         courses={courses}
+        canDebrief={!!session}
         onClose={()=>setPendingSession(null)}
-        onSave={async ({subjectId, durationMinutes, notes, startedAt, focusRating}) => {
+        onSave={async ({subjectId, durationMinutes, notes, startedAt, focusRating, aiDebriefRaw, aiSubjectCovered, aiComprehension, aiConfusionFlags, aiSessionSummary}) => {
           const id = newSyncId();
-          dispatch({type:"ADD_SESSION", id, subjectId: subjectId||null, startedAt, durationMinutes, notes, focusRating});
+          dispatch({type:"ADD_SESSION", id, subjectId: subjectId||null, startedAt, durationMinutes, notes, focusRating, aiDebriefRaw, aiSubjectCovered, aiComprehension, aiConfusionFlags, aiSessionSummary});
           setPendingSession(null);
           showFlash(`Logged ${durationMinutes}m`);
-          if (session) outbox.enqueue("log_session", { id, subjectId, startedAt, durationMinutes, notes, focusRating });
+          if (session) outbox.enqueue("log_session", { id, subjectId, startedAt, durationMinutes, notes, focusRating, aiDebriefRaw, aiSubjectCovered, aiComprehension, aiConfusionFlags, aiSessionSummary });
         }}
       />
     )}

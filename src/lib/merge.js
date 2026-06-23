@@ -78,6 +78,12 @@ export function mergeSession(localSession, remoteRow) {
     notes: remoteRow.notes || null,
     // v1.3 (BUG-22) — focus_rating is nullable; older rows have none.
     focusRating: remoteRow.focus_rating ?? null,
+    // v1.4 — AI debrief fields; null on rows logged without a debrief.
+    aiDebriefRaw: remoteRow.ai_debrief_raw ?? null,
+    aiSubjectCovered: remoteRow.ai_subject_covered ?? null,
+    aiComprehension: remoteRow.ai_comprehension ?? null,
+    aiConfusionFlags: Array.isArray(remoteRow.ai_confusion_flags) ? remoteRow.ai_confusion_flags : null,
+    aiSessionSummary: remoteRow.ai_session_summary ?? null,
     updatedAt: remoteRow.updated_at || null,
     deletedAt: remoteRow.deleted_at || null,
   };
