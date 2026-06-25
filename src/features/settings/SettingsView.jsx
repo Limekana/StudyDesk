@@ -1,6 +1,7 @@
 import { useState, useCallback, useSyncExternalStore } from 'react';
 import { supabase } from '../../lib/supabase.js';
 import { setGuestMode } from '../../lib/guestMode.js';
+import PeriodHistory from '../grades/PeriodHistory.jsx';
 import * as sync from '../../lib/sync.js';
 import * as outbox from '../../lib/outbox.js';
 import pkg from '../../../package.json';
@@ -259,6 +260,16 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
           <div className="sv2-note">
             IB: weighted average on the 1–7 scale. US: per-course percent → 4.0 grade points,
             then credit-weighted. Stored locally — does not sync.
+          </div>
+        </div>
+
+        {/* ── Period history (Archive) ── */}
+        <div className="sv2-section">
+          <div className="sv2-section-title">Period history · Archive</div>
+          <PeriodHistory courses={state.courses} grades={grades} mode={mode} />
+          <div className="sv2-note">
+            Archived periods, grouped by school year with a GPA snapshot. Archive or restore a
+            period from the Grades tab.
           </div>
         </div>
 
