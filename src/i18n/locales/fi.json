@@ -1,0 +1,28 @@
+{
+  "app": {
+    "name": "StudyDesk",
+    "tagline": "Suunnittele opintosi. Pysy edellä."
+  },
+  "common": {
+    "save": "Tallenna",
+    "cancel": "Peruuta",
+    "delete": "Poista",
+    "edit": "Muokkaa",
+    "add": "Lisää",
+    "done": "Valmis",
+    "close": "Sulje",
+    "back": "Takaisin",
+    "confirm": "Vahvista",
+    "retry": "Yritä uudelleen",
+    "loading": "Ladataan…",
+    "settings": "Asetukset",
+    "next": "Seuraava"
+  },
+  "academic": {
+    "period": "Jakso",
+    "semester": "Lukukausi",
+    "schoolYear": "Lukuvuosi",
+    "course": "Kurssi",
+    "grade": "Arvosana"
+  }
+}
