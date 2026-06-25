@@ -1166,7 +1166,7 @@ export default function App() {
               only the routed view animates. */}
           <div className="page-turn" key={state.view}>
           {state.view==="plan"   &&<PlanView    state={state} dispatch={dispatch} showFlash={showFlash} onAddAsgn={()=>setShowAddAsgn(true)} onAddExam={()=>setShowAddExam(true)} onAddCourse={()=>setShowAddCourse(true)} onEditCourse={(c)=>setEditingCourse(c)}/>}
-          {state.view==="actions" &&<ActionsView state={state} dispatch={dispatch} showFlash={showFlash}/>}
+          {state.view==="actions" &&<ActionsView state={state} dispatch={dispatch} showFlash={showFlash} onAddCourse={()=>setShowAddCourse(true)}/>}
           {state.view==="grades"  &&<GradesView  state={state} dispatch={dispatch} showFlash={showFlash} session={session}/>}
           {state.view==="timer"   &&(
             <>
@@ -1925,9 +1925,13 @@ function ExamCard({ exam, courses, dispatch }) {
 }
 
 // ── ActionsView — Next Up ─────────────────────────────────────────────────────
-function ActionsView({ state, dispatch, showFlash }) {
+function ActionsView({ state, dispatch, showFlash, onAddCourse }) {
   const [newText, setNewText] = useState(""); const [newBucket, setNewBucket] = useState("today"); const [newCourse, setNewCourse] = useState("");
   const courses = Object.values(state.courses).filter(c => !c.deletedAt);
+  // v1.5 (5D) — active = non-archived. When every course is archived (a new
+  // period just started) OR none exist yet (first run), Next Up has nothing to
+  // build a plan from, so guide the user to add courses before deadlines.
+  const activeCourses = courses.filter(c => !c.archivedAt);
   const totalDeadlines = state.assignments.filter(a=>a.dueDate&&!a.done).length + state.exams.filter(e=>e.dueDate&&!e.done).length;
   const suggestedActions = (() => {
     const actions = [];
@@ -1980,6 +1984,21 @@ function ActionsView({ state, dispatch, showFlash }) {
   }, []);
   const allActions = [...visibleManual, ...suggestedActions.filter(s=>!visibleManual.some(a=>a.sourceId===s.sourceId&&a.suggested))];
   const addAction = () => { if(!newText.trim()) return; dispatch({type:"ADD_ACTION",text:newText.trim(),bucket:newBucket,courseId:newCourse||null}); setNewText(""); showFlash("Added to Next Up"); };
+  // v1.5 (5D) — empty-period / first-run re-onboarding: no active courses to plan around.
+  if(activeCourses.length === 0) return <div>
+    <div className="nextup-unlock">
+      <div className="nextup-unlock-icon">◎</div>
+      <div className="nextup-unlock-body">
+        <div className="nextup-unlock-title">New period? Start by adding your courses</div>
+        <div className="nextup-unlock-sub">Add this period’s courses and their deadlines and StudyDesk will surface what to do next. Past periods stay in your history.</div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:12}}>
+          <button className="btn btn-sm" onClick={()=>onAddCourse?.()}>Add a course</button>
+          <button className="btn-outline btn-sm" onClick={()=>dispatch({type:"SET_VIEW",view:"plan"})}>Go to Plan →</button>
+        </div>
+      </div>
+    </div>
+  </div>;
+
   if(totalDeadlines < 1) return <div>
     <div className="nextup-unlock">
       <div className="nextup-unlock-icon">◎</div>
