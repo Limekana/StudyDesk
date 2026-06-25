@@ -24,5 +24,57 @@
     "schoolYear": "Année scolaire",
     "course": "Cours",
     "grade": "Note"
+  },
+  "nav": {
+    "study": "Étudier",
+    "plan": "Plan",
+    "grades": "Notes",
+    "timer": "Minuteur",
+    "stats": "Stats"
+  },
+  "topbar": {
+    "nextUp": "À suivre"
+  },
+  "course": {
+    "edit": "Modifier le cours",
+    "add": "Ajouter un cours",
+    "name": "Nom du cours",
+    "namePlaceholder": "ex. Analyse II",
+    "credits": "Crédits (pondération)",
+    "period": "Période / Jakso",
+    "periodPlaceholder": "ex. Jakso 3",
+    "schoolYear": "Année scolaire",
+    "yearPlaceholder": "ex. 2024–2025",
+    "color": "Couleur",
+    "delete": "Supprimer le cours",
+    "deleteConfirm": "Supprimer toutes les données ?",
+    "yesDelete": "Oui, supprimer",
+    "no": "Non",
+    "updated": "Cours mis à jour"
+  },
+  "history": {
+    "title": "Historique des périodes · Archive",
+    "note": "Périodes archivées, regroupées par année scolaire avec un aperçu de la moyenne. Archive ou restaure une période depuis l’onglet Notes.",
+    "empty": "Aucune période archivée. Archive une période depuis l’onglet Notes et elle apparaîtra ici, regroupée par année scolaire.",
+    "noSchoolYear": "Aucune année scolaire",
+    "noPeriod": "Aucune période",
+    "course_one": "{{count}} cours",
+    "course_other": "{{count}} cours",
+    "gpaIb": "Moy. IB",
+    "gpaUs": "Moyenne",
+    "noGrades": "Aucune note"
+  },
+  "nextup": {
+    "newPeriodTitle": "Nouvelle période ? Commence par ajouter tes cours",
+    "newPeriodSub": "Ajoute les cours de cette période et leurs échéances, et StudyDesk affichera quoi faire ensuite. Les périodes passées restent dans ton historique.",
+    "addCourse": "Ajouter un cours",
+    "goToPlan": "Aller au plan →",
+    "addDeadlineTitle": "Ajoute une échéance pour débloquer ton plan d’étude",
+    "addDeadlineSub": "À suivre fait remonter automatiquement tes tâches les plus urgentes. Ajoute un devoir ou un examen pour commencer."
+  },
+  "settings": {
+    "cloudSync": "Synchro cloud",
+    "grades": "Notes",
+    "about": "À propos"
   }
 }

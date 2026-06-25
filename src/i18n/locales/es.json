@@ -24,5 +24,57 @@
     "schoolYear": "Año escolar",
     "course": "Asignatura",
     "grade": "Nota"
+  },
+  "nav": {
+    "study": "Estudiar",
+    "plan": "Plan",
+    "grades": "Notas",
+    "timer": "Temporizador",
+    "stats": "Estadísticas"
+  },
+  "topbar": {
+    "nextUp": "A continuación"
+  },
+  "course": {
+    "edit": "Editar asignatura",
+    "add": "Añadir asignatura",
+    "name": "Nombre de la asignatura",
+    "namePlaceholder": "ej. Cálculo II",
+    "credits": "Créditos (ponderación)",
+    "period": "Periodo / Jakso",
+    "periodPlaceholder": "ej. Jakso 3",
+    "schoolYear": "Año escolar",
+    "yearPlaceholder": "ej. 2024–2025",
+    "color": "Color",
+    "delete": "Eliminar asignatura",
+    "deleteConfirm": "¿Eliminar todos los datos?",
+    "yesDelete": "Sí, eliminar",
+    "no": "No",
+    "updated": "Asignatura actualizada"
+  },
+  "history": {
+    "title": "Historial de periodos · Archivo",
+    "note": "Periodos archivados, agrupados por año escolar con un resumen de la nota media. Archiva o restaura un periodo desde la pestaña Notas.",
+    "empty": "Aún no hay periodos archivados. Archiva un periodo desde la pestaña Notas y aparecerá aquí, agrupado por año escolar.",
+    "noSchoolYear": "Sin año escolar",
+    "noPeriod": "Sin periodo",
+    "course_one": "{{count}} asignatura",
+    "course_other": "{{count}} asignaturas",
+    "gpaIb": "Media IB",
+    "gpaUs": "Media",
+    "noGrades": "Sin notas"
+  },
+  "nextup": {
+    "newPeriodTitle": "¿Nuevo periodo? Empieza añadiendo tus asignaturas",
+    "newPeriodSub": "Añade las asignaturas de este periodo y sus fechas límite, y StudyDesk te mostrará qué hacer a continuación. Los periodos pasados quedan en tu historial.",
+    "addCourse": "Añadir asignatura",
+    "goToPlan": "Ir al plan →",
+    "addDeadlineTitle": "Añade una fecha límite para desbloquear tu plan de estudio",
+    "addDeadlineSub": "A continuación muestra automáticamente tus tareas más urgentes. Añade una tarea o examen para empezar."
+  },
+  "settings": {
+    "cloudSync": "Sincronización en la nube",
+    "grades": "Notas",
+    "about": "Acerca de"
   }
 }

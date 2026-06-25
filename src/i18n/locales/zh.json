@@ -24,5 +24,57 @@
     "schoolYear": "学年",
     "course": "课程",
     "grade": "成绩"
+  },
+  "nav": {
+    "study": "学习",
+    "plan": "计划",
+    "grades": "成绩",
+    "timer": "计时器",
+    "stats": "统计"
+  },
+  "topbar": {
+    "nextUp": "接下来"
+  },
+  "course": {
+    "edit": "编辑课程",
+    "add": "添加课程",
+    "name": "课程名称",
+    "namePlaceholder": "例如 微积分 II",
+    "credits": "学分（绩点权重）",
+    "period": "学段 / Jakso",
+    "periodPlaceholder": "例如 Jakso 3",
+    "schoolYear": "学年",
+    "yearPlaceholder": "例如 2024–2025",
+    "color": "颜色",
+    "delete": "删除课程",
+    "deleteConfirm": "删除所有数据？",
+    "yesDelete": "是，删除",
+    "no": "否",
+    "updated": "课程已更新"
+  },
+  "history": {
+    "title": "学段历史 · 归档",
+    "note": "已归档的学段，按学年分组并附绩点概览。可在成绩标签页归档或恢复学段。",
+    "empty": "暂无已归档的学段。在成绩标签页归档一个学段，它就会按学年分组显示在这里。",
+    "noSchoolYear": "无学年",
+    "noPeriod": "无学段",
+    "course_one": "{{count}} 门课程",
+    "course_other": "{{count}} 门课程",
+    "gpaIb": "IB 均分",
+    "gpaUs": "绩点",
+    "noGrades": "无成绩"
+  },
+  "nextup": {
+    "newPeriodTitle": "新学段？先添加你的课程",
+    "newPeriodSub": "添加本学段的课程及其截止日期，StudyDesk 会为你显示接下来要做的事。过去的学段会保留在历史记录中。",
+    "addCourse": "添加课程",
+    "goToPlan": "前往计划 →",
+    "addDeadlineTitle": "添加一个截止日期以解锁你的学习计划",
+    "addDeadlineSub": "“接下来”会自动突出最紧急的任务。添加一项作业或考试即可开始。"
+  },
+  "settings": {
+    "cloudSync": "云同步",
+    "grades": "成绩",
+    "about": "关于"
   }
 }

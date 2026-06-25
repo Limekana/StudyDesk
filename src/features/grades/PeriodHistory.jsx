@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { subjectEffectiveGrade, subjectsWithEffectiveGrades, calculateGPA } from '../../lib/gpa.js';
 
 // v1.5 (5C) — read-only Period/Jakso history. Groups ARCHIVED courses by
@@ -31,6 +32,7 @@ const NO_YEAR = '__noyear__';
 const NO_PERIOD = '__noperiod__';
 
 export default function PeriodHistory({ courses, grades, mode = 'ib' }) {
+  const { t } = useTranslation();
   const grouped = useMemo(() => {
     const archived = Object.values(courses || {}).filter((c) => !c.deletedAt && c.archivedAt);
     // year → period → subjects[]
@@ -71,22 +73,19 @@ export default function PeriodHistory({ courses, grades, mode = 'ib' }) {
     return (
       <>
         <style>{css}</style>
-        <div className="ph-empty">
-          No archived periods yet. Archive a period from the Grades tab and it’ll appear here,
-          grouped by school year.
-        </div>
+        <div className="ph-empty">{t('history.empty')}</div>
       </>
     );
   }
 
-  const gpaLabel = mode === 'ib' ? 'IB avg' : 'GPA';
+  const gpaLabel = mode === 'ib' ? t('history.gpaIb') : t('history.gpaUs');
 
   return (
     <>
       <style>{css}</style>
       {grouped.map(([yKey, periodList]) => (
         <div className="ph-year" key={yKey}>
-          <div className="ph-year-label">{yKey === NO_YEAR ? 'No school year' : yKey}</div>
+          <div className="ph-year-label">{yKey === NO_YEAR ? t('history.noSchoolYear') : yKey}</div>
           {periodList.map(([pKey, subs]) => {
             const key = `${yKey}::${pKey}`;
             const isOpen = open.has(key);
@@ -104,10 +103,10 @@ export default function PeriodHistory({ courses, grades, mode = 'ib' }) {
                 >
                   <div className="ph-period-name">
                     <span className="ph-caret">{isOpen ? '▾' : '▸'}</span>
-                    {pKey === NO_PERIOD ? 'No period' : pKey}
+                    {pKey === NO_PERIOD ? t('history.noPeriod') : pKey}
                   </div>
                   <div className="ph-period-meta">
-                    {subs.length} course{subs.length === 1 ? '' : 's'}
+                    {t('history.course', { count: subs.length })}
                     {graded > 0 && (
                       <> · {gpaLabel} <span className="ph-gpa">{gpa}</span></>
                     )}
@@ -125,7 +124,7 @@ export default function PeriodHistory({ courses, grades, mode = 'ib' }) {
                             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
                           </div>
                           <div className={`ph-course-grade${eff == null ? ' none' : ''}`}>
-                            {eff == null ? 'No grades' : Math.round(eff * 100) / 100}
+                            {eff == null ? t('history.noGrades') : Math.round(eff * 100) / 100}
                           </div>
                         </div>
                       );

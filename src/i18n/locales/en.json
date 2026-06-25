@@ -24,5 +24,57 @@
     "schoolYear": "School year",
     "course": "Course",
     "grade": "Grade"
+  },
+  "nav": {
+    "study": "Study",
+    "plan": "Plan",
+    "grades": "Grades",
+    "timer": "Timer",
+    "stats": "Stats"
+  },
+  "topbar": {
+    "nextUp": "Next Up"
+  },
+  "course": {
+    "edit": "Edit Course",
+    "add": "Add Course",
+    "name": "Course name",
+    "namePlaceholder": "e.g. Calculus II",
+    "credits": "Credits (GPA weight)",
+    "period": "Period / Jakso",
+    "periodPlaceholder": "e.g. Jakso 3",
+    "schoolYear": "School year",
+    "yearPlaceholder": "e.g. 2024–2025",
+    "color": "Color",
+    "delete": "Delete course",
+    "deleteConfirm": "Delete all data?",
+    "yesDelete": "Yes, delete",
+    "no": "No",
+    "updated": "Course updated"
+  },
+  "history": {
+    "title": "Period history · Archive",
+    "note": "Archived periods, grouped by school year with a GPA snapshot. Archive or restore a period from the Grades tab.",
+    "empty": "No archived periods yet. Archive a period from the Grades tab and it’ll appear here, grouped by school year.",
+    "noSchoolYear": "No school year",
+    "noPeriod": "No period",
+    "course_one": "{{count}} course",
+    "course_other": "{{count}} courses",
+    "gpaIb": "IB avg",
+    "gpaUs": "GPA",
+    "noGrades": "No grades"
+  },
+  "nextup": {
+    "newPeriodTitle": "New period? Start by adding your courses",
+    "newPeriodSub": "Add this period’s courses and their deadlines and StudyDesk will surface what to do next. Past periods stay in your history.",
+    "addCourse": "Add a course",
+    "goToPlan": "Go to Plan →",
+    "addDeadlineTitle": "Add a deadline to unlock your study plan",
+    "addDeadlineSub": "Next Up surfaces your most urgent work automatically. Add an assignment or exam to get started."
+  },
+  "settings": {
+    "cloudSync": "Cloud sync",
+    "grades": "Grades",
+    "about": "About"
   }
 }

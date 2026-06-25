@@ -24,5 +24,57 @@
     "schoolYear": "Schuljahr",
     "course": "Kurs",
     "grade": "Note"
+  },
+  "nav": {
+    "study": "Lernen",
+    "plan": "Plan",
+    "grades": "Noten",
+    "timer": "Timer",
+    "stats": "Statistik"
+  },
+  "topbar": {
+    "nextUp": "Als Nächstes"
+  },
+  "course": {
+    "edit": "Kurs bearbeiten",
+    "add": "Kurs hinzufügen",
+    "name": "Kursname",
+    "namePlaceholder": "z. B. Analysis II",
+    "credits": "Punkte (Gewichtung)",
+    "period": "Periode / Jakso",
+    "periodPlaceholder": "z. B. Jakso 3",
+    "schoolYear": "Schuljahr",
+    "yearPlaceholder": "z. B. 2024–2025",
+    "color": "Farbe",
+    "delete": "Kurs löschen",
+    "deleteConfirm": "Alle Daten löschen?",
+    "yesDelete": "Ja, löschen",
+    "no": "Nein",
+    "updated": "Kurs aktualisiert"
+  },
+  "history": {
+    "title": "Periodenverlauf · Archiv",
+    "note": "Archivierte Perioden, gruppiert nach Schuljahr mit Notenschnitt. Archiviere oder stelle eine Periode im Noten-Tab wieder her.",
+    "empty": "Noch keine archivierten Perioden. Archiviere eine Periode im Noten-Tab, dann erscheint sie hier, nach Schuljahr gruppiert.",
+    "noSchoolYear": "Kein Schuljahr",
+    "noPeriod": "Keine Periode",
+    "course_one": "{{count}} Kurs",
+    "course_other": "{{count}} Kurse",
+    "gpaIb": "IB-Schnitt",
+    "gpaUs": "Schnitt",
+    "noGrades": "Keine Noten"
+  },
+  "nextup": {
+    "newPeriodTitle": "Neue Periode? Füge zuerst deine Kurse hinzu",
+    "newPeriodSub": "Füge die Kurse dieser Periode und ihre Fristen hinzu, und StudyDesk zeigt dir, was als Nächstes ansteht. Vergangene Perioden bleiben in deinem Verlauf.",
+    "addCourse": "Kurs hinzufügen",
+    "goToPlan": "Zum Plan →",
+    "addDeadlineTitle": "Füge eine Frist hinzu, um deinen Lernplan freizuschalten",
+    "addDeadlineSub": "Als Nächstes zeigt automatisch deine dringendsten Aufgaben. Füge eine Aufgabe oder Prüfung hinzu, um zu starten."
+  },
+  "settings": {
+    "cloudSync": "Cloud-Sync",
+    "grades": "Noten",
+    "about": "Über"
   }
 }

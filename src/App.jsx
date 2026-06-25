@@ -1,4 +1,5 @@
 import { useState, useReducer, useEffect, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { App as CapApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
@@ -743,6 +744,7 @@ export default function App() {
       };
     } catch { return init; }
   });
+  const { t } = useTranslation();
   const [onboarded, setOnboarded] = useState(() => {
     try { return localStorage.getItem("studydesk-onboarded") === "1"; } catch { return false; }
   });
@@ -1076,12 +1078,12 @@ export default function App() {
   };
 
   const views = [
-    {id:"actions",  label:"Study",   icon:"◎"},
-    {id:"plan",     label:"Plan",    icon:"◈"},
-    {id:"grades",   label:"Grades",  icon:"⌗"},
+    {id:"actions",  label:t('nav.study'),  icon:"◎"},
+    {id:"plan",     label:t('nav.plan'),   icon:"◈"},
+    {id:"grades",   label:t('nav.grades'), icon:"⌗"},
     // v1.3 — Timer now hosts Log + Stats as sub-tabs (see TimerView), so they
     // no longer take their own bottom-bar slots — keeps the nav uncrowded.
-    {id:"timer",    label:"Timer",   icon:"◉"},
+    {id:"timer",    label:t('nav.timer'),  icon:"◉"},
     // v1.3.1 — Settings is no longer a nav tab; it opens from the top-right
     // profile avatar (matches NCC/LimeLog). Still a valid `state.view`.
   ];
@@ -1138,7 +1140,7 @@ export default function App() {
       {/* ── Main content ── */}
       <main className="main">
         <div className="topbar">
-          <h1 className="topbar-title">{state.view==="actions"?"Next Up":activeView?.label}</h1>
+          <h1 className="topbar-title">{state.view==="actions"?t('topbar.nextUp'):activeView?.label}</h1>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             <div className="topbar-date">{todayStr}</div>
             {/* v1.3.1 — profile avatar opens Settings (matches NCC/LimeLog).
@@ -1768,6 +1770,7 @@ function AddExamModal({ courses, activeCourse, onAdd, onClose }) {
 }
 
 function EditCourseModal({ course, courses, onSave, onDelete, onClose }) {
+  const { t } = useTranslation();
   const [name,setName]=useState(course.name);
   const [color,setColor]=useState(course.color);
   const [credits,setCredits]=useState(course.credits!=null?String(course.credits):"1");
@@ -1784,29 +1787,29 @@ function EditCourseModal({ course, courses, onSave, onDelete, onClose }) {
     const cr = parseFloat(credits);
     onSave(name.trim(), color, isNaN(cr)?1:cr, semester.trim()||null, schoolYear.trim()||null);
   };
-  return <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Edit Course" onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
-    <div className="modal-title">Edit Course</div>
-    <div className="input-group"><div className="input-label">Course name</div><input type="text" value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doSave()} autoFocus/></div>
+  return <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={t('course.edit')} onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
+    <div className="modal-title">{t('course.edit')}</div>
+    <div className="input-group"><div className="input-label">{t('course.name')}</div><input type="text" value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doSave()} autoFocus/></div>
     <div className="modal-grid">
-      <div className="input-group"><div className="input-label">Credits (GPA weight)</div><input type="number" step="0.5" min="0" value={credits} onChange={e=>setCredits(e.target.value)}/></div>
-      <div className="input-group"><div className="input-label">Period / Jakso</div><input type="text" list="period-options" placeholder="e.g. Jakso 3" value={semester} onChange={e=>setSemester(e.target.value)}/>
+      <div className="input-group"><div className="input-label">{t('course.credits')}</div><input type="number" step="0.5" min="0" value={credits} onChange={e=>setCredits(e.target.value)}/></div>
+      <div className="input-group"><div className="input-label">{t('course.period')}</div><input type="text" list="period-options" placeholder={t('course.periodPlaceholder')} value={semester} onChange={e=>setSemester(e.target.value)}/>
         <datalist id="period-options">{periodOptions.map(p=><option key={p} value={p}/>)}</datalist></div>
     </div>
-    <div className="input-group"><div className="input-label">School year</div><input type="text" list="schoolyear-options" placeholder="e.g. 2024–2025" value={schoolYear} onChange={e=>setSchoolYear(e.target.value)}/>
+    <div className="input-group"><div className="input-label">{t('course.schoolYear')}</div><input type="text" list="schoolyear-options" placeholder={t('course.yearPlaceholder')} value={schoolYear} onChange={e=>setSchoolYear(e.target.value)}/>
       <datalist id="schoolyear-options">{yearOptions.map(y=><option key={y} value={y}/>)}</datalist></div>
-    <div className="input-group"><div className="input-label">Color</div>
+    <div className="input-group"><div className="input-label">{t('course.color')}</div>
       <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{COURSE_COLORS.map(c=><div key={c} onClick={()=>setColor(c)} style={{width:24,height:24,borderRadius:"50%",background:c,cursor:"pointer",outline:color===c?"3px solid "+c:"2px solid transparent",outlineOffset:2}}/>)}</div>
     </div>
     <div style={{display:"flex",gap:8,marginTop:8,alignItems:"center"}}>
-      <button className="btn" onClick={doSave}>Save</button>
-      <button className="btn-outline" onClick={onClose}>Cancel</button>
+      <button className="btn" onClick={doSave}>{t('common.save')}</button>
+      <button className="btn-outline" onClick={onClose}>{t('common.cancel')}</button>
       <span style={{flex:1}}/>
       {!confirmDelete
-        ?<button className="btn-outline" style={{color:"#c0392b",borderColor:"#c0392b"}} onClick={()=>setConfirmDelete(true)}>Delete course</button>
+        ?<button className="btn-outline" style={{color:"#c0392b",borderColor:"#c0392b"}} onClick={()=>setConfirmDelete(true)}>{t('course.delete')}</button>
         :<div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <span style={{fontFamily:"var(--font-mono)",fontSize:11,color:"#c0392b"}}>Delete all data?</span>
-          <button className="btn-red" onClick={onDelete}>Yes, delete</button>
-          <button className="btn-outline" onClick={()=>setConfirmDelete(false)}>No</button>
+          <span style={{fontFamily:"var(--font-mono)",fontSize:11,color:"#c0392b"}}>{t('course.deleteConfirm')}</span>
+          <button className="btn-red" onClick={onDelete}>{t('course.yesDelete')}</button>
+          <button className="btn-outline" onClick={()=>setConfirmDelete(false)}>{t('course.no')}</button>
         </div>}
     </div>
   </div></div>;
@@ -1926,6 +1929,7 @@ function ExamCard({ exam, courses, dispatch }) {
 
 // ── ActionsView — Next Up ─────────────────────────────────────────────────────
 function ActionsView({ state, dispatch, showFlash, onAddCourse }) {
+  const { t } = useTranslation();
   const [newText, setNewText] = useState(""); const [newBucket, setNewBucket] = useState("today"); const [newCourse, setNewCourse] = useState("");
   const courses = Object.values(state.courses).filter(c => !c.deletedAt);
   // v1.5 (5D) — active = non-archived. When every course is archived (a new
@@ -1989,11 +1993,11 @@ function ActionsView({ state, dispatch, showFlash, onAddCourse }) {
     <div className="nextup-unlock">
       <div className="nextup-unlock-icon">◎</div>
       <div className="nextup-unlock-body">
-        <div className="nextup-unlock-title">New period? Start by adding your courses</div>
-        <div className="nextup-unlock-sub">Add this period’s courses and their deadlines and StudyDesk will surface what to do next. Past periods stay in your history.</div>
+        <div className="nextup-unlock-title">{t('nextup.newPeriodTitle')}</div>
+        <div className="nextup-unlock-sub">{t('nextup.newPeriodSub')}</div>
         <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:12}}>
-          <button className="btn btn-sm" onClick={()=>onAddCourse?.()}>Add a course</button>
-          <button className="btn-outline btn-sm" onClick={()=>dispatch({type:"SET_VIEW",view:"plan"})}>Go to Plan →</button>
+          <button className="btn btn-sm" onClick={()=>onAddCourse?.()}>{t('nextup.addCourse')}</button>
+          <button className="btn-outline btn-sm" onClick={()=>dispatch({type:"SET_VIEW",view:"plan"})}>{t('nextup.goToPlan')}</button>
         </div>
       </div>
     </div>
@@ -2003,10 +2007,10 @@ function ActionsView({ state, dispatch, showFlash, onAddCourse }) {
     <div className="nextup-unlock">
       <div className="nextup-unlock-icon">◎</div>
       <div className="nextup-unlock-body">
-        <div className="nextup-unlock-title">Add a deadline to unlock your study plan</div>
-        <div className="nextup-unlock-sub">Next Up surfaces your most urgent work automatically. Add an assignment or exam to get started.</div>
+        <div className="nextup-unlock-title">{t('nextup.addDeadlineTitle')}</div>
+        <div className="nextup-unlock-sub">{t('nextup.addDeadlineSub')}</div>
         <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:12}}>
-          <button className="btn btn-sm" onClick={()=>dispatch({type:"SET_VIEW",view:"plan"})}>Go to Plan →</button>
+          <button className="btn btn-sm" onClick={()=>dispatch({type:"SET_VIEW",view:"plan"})}>{t('nextup.goToPlan')}</button>
         </div>
       </div>
     </div>

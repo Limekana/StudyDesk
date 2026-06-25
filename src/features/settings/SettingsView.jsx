@@ -1,4 +1,5 @@
 import { useState, useCallback, useSyncExternalStore } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase.js';
 import { setGuestMode } from '../../lib/guestMode.js';
 import PeriodHistory from '../grades/PeriodHistory.jsx';
@@ -74,6 +75,7 @@ function fmtTime(iso) {
 }
 
 export default function SettingsView({ state, dispatch, showFlash, session }) {
+  const { t } = useTranslation();
   const [pulling, setPulling] = useState(false);
   const [lastPullAt, setLastPullAt] = useState(null);
   const [signingOut, setSigningOut] = useState(false);
@@ -265,12 +267,9 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
 
         {/* ── Period history (Archive) ── */}
         <div className="sv2-section">
-          <div className="sv2-section-title">Period history · Archive</div>
+          <div className="sv2-section-title">{t('history.title')}</div>
           <PeriodHistory courses={state.courses} grades={grades} mode={mode} />
-          <div className="sv2-note">
-            Archived periods, grouped by school year with a GPA snapshot. Archive or restore a
-            period from the Grades tab.
-          </div>
+          <div className="sv2-note">{t('history.note')}</div>
         </div>
 
         {/* ── About ── */}

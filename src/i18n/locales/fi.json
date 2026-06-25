@@ -24,5 +24,57 @@
     "schoolYear": "Lukuvuosi",
     "course": "Kurssi",
     "grade": "Arvosana"
+  },
+  "nav": {
+    "study": "Opiskele",
+    "plan": "Suunnitelma",
+    "grades": "Arvosanat",
+    "timer": "Ajastin",
+    "stats": "Tilastot"
+  },
+  "topbar": {
+    "nextUp": "Seuraavaksi"
+  },
+  "course": {
+    "edit": "Muokkaa kurssia",
+    "add": "Lisää kurssi",
+    "name": "Kurssin nimi",
+    "namePlaceholder": "esim. Analyysi II",
+    "credits": "Opintopisteet (painotus)",
+    "period": "Jakso",
+    "periodPlaceholder": "esim. Jakso 3",
+    "schoolYear": "Lukuvuosi",
+    "yearPlaceholder": "esim. 2024–2025",
+    "color": "Väri",
+    "delete": "Poista kurssi",
+    "deleteConfirm": "Poistetaanko kaikki tiedot?",
+    "yesDelete": "Kyllä, poista",
+    "no": "Ei",
+    "updated": "Kurssi päivitetty"
+  },
+  "history": {
+    "title": "Jaksohistoria · Arkisto",
+    "note": "Arkistoidut jaksot ryhmiteltynä lukuvuoden mukaan keskiarvotietoineen. Arkistoi tai palauta jakso Arvosanat-välilehdeltä.",
+    "empty": "Ei arkistoituja jaksoja vielä. Arkistoi jakso Arvosanat-välilehdeltä, niin se näkyy täällä lukuvuoden mukaan ryhmiteltynä.",
+    "noSchoolYear": "Ei lukuvuotta",
+    "noPeriod": "Ei jaksoa",
+    "course_one": "{{count}} kurssi",
+    "course_other": "{{count}} kurssia",
+    "gpaIb": "IB-ka.",
+    "gpaUs": "Keskiarvo",
+    "noGrades": "Ei arvosanoja"
+  },
+  "nextup": {
+    "newPeriodTitle": "Uusi jakso? Aloita lisäämällä kurssisi",
+    "newPeriodSub": "Lisää tämän jakson kurssit ja niiden määräajat, niin StudyDesk näyttää mitä tehdä seuraavaksi. Menneet jaksot säilyvät historiassasi.",
+    "addCourse": "Lisää kurssi",
+    "goToPlan": "Siirry suunnitelmaan →",
+    "addDeadlineTitle": "Lisää määräaika avataksesi opiskelusuunnitelmasi",
+    "addDeadlineSub": "Seuraavaksi nostaa kiireellisimmät tehtäväsi automaattisesti. Lisää tehtävä tai koe aloittaaksesi."
+  },
+  "settings": {
+    "cloudSync": "Pilvisynkronointi",
+    "grades": "Arvosanat",
+    "about": "Tietoja"
   }
 }
