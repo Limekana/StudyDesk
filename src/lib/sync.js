@@ -23,7 +23,7 @@ function todayISO() { return new Date().toISOString().slice(0, 10); }
 
 // ── subjects (courses) ───────────────────────────────────────────────────────
 
-export async function upsertSubject({ id, name, credits, semester, color, archivedAt }) {
+export async function upsertSubject({ id, name, credits, semester, color, archivedAt, schoolYear }) {
   const userId = await currentUserId();
   const { error } = await supabase.from('subjects').upsert({
     id,
@@ -40,6 +40,10 @@ export async function upsertSubject({ id, name, credits, semester, color, archiv
     // individually here. archivedAt === undefined preserves prior value
     // (don't pass through to the upsert), null/ISO string sets it.
     ...(archivedAt !== undefined ? { archived_at: archivedAt } : {}),
+    // v1.5 — school_year groups periods/jaksot for the history view. Same
+    // preserve-on-undefined semantics as archived_at: callers that don't know
+    // about it (e.g. NCC, the add-course path) won't clobber an existing value.
+    ...(schoolYear !== undefined ? { school_year: schoolYear } : {}),
     updated_at: nowISO(),
   });
   if (error) throw error;
@@ -70,6 +74,7 @@ export async function archiveSemester(courses, semester) {
         name: c.name,
         credits: c.credits,
         semester: c.semester,
+        schoolYear: c.schoolYear,
         color: c.color,
         archivedAt: stamp,
       }),
@@ -94,6 +99,7 @@ export async function restoreSemester(courses, semester) {
         name: c.name,
         credits: c.credits,
         semester: c.semester,
+        schoolYear: c.schoolYear,
         color: c.color,
         archivedAt: null,
       }),

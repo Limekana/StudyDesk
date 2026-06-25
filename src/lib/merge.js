@@ -29,6 +29,8 @@ export function mergeSubject(localCourse, remoteRow) {
     name: remoteRow.name,
     credits: remoteRow.credits ?? 1,
     semester: remoteRow.semester ?? null,
+    // v1.5 — school_year groups periods for the history view (nullable).
+    schoolYear: remoteRow.school_year ?? null,
     color: remoteRow.color || null,
     // v1.2 — archived_at piggybacks on updated_at like every other column.
     // Null means active; ISO string means archived at that moment.

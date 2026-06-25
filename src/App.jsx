@@ -191,8 +191,8 @@ const cssOnboard = `
 
 function reducer(state, action) {
   switch(action.type) {
-    case "ADD_COURSE":    { const id=action.id||newSyncId(); return {...state,courses:{...state.courses,[id]:{id,name:action.name,color:action.color,notes:[],credits:action.credits??1,semester:action.semester??null,archivedAt:null,updatedAt:action.updatedAt||new Date().toISOString(),deletedAt:null}}}; }
-    case "EDIT_COURSE":  return {...state,courses:{...state.courses,[action.id]:{...state.courses[action.id],name:action.name,color:action.color,credits:action.credits!==undefined?action.credits:state.courses[action.id]?.credits,semester:action.semester!==undefined?action.semester:state.courses[action.id]?.semester,updatedAt:new Date().toISOString()}}};
+    case "ADD_COURSE":    { const id=action.id||newSyncId(); return {...state,courses:{...state.courses,[id]:{id,name:action.name,color:action.color,notes:[],credits:action.credits??1,semester:action.semester??null,schoolYear:action.schoolYear??null,archivedAt:null,updatedAt:action.updatedAt||new Date().toISOString(),deletedAt:null}}}; }
+    case "EDIT_COURSE":  return {...state,courses:{...state.courses,[action.id]:{...state.courses[action.id],name:action.name,color:action.color,credits:action.credits!==undefined?action.credits:state.courses[action.id]?.credits,semester:action.semester!==undefined?action.semester:state.courses[action.id]?.semester,schoolYear:action.schoolYear!==undefined?action.schoolYear:state.courses[action.id]?.schoolYear,updatedAt:new Date().toISOString()}}};
     // v1.2 — semester archiving. ARCHIVE_SEMESTER stamps archivedAt on
     // every active course matching the semester string; RESTORE_SEMESTER
     // clears it. Per-course variants for the case where the user wants
@@ -650,6 +650,7 @@ export default function App() {
           notes: [],
           credits: 1,
           semester: null,
+          schoolYear: null,
           updatedAt: null,
           deletedAt: null,
           archivedAt: null,
@@ -974,7 +975,7 @@ export default function App() {
       for (const c of courses) {
         if (cancelled) return;
         try {
-          await sync.upsertSubject({ id: c.id, name: c.name, credits: c.credits, semester: c.semester, color: c.color });
+          await sync.upsertSubject({ id: c.id, name: c.name, credits: c.credits, semester: c.semester, schoolYear: c.schoolYear, color: c.color });
           pushed++;
         } catch (e) { failed++; console.error("[StudyDesk] initial push subject failed:", c.id, e); }
       }
@@ -1165,7 +1166,7 @@ export default function App() {
               only the routed view animates. */}
           <div className="page-turn" key={state.view}>
           {state.view==="plan"   &&<PlanView    state={state} dispatch={dispatch} showFlash={showFlash} onAddAsgn={()=>setShowAddAsgn(true)} onAddExam={()=>setShowAddExam(true)} onAddCourse={()=>setShowAddCourse(true)} onEditCourse={(c)=>setEditingCourse(c)}/>}
-          {state.view==="actions" &&<ActionsView state={state} dispatch={dispatch} showFlash={showFlash}/>}
+          {state.view==="actions" &&<ActionsView state={state} dispatch={dispatch} showFlash={showFlash} onAddCourse={()=>setShowAddCourse(true)}/>}
           {state.view==="grades"  &&<GradesView  state={state} dispatch={dispatch} showFlash={showFlash} session={session}/>}
           {state.view==="timer"   &&(
             <>
@@ -1210,10 +1211,11 @@ export default function App() {
     {showAddExam&&<AddExamModal courses={courses} activeCourse={state.activeCourse} onAdd={(data)=>{dispatch({type:"ADD_EXAM",...data});setShowAddExam(false);showFlash("Exam added");}} onClose={()=>setShowAddExam(false)}/>}
     {editingCourse&&<EditCourseModal
       course={state.courses[editingCourse.id] || editingCourse}
-      onSave={(name,color,credits,semester)=>{
-        dispatch({type:"EDIT_COURSE",id:editingCourse.id,name,color,credits,semester});
+      courses={state.courses}
+      onSave={(name,color,credits,semester,schoolYear)=>{
+        dispatch({type:"EDIT_COURSE",id:editingCourse.id,name,color,credits,semester,schoolYear});
         setEditingCourse(null); showFlash("Course updated");
-        if (session) outbox.enqueue("upsert_subject", { id:editingCourse.id, name, credits, semester, color });
+        if (session) outbox.enqueue("upsert_subject", { id:editingCourse.id, name, credits, semester, schoolYear, color });
       }}
       onDelete={()=>{
         const id=editingCourse.id;
@@ -1765,24 +1767,33 @@ function AddExamModal({ courses, activeCourse, onAdd, onClose }) {
   </div></div>;
 }
 
-function EditCourseModal({ course, onSave, onDelete, onClose }) {
+function EditCourseModal({ course, courses, onSave, onDelete, onClose }) {
   const [name,setName]=useState(course.name);
   const [color,setColor]=useState(course.color);
   const [credits,setCredits]=useState(course.credits!=null?String(course.credits):"1");
   const [semester,setSemester]=useState(course.semester||"");
+  const [schoolYear,setSchoolYear]=useState(course.schoolYear||"");
   const [confirmDelete,setConfirmDelete]=useState(false);
+  // v1.5 — autocomplete options from previously-used period / school-year
+  // values so free-text input stays consistent before the history view (5C).
+  const allCourses = Object.values(courses||{});
+  const periodOptions = [...new Set(allCourses.map(c=>c.semester).filter(Boolean))].sort();
+  const yearOptions = [...new Set(allCourses.map(c=>c.schoolYear).filter(Boolean))].sort();
   const doSave = () => {
     if(!name.trim()) return;
     const cr = parseFloat(credits);
-    onSave(name.trim(), color, isNaN(cr)?1:cr, semester.trim()||null);
+    onSave(name.trim(), color, isNaN(cr)?1:cr, semester.trim()||null, schoolYear.trim()||null);
   };
   return <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Edit Course" onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
     <div className="modal-title">Edit Course</div>
     <div className="input-group"><div className="input-label">Course name</div><input type="text" value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doSave()} autoFocus/></div>
     <div className="modal-grid">
       <div className="input-group"><div className="input-label">Credits (GPA weight)</div><input type="number" step="0.5" min="0" value={credits} onChange={e=>setCredits(e.target.value)}/></div>
-      <div className="input-group"><div className="input-label">Semester</div><input type="text" placeholder="e.g. Spring 2026" value={semester} onChange={e=>setSemester(e.target.value)}/></div>
+      <div className="input-group"><div className="input-label">Period / Jakso</div><input type="text" list="period-options" placeholder="e.g. Jakso 3" value={semester} onChange={e=>setSemester(e.target.value)}/>
+        <datalist id="period-options">{periodOptions.map(p=><option key={p} value={p}/>)}</datalist></div>
     </div>
+    <div className="input-group"><div className="input-label">School year</div><input type="text" list="schoolyear-options" placeholder="e.g. 2024–2025" value={schoolYear} onChange={e=>setSchoolYear(e.target.value)}/>
+      <datalist id="schoolyear-options">{yearOptions.map(y=><option key={y} value={y}/>)}</datalist></div>
     <div className="input-group"><div className="input-label">Color</div>
       <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{COURSE_COLORS.map(c=><div key={c} onClick={()=>setColor(c)} style={{width:24,height:24,borderRadius:"50%",background:c,cursor:"pointer",outline:color===c?"3px solid "+c:"2px solid transparent",outlineOffset:2}}/>)}</div>
     </div>
@@ -1914,9 +1925,13 @@ function ExamCard({ exam, courses, dispatch }) {
 }
 
 // ── ActionsView — Next Up ─────────────────────────────────────────────────────
-function ActionsView({ state, dispatch, showFlash }) {
+function ActionsView({ state, dispatch, showFlash, onAddCourse }) {
   const [newText, setNewText] = useState(""); const [newBucket, setNewBucket] = useState("today"); const [newCourse, setNewCourse] = useState("");
   const courses = Object.values(state.courses).filter(c => !c.deletedAt);
+  // v1.5 (5D) — active = non-archived. When every course is archived (a new
+  // period just started) OR none exist yet (first run), Next Up has nothing to
+  // build a plan from, so guide the user to add courses before deadlines.
+  const activeCourses = courses.filter(c => !c.archivedAt);
   const totalDeadlines = state.assignments.filter(a=>a.dueDate&&!a.done).length + state.exams.filter(e=>e.dueDate&&!e.done).length;
   const suggestedActions = (() => {
     const actions = [];
@@ -1969,6 +1984,21 @@ function ActionsView({ state, dispatch, showFlash }) {
   }, []);
   const allActions = [...visibleManual, ...suggestedActions.filter(s=>!visibleManual.some(a=>a.sourceId===s.sourceId&&a.suggested))];
   const addAction = () => { if(!newText.trim()) return; dispatch({type:"ADD_ACTION",text:newText.trim(),bucket:newBucket,courseId:newCourse||null}); setNewText(""); showFlash("Added to Next Up"); };
+  // v1.5 (5D) — empty-period / first-run re-onboarding: no active courses to plan around.
+  if(activeCourses.length === 0) return <div>
+    <div className="nextup-unlock">
+      <div className="nextup-unlock-icon">◎</div>
+      <div className="nextup-unlock-body">
+        <div className="nextup-unlock-title">New period? Start by adding your courses</div>
+        <div className="nextup-unlock-sub">Add this period’s courses and their deadlines and StudyDesk will surface what to do next. Past periods stay in your history.</div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:12}}>
+          <button className="btn btn-sm" onClick={()=>onAddCourse?.()}>Add a course</button>
+          <button className="btn-outline btn-sm" onClick={()=>dispatch({type:"SET_VIEW",view:"plan"})}>Go to Plan →</button>
+        </div>
+      </div>
+    </div>
+  </div>;
+
   if(totalDeadlines < 1) return <div>
     <div className="nextup-unlock">
       <div className="nextup-unlock-icon">◎</div>
