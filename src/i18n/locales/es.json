@@ -1,0 +1,28 @@
+{
+  "app": {
+    "name": "StudyDesk",
+    "tagline": "Planifica tus estudios. Ve un paso por delante."
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "add": "Añadir",
+    "done": "Hecho",
+    "close": "Cerrar",
+    "back": "Atrás",
+    "confirm": "Confirmar",
+    "retry": "Reintentar",
+    "loading": "Cargando…",
+    "settings": "Ajustes",
+    "next": "Siguiente"
+  },
+  "academic": {
+    "period": "Periodo",
+    "semester": "Semestre",
+    "schoolYear": "Año escolar",
+    "course": "Asignatura",
+    "grade": "Nota"
+  }
+}

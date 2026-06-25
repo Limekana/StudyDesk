@@ -1,0 +1,28 @@
+{
+  "app": {
+    "name": "StudyDesk",
+    "tagline": "Planifie tes études. Garde une longueur d’avance."
+  },
+  "common": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "add": "Ajouter",
+    "done": "Terminé",
+    "close": "Fermer",
+    "back": "Retour",
+    "confirm": "Confirmer",
+    "retry": "Réessayer",
+    "loading": "Chargement…",
+    "settings": "Paramètres",
+    "next": "Suivant"
+  },
+  "academic": {
+    "period": "Période",
+    "semester": "Semestre",
+    "schoolYear": "Année scolaire",
+    "course": "Cours",
+    "grade": "Note"
+  }
+}

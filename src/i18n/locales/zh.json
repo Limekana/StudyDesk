@@ -1,0 +1,28 @@
+{
+  "app": {
+    "name": "StudyDesk",
+    "tagline": "规划你的学业，保持领先。"
+  },
+  "common": {
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "edit": "编辑",
+    "add": "添加",
+    "done": "完成",
+    "close": "关闭",
+    "back": "返回",
+    "confirm": "确认",
+    "retry": "重试",
+    "loading": "加载中…",
+    "settings": "设置",
+    "next": "下一步"
+  },
+  "academic": {
+    "period": "学段",
+    "semester": "学期",
+    "schoolYear": "学年",
+    "course": "课程",
+    "grade": "成绩"
+  }
+}

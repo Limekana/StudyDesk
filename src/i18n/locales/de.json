@@ -1,0 +1,28 @@
+{
+  "app": {
+    "name": "StudyDesk",
+    "tagline": "Plane dein Studium. Bleib voraus."
+  },
+  "common": {
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "add": "Hinzufügen",
+    "done": "Fertig",
+    "close": "Schließen",
+    "back": "Zurück",
+    "confirm": "Bestätigen",
+    "retry": "Erneut versuchen",
+    "loading": "Wird geladen…",
+    "settings": "Einstellungen",
+    "next": "Weiter"
+  },
+  "academic": {
+    "period": "Lernperiode",
+    "semester": "Semester",
+    "schoolYear": "Schuljahr",
+    "course": "Kurs",
+    "grade": "Note"
+  }
+}
