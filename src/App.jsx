@@ -57,7 +57,7 @@ function daysUntil(s){ if(!s) return null; return Math.round((parseLocalDate(s)-
 function fmtDate(s){ if(!s) return "No date"; return parseLocalDate(s).toLocaleDateString("en-GB",{day:"numeric",month:"short"}); }
 function fmtDateFull(s){ if(!s) return ""; return parseLocalDate(s).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"}); }
 function urgencyColor(d){ if(d===null) return "#aaa"; if(d<0) return "#c0392b"; if(d<=2) return "#c0392b"; if(d<=7) return "#d4860a"; return "#2e7d52"; }
-function urgencyLabel(d){ if(d===null) return ""; if(d<0) return Math.abs(d)+"d overdue"; if(d===0) return "Due today"; if(d===1) return "Due tomorrow"; return d+"d left"; }
+function urgencyLabel(d, t){ if(d===null||!t) return ""; if(d<0) return t('av.urgency.overdue',{n:Math.abs(d)}); if(d===0) return t('av.urgency.dueToday'); if(d===1) return t('av.urgency.dueTomorrow'); return t('av.urgency.daysLeft',{n:d}); }
 function addDays(s,n){ const d=parseLocalDate(s); d.setDate(d.getDate()+n); return toLocalISO(d); }
 function studyStartDate(e){ return addDays(e.dueDate,-DIFFICULTY_DAYS[e.difficulty||"medium"]); }
 function fmtMMSS(sec){ return String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0"); }
@@ -1021,9 +1021,9 @@ export default function App() {
       }
       if (failed === 0) {
         try { localStorage.removeItem("studydesk-needs-initial-push"); } catch {}
-        if (pushed > 0) showFlash(`Synced ${pushed} legacy items`);
+        if (pushed > 0) showFlash(t('av.flash.syncedLegacy', { n: pushed }));
       } else {
-        showFlash(`${pushed} synced, ${failed} failed — will retry`);
+        showFlash(t('av.flash.syncedFailed', { pushed, failed }));
       }
     })();
     return () => { cancelled = true; };
@@ -1061,16 +1061,16 @@ export default function App() {
       window.dispatchEvent(new CustomEvent("studydesk:guest-mode-changed"));
       try {
         await supabase.auth.signOut();
-        showFlash("Signed out · local mode");
+        showFlash(t('settings.signedOutLocal'));
       } catch (e) {
-        showFlash("Sign-out failed: " + e.message);
+        showFlash(t('settings.signOutFailed', { msg: e.message }));
       }
     } else {
       // Guest mode — exit to AuthGate so the user can pick a sign-in path.
       setGuestMode(false);
       window.dispatchEvent(new CustomEvent("studydesk:guest-mode-changed"));
     }
-  }, [showFlash, session]);
+  }, [showFlash, session, t]);
 
   // #26 — Android back button: dismiss modals first, then navigate home, then exit
   useEffect(() => {
@@ -1095,7 +1095,7 @@ export default function App() {
     const name = newCourseName.trim();
     const color = COURSE_COLORS[colorIdx%COURSE_COLORS.length];
     dispatch({type:"ADD_COURSE", id, name, color});
-    setColorIdx(i=>i+1); setNewCourseName(""); setShowAddCourse(false); showFlash("Course added");
+    setColorIdx(i=>i+1); setNewCourseName(""); setShowAddCourse(false); showFlash(t('av.flash.courseAdded'));
     if (session) outbox.enqueue("upsert_subject", { id, name, color });
   };
 
@@ -1114,7 +1114,7 @@ export default function App() {
   // Auth gate: show login UI until Supabase confirms a session.
   // (session === undefined while the initial getSession() call is in flight.)
   if (session === undefined) {
-    return <><style>{css+css2+css3+css4+cssOnboard}</style><div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",letterSpacing:"0.1em"}}>LOADING…</div></>;
+    return <><style>{css+css2+css3+css4+cssOnboard}</style><div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",letterSpacing:"0.1em"}}>{t('av.chrome.loading')}</div></>;
   }
   // v1.1 — bypass AuthGate when the user opted into guest mode. The rest of
   // the app runs identically; cloud sync remains gated on `session` which is
@@ -1135,7 +1135,7 @@ export default function App() {
             <img src="/logo.png" alt="StudyDesk" className="sidebar-logo" />
             <div>
               <div className="sidebar-wordmark">Studydesk</div>
-              <div className="sidebar-sub">academic focus tool</div>
+              <div className="sidebar-sub">{t('av.chrome.subtitle')}</div>
             </div>
           </div>
         </div>
@@ -1145,17 +1145,17 @@ export default function App() {
           </div>)}
         </nav>
         <div className="sidebar-courses">
-          {courses.length>0&&<div className="courses-label">Courses</div>}
+          {courses.length>0&&<div className="courses-label">{t('av.chrome.coursesLabel')}</div>}
           {courses.map(c=>{
             const open=state.assignments.filter(a=>a.courseId===c.id&&!a.done).length;
             const exams=state.exams.filter(e=>e.courseId===c.id&&!e.done).length;
             return <div key={c.id} role="button" tabIndex={0} className={"course-item"+(state.activeCourse===c.id?" active":"")} onClick={()=>dispatch({type:"SET_VIEW",view:"status",course:c.id})} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&dispatch({type:"SET_VIEW",view:"status",course:c.id})}>
               <div className="course-pip" style={{background:c.color}}/><span className="course-name">{c.name}</span>
               {(open+exams)>0&&<span className="course-count">{open+exams}</span>}
-              <span className="course-edit-btn" onClick={e=>{e.stopPropagation();setEditingCourse({id:c.id,name:c.name,color:c.color});}} title="Edit">✎</span>
+              <span className="course-edit-btn" onClick={e=>{e.stopPropagation();setEditingCourse({id:c.id,name:c.name,color:c.color});}} title={t('av.pl.edit')}>✎</span>
             </div>;
           })}
-          <div className="add-course-btn" onClick={()=>setShowAddCourse(true)}><span style={{fontSize:16}}>+</span> Add Course</div>
+          <div className="add-course-btn" onClick={()=>setShowAddCourse(true)}><span style={{fontSize:16}}>+</span> {t('av.chrome.addCourse')}</div>
         </div>
       </aside>
 
@@ -1170,8 +1170,8 @@ export default function App() {
             <button
               className={"topbar-avatar"+(state.view==="settings"?" active":"")}
               onClick={()=>dispatch({type:"SET_VIEW",view:"settings"})}
-              title={session?.user?.email ? `Settings · ${session.user.email}` : "Settings"}
-              aria-label="Open settings">
+              title={session?.user?.email ? t('av.chrome.settingsWith', { email: session.user.email }) : t('av.chrome.settings')}
+              aria-label={t('av.chrome.openSettings')}>
               {avatarInitials(session)}
             </button>
           </div>
@@ -1179,8 +1179,8 @@ export default function App() {
         <div className="content">
           {(urgent.length>0||urgentExams.length>0)&&state.view==="plan"&&(
             <div className="urgent-banner"><span>⚠️</span><div>
-              <strong>URGENT</strong> —{" "}
-              {urgentExams.map((e,i)=><span key={e.id} style={{color:"#6d3fa0"}}>EXAM: {e.title}{i<urgentExams.length-1?", ":""}</span>)}
+              <strong>{t('av.chrome.urgent')}</strong> —{" "}
+              {urgentExams.map((e,i)=><span key={e.id} style={{color:"#6d3fa0"}}>{t('av.chrome.examPrefix',{title:e.title})}{i<urgentExams.length-1?", ":""}</span>)}
               {urgent.length>0&&urgentExams.length>0&&", "}
               {urgent.map((a,i)=><span key={a.id}>{a.title}{i<urgent.length-1?", ":""}</span>)}
             </div></div>
@@ -1195,10 +1195,10 @@ export default function App() {
           {state.view==="timer"   &&(
             <>
               <div className="timer-subtabs" role="tablist" aria-label="Timer sections">
-                {[["timer","Timer"],["log","Log"],["stats","Stats"]].map(([id,label])=>(
+                {[["timer","av.tm.timerTab"],["log","av.tm.logTab"],["stats","av.tm.statsTab"]].map(([id,key])=>(
                   <button key={id} type="button" role="tab" aria-selected={timerSub===id}
                     className={"timer-subtab"+(timerSub===id?" active":"")}
-                    onClick={()=>setTimerSub(id)}>{label}</button>
+                    onClick={()=>setTimerSub(id)}>{t(key)}</button>
                 ))}
               </div>
               <div className="page-turn" key={timerSub}>
@@ -1225,26 +1225,26 @@ export default function App() {
     )}
 
     {/* ── Modals ── */}
-    {showAddCourse&&<div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Add a Course" onClick={()=>setShowAddCourse(false)}><div className="modal" onClick={e=>e.stopPropagation()}>
-      <div className="modal-title">Add a Course</div>
-      <div className="input-group"><div className="input-label">Course name</div><input type="text" placeholder="e.g. Calculus II" value={newCourseName} onChange={e=>setNewCourseName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCourse()} autoFocus/></div>
+    {showAddCourse&&<div className="modal-overlay" role="dialog" aria-modal="true" aria-label={t('av.md.addCourse')} onClick={()=>setShowAddCourse(false)}><div className="modal" onClick={e=>e.stopPropagation()}>
+      <div className="modal-title">{t('av.md.addCourse')}</div>
+      <div className="input-group"><div className="input-label">{t('course.name')}</div><input type="text" placeholder={t('course.namePlaceholder')} value={newCourseName} onChange={e=>setNewCourseName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCourse()} autoFocus/></div>
       <div style={{display:"flex",gap:8,marginBottom:16}}>{COURSE_COLORS.map((c,i)=><div key={c} onClick={()=>setColorIdx(i)} style={{width:20,height:20,borderRadius:"50%",background:c,cursor:"pointer",outline:colorIdx===i?"2px solid "+c:"none",outlineOffset:2}}/>)}</div>
-      <div style={{display:"flex",gap:8}}><button className="btn" onClick={addCourse}>Add Course</button><button className="btn-outline" onClick={()=>setShowAddCourse(false)}>Cancel</button></div>
+      <div style={{display:"flex",gap:8}}><button className="btn" onClick={addCourse}>{t('av.chrome.addCourse')}</button><button className="btn-outline" onClick={()=>setShowAddCourse(false)}>{t('common.cancel')}</button></div>
     </div></div>}
-    {showAddAsgn&&<AddAsgnModal courses={courses} activeCourse={state.activeCourse} onAdd={(data)=>{dispatch({type:"ADD_ASSIGNMENT",title:data.title,courseId:data.courseId,assignType:data.type,dueDate:data.dueDate,notes:data.notes});setShowAddAsgn(false);showFlash("Assignment added");}} onClose={()=>setShowAddAsgn(false)}/>}
-    {showAddExam&&<AddExamModal courses={courses} activeCourse={state.activeCourse} onAdd={(data)=>{dispatch({type:"ADD_EXAM",...data});setShowAddExam(false);showFlash("Exam added");}} onClose={()=>setShowAddExam(false)}/>}
+    {showAddAsgn&&<AddAsgnModal courses={courses} activeCourse={state.activeCourse} onAdd={(data)=>{dispatch({type:"ADD_ASSIGNMENT",title:data.title,courseId:data.courseId,assignType:data.type,dueDate:data.dueDate,notes:data.notes});setShowAddAsgn(false);showFlash(t('av.flash.assignmentAdded'));}} onClose={()=>setShowAddAsgn(false)}/>}
+    {showAddExam&&<AddExamModal courses={courses} activeCourse={state.activeCourse} onAdd={(data)=>{dispatch({type:"ADD_EXAM",...data});setShowAddExam(false);showFlash(t('av.flash.examAdded'));}} onClose={()=>setShowAddExam(false)}/>}
     {editingCourse&&<EditCourseModal
       course={state.courses[editingCourse.id] || editingCourse}
       courses={state.courses}
       onSave={(name,color,credits,semester,schoolYear)=>{
         dispatch({type:"EDIT_COURSE",id:editingCourse.id,name,color,credits,semester,schoolYear});
-        setEditingCourse(null); showFlash("Course updated");
+        setEditingCourse(null); showFlash(t('av.flash.courseUpdated'));
         if (session) outbox.enqueue("upsert_subject", { id:editingCourse.id, name, credits, semester, schoolYear, color });
       }}
       onDelete={()=>{
         const id=editingCourse.id;
         dispatch({type:"DELETE_COURSE",id});
-        setEditingCourse(null); showFlash("Course deleted");
+        setEditingCourse(null); showFlash(t('av.flash.courseDeleted'));
         if (session) outbox.enqueue("delete_subject", { id });
       }}
       onClose={()=>setEditingCourse(null)}/>}
@@ -1258,7 +1258,7 @@ export default function App() {
           const id = newSyncId();
           dispatch({type:"ADD_SESSION", id, subjectId: subjectId||null, startedAt, durationMinutes, notes, focusRating, aiDebriefRaw, aiSubjectCovered, aiComprehension, aiConfusionFlags, aiSessionSummary});
           setPendingSession(null);
-          showFlash(`Logged ${durationMinutes}m`);
+          showFlash(t('av.flash.logged', { n: durationMinutes }));
           if (session) outbox.enqueue("log_session", { id, subjectId, startedAt, durationMinutes, notes, focusRating, aiDebriefRaw, aiSubjectCovered, aiComprehension, aiConfusionFlags, aiSessionSummary });
         }}
       />
@@ -1375,6 +1375,7 @@ function OnboardingView({ onComplete }) {
 
 // ── Pomodoro Timer ────────────────────────────────────────────────────────────
 function TimerView({ state, onTimerComplete }) {
+  const { t } = useTranslation();
   const FOCUS_SECS = 25*60, SHORT_SECS = 5*60, LONG_SECS = 15*60;
 
   // Restore persisted timer state from localStorage so tab-switching doesn't reset
@@ -1582,8 +1583,8 @@ function TimerView({ state, onTimerComplete }) {
   if (lockedIn) {
     return <div className="lockin-wrap">
       <div className="lockin-top">
-        <span className="lockin-badge">LOCK IN</span>
-        <span className="lockin-task">{task || "Deep focus"}</span>
+        <span className="lockin-badge">{t('av.tm.lockIn')}</span>
+        <span className="lockin-task">{task || t('av.tm.deepFocus')}</span>
       </div>
       <div className={"pomo-ring-wrap lockin-ring"+(timerDone?" pomo-ring-done":"")}>
         <svg className="pomo-ring-svg" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
@@ -1596,18 +1597,18 @@ function TimerView({ state, onTimerComplete }) {
         </svg>
         <div className="pomo-ring-label">
           <div className={"pomo-time"+(timerDone?" pomo-time-flash":"")} style={{color:"#faf8f4"}}>{fmtMMSS(secsLeft)}</div>
-          <div className="pomo-phase" style={{color:"rgba(250,248,244,0.5)"}}>FOCUS · {focusDone} done</div>
+          <div className="pomo-phase" style={{color:"rgba(250,248,244,0.5)"}}>{t('av.tm.focusDone',{n:focusDone})}</div>
         </div>
       </div>
       <input
         type="text"
         className="lockin-task-input"
-        placeholder="What are you locking in on?"
+        placeholder={t('av.tm.lockPlaceholder')}
         value={task}
         onChange={e=>setTask(e.target.value)}
       />
       <div className="lockin-controls">
-        <button className="lockin-btn-main" onClick={toggle} aria-label={running?"Pause":"Start"}>
+        <button className="lockin-btn-main" onClick={toggle} aria-label={running?t('av.tm.pause'):t('av.tm.start')}>
           {running
             ? <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><rect x="5" y="4" width="4" height="16" rx="1"/><rect x="15" y="4" width="4" height="16" rx="1"/></svg>
             : <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><polygon points="6,3 20,12 6,21"/></svg>
@@ -1617,7 +1618,7 @@ function TimerView({ state, onTimerComplete }) {
       <div className="lockin-presets">
         {[25,45,60,90].map(m=><button key={m} className={"lockin-preset"+(customFocus===m?" active":"")} onClick={()=>changeCustom(m)} disabled={running}>{m}m</button>)}
       </div>
-      <button className="lockin-exit" onClick={toggleLockIn}>End session</button>
+      <button className="lockin-exit" onClick={toggleLockIn}>{t('av.tm.endSession')}</button>
     </div>;
   }
 
@@ -1633,14 +1634,14 @@ function TimerView({ state, onTimerComplete }) {
       </svg>
       <div className="pomo-ring-label">
         <div className={"pomo-time"+(timerDone?" pomo-time-flash":"")} style={{color:phaseColor}}>{fmtMMSS(secsLeft)}</div>
-        <div className="pomo-phase">{phase==="focus"?"FOCUS":phase==="short"?"SHORT BREAK":"LONG BREAK"}</div>
+        <div className="pomo-phase">{phase==="focus"?t('av.tm.focus'):phase==="short"?t('av.tm.shortBreak'):t('av.tm.longBreak')}</div>
       </div>
     </div>
     <div className="pomo-segments">
       {[0,1,2,3].map(i=><div key={i} className={"pomo-seg"+(i<focusDone%4?"done":i===session&&phase==="focus"?"current":"")}/>)}
     </div>
     <div className="pomo-controls">
-      <button className="pomo-btn-sec" onClick={reset} title="Reset">
+      <button className="pomo-btn-sec" onClick={reset} title={t('av.tm.reset')}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3.3-6.7"/><polyline points="3 3 3 8 8 8"/></svg>
       </button>
       <button className={"pomo-btn-main"+(!running && secsLeft < totalSecs?" paused":"")} onClick={toggle}>
@@ -1649,21 +1650,21 @@ function TimerView({ state, onTimerComplete }) {
           : <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20" aria-hidden="true"><polygon points="6,3 20,12 6,21"/></svg>
         }
       </button>
-      <button className="pomo-btn-sec" onClick={skip} title="Skip">
+      <button className="pomo-btn-sec" onClick={skip} title={t('av.tm.skip')}>
         <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" aria-hidden="true"><polygon points="5,4 15,12 5,20"/><rect x="17" y="4" width="3" height="16" rx="1"/></svg>
       </button>
     </div>
     {phase==="focus"&&<div className="pomo-presets">
       {[15,20,25,30,45,60].map(m=><button key={m} className={"pomo-preset-btn"+(customFocus===m?" active":"")} onClick={()=>changeCustom(m)}>{m}m</button>)}
     </div>}
-    <button className="lockin-enter" onClick={toggleLockIn} title="Strip breaks, hide nav, deep focus only">
-      🔒 Lock in
+    <button className="lockin-enter" onClick={toggleLockIn} title={t('av.tm.lockInTitle')}>
+      🔒 {t('av.tm.lockInBtn')}
     </button>
     <div className="pomo-task-row">
-      <div className="pomo-task-label">Studying</div>
-      <input type="text" placeholder="What are you working on? (optional)" value={task} onChange={e=>setTask(e.target.value)} style={{fontSize:14,padding:"10px 12px"}}/>
-      {courses.length>0&&<select aria-label="Quick fill from course" value="" onChange={e=>setTask(e.target.value)} style={{marginTop:6}}>
-        <option value="">Quick fill from course…</option>
+      <div className="pomo-task-label">{t('av.tm.studying')}</div>
+      <input type="text" placeholder={t('av.tm.workingPlaceholder')} value={task} onChange={e=>setTask(e.target.value)} style={{fontSize:14,padding:"10px 12px"}}/>
+      {courses.length>0&&<select aria-label={t('av.tm.quickFillAria')} value="" onChange={e=>setTask(e.target.value)} style={{marginTop:6}}>
+        <option value="">{t('av.tm.quickFillOption')}</option>
         {courses.map(c=><option key={c.id} value={c.name}>{c.name}</option>)}
       </select>}
     </div>
@@ -1691,11 +1692,11 @@ function TimerView({ state, onTimerComplete }) {
       const weeks = Object.entries(weekMap).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,8);
       const thisWeekKey = getWeekKey(new Date().toISOString());
       return <div className="pomo-session-log">
-        <div className="section-label" style={{marginTop:24}}>Weekly hours</div>
+        <div className="section-label" style={{marginTop:24}}>{t('av.tm.weeklyHours')}</div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>
           {weeks.map(([wk,mins])=>{
             const hrs = (mins/60).toFixed(1);
-            const label = wk===thisWeekKey?"This week":("Wk "+wk.slice(5));
+            const label = wk===thisWeekKey?t('av.tm.thisWeek'):t('av.tm.wk',{n:wk.slice(5)});
             const barH = Math.max(4, Math.round((mins/600)*48));
             return <div key={wk} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,minWidth:44}}>
               <span style={{fontFamily:"var(--font-mono)",fontSize:9,color:"var(--muted2)"}}>{hrs}h</span>
@@ -1705,7 +1706,7 @@ function TimerView({ state, onTimerComplete }) {
           })}
         </div>
         {todayList.length>0 && <>
-          <div className="section-label">Today's sessions</div>
+          <div className="section-label">{t('av.tm.todaysSessions')}</div>
           {todayList.map(s=>{
             const c = s.subjectId ? state.courses[s.subjectId] : null;
             const ts = s.startedAt ? new Date(s.startedAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : "";
@@ -1722,19 +1723,21 @@ function TimerView({ state, onTimerComplete }) {
 }
 
 function StatusView({ state, dispatch, showFlash, onAddAsgn }) {
+  const { t } = useTranslation();
   const courses=Object.values(state.courses); const ac=state.activeCourse;
   const assignments=ac?state.assignments.filter(a=>a.courseId===ac):state.assignments;
   const open=assignments.filter(a=>!a.done); const done=assignments.filter(a=>a.done);
   return <div>
-    <div className="section-label">Deadlines{ac&&" · "+(state.courses[ac]?.name||"")}</div>
-    {open.length===0&&courses.length>0&&<div className="empty">No open assignments.</div>}
+    <div className="section-label">{t('av.pl.assignments')}{ac&&" · "+(state.courses[ac]?.name||"")}</div>
+    {open.length===0&&courses.length>0&&<div className="empty">{t('av.pl.noOpenAsgn')}</div>}
     {open.slice().sort((a,b)=>new Date(a.dueDate||"9999-12-31")-new Date(b.dueDate||"9999-12-31")).map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch}/>)}
-    <div style={{marginTop:12,marginBottom:24}}><button className="btn-outline" onClick={onAddAsgn}>+ Add Assignment</button></div>
-    {done.length>0&&<><div className="divider"/><div className="section-label">Completed ({done.length})</div>{done.slice().sort((a,b)=>new Date(b.dueDate||"1970-01-01")-new Date(a.dueDate||"1970-01-01")).map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch}/>)}</>}
+    <div style={{marginTop:12,marginBottom:24}}><button className="btn-outline" onClick={onAddAsgn}>{t('av.md.addAssignment')}</button></div>
+    {done.length>0&&<><div className="divider"/><div className="section-label">{t('av.pl.completed',{count:done.length})}</div>{done.slice().sort((a,b)=>new Date(b.dueDate||"1970-01-01")-new Date(a.dueDate||"1970-01-01")).map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch}/>)}</>}
   </div>;
 }
 
 function AsgnItem({ asgn, courses, dispatch }) {
+  const { t } = useTranslation();
   const course=courses[asgn.courseId]; const days=daysUntil(asgn.dueDate);
   const [editing,setEditing]=useState(false);
   const [editTitle,setEditTitle]=useState(asgn.title);
@@ -1744,8 +1747,8 @@ function AsgnItem({ asgn, courses, dispatch }) {
   if(editing) return <div className="asgn-item" style={{flexDirection:"column",gap:10}}>
     <input type="text" value={editTitle} onChange={e=>setEditTitle(e.target.value)} style={{fontWeight:500}} autoFocus/>
     <input type="date" value={editDate} onChange={e=>setEditDate(e.target.value)}/>
-    <textarea value={editNotes} onChange={e=>setEditNotes(e.target.value)} placeholder="Notes…" style={{minHeight:48,fontSize:12}}/>
-    <div style={{display:"flex",gap:8}}><button className="btn btn-sm" onClick={save}>Save</button><button className="btn-outline btn-sm" onClick={()=>setEditing(false)}>Cancel</button></div>
+    <textarea value={editNotes} onChange={e=>setEditNotes(e.target.value)} placeholder={t('sv.fNotes')+"…"} style={{minHeight:48,fontSize:12}}/>
+    <div style={{display:"flex",gap:8}}><button className="btn btn-sm" onClick={save}>{t('common.save')}</button><button className="btn-outline btn-sm" onClick={()=>setEditing(false)}>{t('common.cancel')}</button></div>
   </div>;
   return <div className={"asgn-item"+(asgn.done?" done":"")}>
     <div className={"asgn-check"+(asgn.done?" checked":"")} onClick={()=>dispatch({type:"TOGGLE_ASSIGNMENT",id:asgn.id})}/>
@@ -1753,56 +1756,58 @@ function AsgnItem({ asgn, courses, dispatch }) {
       <div className={"asgn-title"+(asgn.done?" done":"")}>{asgn.title}</div>
       <div className="asgn-meta">
         {course&&<span className="asgn-course" style={{background:course.color+"18",color:course.color}}>{course.name}</span>}
-        {asgn.type&&<span className="asgn-type">{asgn.type}</span>}
-        {asgn.dueDate&&<span className="asgn-due" style={{color:asgn.done?"var(--muted2)":urgencyColor(days)}}>{fmtDate(asgn.dueDate)} · {urgencyLabel(days)}</span>}
+        {asgn.type&&<span className="asgn-type">{t(`av.assignType.${asgn.type}`,{defaultValue:asgn.type})}</span>}
+        {asgn.dueDate&&<span className="asgn-due" style={{color:asgn.done?"var(--muted2)":urgencyColor(days)}}>{fmtDate(asgn.dueDate)} · {urgencyLabel(days,t)}</span>}
       </div>
       {asgn.notes&&<div className="asgn-notes">{asgn.notes}</div>}
     </div>
-    <button className="btn-danger-text" style={{fontSize:13,color:"var(--muted2)"}} onClick={()=>setEditing(true)} title="Edit">✎</button>
+    <button className="btn-danger-text" style={{fontSize:13,color:"var(--muted2)"}} onClick={()=>setEditing(true)} title={t('av.pl.edit')}>✎</button>
     <button className="btn-danger-text" onClick={()=>dispatch({type:"DELETE_ASSIGNMENT",id:asgn.id})}>×</button>
   </div>;
 }
 
 function AddAsgnModal({ courses, activeCourse, onAdd, onClose }) {
+  const { t } = useTranslation();
   const [title,setTitle]=useState(""); const [courseId,setCourse]=useState(activeCourse||(courses[0]?.id??"")); const [type,setType]=useState(ASSIGN_TYPES[0]); const [dueDate,setDueDate]=useState(""); const [notes,setNotes]=useState("");
   const submit=()=>{ if(!title.trim()||!courseId) return; onAdd({title:title.trim(),courseId,type,dueDate,notes}); };
-  return <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Add Assignment" onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
-    <div className="modal-title">Add Assignment</div>
-    <div className="input-group"><div className="input-label">Title</div><input type="text" placeholder="e.g. Problem Set 3" value={title} onChange={e=>setTitle(e.target.value)} autoFocus/></div>
+  return <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={t('av.md.addAssignment')} onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
+    <div className="modal-title">{t('av.md.addAssignment')}</div>
+    <div className="input-group"><div className="input-label">{t('av.md.title')}</div><input type="text" placeholder={t('av.md.titlePh')} value={title} onChange={e=>setTitle(e.target.value)} autoFocus/></div>
     <div className="modal-grid">
-      <div className="input-group"><div className="input-label">Course</div><select value={courseId} onChange={e=>setCourse(e.target.value)}>{courses.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
-      <div className="input-group"><div className="input-label">Type</div><select value={type} onChange={e=>setType(e.target.value)}>{ASSIGN_TYPES.map(t=><option key={t} value={t}>{t}</option>)}</select></div>
+      <div className="input-group"><div className="input-label">{t('av.md.course')}</div><select value={courseId} onChange={e=>setCourse(e.target.value)}>{courses.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+      <div className="input-group"><div className="input-label">{t('av.md.type')}</div><select value={type} onChange={e=>setType(e.target.value)}>{ASSIGN_TYPES.map(ty=><option key={ty} value={ty}>{t(`av.assignType.${ty}`,{defaultValue:ty})}</option>)}</select></div>
     </div>
-    <div className="input-group"><div className="input-label">Due Date (optional)</div><input type="date" value={dueDate} onChange={e=>setDueDate(e.target.value)}/></div>
-    <div className="input-group"><div className="input-label">Notes (optional)</div><textarea placeholder="Details, links, what to focus on..." value={notes} onChange={e=>setNotes(e.target.value)} style={{minHeight:60}}/></div>
-    <div style={{display:"flex",gap:8,marginTop:4}}><button className="btn" onClick={submit}>Add Assignment</button><button className="btn-outline" onClick={onClose}>Cancel</button></div>
+    <div className="input-group"><div className="input-label">{t('av.md.dueDateOpt')}</div><input type="date" value={dueDate} onChange={e=>setDueDate(e.target.value)}/></div>
+    <div className="input-group"><div className="input-label">{t('av.md.notesOpt')}</div><textarea placeholder={t('av.md.asgnNotesPh')} value={notes} onChange={e=>setNotes(e.target.value)} style={{minHeight:60}}/></div>
+    <div style={{display:"flex",gap:8,marginTop:4}}><button className="btn" onClick={submit}>{t('av.md.addAssignment')}</button><button className="btn-outline" onClick={onClose}>{t('common.cancel')}</button></div>
   </div></div>;
 }
 
 function AddExamModal({ courses, activeCourse, onAdd, onClose }) {
+  const { t } = useTranslation();
   const [title,setTitle]=useState(""); const [courseId,setCourse]=useState(activeCourse||(courses[0]?.id??"")); const [dueDate,setDueDate]=useState(""); const [difficulty,setDiff]=useState("medium"); const [notes,setNotes]=useState("");
   const submit=()=>{ if(!title.trim()||!courseId||!dueDate) return; onAdd({title:title.trim(),courseId,dueDate,difficulty,notes}); };
-  return <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Add Assignment" onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
-    <div className="modal-title">Add Exam</div>
-    <div className="input-group"><div className="input-label">Exam / Subject</div><input type="text" placeholder="e.g. Calculus II Midterm" value={title} onChange={e=>setTitle(e.target.value)} autoFocus/></div>
+  return <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={t('av.md.addExam')} onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
+    <div className="modal-title">{t('av.md.addExam')}</div>
+    <div className="input-group"><div className="input-label">{t('av.md.examSubject')}</div><input type="text" placeholder={t('av.md.examTitlePh')} value={title} onChange={e=>setTitle(e.target.value)} autoFocus/></div>
     <div className="modal-grid">
-      <div className="input-group"><div className="input-label">Course</div><select value={courseId} onChange={e=>setCourse(e.target.value)}>{courses.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
-      <div className="input-group"><div className="input-label">Exam Date</div><input type="date" value={dueDate} onChange={e=>setDueDate(e.target.value)}/></div>
+      <div className="input-group"><div className="input-label">{t('av.md.course')}</div><select value={courseId} onChange={e=>setCourse(e.target.value)}>{courses.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+      <div className="input-group"><div className="input-label">{t('av.md.examDate')}</div><input type="date" value={dueDate} onChange={e=>setDueDate(e.target.value)}/></div>
     </div>
-    <div className="input-group"><div className="input-label">Difficulty</div>
+    <div className="input-group"><div className="input-label">{t('av.md.difficultyLabel')}</div>
       <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
         {["easy","medium","hard","brutal"].map(d=>(
           <span key={d} className="difficulty-pill" style={{background:difficulty===d?DIFFICULTY_COLORS[d]+"18":"transparent",color:difficulty===d?DIFFICULTY_COLORS[d]:"var(--muted2)",borderColor:difficulty===d?DIFFICULTY_COLORS[d]:"var(--border2)",padding:"6px 14px",fontSize:12}} onClick={()=>setDiff(d)}>
-            {DIFFICULTY_LABELS[d]} <span style={{opacity:0.6,fontSize:10}}>({DIFFICULTY_DAYS[d]}d)</span>
+            {t(`av.difficulty.${d}`)} <span style={{opacity:0.6,fontSize:10}}>({DIFFICULTY_DAYS[d]}d)</span>
           </span>
         ))}
       </div>
     </div>
     {dueDate&&<div style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",marginBottom:12,padding:"8px 12px",background:"var(--surface2)",borderRadius:4}}>
-      📚 Study start: <strong>{fmtDateFull(addDays(dueDate,-DIFFICULTY_DAYS[difficulty]))}</strong>
+      📚 {t('av.ec.studyStart')} <strong>{fmtDateFull(addDays(dueDate,-DIFFICULTY_DAYS[difficulty]))}</strong>
     </div>}
-    <div className="input-group"><div className="input-label">Notes (optional)</div><textarea placeholder="Topics covered, format, what to focus on..." value={notes} onChange={e=>setNotes(e.target.value)} style={{minHeight:60}}/></div>
-    <div style={{display:"flex",gap:8,marginTop:4}}><button className="btn" onClick={submit}>Add Exam</button><button className="btn-outline" onClick={onClose}>Cancel</button></div>
+    <div className="input-group"><div className="input-label">{t('av.md.notesOpt')}</div><textarea placeholder={t('av.md.examNotesPh')} value={notes} onChange={e=>setNotes(e.target.value)} style={{minHeight:60}}/></div>
+    <div style={{display:"flex",gap:8,marginTop:4}}><button className="btn" onClick={submit}>{t('av.md.addExam')}</button><button className="btn-outline" onClick={onClose}>{t('common.cancel')}</button></div>
   </div></div>;
 }
 
@@ -1854,6 +1859,8 @@ function EditCourseModal({ course, courses, onSave, onDelete, onClose }) {
 
 // ── PlanView — unified planning surface (assignments + exams + courses) ────────
 function PlanView({ state, dispatch, showFlash, onAddAsgn, onAddExam, onAddCourse, onEditCourse }) {
+  const { t, i18n } = useTranslation();
+  const lang = (i18n.language || "en").split("-")[0];
   const courses = Object.values(state.courses).filter(c => !c.deletedAt);
   const [calMonth, setCalMonth] = useState(()=>{const d=new Date(); return {year:d.getFullYear(),month:d.getMonth()};});
   const [expandedCourse, setExpandedCourse] = useState({});
@@ -1872,7 +1879,7 @@ function PlanView({ state, dispatch, showFlash, onAddAsgn, onAddExam, onAddCours
     return [...examEvents,...studyEvents,...asgnEvents];
   };
   const dayIsToday=(date)=>toLocalISO(date)===toLocalISO(TODAY);
-  const monthName=firstDay.toLocaleDateString("en-GB",{month:"long",year:"numeric"});
+  const monthName=firstDay.toLocaleDateString(lang||"en-GB",{month:"long",year:"numeric"});
   const prevMonth=()=>setCalMonth(m=>m.month===0?{year:m.year-1,month:11}:{year:m.year,month:m.month-1});
   const nextMonth=()=>setCalMonth(m=>m.month===11?{year:m.year+1,month:0}:{year:m.year,month:m.month+1});
   const agendaEvents=[];
@@ -1880,39 +1887,40 @@ function PlanView({ state, dispatch, showFlash, onAddAsgn, onAddExam, onAddCours
   const openAsgns=state.assignments.filter(a=>!a.done).sort((a,b)=>new Date(a.dueDate||"9999-12-31")-new Date(b.dueDate||"9999-12-31"));
   const openExams=state.exams.filter(e=>!e.done).sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));
   return <div>
-    <div className="section-label">Assignments<button className="btn btn-sm" style={{marginLeft:"auto"}} onClick={onAddAsgn}>+ Add</button></div>
-    {openAsgns.length===0&&<div className="empty">No open assignments.</div>}
+    <div className="section-label">{t('av.pl.assignments')}<button className="btn btn-sm" style={{marginLeft:"auto"}} onClick={onAddAsgn}>{t('av.pl.add')}</button></div>
+    {openAsgns.length===0&&<div className="empty">{t('av.pl.noOpenAsgn')}</div>}
     {openAsgns.map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch}/>)}
-    {state.assignments.filter(a=>a.done).length>0&&<details style={{marginBottom:16}}><summary style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",cursor:"pointer",padding:"8px 0"}}>Completed ({state.assignments.filter(a=>a.done).length})</summary>{state.assignments.filter(a=>a.done).sort((a,b)=>new Date(b.dueDate||"1970-01-01")-new Date(a.dueDate||"1970-01-01")).map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch}/>)}</details>}
+    {state.assignments.filter(a=>a.done).length>0&&<details style={{marginBottom:16}}><summary style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",cursor:"pointer",padding:"8px 0"}}>{t('av.pl.completed',{count:state.assignments.filter(a=>a.done).length})}</summary>{state.assignments.filter(a=>a.done).sort((a,b)=>new Date(b.dueDate||"1970-01-01")-new Date(a.dueDate||"1970-01-01")).map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch}/>)}</details>}
     <div className="divider"/>
-    <div className="section-label">Exams &amp; Calendar<button className="btn btn-sm" style={{marginLeft:"auto"}} onClick={onAddExam}>+ Add</button></div>
+    <div className="section-label">{t('av.pl.examsCalendar')}<button className="btn btn-sm" style={{marginLeft:"auto"}} onClick={onAddExam}>{t('av.pl.add')}</button></div>
     <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
       <button className="btn-outline btn-sm" onClick={prevMonth}>←</button>
       <span style={{fontFamily:"var(--font-display)",fontSize:16,flex:1}}>{monthName}</span>
       <button className="btn-outline btn-sm" onClick={nextMonth}>→</button>
     </div>
-    <div className="calendar-grid cal-header-row" style={{marginBottom:0,gap:4}}>{["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d=><div key={d} className="cal-header">{d}</div>)}</div>
+    <div className="calendar-grid cal-header-row" style={{marginBottom:0,gap:4}}>{["sun","mon","tue","wed","thu","fri","sat"].map(d=><div key={d} className="cal-header">{t(`av.cal.${d}`)}</div>)}</div>
     <div className="calendar-grid" style={{marginBottom:16}}>
-      {days.map((day,i)=>{const events=eventsOnDay(day.date);return <div key={i} className={"cal-day"+(dayIsToday(day.date)?" today":"")+(day.current?"":" other-month")}><div className="cal-day-num">{day.date.getDate()}</div>{events.map((ev,j)=>{if(ev.type==="exam") return <div key={j} className="cal-event cal-exam" title={"EXAM: "+ev.exam.title}>📝 {ev.exam.title}</div>;if(ev.type==="study") return <div key={j} className="cal-event cal-study" title={"Study: "+ev.exam.title}>📚 {ev.exam.title}</div>;const col=ev.course?.color||"#8a8278";return <div key={j} className="cal-event" style={{background:col+"22",color:col}} title={ev.asgn.title}>◷ {ev.asgn.title}</div>;})}</div>;})}
+      {days.map((day,i)=>{const events=eventsOnDay(day.date);return <div key={i} className={"cal-day"+(dayIsToday(day.date)?" today":"")+(day.current?"":" other-month")}><div className="cal-day-num">{day.date.getDate()}</div>{events.map((ev,j)=>{if(ev.type==="exam") return <div key={j} className="cal-event cal-exam" title={t('av.chrome.examPrefix',{title:ev.exam.title})}>📝 {ev.exam.title}</div>;if(ev.type==="study") return <div key={j} className="cal-event cal-study" title={t('av.ec.studyStart')+" "+ev.exam.title}>📚 {ev.exam.title}</div>;const col=ev.course?.color||"#8a8278";return <div key={j} className="cal-event" style={{background:col+"22",color:col}} title={ev.asgn.title}>◷ {ev.asgn.title}</div>;})}</div>;})}
     </div>
     <div className="cal-agenda" style={{marginBottom:16}}>
-      {agendaEvents.length===0&&<div className="empty">Nothing coming up.</div>}
-      {agendaEvents.map((entry,i)=>{const label=entry.date.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"});return <div key={i} className="cal-agenda-item"><div className="cal-agenda-date">{label}</div><div className="cal-agenda-pills">{entry.events.map((ev,j)=>{if(ev.type==="exam"||ev.type==="study"){const c=ev.course;return <div key={j} className="cal-agenda-pill" style={{background:ev.type==="exam"?"rgba(109,63,160,0.10)":"rgba(26,92,158,0.08)"}}><span>{ev.type==="exam"?"📝":"📚"}</span><span style={{fontFamily:"var(--font-mono)",fontSize:11,color:ev.type==="exam"?"#6d3fa0":"#1a5c9e"}}>{ev.type==="exam"?"EXAM":"STUDY"}</span><span style={{fontSize:13}}>{ev.exam.title}</span>{c&&<span className="asgn-course" style={{background:c.color+"18",color:c.color}}>{c.name}</span>}</div>;}const c=ev.course;return <div key={j} className="cal-agenda-pill" style={{background:c?c.color+"18":"var(--surface2)"}}><span>◷</span><span style={{fontFamily:"var(--font-mono)",fontSize:11,color:c?.color||"var(--muted)"}}>DUE</span><span style={{fontSize:13}}>{ev.asgn.title}</span>{c&&<span className="asgn-course" style={{background:c.color+"18",color:c.color}}>{c.name}</span>}</div>;})}</div></div>;})}
+      {agendaEvents.length===0&&<div className="empty">{t('av.pl.nothingComingUp')}</div>}
+      {agendaEvents.map((entry,i)=>{const label=entry.date.toLocaleDateString(lang||"en-GB",{weekday:"short",day:"numeric",month:"short"});return <div key={i} className="cal-agenda-item"><div className="cal-agenda-date">{label}</div><div className="cal-agenda-pills">{entry.events.map((ev,j)=>{if(ev.type==="exam"||ev.type==="study"){const c=ev.course;return <div key={j} className="cal-agenda-pill" style={{background:ev.type==="exam"?"rgba(109,63,160,0.10)":"rgba(26,92,158,0.08)"}}><span>{ev.type==="exam"?"📝":"📚"}</span><span style={{fontFamily:"var(--font-mono)",fontSize:11,color:ev.type==="exam"?"#6d3fa0":"#1a5c9e"}}>{ev.type==="exam"?t('av.pl.examWord'):t('av.pl.studyWord')}</span><span style={{fontSize:13}}>{ev.exam.title}</span>{c&&<span className="asgn-course" style={{background:c.color+"18",color:c.color}}>{c.name}</span>}</div>;}const c=ev.course;return <div key={j} className="cal-agenda-pill" style={{background:c?c.color+"18":"var(--surface2)"}}><span>◷</span><span style={{fontFamily:"var(--font-mono)",fontSize:11,color:c?.color||"var(--muted)"}}>{t('av.pl.dueWord')}</span><span style={{fontSize:13}}>{ev.asgn.title}</span>{c&&<span className="asgn-course" style={{background:c.color+"18",color:c.color}}>{c.name}</span>}</div>;})}</div></div>;})}
     </div>
     {openExams.map(e=><ExamCard key={e.id} exam={e} courses={state.courses} dispatch={dispatch}/>)}
-    {openExams.length===0&&<div className="empty">No exams yet.</div>}
-    {state.exams.filter(e=>e.done).length>0&&<details style={{marginBottom:16}}><summary style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",cursor:"pointer",padding:"8px 0"}}>Completed exams ({state.exams.filter(e=>e.done).length})</summary>{state.exams.filter(e=>e.done).map(e=><ExamCard key={e.id} exam={e} courses={state.courses} dispatch={dispatch}/>)}</details>}
+    {openExams.length===0&&<div className="empty">{t('av.pl.noExams')}</div>}
+    {state.exams.filter(e=>e.done).length>0&&<details style={{marginBottom:16}}><summary style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",cursor:"pointer",padding:"8px 0"}}>{t('av.pl.completedExams',{count:state.exams.filter(e=>e.done).length})}</summary>{state.exams.filter(e=>e.done).map(e=><ExamCard key={e.id} exam={e} courses={state.courses} dispatch={dispatch}/>)}</details>}
     <div className="divider"/>
-    <div className="section-label">Courses<button className="btn btn-sm" style={{marginLeft:"auto"}} onClick={onAddCourse}>+ Add</button></div>
-    {courses.length===0&&<div className="empty">No courses yet.</div>}
+    <div className="section-label">{t('av.pl.courses')}<button className="btn btn-sm" style={{marginLeft:"auto"}} onClick={onAddCourse}>{t('av.pl.add')}</button></div>
+    {courses.length===0&&<div className="empty">{t('av.pl.noCourses')}</div>}
     <div className="home-grid">
-      {courses.map(c=>{const openA=state.assignments.filter(a=>a.courseId===c.id&&!a.done);const openE=state.exams.filter(e=>e.courseId===c.id&&!e.done);const isOpen=!!expandedCourse[c.id];const nextA=openA.filter(a=>a.dueDate).sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate))[0];const nextE=[...openE].sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate))[0];const hasUrgent=openA.some(a=>{const d=daysUntil(a.dueDate);return d!==null&&d<=2;})||openE.some(e=>{const d=daysUntil(e.dueDate);return d!==null&&d<=5;});return <div key={c.id} className="course-card" style={{borderLeftColor:c.color}}><div role="button" tabIndex={0} className="course-card-compact" onClick={()=>setExpandedCourse(x=>({...x,[c.id]:!x[c.id]}))} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&setExpandedCourse(x=>({...x,[c.id]:!x[c.id]}))}><div className="course-card-left"><div className="course-card-name">{c.name}</div><div className="course-card-pills">{openA.length>0&&<span className={"course-card-pill"+(hasUrgent?" urgent":"")}>{openA.length} due</span>}{openE.length>0&&<span className="course-card-pill" style={{background:"rgba(109,63,160,0.08)",color:"#6d3fa0",borderColor:"rgba(109,63,160,0.18)"}}>{openE.length} exam{openE.length!==1?"s":""}</span>}{openA.length===0&&openE.length===0&&<span className="course-card-pill" style={{color:"#2e7d52",borderColor:"rgba(46,125,82,0.2)"}}>clear</span>}</div></div><span className={"course-card-chevron"+(isOpen?" open":"")}>▶</span></div>{isOpen&&<div className="course-card-detail"><div className="course-card-next">{nextE&&<div style={{color:"#6d3fa0",marginBottom:5,fontFamily:"var(--font-mono)",fontSize:11}}>📝 <strong>{nextE.title}</strong> — {urgencyLabel(daysUntil(nextE.dueDate))}</div>}{nextA&&<div style={{marginBottom:5}}>Next: <strong>{nextA.title}</strong><span style={{color:urgencyColor(daysUntil(nextA.dueDate)),marginLeft:6,fontFamily:"var(--font-mono)",fontSize:11}}>{urgencyLabel(daysUntil(nextA.dueDate))}</span></div>}{!nextA&&!nextE&&<span style={{color:"var(--muted2)",fontFamily:"var(--font-mono)",fontSize:11}}>Nothing due — all clear</span>}</div><div className="course-card-actions"><button className="btn-outline btn-sm" onClick={()=>onEditCourse({id:c.id,name:c.name,color:c.color})}>Edit</button></div></div>}</div>;})}
+      {courses.map(c=>{const openA=state.assignments.filter(a=>a.courseId===c.id&&!a.done);const openE=state.exams.filter(e=>e.courseId===c.id&&!e.done);const isOpen=!!expandedCourse[c.id];const nextA=openA.filter(a=>a.dueDate).sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate))[0];const nextE=[...openE].sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate))[0];const hasUrgent=openA.some(a=>{const d=daysUntil(a.dueDate);return d!==null&&d<=2;})||openE.some(e=>{const d=daysUntil(e.dueDate);return d!==null&&d<=5;});return <div key={c.id} className="course-card" style={{borderLeftColor:c.color}}><div role="button" tabIndex={0} className="course-card-compact" onClick={()=>setExpandedCourse(x=>({...x,[c.id]:!x[c.id]}))} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&setExpandedCourse(x=>({...x,[c.id]:!x[c.id]}))}><div className="course-card-left"><div className="course-card-name">{c.name}</div><div className="course-card-pills">{openA.length>0&&<span className={"course-card-pill"+(hasUrgent?" urgent":"")}>{t('av.pl.due',{count:openA.length})}</span>}{openE.length>0&&<span className="course-card-pill" style={{background:"rgba(109,63,160,0.08)",color:"#6d3fa0",borderColor:"rgba(109,63,160,0.18)"}}>{t('av.pl.exam',{count:openE.length})}</span>}{openA.length===0&&openE.length===0&&<span className="course-card-pill" style={{color:"#2e7d52",borderColor:"rgba(46,125,82,0.2)"}}>{t('av.pl.clear')}</span>}</div></div><span className={"course-card-chevron"+(isOpen?" open":"")}>▶</span></div>{isOpen&&<div className="course-card-detail"><div className="course-card-next">{nextE&&<div style={{color:"#6d3fa0",marginBottom:5,fontFamily:"var(--font-mono)",fontSize:11}}>📝 <strong>{nextE.title}</strong> — {urgencyLabel(daysUntil(nextE.dueDate),t)}</div>}{nextA&&<div style={{marginBottom:5}}>{t('av.pl.next')} <strong>{nextA.title}</strong><span style={{color:urgencyColor(daysUntil(nextA.dueDate)),marginLeft:6,fontFamily:"var(--font-mono)",fontSize:11}}>{urgencyLabel(daysUntil(nextA.dueDate),t)}</span></div>}{!nextA&&!nextE&&<span style={{color:"var(--muted2)",fontFamily:"var(--font-mono)",fontSize:11}}>{t('av.pl.nothingDue')}</span>}</div><div className="course-card-actions"><button className="btn-outline btn-sm" onClick={()=>onEditCourse({id:c.id,name:c.name,color:c.color})}>{t('av.pl.edit')}</button></div></div>}</div>;})}
     </div>
   </div>;
 }
 
 // ── ExamCard ──────────────────────────────────────────────────────────────────
 function ExamCard({ exam, courses, dispatch }) {
+  const { t } = useTranslation();
   const [topicInput, setTopicInput] = useState("");
   const [open, setOpen] = useState(false);
   const course=courses[exam.courseId]; const days=daysUntil(exam.dueDate);
@@ -1929,10 +1937,10 @@ function ExamCard({ exam, courses, dispatch }) {
         <div className={"exam-card-title"+(exam.done?" done":"")}>{exam.title}</div>
         <div className="exam-card-meta">
           {course&&<span className="asgn-course" style={{background:course.color+"18",color:course.color}}>{course.name}</span>}
-          <span className="tag tag-exam">EXAM</span>
-          {exam.dueDate&&<span style={{fontFamily:"var(--font-mono)",fontSize:11,fontWeight:500,color:exam.done?"var(--muted2)":urgencyColor(days)}}>{fmtDate(exam.dueDate)} · {urgencyLabel(days)}</span>}
+          <span className="tag tag-exam">{t('av.ec.examTag')}</span>
+          {exam.dueDate&&<span style={{fontFamily:"var(--font-mono)",fontSize:11,fontWeight:500,color:exam.done?"var(--muted2)":urgencyColor(days)}}>{fmtDate(exam.dueDate)} · {urgencyLabel(days,t)}</span>}
         </div>
-        {topics.length>0&&<div className="exam-header-progress"><div className="exam-header-progress-track"><div className="exam-header-progress-fill" style={{width:pct+"%",background:progressColor}}/></div><span className="exam-header-progress-txt">{doneCnt}/{topics.length} topics{pct===100?" ✓":""}</span></div>}
+        {topics.length>0&&<div className="exam-header-progress"><div className="exam-header-progress-track"><div className="exam-header-progress-fill" style={{width:pct+"%",background:progressColor}}/></div><span className="exam-header-progress-txt">{t('av.ec.topicsCount',{done:doneCnt,total:topics.length})}{pct===100?" ✓":""}</span></div>}
       </div>
       <span style={{fontSize:10,color:"var(--muted2)",transform:open?"rotate(90deg)":"rotate(0deg)",transition:"transform 0.2s",flexShrink:0,marginLeft:6}}>▶</span>
       <button className="btn-danger-text" style={{flexShrink:0}} onClick={e=>{e.stopPropagation();dispatch({type:"DELETE_EXAM",id:exam.id});}}>×</button>
@@ -1940,24 +1948,24 @@ function ExamCard({ exam, courses, dispatch }) {
     {open&&<div className="exam-card-body">
       {exam.notes&&<div className="exam-card-notes">{exam.notes}</div>}
       {!exam.done&&<div className="study-plan-bar">
-        <span className="study-plan-label">DIFFICULTY:</span>
-        {["easy","medium","hard","brutal"].map(d=><span key={d} className="difficulty-pill" style={{background:diff===d?DIFFICULTY_COLORS[d]+"18":"transparent",color:diff===d?DIFFICULTY_COLORS[d]:"var(--muted2)",borderColor:diff===d?DIFFICULTY_COLORS[d]:"var(--border2)"}} onClick={()=>dispatch({type:"UPDATE_EXAM_DIFFICULTY",id:exam.id,difficulty:d})}>{DIFFICULTY_LABELS[d]}</span>)}
+        <span className="study-plan-label">{t('av.ec.difficulty')}</span>
+        {["easy","medium","hard","brutal"].map(d=><span key={d} className="difficulty-pill" style={{background:diff===d?DIFFICULTY_COLORS[d]+"18":"transparent",color:diff===d?DIFFICULTY_COLORS[d]:"var(--muted2)",borderColor:diff===d?DIFFICULTY_COLORS[d]:"var(--border2)"}} onClick={()=>dispatch({type:"UPDATE_EXAM_DIFFICULTY",id:exam.id,difficulty:d})}>{t(`av.difficulty.${d}`)}</span>)}
       </div>}
-      {!exam.done&&exam.dueDate&&<div className="study-plan-bar"><span className="study-plan-label">START STUDYING:</span><span className="study-plan-date">{fmtDateFull(studyStart)}</span><span style={{fontFamily:"var(--font-mono)",fontSize:11,color:studyDays<=0?"#c0392b":studyDays<=3?"#d4860a":"var(--muted)"}}>({studyDays<=0?"now":"in "+studyDays+"d"})</span></div>}
+      {!exam.done&&exam.dueDate&&<div className="study-plan-bar"><span className="study-plan-label">{t('av.ec.startStudying')}</span><span className="study-plan-date">{fmtDateFull(studyStart)}</span><span style={{fontFamily:"var(--font-mono)",fontSize:11,color:studyDays<=0?"#c0392b":studyDays<=3?"#d4860a":"var(--muted)"}}>({studyDays<=0?t('av.ec.now'):t('av.ec.inDays',{n:studyDays})})</span></div>}
       <div className="topics-section">
         <div className="topics-section-header">
-          <span className="topics-section-label">Topics</span>
+          <span className="topics-section-label">{t('av.ec.topics')}</span>
           {topics.length>0&&<><div className="topics-big-progress-wrap"><div className="topics-big-progress-bar" style={{width:pct+"%",background:progressColor}}/></div><span className="topics-big-progress-txt">{pct}%</span></>}
         </div>
-        {topics.length===0&&<div className="topics-empty">No topics yet — add what you need to cover</div>}
-        {topics.map(t=><div key={t.id} className="topic-item" onClick={()=>dispatch({type:"TOGGLE_EXAM_TOPIC",examId:exam.id,topicId:t.id})}>
-          <div className={"topic-check"+(t.done?" checked":"")}/>
-          <span className={"topic-title"+(t.done?" done":"")}>{t.title}</span>
-          <button className="topic-del" onClick={e=>{e.stopPropagation();dispatch({type:"DELETE_EXAM_TOPIC",examId:exam.id,topicId:t.id});}}>×</button>
+        {topics.length===0&&<div className="topics-empty">{t('av.ec.noTopics')}</div>}
+        {topics.map(tp=><div key={tp.id} className="topic-item" onClick={()=>dispatch({type:"TOGGLE_EXAM_TOPIC",examId:exam.id,topicId:tp.id})}>
+          <div className={"topic-check"+(tp.done?" checked":"")}/>
+          <span className={"topic-title"+(tp.done?" done":"")}>{tp.title}</span>
+          <button className="topic-del" onClick={e=>{e.stopPropagation();dispatch({type:"DELETE_EXAM_TOPIC",examId:exam.id,topicId:tp.id});}}>×</button>
         </div>)}
         <div className="topic-add-row">
-          <input type="text" placeholder="Add a topic…" value={topicInput} onChange={e=>setTopicInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addTopic()}/>
-          <button className="topic-add-btn" onClick={addTopic}>Add</button>
+          <input type="text" placeholder={t('av.ec.addTopic')} value={topicInput} onChange={e=>setTopicInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addTopic()}/>
+          <button className="topic-add-btn" onClick={addTopic}>{t('av.ec.add')}</button>
         </div>
       </div>
     </div>}
@@ -1988,8 +1996,9 @@ function ActionsView({ state, dispatch, showFlash, onAddCourse }) {
       const d=daysUntil(e.dueDate); const c=state.courses[e.courseId];
       const incompTopics=(e.topics||[]).filter(t=>!t.done);
       const bucket=d<=3?"today":d<=7?"this_week":"later";
-      if(incompTopics.length>0){actions.push({id:"sugg-e-"+e.id,text:"Study for "+(c?c.name+": ":"")+e.title+" — "+incompTopics[0].title+(incompTopics.length>1?" (+"+( incompTopics.length-1)+" more)":""),bucket,sourceId:e.id,sourceType:"exam",suggested:true,courseId:e.courseId||null,done:false});}
-      else{actions.push({id:"sugg-e-"+e.id,text:"Prepare for "+(c?c.name+": ":"")+e.title,bucket,sourceId:e.id,sourceType:"exam",suggested:true,courseId:e.courseId||null,done:false});}
+      const exLabel=(c?c.name+": ":"")+e.title;
+      if(incompTopics.length>0){actions.push({id:"sugg-e-"+e.id,text:t('av.ec.studyFor',{label:exLabel})+" — "+incompTopics[0].title+(incompTopics.length>1?t('av.ec.topicMore',{n:incompTopics.length-1}):""),bucket,sourceId:e.id,sourceType:"exam",suggested:true,courseId:e.courseId||null,done:false});}
+      else{actions.push({id:"sugg-e-"+e.id,text:t('av.ec.prepareFor',{label:exLabel}),bucket,sourceId:e.id,sourceType:"exam",suggested:true,courseId:e.courseId||null,done:false});}
     });
     return actions;
   })();
@@ -2025,7 +2034,7 @@ function ActionsView({ state, dispatch, showFlash, onAddCourse }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const allActions = [...visibleManual, ...suggestedActions.filter(s=>!visibleManual.some(a=>a.sourceId===s.sourceId&&a.suggested))];
-  const addAction = () => { if(!newText.trim()) return; dispatch({type:"ADD_ACTION",text:newText.trim(),bucket:newBucket,courseId:newCourse||null}); setNewText(""); showFlash("Added to Next Up"); };
+  const addAction = () => { if(!newText.trim()) return; dispatch({type:"ADD_ACTION",text:newText.trim(),bucket:newBucket,courseId:newCourse||null}); setNewText(""); showFlash(t('av.act.addedToNextUp')); };
   // v1.5 (5D) — empty-period / first-run re-onboarding: no active courses to plan around.
   if(activeCourses.length === 0) return <div>
     <div className="nextup-unlock">
@@ -2075,7 +2084,7 @@ function ActionsView({ state, dispatch, showFlash, onAddCourse }) {
       if(items.length===0) return null;
       const col=BUCKET_COLORS[bucket];
       return <div key={bucket} className="bucket-section">
-        <div className="bucket-header"><div className="bucket-dot" style={{background:col.bg}}/>{BUCKET_LABELS[bucket]}</div>
+        <div className="bucket-header"><div className="bucket-dot" style={{background:col.bg}}/>{t(`av.bucket.${bucket}`)}</div>
         {items.map(a=><div key={a.id} className={"action-item"+(a.done?" done":"")+(a.suggested?" suggested":"")}>
           <div className={"asgn-check"+(a.done?" checked":"")} onClick={()=>{
             if(a.suggested){
@@ -2087,20 +2096,20 @@ function ActionsView({ state, dispatch, showFlash, onAddCourse }) {
           }}/>
           <div className={"action-text"+(a.done?" done":"")}>{a.text}</div>
           {!a.suggested&&<button className="btn-danger-text" onClick={()=>dispatch({type:"DELETE_ACTION",id:a.id})}>×</button>}
-          {a.suggested&&<span style={{fontFamily:"var(--font-mono)",fontSize:9,color:"#1a5c9e",letterSpacing:"0.06em",flexShrink:0}}>AUTO</span>}
+          {a.suggested&&<span style={{fontFamily:"var(--font-mono)",fontSize:9,color:"#1a5c9e",letterSpacing:"0.06em",flexShrink:0}}>{t('av.act.auto')}</span>}
         </div>)}
       </div>;
     })}
     <div className="divider"/>
-    <div className="section-label">Add manually</div>
+    <div className="section-label">{t('av.act.addManually')}</div>
     <div className="quick-add-box">
       <div className="input-row">
-        <input type="text" placeholder="What do you need to do?" value={newText} onChange={e=>setNewText(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addAction()} style={{flex:2}}/>
-        <select value={newBucket} onChange={e=>setNewBucket(e.target.value)} style={{flex:1,maxWidth:130}}>{BUCKETS.map(b=><option key={b} value={b}>{BUCKET_LABELS[b]}</option>)}</select>
-        <button className="btn" onClick={addAction}>Add</button>
+        <input type="text" placeholder={t('av.act.whatToDo')} value={newText} onChange={e=>setNewText(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addAction()} style={{flex:2}}/>
+        <select value={newBucket} onChange={e=>setNewBucket(e.target.value)} style={{flex:1,maxWidth:130}}>{BUCKETS.map(b=><option key={b} value={b}>{t(`av.bucket.${b}`)}</option>)}</select>
+        <button className="btn" onClick={addAction}>{t('av.act.add')}</button>
       </div>
       {courses.length>0&&<select value={newCourse} onChange={e=>setNewCourse(e.target.value)} style={{marginTop:8,fontSize:12}}>
-        <option value="">No course</option>
+        <option value="">{t('av.act.noCourse')}</option>
         {courses.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
       </select>}
     </div>
