@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { calculateGPA, subjectsWithEffectiveGrades } from '../../lib/gpa.js';
 
 // ── BUG-21: Study Statistics Dashboard ───────────────────────────────────────
@@ -64,6 +65,7 @@ function dayKey(d) {
 }
 
 export default function StatsView({ state }) {
+  const { t } = useTranslation();
   const mode = state.gradeMode || 'ib';
 
   const sessions = useMemo(
@@ -112,7 +114,7 @@ export default function StatsView({ state }) {
         const course = key === '__general__' ? null : state.courses?.[key];
         return {
           key,
-          name: course?.name || 'General study',
+          name: course?.name || null, // null → rendered as t('st.generalStudy')
           color: course?.color || '#a8a29a',
           minutes,
         };
@@ -198,16 +200,16 @@ export default function StatsView({ state }) {
         {/* Weekly load */}
         <div className="st-card">
           <div className="st-card-head">
-            <span className="st-card-title">This week</span>
-            <span className="st-card-note">vs 4-week avg {fmtH(weekly.priorAvg)}h</span>
+            <span className="st-card-title">{t('st.thisWeek')}</span>
+            <span className="st-card-note">{t('st.vs4wk', { h: fmtH(weekly.priorAvg) })}</span>
           </div>
           <div className="st-hero">
             <span className="st-hero-val">{fmtH(weekly.current)}</span>
-            <span className="st-hero-unit">hours</span>
+            <span className="st-hero-unit">{t('st.hours')}</span>
           </div>
           {deltaPct != null && (
             <div className={'st-delta ' + (deltaPct > 2 ? 'up' : deltaPct < -2 ? 'down' : 'flat')}>
-              {deltaPct > 0 ? '↑' : deltaPct < 0 ? '↓' : '→'} {Math.abs(deltaPct)}% vs your recent average
+              {deltaPct > 0 ? '↑' : deltaPct < 0 ? '↓' : '→'} {t('st.deltaVs', { pct: Math.abs(deltaPct) })}
             </div>
           )}
           <div className="st-weeks">
@@ -218,7 +220,7 @@ export default function StatsView({ state }) {
                 <div className="st-week" key={i}>
                   <div className="st-week-val">{w.minutes > 0 ? `${fmtH(w.minutes)}h` : ''}</div>
                   <div className={'st-week-bar' + (isCurrent ? ' current' : '')} style={{ height: `${Math.max(3, h)}%` }} />
-                  <div className="st-week-label">{isCurrent ? 'NOW' : `−${weekly.weeks.length - 1 - i}w`}</div>
+                  <div className="st-week-label">{isCurrent ? t('st.now') : t('st.weeksAgo', { n: weekly.weeks.length - 1 - i })}</div>
                 </div>
               );
             })}
@@ -229,13 +231,13 @@ export default function StatsView({ state }) {
         {hasAiInsights && (
           <div className="st-card">
             <div className="st-card-head">
-              <span className="st-card-title">Study debrief</span>
-              <span className="st-card-note">last 7 days · AI</span>
+              <span className="st-card-title">{t('st.debrief')}</span>
+              <span className="st-card-note">{t('st.debriefNote')}</span>
             </div>
             {aiInsights.avgComprehension != null && (
               <div className="st-hero" style={{ marginBottom: 4 }}>
                 <span className="st-hero-val">{aiInsights.avgComprehension.toFixed(1)}</span>
-                <span className="st-hero-unit">/5 avg comprehension</span>
+                <span className="st-hero-unit">{t('st.avgComp')}</span>
               </div>
             )}
             {aiInsights.recurring.length > 0 && (
@@ -250,7 +252,7 @@ export default function StatsView({ state }) {
                       border: '1px solid var(--border2)',
                       color: 'var(--text)',
                     }}
-                    title={`Flagged ${n} times this week`}
+                    title={t('st.flaggedTimes', { n })}
                   >
                     {term} · {n}×
                   </span>
@@ -259,7 +261,7 @@ export default function StatsView({ state }) {
             )}
             {aiInsights.recurring.length > 0 && (
               <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>
-                Concepts you've flagged as confusing more than once — worth a focused review.
+                {t('st.recurringNote')}
               </div>
             )}
           </div>
@@ -268,18 +270,18 @@ export default function StatsView({ state }) {
         {/* Subject split */}
         <div className="st-card">
           <div className="st-card-head">
-            <span className="st-card-title">Where your time went</span>
-            <span className="st-card-note">last 30 days · {fmtH(split.total)}h</span>
+            <span className="st-card-title">{t('st.timeWent')}</span>
+            <span className="st-card-note">{t('st.last30', { h: fmtH(split.total) })}</span>
           </div>
           {split.rows.length === 0 ? (
-            <div className="st-empty">No sessions in the last 30 days.</div>
+            <div className="st-empty">{t('st.noSessions30')}</div>
           ) : (
             split.rows.map((r) => {
               const pct = split.total > 0 ? Math.round((r.minutes / split.total) * 100) : 0;
               return (
                 <div className="st-split-row" key={r.key}>
                   <span className="st-split-pip" style={{ background: r.color }} />
-                  <span className="st-split-name">{r.name}</span>
+                  <span className="st-split-name">{r.name || t('st.generalStudy')}</span>
                   <span className="st-split-bar-track">
                     <span className="st-split-bar-fill" style={{ width: `${pct}%`, background: r.color }} />
                   </span>
@@ -293,12 +295,12 @@ export default function StatsView({ state }) {
         {/* Streak */}
         <div className="st-card">
           <div className="st-card-head">
-            <span className="st-card-title">Study streak</span>
-            <span className="st-card-note">last 14 days</span>
+            <span className="st-card-title">{t('st.streak')}</span>
+            <span className="st-card-note">{t('st.last14')}</span>
           </div>
           <div className="st-hero">
             <span className="st-hero-val">{streak.count}</span>
-            <span className="st-hero-unit">{streak.count === 1 ? 'day' : 'days'} in a row</span>
+            <span className="st-hero-unit">{streak.count === 1 ? t('st.dayInRow') : t('st.daysInRow')}</span>
           </div>
           <div className="st-streak-dots" aria-hidden="true">
             {streak.last14.map((on, i) => (
@@ -310,12 +312,12 @@ export default function StatsView({ state }) {
         {/* GPA trend */}
         <div className="st-card">
           <div className="st-card-head">
-            <span className="st-card-title">{mode === 'ib' ? 'IB average trend' : 'GPA trend'}</span>
-            <span className="st-card-note">{mode === 'ib' ? '1–7 scale' : '4.0 scale'}</span>
+            <span className="st-card-title">{mode === 'ib' ? t('st.ibTrend') : t('st.gpaTrend')}</span>
+            <span className="st-card-note">{mode === 'ib' ? t('st.ibScale') : t('st.usScale')}</span>
           </div>
           {gpaTrend.points.length < 2 ? (
             <div className="st-empty">
-              Log grades across more than one month to see your trend.
+              {t('st.trendNeedMore')}
             </div>
           ) : (
             <GpaSparkline points={gpaTrend.points} min={gpaTrend.min} max={gpaTrend.max} />
@@ -324,7 +326,7 @@ export default function StatsView({ state }) {
 
         {!hasAnySessions && gpaTrend.points.length === 0 && (
           <div className="st-empty" style={{ textAlign: 'center', paddingTop: 28 }}>
-            Log a focus session or a grade and your stats will fill in here.
+            {t('st.emptyAll')}
           </div>
         )}
       </div>

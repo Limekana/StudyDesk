@@ -1,13 +1,11 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { analyseStudySession } from '../../lib/aiStudyDebrief.js';
 
-/**
- * Raised after a focus phase ends. The user explicitly opts in to logging
- * the session — per the brief, "don't log anything until the user taps Save."
- */
-const FOCUS_LABELS = ['', 'Scattered', 'Distracted', 'Okay', 'Focused', 'Locked in'];
-
 export default function SaveSessionSheet({ pending, courses, onSave, onClose, canDebrief = false }) {
+  const { t } = useTranslation();
+  // Focus labels are looked up per-rating via t('ss.focus{n}') (1–5); index 0 is unused.
+  const focusLabel = (n) => (n >= 1 && n <= 5 ? t(`ss.focus${n}`) : '');
   const [subjectId, setSubjectId] = useState('');
   const [duration, setDuration] = useState(String(pending.durationMinutes));
   const [notes, setNotes] = useState(pending.task || '');
@@ -56,26 +54,26 @@ export default function SaveSessionSheet({ pending, courses, onSave, onClose, ca
   return (
     <div className="modal-overlay" role="dialog" aria-modal="true" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-title">Save session?</div>
+        <div className="modal-title">{t('ss.title')}</div>
         <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 18 }}>
-          Focus session finished. Log it so it counts toward your study totals.
+          {t('ss.intro')}
         </div>
 
         <div className="input-group">
-          <div className="input-label">Course (optional)</div>
+          <div className="input-label">{t('ss.fCourse')}</div>
           <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
-            <option value="">General study</option>
+            <option value="">{t('ss.generalStudy')}</option>
             {courses.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
 
         <div className="modal-grid">
           <div className="input-group">
-            <div className="input-label">Duration (minutes)</div>
+            <div className="input-label">{t('ss.fDuration')}</div>
             <input type="number" min="1" max="1440" value={duration} onChange={(e) => setDuration(e.target.value)} />
           </div>
           <div className="input-group">
-            <div className="input-label">Started at</div>
+            <div className="input-label">{t('ss.fStarted')}</div>
             <input
               type="text"
               readOnly
@@ -88,16 +86,16 @@ export default function SaveSessionSheet({ pending, courses, onSave, onClose, ca
         </div>
 
         <div className="input-group">
-          <div className="input-label">Notes (optional)</div>
-          <input type="text" placeholder="What did you work on?" value={notes} onChange={(e) => setNotes(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} autoFocus />
+          <div className="input-label">{t('ss.fNotes')}</div>
+          <input type="text" placeholder={t('ss.phNotes')} value={notes} onChange={(e) => setNotes(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} autoFocus />
         </div>
 
         <div className="input-group">
           <div className="input-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <span>How focused were you? (optional)</span>
+            <span>{t('ss.fFocus')}</span>
             {focus != null && (
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.04em' }}>
-                {FOCUS_LABELS[focus]}
+                {focusLabel(focus)}
               </span>
             )}
           </div>
@@ -108,7 +106,7 @@ export default function SaveSessionSheet({ pending, courses, onSave, onClose, ca
                 <button
                   key={n}
                   type="button"
-                  aria-label={`Focus ${n} — ${FOCUS_LABELS[n]}`}
+                  aria-label={`${focusLabel(n)} (${n}/5)`}
                   aria-pressed={active}
                   onClick={() => setFocus(active ? null : n)}
                   style={{
@@ -134,7 +132,7 @@ export default function SaveSessionSheet({ pending, courses, onSave, onClose, ca
 
         {canDebrief && (
           <div className="input-group">
-            <div className="input-label">What did you cover? (optional)</div>
+            <div className="input-label">{t('ss.fCover')}</div>
             {debrief ? (
               <div
                 style={{
@@ -148,16 +146,16 @@ export default function SaveSessionSheet({ pending, courses, onSave, onClose, ca
                 }}
               >
                 {debrief.subjectCovered && (
-                  <div><strong>Subject:</strong> {debrief.subjectCovered}</div>
+                  <div><strong>{t('ss.subject')}</strong> {debrief.subjectCovered}</div>
                 )}
                 {debrief.comprehension != null && (
                   <div>
-                    <strong>Comprehension:</strong>{' '}
+                    <strong>{t('ss.comprehension')}</strong>{' '}
                     {'●'.repeat(debrief.comprehension) + '○'.repeat(5 - debrief.comprehension)} ({debrief.comprehension}/5)
                   </div>
                 )}
                 {debrief.confusionFlags.length > 0 && (
-                  <div><strong>Confusion:</strong> {debrief.confusionFlags.join(', ')}</div>
+                  <div><strong>{t('ss.confusion')}</strong> {debrief.confusionFlags.join(', ')}</div>
                 )}
                 {debrief.sessionSummary && (
                   <div style={{ color: 'var(--muted)' }}>{debrief.sessionSummary}</div>
@@ -168,14 +166,14 @@ export default function SaveSessionSheet({ pending, courses, onSave, onClose, ca
                   style={{ alignSelf: 'flex-start', marginTop: 2, fontSize: 12, padding: '4px 10px' }}
                   onClick={() => { setDebrief(null); setDebriefError(false); }}
                 >
-                  Redo
+                  {t('ss.redo')}
                 </button>
               </div>
             ) : (
               <>
                 <textarea
                   rows={2}
-                  placeholder="Topics studied, anything confusing…"
+                  placeholder={t('ss.phCover')}
                   value={debriefText}
                   onChange={(e) => setDebriefText(e.target.value)}
                   style={{ width: '100%', resize: 'vertical', fontFamily: 'inherit', fontSize: 13 }}
@@ -188,11 +186,11 @@ export default function SaveSessionSheet({ pending, courses, onSave, onClose, ca
                     onClick={runAnalyse}
                     disabled={analysing || !debriefText.trim()}
                   >
-                    {analysing ? 'Analysing…' : 'Analyse'}
+                    {analysing ? t('ss.analysing') : t('ss.analyse')}
                   </button>
                   {debriefError && (
                     <span style={{ fontSize: 11, color: 'var(--muted)' }}>
-                      Couldn’t analyse — you can still save.
+                      {t('ss.analyseFail')}
                     </span>
                   )}
                 </div>
@@ -202,8 +200,8 @@ export default function SaveSessionSheet({ pending, courses, onSave, onClose, ca
         )}
 
         <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-          <button className="btn" onClick={submit}>Save session</button>
-          <button className="btn-outline" onClick={onClose}>Discard</button>
+          <button className="btn" onClick={submit}>{t('ss.saveBtn')}</button>
+          <button className="btn-outline" onClick={onClose}>{t('ss.discard')}</button>
         </div>
       </div>
     </div>

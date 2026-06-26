@@ -69,21 +69,22 @@ const css = `
 .sv2-link{color:var(--muted);text-decoration:underline;}
 `;
 
-function fmtTime(iso) {
+function fmtTime(iso, t, lang) {
   if (!iso) return '—';
   const d = new Date(iso);
   if (isNaN(d.getTime())) return '—';
   const now = new Date();
   const diff = (now - d) / 1000;
-  if (diff < 60) return 'just now';
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  if (diff < 60) return t('settings.justNow');
+  if (diff < 3600) return t('settings.minAgo', { n: Math.floor(diff / 60) });
+  if (diff < 86400) return t('settings.hAgo', { n: Math.floor(diff / 3600) });
+  return d.toLocaleDateString(lang || 'en', { day: 'numeric', month: 'short' });
 }
 
 export default function SettingsView({ state, dispatch, showFlash, session }) {
   const { t, i18n } = useTranslation();
   const currentLang = (i18n.language || 'en').split('-')[0];
+  const lang = currentLang; // for locale-aware date formatting in fmtTime
   const [pulling, setPulling] = useState(false);
   const [lastPullAt, setLastPullAt] = useState(null);
   const [signingOut, setSigningOut] = useState(false);
@@ -99,11 +100,11 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
     setDraining(true);
     try {
       const remaining = await outbox.drain();
-      showFlash(remaining === 0 ? 'Queue drained' : `${remaining} item${remaining === 1 ? '' : 's'} still pending`);
+      showFlash(remaining === 0 ? t('settings.queueDrained') : t('settings.stillPending', { count: remaining }));
     } finally {
       setDraining(false);
     }
-  }, [showFlash]);
+  }, [showFlash, t]);
 
   const subjects = Object.values(state.courses || {}).filter((c) => !c.deletedAt);
   const grades = (state.grades || []).filter((g) => !g.deletedAt);
@@ -112,7 +113,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
   const mode = state.gradeMode || 'ib';
 
   const onSignOut = useCallback(async () => {
-    if (!confirm('Sign out of StudyDesk? Your synced data stays in the cloud and will reappear when you sign back in.')) return;
+    if (!confirm(t('settings.signOutConfirm'))) return;
     setSigningOut(true);
     try {
       // Drain-then-wipe order preserved from the v1.1.1 / AUDIT-SD-FSG-2 work:
@@ -124,13 +125,13 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
       setGuestMode(true);
       window.dispatchEvent(new CustomEvent('studydesk:guest-mode-changed'));
       await supabase.auth.signOut();
-      showFlash('Signed out · local mode');
+      showFlash(t('settings.signedOutLocal'));
     } catch (e) {
-      showFlash('Sign-out failed: ' + e.message);
+      showFlash(t('settings.signOutFailed', { msg: e.message }));
     } finally {
       setSigningOut(false);
     }
-  }, [showFlash, dispatch]);
+  }, [showFlash, dispatch, t]);
 
   // v1.3.1 — guests sign in from here now that the topbar button is gone.
   // Flipping guestMode off routes the app back to AuthGate.
@@ -140,19 +141,19 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
   }, []);
 
   const onPullNow = useCallback(async () => {
-    if (!session) { showFlash('Not signed in'); return; }
+    if (!session) { showFlash(t('settings.notSignedIn')); return; }
     setPulling(true);
     try {
       const remote = await sync.pullAllStudyData();
       dispatch({ type: 'MERGE_REMOTE', remote });
       setLastPullAt(new Date().toISOString());
-      showFlash(`Synced: ${remote.subjects.length} subjects · ${remote.grades.length} grades · ${remote.sessions.length} sessions`);
+      showFlash(t('settings.syncedSummary', { subjects: remote.subjects.length, grades: remote.grades.length, sessions: remote.sessions.length }));
     } catch (e) {
-      showFlash('Pull failed: ' + e.message);
+      showFlash(t('settings.pullFailed', { msg: e.message }));
     } finally {
       setPulling(false);
     }
-  }, [session, dispatch, showFlash]);
+  }, [session, dispatch, showFlash, t]);
 
   const userEmail = session?.user?.email || '—';
   const userId = session?.user?.id;
@@ -169,26 +170,25 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
           <div className="sv2-hero">
             <div className="sv2-avatar">{avatarInitials(session)}</div>
             <div className="sv2-hero-info">
-              <div className="sv2-hero-name">{session ? userEmail : 'Guest'}</div>
+              <div className="sv2-hero-name">{session ? userEmail : t('settings.guest')}</div>
               <div className="sv2-hero-status">
                 <span className="sv2-dot" style={{ background: session ? '#2e7d52' : 'var(--muted2)' }} />
-                {session ? `Signed in · ${provider}` : 'Local only · not signed in'}
+                {session ? t('settings.signedInProvider', { provider }) : t('settings.localOnly')}
               </div>
             </div>
           </div>
           <div className="sv2-action">
             {session ? (
               <button className="sv2-signout" onClick={onSignOut} disabled={signingOut}>
-                {signingOut ? 'Signing out…' : 'Sign out'}
+                {signingOut ? t('settings.signingOut') : t('settings.signOut')}
               </button>
             ) : (
-              <button className="sv2-signin" onClick={onSignIn}>Sign in to sync</button>
+              <button className="sv2-signin" onClick={onSignIn}>{t('settings.signInToSync')}</button>
             )}
           </div>
           {!session && (
             <div className="sv2-note">
-              Your courses, grades and study sessions stay on this device. Sign in to sync them
-              with Nexus Command Center across your devices.
+              {t('settings.guestNote')}
             </div>
           )}
         </div>
@@ -212,71 +212,70 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
 
         {/* ── Cloud sync ── */}
         <div className="sv2-section">
-          <div className="sv2-section-title">Cloud sync</div>
+          <div className="sv2-section-title">{t('settings.cloudSync')}</div>
           <div className="sv2-stats">
-            <div className="sv2-stat"><div className="sv2-stat-num">{subjects.length}</div><div className="sv2-stat-lbl">Subjects</div></div>
-            <div className="sv2-stat"><div className="sv2-stat-num">{grades.length}</div><div className="sv2-stat-lbl">Grades</div></div>
-            <div className="sv2-stat"><div className="sv2-stat-num">{sessions.length}</div><div className="sv2-stat-lbl">Sessions</div></div>
+            <div className="sv2-stat"><div className="sv2-stat-num">{subjects.length}</div><div className="sv2-stat-lbl">{t('settings.subjects')}</div></div>
+            <div className="sv2-stat"><div className="sv2-stat-num">{grades.length}</div><div className="sv2-stat-lbl">{t('settings.gradesLbl')}</div></div>
+            <div className="sv2-stat"><div className="sv2-stat-num">{sessions.length}</div><div className="sv2-stat-lbl">{t('settings.sessionsLbl')}</div></div>
           </div>
           <div className="sv2-row">
-            <span className="sv2-row-label">Connection</span>
+            <span className="sv2-row-label">{t('settings.connection')}</span>
             <span className="sv2-row-value">
               <span className="sv2-dot" style={{ background: session ? '#2e7d52' : 'var(--muted2)' }} />
-              {session ? 'Realtime active' : 'Offline (local only)'}
+              {session ? t('settings.realtimeActive') : t('settings.offlineLocal')}
             </span>
           </div>
           <div className="sv2-row">
-            <span className="sv2-row-label">Pending queue</span>
+            <span className="sv2-row-label">{t('settings.pendingQueue')}</span>
             <span className="sv2-row-value">
               {outboxStatus.pending === 0 ? (
-                <><span className="sv2-dot" style={{ background: '#2e7d52' }} />All synced</>
+                <><span className="sv2-dot" style={{ background: '#2e7d52' }} />{t('settings.allSynced')}</>
               ) : (
                 <>
                   <span className="sv2-dot" style={{ background: outboxStatus.stuck > 0 ? 'var(--danger)' : '#d4860a' }} />
-                  {outboxStatus.pending} pending{outboxStatus.stuck > 0 && ` (${outboxStatus.stuck} stuck)`}
+                  {t('settings.pendingCount', { count: outboxStatus.pending })}{outboxStatus.stuck > 0 && ` ${t('settings.stuck', { count: outboxStatus.stuck })}`}
                 </>
               )}
             </span>
           </div>
           <div className="sv2-row">
-            <span className="sv2-row-label">Last successful push</span>
-            <span className="sv2-row-value">{fmtTime(outboxStatus.lastSuccessAt)}</span>
+            <span className="sv2-row-label">{t('settings.lastPush')}</span>
+            <span className="sv2-row-value">{fmtTime(outboxStatus.lastSuccessAt, t, lang)}</span>
           </div>
           {lastPullAt && (
             <div className="sv2-row">
-              <span className="sv2-row-label">Last manual pull</span>
-              <span className="sv2-row-value">{fmtTime(lastPullAt)}</span>
+              <span className="sv2-row-label">{t('settings.lastPull')}</span>
+              <span className="sv2-row-value">{fmtTime(lastPullAt, t, lang)}</span>
             </div>
           )}
           {outboxStatus.lastError && (
             <div className="sv2-row">
-              <span className="sv2-row-label">Last error</span>
+              <span className="sv2-row-label">{t('settings.lastError')}</span>
               <span className="sv2-row-value" style={{ color: 'var(--danger)', fontSize: 11 }}>{outboxStatus.lastError}</span>
             </div>
           )}
           {session && (
             <div className="sv2-action">
               <button className="btn-outline" onClick={onPullNow} disabled={pulling}>
-                {pulling ? 'Pulling…' : 'Pull latest now'}
+                {pulling ? t('settings.pulling') : t('settings.pullLatest')}
               </button>
               {outboxStatus.pending > 0 && (
                 <button className="btn-outline" onClick={onRetryNow} disabled={draining}>
-                  {draining ? 'Retrying…' : 'Retry now'}
+                  {draining ? t('settings.retrying') : t('settings.retryNow')}
                 </button>
               )}
             </div>
           )}
           <div className="sv2-note">
-            Realtime pushes inbound changes within ~1.5s. Outbound writes go through a local
-            outbox that retries automatically on network restore and app resume.
+            {t('settings.syncNote')}
           </div>
         </div>
 
         {/* ── Grades ── */}
         <div className="sv2-section">
-          <div className="sv2-section-title">Grades</div>
+          <div className="sv2-section-title">{t('settings.gradesLbl')}</div>
           <div className="sv2-row">
-            <span className="sv2-row-label">Grade scale</span>
+            <span className="sv2-row-label">{t('settings.gradeScale')}</span>
             <span className="sv2-row-value">
               <span className="sv2-mode">
                 <button className={mode === 'ib' ? 'active' : ''} onClick={() => dispatch({ type: 'SET_GRADE_MODE', mode: 'ib' })}>IB</button>
@@ -285,8 +284,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
             </span>
           </div>
           <div className="sv2-note">
-            IB: weighted average on the 1–7 scale. US: per-course percent → 4.0 grade points,
-            then credit-weighted. Stored locally — does not sync.
+            {t('settings.gradeNote')}
           </div>
         </div>
 
@@ -299,19 +297,19 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
 
         {/* ── About ── */}
         <div className="sv2-section">
-          <div className="sv2-section-title">About</div>
+          <div className="sv2-section-title">{t('settings.about')}</div>
           <div className="sv2-row">
             <span className="sv2-row-label">StudyDesk</span>
             <span className="sv2-row-value">v{appVersion}</span>
           </div>
           <details className="sv2-tech">
-            <summary>Technical details</summary>
+            <summary>{t('settings.techDetails')}</summary>
             <div className="sv2-tech-grid">
-              <div className="sv2-tech-item"><span>Bundle</span><span>com.StudyDesk.app</span></div>
-              <div className="sv2-tech-item"><span>Backend</span><span>Supabase (hkktorzh…)</span></div>
-              {userId && <div className="sv2-tech-item"><span>User ID</span><span title={userId}>{userIdShort}</span></div>}
-              <div className="sv2-tech-item"><span>Source</span><span><a className="sv2-link" href="https://github.com/Limekana/StudyDesk" target="_blank" rel="noopener noreferrer">github.com/Limekana/StudyDesk</a></span></div>
-              <div className="sv2-tech-item"><span>License</span><span>MIT</span></div>
+              <div className="sv2-tech-item"><span>{t('settings.bundle')}</span><span>com.StudyDesk.app</span></div>
+              <div className="sv2-tech-item"><span>{t('settings.backend')}</span><span>Supabase (hkktorzh…)</span></div>
+              {userId && <div className="sv2-tech-item"><span>{t('settings.userId')}</span><span title={userId}>{userIdShort}</span></div>}
+              <div className="sv2-tech-item"><span>{t('settings.source')}</span><span><a className="sv2-link" href="https://github.com/Limekana/StudyDesk" target="_blank" rel="noopener noreferrer">github.com/Limekana/StudyDesk</a></span></div>
+              <div className="sv2-tech-item"><span>{t('settings.license')}</span><span>MIT</span></div>
             </div>
           </details>
         </div>
