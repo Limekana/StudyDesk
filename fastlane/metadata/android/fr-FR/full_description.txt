@@ -1,0 +1,14 @@
+StudyDesk est une appli d'exécution pour les étudiants qui perdent du temps à décider quoi réviser au lieu de réviser.
+
+Tu saisis tes cours et tes échéances. Le moteur « À suivre » de StudyDesk classe quoi faire maintenant — la décision est déjà prise quand tu t'assois.
+
+* À suivre — une liste de priorités fondée sur tes échéances
+* Périodes — organise les cours par année scolaire et période
+* Historique des périodes — cours archivés groupés par année et période, avec une moyenne
+* Notes — barèmes IB et GPA
+* Lock In — un minuteur Pomodoro intégré
+* Bilan d'étude par IA optionnel après une session
+
+Esthétique papier chaleureuse, pas encore un tableau de bord. Tes données restent sur ton appareil ; la synchro cloud est optionnelle et liée à un compte. Pas de publicité, pas de pisteurs, pas de Google Play Services — ouvert et compatible F-Droid.
+
+Fait partie de la suite Limecore Nexus.

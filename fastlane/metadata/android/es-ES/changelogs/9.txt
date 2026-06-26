@@ -1,0 +1,6 @@
+Primera versión multilingüe (inglés, finés, francés, alemán, español, chino).
+
+Novedades:
+- Periodos: organiza los cursos por año escolar y periodo
+- Historial de periodos (Ajustes > Archivo) con nota media por periodo
+- Reonboarding al comenzar un nuevo periodo

@@ -1,0 +1,6 @@
+Erste mehrsprachige Version (Englisch, Finnisch, Französisch, Deutsch, Spanisch, Chinesisch).
+
+Neu:
+- Perioden: Kurse nach Schuljahr und Periode ordnen
+- Perioden-Historie (Einstellungen > Archiv) mit Notenschnitt je Periode
+- Wieder-Onboarding zu Beginn einer neuen Periode

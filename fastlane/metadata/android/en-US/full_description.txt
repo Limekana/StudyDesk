@@ -1,0 +1,14 @@
+StudyDesk is a study execution app for students who lose time deciding what to study instead of studying.
+
+You enter your courses and deadlines. StudyDesk's Next Up engine ranks what to do right now — so the decision is already made when you sit down.
+
+* Next Up — a rule-based priority list from your deadlines
+* Periods / jaksot — organise courses by school year and period
+* Period History — archived courses grouped by year and period, with a GPA snapshot
+* Grades — IB and GPA scales
+* Lock In — a built-in Pomodoro focus timer
+* Optional AI study debrief after a session
+
+Warm paper aesthetic, not another dashboard. Your data lives on your device; cloud sync is optional and account-gated. No ads, no trackers, no Google Play Services — open and F-Droid friendly.
+
+Part of the Limecore Nexus suite.

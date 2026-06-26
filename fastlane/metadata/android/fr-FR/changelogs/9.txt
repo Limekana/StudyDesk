@@ -1,0 +1,6 @@
+Première version multilingue (anglais, finnois, français, allemand, espagnol, chinois).
+
+Nouveautés :
+- Périodes : organise les cours par année scolaire et période
+- Historique des périodes (Paramètres > Archive) avec moyenne par période
+- Ré-accueil quand une nouvelle période commence

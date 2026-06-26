@@ -1,0 +1,6 @@
+Ensimmäinen monikielinen julkaisu (englanti, suomi, ranska, saksa, espanja, kiina).
+
+Uutta:
+- Jaksot: järjestä kurssit lukuvuoden ja jakson mukaan
+- Jaksohistoria (Asetukset > Arkisto) jaksokohtaisella keskiarvolla
+- Tyhjän jakson uudelleenkäyttöönotto uuden jakson alkaessa

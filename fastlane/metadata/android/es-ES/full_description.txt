@@ -1,0 +1,14 @@
+StudyDesk es una app de ejecución de estudio para estudiantes que pierden tiempo decidiendo qué estudiar en lugar de estudiar.
+
+Introduces tus cursos y fechas límite. El motor «A continuación» de StudyDesk prioriza qué hacer ahora mismo — la decisión ya está tomada cuando te sientas.
+
+* A continuación — una lista de prioridades basada en tus fechas límite
+* Periodos — organiza los cursos por año escolar y periodo
+* Historial de periodos — cursos archivados agrupados por año y periodo, con nota media
+* Notas — escalas IB y GPA
+* Lock In — un temporizador Pomodoro integrado
+* Resumen de estudio con IA opcional tras una sesión
+
+Estética de papel cálida, no otro panel más. Tus datos permanecen en tu dispositivo; la sincronización en la nube es opcional y requiere cuenta. Sin anuncios, sin rastreadores, sin Google Play Services — abierto y compatible con F-Droid.
+
+Parte de la suite Limecore Nexus.

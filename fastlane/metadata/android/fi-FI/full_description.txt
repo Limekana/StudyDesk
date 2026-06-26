@@ -1,0 +1,14 @@
+StudyDesk on opiskelun suoritussovellus opiskelijoille, jotka tuhlaavat aikaa miettiessään mitä opiskella sen sijaan että opiskelisivat.
+
+Syötät kurssit ja määräajat. StudyDeskin Seuraavaksi-moottori asettaa tärkeysjärjestykseen, mitä tehdä juuri nyt — päätös on jo tehty, kun istut alas.
+
+* Seuraavaksi — sääntöpohjainen prioriteettilista määräajoistasi
+* Jaksot — järjestä kurssit lukuvuoden ja jakson mukaan
+* Jaksohistoria — arkistoidut kurssit ryhmiteltynä vuoden ja jakson mukaan, keskiarvon kanssa
+* Arvosanat — IB- ja GPA-asteikot
+* Lock In — sisäänrakennettu Pomodoro-ajastin
+* Valinnainen tekoälyn opintopalaute istunnon jälkeen
+
+Lämmin paperiestetiikka, ei taas yksi kojelauta. Tietosi pysyvät laitteellasi; pilvisynkronointi on valinnaista ja tiliin sidottu. Ei mainoksia, ei seurantaa, ei Google Play -palveluita — avoin ja F-Droid-yhteensopiva.
+
+Osa Limecore Nexus -kokonaisuutta.

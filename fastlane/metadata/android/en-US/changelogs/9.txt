@@ -1,0 +1,6 @@
+First multilingual release (English, Finnish, French, German, Spanish, Chinese).
+
+New:
+- Periods / jaksot: organise courses by school year and period
+- Period History view (Settings > Archive) with per-period GPA
+- Empty-period re-onboarding when a new period starts
