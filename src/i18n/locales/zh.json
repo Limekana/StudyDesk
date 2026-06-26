@@ -75,6 +75,7 @@
   "settings": {
     "cloudSync": "云同步",
     "grades": "成绩",
-    "about": "关于"
+    "about": "关于",
+    "language": "语言"
   }
 }

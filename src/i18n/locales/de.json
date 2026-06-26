@@ -75,6 +75,7 @@
   "settings": {
     "cloudSync": "Cloud-Sync",
     "grades": "Noten",
-    "about": "Über"
+    "about": "Über",
+    "language": "Sprache"
   }
 }
