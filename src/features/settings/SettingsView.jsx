@@ -1,5 +1,6 @@
 import { useState, useCallback, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
+import { setLanguage, SUPPORTED_LANGS, LANGUAGE_NAMES } from '../../i18n/index.js';
 import { supabase } from '../../lib/supabase.js';
 import { setGuestMode } from '../../lib/guestMode.js';
 import PeriodHistory from '../grades/PeriodHistory.jsx';
@@ -21,6 +22,12 @@ const css = `
 .sv2-wrap{padding:16px 24px 80px;max-width:680px;margin:0 auto;}
 .sv2-section{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:14px;}
 .sv2-section-title{font-family:var(--font-mono);font-size:10px;letter-spacing:0.18em;color:var(--muted2);text-transform:uppercase;margin-bottom:14px;}
+
+/* Language switcher grid (v1.5.1) */
+.sv2-lang-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.sv2-lang-btn{font-family:var(--font-display);font-size:14px;color:var(--text);background:var(--bg);border:1px solid var(--border2);border-radius:9px;padding:11px 10px;cursor:pointer;text-align:left;transition:border-color .15s,background .15s;}
+.sv2-lang-btn:hover{border-color:var(--muted2);}
+.sv2-lang-btn--on{border-color:var(--accent,#2e7d52);background:color-mix(in srgb,var(--accent,#2e7d52) 8%,transparent);color:var(--accent,#2e7d52);font-weight:600;}
 
 /* Account hero */
 .sv2-hero{display:flex;align-items:center;gap:14px;}
@@ -75,7 +82,8 @@ function fmtTime(iso) {
 }
 
 export default function SettingsView({ state, dispatch, showFlash, session }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const currentLang = (i18n.language || 'en').split('-')[0];
   const [pulling, setPulling] = useState(false);
   const [lastPullAt, setLastPullAt] = useState(null);
   const [signingOut, setSigningOut] = useState(false);
@@ -183,6 +191,23 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
               with Nexus Command Center across your devices.
             </div>
           )}
+        </div>
+
+        {/* ── Language ── */}
+        <div className="sv2-section">
+          <div className="sv2-section-title">{t('settings.language')}</div>
+          <div className="sv2-lang-grid">
+            {SUPPORTED_LANGS.map((code) => (
+              <button
+                key={code}
+                className={`sv2-lang-btn${currentLang === code ? ' sv2-lang-btn--on' : ''}`}
+                onClick={() => setLanguage(code)}
+                aria-pressed={currentLang === code}
+              >
+                {LANGUAGE_NAMES[code]}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* ── Cloud sync ── */}

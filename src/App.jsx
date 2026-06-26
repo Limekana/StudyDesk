@@ -1,5 +1,6 @@
 import { useState, useReducer, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { setLanguage, SUPPORTED_LANGS, LANGUAGE_NAMES } from "./i18n/index.js";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { App as CapApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
@@ -1929,7 +1930,8 @@ function ExamCard({ exam, courses, dispatch }) {
 
 // ── ActionsView — Next Up ─────────────────────────────────────────────────────
 function ActionsView({ state, dispatch, showFlash, onAddCourse }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const currentLang = (i18n.language || "en").split("-")[0];
   const [newText, setNewText] = useState(""); const [newBucket, setNewBucket] = useState("today"); const [newCourse, setNewCourse] = useState("");
   const courses = Object.values(state.courses).filter(c => !c.deletedAt);
   // v1.5 (5D) — active = non-archived. When every course is archived (a new
@@ -1998,6 +2000,22 @@ function ActionsView({ state, dispatch, showFlash, onAddCourse }) {
         <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:12}}>
           <button className="btn btn-sm" onClick={()=>onAddCourse?.()}>{t('nextup.addCourse')}</button>
           <button className="btn-outline btn-sm" onClick={()=>dispatch({type:"SET_VIEW",view:"plan"})}>{t('nextup.goToPlan')}</button>
+        </div>
+        {/* v1.5.1 — first-run language choice. Lives in the re-onboarding
+            prompt (StudyDesk's first surface) + Settings. setLanguage writes
+            the localStorage override and applies live. */}
+        <div style={{marginTop:18}}>
+          <div style={{fontFamily:"var(--font-mono)",fontSize:10,letterSpacing:"0.18em",color:"var(--muted2)",textTransform:"uppercase",marginBottom:8}}>{t('settings.language')}</div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            {SUPPORTED_LANGS.map((code)=>(
+              <button
+                key={code}
+                className={currentLang===code?"btn btn-sm":"btn-outline btn-sm"}
+                onClick={()=>setLanguage(code)}
+                aria-pressed={currentLang===code}
+              >{LANGUAGE_NAMES[code]}</button>
+            ))}
+          </div>
         </div>
       </div>
     </div>

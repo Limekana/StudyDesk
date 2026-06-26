@@ -75,6 +75,7 @@
   "settings": {
     "cloudSync": "Pilvisynkronointi",
     "grades": "Arvosanat",
-    "about": "Tietoja"
+    "about": "Tietoja",
+    "language": "Kieli"
   }
 }

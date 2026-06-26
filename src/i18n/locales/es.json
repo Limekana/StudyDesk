@@ -75,6 +75,7 @@
   "settings": {
     "cloudSync": "Sincronización en la nube",
     "grades": "Notas",
-    "about": "Acerca de"
+    "about": "Acerca de",
+    "language": "Idioma"
   }
 }

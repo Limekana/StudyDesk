@@ -24,6 +24,16 @@ export const SUPPORTED_LANGS = ['en', 'fi', 'fr', 'de', 'es', 'zh'];
 
 export const LANG_STORAGE_KEY = 'limecore_lang';
 
+/** Native (endonym) display names for the in-app language switcher. */
+export const LANGUAGE_NAMES = {
+  en: 'English',
+  fi: 'Suomi',
+  fr: 'Français',
+  de: 'Deutsch',
+  es: 'Español',
+  zh: '中文',
+};
+
 function isSupported(code) {
   return SUPPORTED_LANGS.includes(code);
 }
