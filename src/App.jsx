@@ -179,7 +179,7 @@ const cssOnboard = `
   box-shadow:0 1px 0 var(--border2),0 18px 40px -18px rgba(40,30,15,0.28);
   /* notebook page: ruled lines + a red margin rule down the left */
   background-image:linear-gradient(var(--danger) 0 0),repeating-linear-gradient(transparent,transparent 31px,color-mix(in srgb,var(--border) 70%,transparent) 31px,color-mix(in srgb,var(--border) 70%,transparent) 32px);
-  background-size:1.5px 100%,100% 100%;background-position:46px 0,0 6px;background-repeat:no-repeat,repeat;
+  background-size:1.5px 100%,100% 100%;background-position:22px 0,0 6px;background-repeat:no-repeat,repeat;
   animation:obSettle 0.5s var(--ease-settle) both;}
 /* a strip of "washi tape" pinning the page at the top */
 .ob-card::before{content:"";position:absolute;top:-11px;left:50%;transform:translateX(-50%) rotate(-1.4deg);width:104px;height:22px;background:color-mix(in srgb,var(--warning) 18%,#fff);border:1px solid color-mix(in srgb,var(--warning) 28%,transparent);box-shadow:0 1px 2px rgba(0,0,0,0.05);}
@@ -210,7 +210,7 @@ const cssOnboard = `
 .ob-notif-icon{font-size:30px;margin-bottom:8px;}
 .ob-notif-title{font-family:var(--font-display);font-size:18px;font-weight:600;margin-bottom:8px;}
 .ob-notif-desc{font-size:13px;color:var(--muted);line-height:1.6;}
-@media(max-width:480px){.ob-card{padding:34px 22px 26px;background-position:38px 0,0 6px;}.ob-pad{padding-left:14px;}.ob-card::before{width:92px;}}`;
+@media(max-width:480px){.ob-card{padding:34px 20px 26px;background-position:15px 0,0 6px;}.ob-pad{padding-left:10px;}.ob-card::before{width:92px;}}`;
 
 function reducer(state, action) {
   switch(action.type) {
