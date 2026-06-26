@@ -77,5 +77,24 @@
     "grades": "Noten",
     "about": "Über",
     "language": "Sprache"
+  },
+  "sdob": {
+    "brand": "Schluss mit Grübeln. Fang an zu lernen.",
+    "langTitle": "Wähle deine Sprache",
+    "langBody": "Du kannst dies jederzeit in den Einstellungen ändern.",
+    "welcomeTitle": "Wisse, was als Nächstes dran ist — jedes Mal, wenn du dich hinsetzt.",
+    "welcomeBody": "Sag StudyDesk, was ansteht. Es sagt dir, was du jetzt tun sollst — ohne Entscheidungslast, ohne Stress.",
+    "getStarted": "Loslegen",
+    "courseTitle": "Füge deinen ersten Kurs hinzu",
+    "courseBody": "Was lernst du gerade? Weitere kannst du später hinzufügen.",
+    "courseNameLabel": "Kursname",
+    "coursePlaceholder": "z. B. Analysis II, Geschichte, Biologie…",
+    "colorLabel": "Wähle eine Farbe",
+    "continue": "Weiter",
+    "skip": "Vorerst überspringen",
+    "notifTitle": "Tägliche Erinnerungen",
+    "notifBody": "StudyDesk kann dich jeden Morgen an deine wichtigste Lernpriorität erinnern. Kein Lärm — nur ein nützlicher Hinweis.",
+    "enableReminders": "Erinnerungen aktivieren",
+    "maybeLater": "Vielleicht später"
   }
 }

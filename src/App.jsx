@@ -167,29 +167,50 @@ const INITIAL = {
   view:"actions", activeCourse:null,
 };
 
-// ── Onboarding CSS ────────────────────────────────────────────────────────────
+// ── Onboarding CSS — cream-paper notebook (v1.5.1 design pass) ────────────────
+// Direction: editorial / paper. A first-run wizard that feels like opening a
+// fresh notebook — ruled lines, a red margin rule, a taped top corner, Playfair
+// display ink, and a soft page-settle on each step.
 const cssOnboard = `
-.ob-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px 20px;background:var(--bg);}
-.ob-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:36px 32px;width:100%;max-width:440px;box-shadow:var(--shadow-md);}
-.ob-wordmark{font-family:var(--font-display);font-size:28px;font-weight:600;text-align:center;margin-bottom:6px;}
-.ob-tagline{font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:center;letter-spacing:0.08em;margin-bottom:32px;}
-.ob-steps{display:flex;gap:6px;justify-content:center;margin-bottom:28px;}
-.ob-step-dot{width:28px;height:4px;border-radius:99px;background:var(--border);transition:background 0.2s;}
-.ob-step-dot.active{background:var(--text);}
+.ob-wrap{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px 20px;background:var(--bg);overflow:hidden;}
+/* faint ruled-paper atmosphere behind the page */
+.ob-wrap::before{content:"";position:absolute;inset:0;background-image:repeating-linear-gradient(var(--bg),var(--bg) 31px,var(--border) 31px,var(--border) 32px);opacity:0.35;pointer-events:none;}
+.ob-card{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:40px 34px 32px;width:100%;max-width:440px;
+  box-shadow:0 1px 0 var(--border2),0 18px 40px -18px rgba(40,30,15,0.28);
+  /* notebook page: ruled lines + a red margin rule down the left */
+  background-image:linear-gradient(var(--danger) 0 0),repeating-linear-gradient(transparent,transparent 31px,color-mix(in srgb,var(--border) 70%,transparent) 31px,color-mix(in srgb,var(--border) 70%,transparent) 32px);
+  background-size:1.5px 100%,100% 100%;background-position:46px 0,0 6px;background-repeat:no-repeat,repeat;
+  animation:obSettle 0.5s var(--ease-settle) both;}
+/* a strip of "washi tape" pinning the page at the top */
+.ob-card::before{content:"";position:absolute;top:-11px;left:50%;transform:translateX(-50%) rotate(-1.4deg);width:104px;height:22px;background:color-mix(in srgb,var(--warning) 18%,#fff);border:1px solid color-mix(in srgb,var(--warning) 28%,transparent);box-shadow:0 1px 2px rgba(0,0,0,0.05);}
+@keyframes obSettle{from{opacity:0;transform:translateY(10px) rotate(-0.4deg);}to{opacity:1;transform:none;}}
+.ob-pad{padding-left:18px;}            /* clear the red margin rule */
+.ob-wordmark{font-family:var(--font-display);font-size:30px;font-weight:600;text-align:center;letter-spacing:-0.01em;margin-bottom:4px;}
+.ob-tagline{font-family:var(--font-mono);font-size:10px;color:var(--muted);text-align:center;letter-spacing:0.16em;text-transform:uppercase;margin-bottom:26px;}
+/* progress as inked ticks with a step count */
+.ob-steps{display:flex;align-items:center;gap:7px;justify-content:center;margin-bottom:26px;}
+.ob-step-dot{width:24px;height:3px;border-radius:0;background:var(--border2);transition:background 0.3s var(--ease-paper),transform 0.3s var(--ease-paper);transform-origin:left;}
+.ob-step-dot.active{background:var(--text);transform:scaleX(1.18);}
 .ob-step-dot.done{background:var(--muted);}
-.ob-step-title{font-family:var(--font-display);font-size:20px;margin-bottom:8px;}
-.ob-step-desc{font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.6;}
-.ob-colors{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;}
-.ob-color{width:26px;height:26px;border-radius:50%;cursor:pointer;transition:transform 0.1s;}
-.ob-color:hover{transform:scale(1.15);}
-.ob-skip{font-family:var(--font-mono);font-size:10px;color:var(--muted2);cursor:pointer;text-align:center;margin-top:16px;letter-spacing:0.05em;}
-.ob-skip:hover{color:var(--muted);}
-.ob-notif-box{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:18px;margin-bottom:20px;text-align:center;}
-.ob-notif-icon{font-size:32px;margin-bottom:10px;}
-.ob-notif-title{font-family:var(--font-display);font-size:17px;margin-bottom:8px;}
+.ob-step-body{animation:obPage 0.4s var(--ease-page-turn) both;}
+@keyframes obPage{from{opacity:0;transform:translateX(8px);}to{opacity:1;transform:none;}}
+.ob-step-title{font-family:var(--font-display);font-size:23px;font-weight:600;line-height:1.18;margin-bottom:10px;}
+.ob-step-desc{font-size:13.5px;color:var(--muted);margin-bottom:22px;line-height:1.62;}
+.ob-colors{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:4px;}
+.ob-color{width:26px;height:26px;border-radius:50%;cursor:pointer;transition:transform 0.12s var(--ease-settle);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.08);}
+.ob-color:hover{transform:scale(1.16);}
+.ob-skip{font-family:var(--font-mono);font-size:10px;color:var(--muted2);cursor:pointer;text-align:center;margin-top:16px;letter-spacing:0.08em;text-transform:uppercase;}
+.ob-skip:hover{color:var(--text);text-decoration:underline;text-underline-offset:3px;}
+/* language step — paper chips */
+.ob-langs{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:4px;}
+.ob-lang{font-family:var(--font-display);font-size:15px;color:var(--text);background:var(--bg);border:1px solid var(--border2);border-radius:3px;padding:12px 12px;cursor:pointer;text-align:left;transition:border-color 0.15s,background 0.15s,transform 0.12s var(--ease-settle);-webkit-tap-highlight-color:transparent;}
+.ob-lang:hover{transform:translateY(-1px);}
+.ob-lang.on{border-color:var(--text);background:var(--surface2);box-shadow:inset 2px 0 0 var(--danger);}
+.ob-notif-box{position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:20px;margin-bottom:20px;text-align:center;}
+.ob-notif-icon{font-size:30px;margin-bottom:8px;}
+.ob-notif-title{font-family:var(--font-display);font-size:18px;font-weight:600;margin-bottom:8px;}
 .ob-notif-desc{font-size:13px;color:var(--muted);line-height:1.6;}
-@media(max-width:480px){.ob-card{padding:28px 20px;}}
-`;
+@media(max-width:480px){.ob-card{padding:34px 22px 26px;background-position:38px 0,0 6px;}.ob-pad{padding-left:14px;}.ob-card::before{width:92px;}}`;
 
 function reducer(state, action) {
   switch(action.type) {
@@ -1246,92 +1267,107 @@ export default function App() {
   </>);
 }
 
-// ── OnboardingView — 3-step first-run wizard ──────────────────────────────────
+// ── OnboardingView — 4-step first-run wizard (cream-paper design) ─────────────
+// Steps: 0 language · 1 welcome · 2 first course · 3 daily reminders.
 function OnboardingView({ onComplete }) {
-  const [step, setStep] = useState(0); // 0=welcome, 1=add course, 2=notification ask
+  const { t, i18n } = useTranslation();
+  const currentLang = (i18n.language || "en").split("-")[0];
+  const [step, setStep] = useState(0);
   const [courseName, setCourseName] = useState("");
   const [colorIdx, setColorIdx] = useState(0);
 
   const chosenColor = COURSE_COLORS[colorIdx % COURSE_COLORS.length];
+  const result = () => courseName.trim() ? { name: courseName.trim(), color: chosenColor } : null;
 
-  const stepDots = [0,1,2].map(i => (
+  const stepDots = [0,1,2,3].map(i => (
     <div key={i} className={"ob-step-dot"+(i===step?" active":i<step?" done":"")}/>
   ));
 
-  if (step === 0) return (
+  // Shared chrome — wordmark, tagline, progress ticks — wraps every step's body.
+  const Shell = ({ children }) => (
     <div className="ob-wrap">
       <div className="ob-card">
-        <div className="ob-wordmark">Studydesk</div>
-        <div className="ob-tagline">STOP DECIDING. START STUDYING.</div>
-        <div className="ob-steps">{stepDots}</div>
-        <div className="ob-step-title">Know what to do next,<br/>every time you sit down.</div>
-        <div className="ob-step-desc">
-          Tell Studydesk what's due. It tells you what to work on right now — no decision cost, no anxiety.
+        <div className="ob-pad">
+          <div className="ob-wordmark">StudyDesk</div>
+          <div className="ob-tagline">{t('sdob.brand')}</div>
+          <div className="ob-steps">{stepDots}</div>
+          <div className="ob-step-body" key={step}>{children}</div>
         </div>
-        <button className="btn" style={{width:"100%",padding:"13px"}} onClick={()=>setStep(1)}>
-          Get started →
-        </button>
       </div>
     </div>
+  );
+
+  if (step === 0) return (
+    <Shell>
+      <div className="ob-step-title">{t('sdob.langTitle')}</div>
+      <div className="ob-step-desc">{t('sdob.langBody')}</div>
+      <div className="ob-langs">
+        {SUPPORTED_LANGS.map((code)=>(
+          <button key={code} className={"ob-lang"+(currentLang===code?" on":"")}
+            onClick={()=>setLanguage(code)} aria-pressed={currentLang===code}>
+            {LANGUAGE_NAMES[code]}
+          </button>
+        ))}
+      </div>
+      <button className="btn" style={{width:"100%",padding:"13px",marginTop:16}} onClick={()=>setStep(1)}>
+        {t('sdob.continue')} →
+      </button>
+    </Shell>
   );
 
   if (step === 1) return (
-    <div className="ob-wrap">
-      <div className="ob-card">
-        <div className="ob-wordmark">Studydesk</div>
-        <div className="ob-tagline">STEP 1 OF 2</div>
-        <div className="ob-steps">{stepDots}</div>
-        <div className="ob-step-title">Add your first course</div>
-        <div className="ob-step-desc">What are you studying right now? You can add more courses later.</div>
-        <div className="input-group">
-          <div className="input-label">Course name</div>
-          <input type="text" placeholder="e.g. Calculus II, History, Biology…"
-            value={courseName} onChange={e=>setCourseName(e.target.value)}
-            onKeyDown={e=>e.key==="Enter"&&courseName.trim()&&setStep(2)}
-            autoFocus/>
-        </div>
-        <div className="input-group">
-          <div className="input-label">Pick a colour</div>
-          <div className="ob-colors">
-            {COURSE_COLORS.map((c,i)=>(
-              <div key={c} className="ob-color"
-                style={{background:c, outline:colorIdx===i?"3px solid "+c:"2px solid transparent", outlineOffset:2}}
-                onClick={()=>setColorIdx(i)}/>
-            ))}
-          </div>
-        </div>
-        <button className="btn" style={{width:"100%",padding:"13px",marginTop:8}}
-          onClick={()=>{ if(courseName.trim()) setStep(2); }}>
-          Continue →
-        </button>
-        <div className="ob-skip" onClick={()=>setStep(2)}>Skip for now</div>
-      </div>
-    </div>
+    <Shell>
+      <div className="ob-step-title">{t('sdob.welcomeTitle')}</div>
+      <div className="ob-step-desc">{t('sdob.welcomeBody')}</div>
+      <button className="btn" style={{width:"100%",padding:"13px"}} onClick={()=>setStep(2)}>
+        {t('sdob.getStarted')} →
+      </button>
+    </Shell>
   );
 
   if (step === 2) return (
-    <div className="ob-wrap">
-      <div className="ob-card">
-        <div className="ob-wordmark">Studydesk</div>
-        <div className="ob-tagline">ONE LAST THING</div>
-        <div className="ob-steps">{stepDots}</div>
-        <div className="ob-notif-box">
-          <div className="ob-notif-icon">🔔</div>
-          <div className="ob-notif-title">Daily reminders</div>
-          <div className="ob-notif-desc">
-            Studydesk can nudge you each morning with your top study priority. No noise — just one useful prompt.
-          </div>
-        </div>
-        <button className="btn" style={{width:"100%",padding:"13px",marginBottom:10}}
-          onClick={()=>onComplete(courseName.trim()?{name:courseName.trim(),color:chosenColor}:null)}>
-          Enable reminders
-        </button>
-        <button className="btn-outline" style={{width:"100%",padding:"11px"}}
-          onClick={()=>onComplete(courseName.trim()?{name:courseName.trim(),color:chosenColor}:null)}>
-          Maybe later
-        </button>
+    <Shell>
+      <div className="ob-step-title">{t('sdob.courseTitle')}</div>
+      <div className="ob-step-desc">{t('sdob.courseBody')}</div>
+      <div className="input-group">
+        <div className="input-label">{t('sdob.courseNameLabel')}</div>
+        <input type="text" placeholder={t('sdob.coursePlaceholder')}
+          value={courseName} onChange={e=>setCourseName(e.target.value)}
+          onKeyDown={e=>e.key==="Enter"&&courseName.trim()&&setStep(3)}
+          autoFocus/>
       </div>
-    </div>
+      <div className="input-group">
+        <div className="input-label">{t('sdob.colorLabel')}</div>
+        <div className="ob-colors">
+          {COURSE_COLORS.map((c,i)=>(
+            <div key={c} className="ob-color"
+              style={{background:c, outline:colorIdx===i?"3px solid "+c:"2px solid transparent", outlineOffset:2}}
+              onClick={()=>setColorIdx(i)}/>
+          ))}
+        </div>
+      </div>
+      <button className="btn" style={{width:"100%",padding:"13px",marginTop:8}}
+        onClick={()=>{ if(courseName.trim()) setStep(3); }}>
+        {t('sdob.continue')} →
+      </button>
+      <div className="ob-skip" onClick={()=>setStep(3)}>{t('sdob.skip')}</div>
+    </Shell>
+  );
+
+  if (step === 3) return (
+    <Shell>
+      <div className="ob-notif-box">
+        <div className="ob-notif-icon">🔔</div>
+        <div className="ob-notif-title">{t('sdob.notifTitle')}</div>
+        <div className="ob-notif-desc">{t('sdob.notifBody')}</div>
+      </div>
+      <button className="btn" style={{width:"100%",padding:"13px",marginBottom:10}} onClick={()=>onComplete(result())}>
+        {t('sdob.enableReminders')}
+      </button>
+      <button className="btn-outline" style={{width:"100%",padding:"11px"}} onClick={()=>onComplete(result())}>
+        {t('sdob.maybeLater')}
+      </button>
+    </Shell>
   );
 
   return null;
