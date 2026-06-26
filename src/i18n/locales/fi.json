@@ -77,5 +77,24 @@
     "grades": "Arvosanat",
     "about": "Tietoja",
     "language": "Kieli"
+  },
+  "sdob": {
+    "brand": "Lopeta miettiminen. Aloita opiskelu.",
+    "langTitle": "Valitse kielesi",
+    "langBody": "Voit vaihtaa tämän milloin tahansa asetuksissa.",
+    "welcomeTitle": "Tiedä mitä tehdä seuraavaksi, joka kerta kun istut alas.",
+    "welcomeBody": "Kerro StudyDeskille mikä on määräajassa. Se kertoo mitä tehdä juuri nyt — ei päätöstaakkaa, ei ahdistusta.",
+    "getStarted": "Aloita",
+    "courseTitle": "Lisää ensimmäinen kurssisi",
+    "courseBody": "Mitä opiskelet juuri nyt? Voit lisätä lisää myöhemmin.",
+    "courseNameLabel": "Kurssin nimi",
+    "coursePlaceholder": "esim. Analyysi II, Historia, Biologia…",
+    "colorLabel": "Valitse väri",
+    "continue": "Jatka",
+    "skip": "Ohita toistaiseksi",
+    "notifTitle": "Päivittäiset muistutukset",
+    "notifBody": "StudyDesk voi muistuttaa sinua joka aamu tärkeimmästä opiskeluprioriteetistasi. Ei melua — vain yksi hyödyllinen kehotus.",
+    "enableReminders": "Ota muistutukset käyttöön",
+    "maybeLater": "Ehkä myöhemmin"
   }
 }

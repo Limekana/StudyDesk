@@ -77,5 +77,24 @@
     "grades": "成绩",
     "about": "关于",
     "language": "语言"
+  },
+  "sdob": {
+    "brand": "别再纠结，开始学习。",
+    "langTitle": "选择你的语言",
+    "langBody": "你可以随时在设置中更改。",
+    "welcomeTitle": "每次坐下，都知道接下来该做什么。",
+    "welcomeBody": "把截止日期告诉 StudyDesk，它会告诉你此刻该做什么——没有决策负担，没有焦虑。",
+    "getStarted": "开始",
+    "courseTitle": "添加你的第一门课程",
+    "courseBody": "你现在在学什么？之后可以添加更多。",
+    "courseNameLabel": "课程名称",
+    "coursePlaceholder": "例如 微积分二、历史、生物…",
+    "colorLabel": "选择颜色",
+    "continue": "继续",
+    "skip": "暂时跳过",
+    "notifTitle": "每日提醒",
+    "notifBody": "StudyDesk 可在每天早晨提醒你最重要的学习优先项。没有噪音——只有一条有用的提示。",
+    "enableReminders": "开启提醒",
+    "maybeLater": "以后再说"
   }
 }

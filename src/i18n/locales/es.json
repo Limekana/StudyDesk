@@ -77,5 +77,24 @@
     "grades": "Notas",
     "about": "Acerca de",
     "language": "Idioma"
+  },
+  "sdob": {
+    "brand": "Deja de decidir. Empieza a estudiar.",
+    "langTitle": "Elige tu idioma",
+    "langBody": "Puedes cambiarlo cuando quieras en Ajustes.",
+    "welcomeTitle": "Sabe qué hacer a continuación, cada vez que te sientas.",
+    "welcomeBody": "Dile a StudyDesk qué tienes pendiente. Te dice qué hacer ahora mismo — sin coste de decisión, sin ansiedad.",
+    "getStarted": "Empezar",
+    "courseTitle": "Añade tu primer curso",
+    "courseBody": "¿Qué estás estudiando ahora? Puedes añadir más luego.",
+    "courseNameLabel": "Nombre del curso",
+    "coursePlaceholder": "p. ej. Cálculo II, Historia, Biología…",
+    "colorLabel": "Elige un color",
+    "continue": "Continuar",
+    "skip": "Omitir por ahora",
+    "notifTitle": "Recordatorios diarios",
+    "notifBody": "StudyDesk puede recordarte cada mañana tu prioridad de estudio. Sin ruido — solo un aviso útil.",
+    "enableReminders": "Activar recordatorios",
+    "maybeLater": "Quizás más tarde"
   }
 }

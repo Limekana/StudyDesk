@@ -77,5 +77,24 @@
     "grades": "Grades",
     "about": "About",
     "language": "Language"
+  },
+  "sdob": {
+    "brand": "Stop deciding. Start studying.",
+    "langTitle": "Choose your language",
+    "langBody": "You can change this anytime in Settings.",
+    "welcomeTitle": "Know what to do next, every time you sit down.",
+    "welcomeBody": "Tell StudyDesk what's due. It tells you what to work on right now — no decision cost, no anxiety.",
+    "getStarted": "Get started",
+    "courseTitle": "Add your first course",
+    "courseBody": "What are you studying right now? You can add more later.",
+    "courseNameLabel": "Course name",
+    "coursePlaceholder": "e.g. Calculus II, History, Biology…",
+    "colorLabel": "Pick a colour",
+    "continue": "Continue",
+    "skip": "Skip for now",
+    "notifTitle": "Daily reminders",
+    "notifBody": "StudyDesk can nudge you each morning with your top study priority. No noise — just one useful prompt.",
+    "enableReminders": "Enable reminders",
+    "maybeLater": "Maybe later"
   }
 }

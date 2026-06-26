@@ -77,5 +77,24 @@
     "grades": "Notes",
     "about": "À propos",
     "language": "Langue"
+  },
+  "sdob": {
+    "brand": "Arrête de choisir. Commence à réviser.",
+    "langTitle": "Choisis ta langue",
+    "langBody": "Tu peux changer cela à tout moment dans les paramètres.",
+    "welcomeTitle": "Sache quoi faire ensuite, à chaque fois que tu t'assois.",
+    "welcomeBody": "Dis à StudyDesk ce qui est dû. Il te dit quoi faire maintenant — sans coût de décision, sans anxiété.",
+    "getStarted": "Commencer",
+    "courseTitle": "Ajoute ton premier cours",
+    "courseBody": "Qu'étudies-tu en ce moment ? Tu pourras en ajouter d'autres plus tard.",
+    "courseNameLabel": "Nom du cours",
+    "coursePlaceholder": "ex. Analyse II, Histoire, Biologie…",
+    "colorLabel": "Choisis une couleur",
+    "continue": "Continuer",
+    "skip": "Passer pour l'instant",
+    "notifTitle": "Rappels quotidiens",
+    "notifBody": "StudyDesk peut te rappeler chaque matin ta priorité d'étude. Pas de bruit — juste un rappel utile.",
+    "enableReminders": "Activer les rappels",
+    "maybeLater": "Plus tard"
   }
 }
