@@ -1,0 +1,1 @@
+Vollständige Unterstützung für sechs Sprachen (Englisch, Finnisch, Französisch, Deutsch, Spanisch, Chinesisch) in allen Ansichten, dazu das Schuljahr/Perioden-Modell, der schreibgeschützte Periodenverlauf mit Notendurchschnitt pro Periode und ein optionales KI-Lernfazit nach der Sitzung.
