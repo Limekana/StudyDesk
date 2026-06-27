@@ -1,0 +1,1 @@
+Full six-language support (English, Finnish, French, German, Spanish, Chinese) across every view, plus the school-year/period model, read-only Period History with per-period GPA, and an optional post-session AI study debrief.

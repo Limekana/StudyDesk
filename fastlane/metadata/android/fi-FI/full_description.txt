@@ -1,0 +1,13 @@
+StudyDesk on opiskelun toteutussovellus opiskelijoille.
+
+Ominaisuudet:
+* Syötä kurssisi ja määräajat; Seuraavaksi-moottori järjestää mitä tehdä juuri nyt
+* Järjestä kurssit lukuvuoden ja jakson mukaan
+* Vain luku -jaksohistoria jaksokohtaisella keskiarvolla
+* Arvostele IB- ja GPA-asteikoilla
+* Sisäänrakennettu Pomodoro-ajastin
+* Valinnainen tekoälyn opiskelukooste istunnon jälkeen
+
+Lämmin paperiestetiikka. Paikallinen ensin; valinnainen tiliin sidottu pilvisynkronointi. Ei Google Play -palveluita — Google-kirjautuminen on tavallinen web-OAuth.
+
+Osa Limecore Nexus -pakettia. Saatavilla englanniksi, suomeksi, ranskaksi, saksaksi, espanjaksi ja kiinaksi.

@@ -1,0 +1,1 @@
+Täysi kuuden kielen tuki (englanti, suomi, ranska, saksa, espanja, kiina) kaikissa näkymissä, sekä lukuvuosi/jakso-malli, vain luku -jaksohistoria jaksokohtaisella keskiarvolla ja valinnainen istunnon jälkeinen tekoälykooste.

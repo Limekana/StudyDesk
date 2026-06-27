@@ -1,0 +1,1 @@
+Compatibilidad completa con seis idiomas (inglés, finlandés, francés, alemán, español, chino) en todas las vistas, además del modelo de año escolar/periodo, el historial de periodos de solo lectura con promedio por periodo y un resumen de estudio con IA opcional tras la sesión.
