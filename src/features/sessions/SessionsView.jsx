@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as outbox from '../../lib/outbox.js';
 
 const css = `
@@ -28,14 +29,14 @@ const css = `
 .sv-empty{padding:48px 20px;text-align:center;border:1px dashed var(--border2);border-radius:10px;background:var(--surface);color:var(--muted);}
 `;
 
-function fmtDateHeader(iso) {
+function fmtDateHeader(iso, t, lang) {
   const d = new Date(iso + 'T00:00:00');
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
   const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-  if (sameDay(d, today)) return 'TODAY';
-  if (sameDay(d, yesterday)) return 'YESTERDAY';
-  return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: d.getFullYear() !== today.getFullYear() ? 'numeric' : undefined }).toUpperCase();
+  if (sameDay(d, today)) return t('sv.todayHead');
+  if (sameDay(d, yesterday)) return t('sv.yesterdayHead');
+  return d.toLocaleDateString(lang || 'en', { weekday: 'long', day: 'numeric', month: 'long', year: d.getFullYear() !== today.getFullYear() ? 'numeric' : undefined }).toUpperCase();
 }
 
 function fmtTime(iso) {
@@ -44,6 +45,8 @@ function fmtTime(iso) {
 }
 
 export default function SessionsView({ state, dispatch, showFlash, session }) {
+  const { t, i18n } = useTranslation();
+  const lang = (i18n.language || 'en').split('-')[0];
   const sessions = useMemo(
     () => (state.studySessions || [])
       .filter((s) => !s.deletedAt)
@@ -74,7 +77,7 @@ export default function SessionsView({ state, dispatch, showFlash, session }) {
 
   function delSession(id) {
     dispatch({ type: 'DELETE_SESSION', id });
-    showFlash('Session deleted');
+    showFlash(t('sv.sessionDeleted'));
     if (session) outbox.enqueue('delete_session', { id });
   }
 
@@ -83,17 +86,17 @@ export default function SessionsView({ state, dispatch, showFlash, session }) {
       <style>{css}</style>
       <div className="sv-wrap">
         <div className="sv-stats">
-          <div className="sv-stat"><div className="sv-stat-label">Today</div><div className="sv-stat-value">{(todayTotal / 60).toFixed(1)}h</div></div>
-          <div className="sv-stat"><div className="sv-stat-label">Last 7 days</div><div className="sv-stat-value">{(weekTotal / 60).toFixed(1)}h</div></div>
-          <div className="sv-stat"><div className="sv-stat-label">All-time sessions</div><div className="sv-stat-value">{sessions.length}</div></div>
-          <div className="sv-stat"><div className="sv-stat-label">All-time hours</div><div className="sv-stat-value">{(total / 60).toFixed(1)}h</div></div>
+          <div className="sv-stat"><div className="sv-stat-label">{t('sv.today')}</div><div className="sv-stat-value">{(todayTotal / 60).toFixed(1)}h</div></div>
+          <div className="sv-stat"><div className="sv-stat-label">{t('sv.last7')}</div><div className="sv-stat-value">{(weekTotal / 60).toFixed(1)}h</div></div>
+          <div className="sv-stat"><div className="sv-stat-label">{t('sv.allSessions')}</div><div className="sv-stat-value">{sessions.length}</div></div>
+          <div className="sv-stat"><div className="sv-stat-label">{t('sv.allHours')}</div><div className="sv-stat-value">{(total / 60).toFixed(1)}h</div></div>
         </div>
 
         {sessions.length === 0 && (
           <div className="sv-empty">
             <div style={{ fontSize: 32, marginBottom: 10, color: 'var(--muted2)' }}>≡</div>
-            <div style={{ fontWeight: 600, marginBottom: 6, color: 'var(--text)' }}>No sessions logged yet</div>
-            <div style={{ fontSize: 13 }}>Finish a Pomodoro and tap Save to start tracking.</div>
+            <div style={{ fontWeight: 600, marginBottom: 6, color: 'var(--text)' }}>{t('sv.emptyTitle')}</div>
+            <div style={{ fontSize: 13 }}>{t('sv.emptyBody')}</div>
           </div>
         )}
 
@@ -102,7 +105,7 @@ export default function SessionsView({ state, dispatch, showFlash, session }) {
           return (
             <div key={dateKey}>
               <div className="sv-date-head">
-                {fmtDateHeader(dateKey)} · {(dayTotal / 60).toFixed(1)}h
+                {fmtDateHeader(dateKey, t, lang)} · {(dayTotal / 60).toFixed(1)}h
               </div>
               {list.map((s) => {
                 const course = s.subjectId ? state.courses[s.subjectId] : null;
@@ -111,10 +114,10 @@ export default function SessionsView({ state, dispatch, showFlash, session }) {
                     <span className="sv-item-pip" style={{ background: course?.color || 'var(--border2)' }} />
                     <div className="sv-item-body">
                       <div className="sv-item-title">
-                        {course?.name || s.notes || 'General study'}
+                        {course?.name || s.notes || t('sv.generalStudy')}
                         {s.aiSessionSummary && (
                           <span
-                            title="AI debrief"
+                            title={t('sv.aiBadge')}
                             style={{
                               marginLeft: 6,
                               fontFamily: 'var(--font-mono)',
@@ -135,7 +138,7 @@ export default function SessionsView({ state, dispatch, showFlash, session }) {
                         {fmtTime(s.startedAt)}
                         {course && s.notes ? ` · ${s.notes}` : ''}
                         {s.focusRating != null && (
-                          <span className="sv-focus" title={`Focus ${s.focusRating}/5`} aria-label={`Focus ${s.focusRating} of 5`}>
+                          <span className="sv-focus" title={t('sv.focusTitle', { n: s.focusRating })} aria-label={t('sv.focusAria', { n: s.focusRating })}>
                             {[1, 2, 3, 4, 5].map((n) => (
                               <span key={n} className={'sv-focus-pip' + (n <= s.focusRating ? ' on' : '')} />
                             ))}
@@ -151,8 +154,8 @@ export default function SessionsView({ state, dispatch, showFlash, session }) {
                     </div>
                     <span className="sv-item-dur">{s.durationMinutes}m</span>
                     <span className="sv-item-actions">
-                      <button onClick={() => setEditing(s)} title="Edit">✎</button>
-                      <button className="danger" onClick={() => delSession(s.id)} title="Delete">×</button>
+                      <button onClick={() => setEditing(s)} title={t('common.edit')}>✎</button>
+                      <button className="danger" onClick={() => delSession(s.id)} title={t('common.delete')}>×</button>
                     </span>
                   </div>
                 );
@@ -169,7 +172,7 @@ export default function SessionsView({ state, dispatch, showFlash, session }) {
             onSave={(patch) => {
               dispatch({ type: 'EDIT_SESSION', id: editing.id, ...patch });
               setEditing(null);
-              showFlash('Session updated');
+              showFlash(t('sv.sessionUpdated'));
               if (session) outbox.enqueue('update_session', { id: editing.id, ...patch });
             }}
           />
@@ -180,6 +183,7 @@ export default function SessionsView({ state, dispatch, showFlash, session }) {
 }
 
 function SessionEditModal({ session, courses, onClose, onSave }) {
+  const { t } = useTranslation();
   const [subjectId, setSubjectId] = useState(session.subjectId || '');
   const [duration, setDuration] = useState(String(session.durationMinutes));
   const [notes, setNotes] = useState(session.notes || '');
@@ -199,24 +203,24 @@ function SessionEditModal({ session, courses, onClose, onSave }) {
   return (
     <div className="modal-overlay" role="dialog" aria-modal="true" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-title">Edit session</div>
+        <div className="modal-title">{t('sv.mEdit')}</div>
         <div className="input-group">
-          <div className="input-label">Course</div>
+          <div className="input-label">{t('sv.fCourse')}</div>
           <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
-            <option value="">General study</option>
+            <option value="">{t('sv.generalStudy')}</option>
             {courses.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
         <div className="input-group">
-          <div className="input-label">Duration (minutes)</div>
+          <div className="input-label">{t('sv.fDuration')}</div>
           <input type="number" min="1" max="1440" value={duration} onChange={(e) => setDuration(e.target.value)} />
         </div>
         <div className="input-group">
-          <div className="input-label">Notes</div>
+          <div className="input-label">{t('sv.fNotes')}</div>
           <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} />
         </div>
         <div className="input-group">
-          <div className="input-label">Focus quality (optional)</div>
+          <div className="input-label">{t('sv.fFocus')}</div>
           <div className="sv-focus-row">
             {[1, 2, 3, 4, 5].map((n) => (
               <button
@@ -232,8 +236,8 @@ function SessionEditModal({ session, courses, onClose, onSave }) {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-          <button className="btn" onClick={submit}>Save</button>
-          <button className="btn-outline" onClick={onClose}>Cancel</button>
+          <button className="btn" onClick={submit}>{t('common.save')}</button>
+          <button className="btn-outline" onClick={onClose}>{t('common.cancel')}</button>
         </div>
       </div>
     </div>

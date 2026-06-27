@@ -1,0 +1,13 @@
+StudyDesk ist eine App zur Studienumsetzung für Studierende.
+
+Funktionen:
+* Gib deine Kurse und Fristen ein; die Als-Nächstes-Engine ordnet, was jetzt zu tun ist
+* Ordne Kurse nach Schuljahr und Periode (jakso)
+* Schreibgeschützter Periodenverlauf mit Notendurchschnitt pro Periode
+* Benotung auf IB- und GPA-Skalen
+* Integrierter Pomodoro-Fokus-Timer
+* Optionales KI-Lernfazit nach einer Sitzung
+
+Warme Papier-Ästhetik. Lokal zuerst; optionale kontogebundene Cloud-Synchronisierung. Keine Google Play Services — die Google-Anmeldung ist ein einfacher Web-OAuth-Ablauf.
+
+Teil der Limecore Nexus-Suite. Verfügbar in Englisch, Finnisch, Französisch, Deutsch, Spanisch und Chinesisch.

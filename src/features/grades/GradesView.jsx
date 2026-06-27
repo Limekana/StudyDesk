@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { calculateGPA, subjectEffectiveGrade, subjectsWithEffectiveGrades } from '../../lib/gpa.js';
 import * as outbox from '../../lib/outbox.js';
 
@@ -52,6 +53,7 @@ const css = `
 `;
 
 export default function GradesView({ state, dispatch, showFlash, session }) {
+  const { t } = useTranslation();
   const mode = state.gradeMode || 'ib';
   // v1.2 — archive-aware. `activeSubjects` drives the GPA and the primary
   // list; `archivedSubjects` rendered separately when the toggle is on.
@@ -84,7 +86,7 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
 
   function onAddClick(subjectId) {
     if (subjects.length === 0) {
-      showFlash('Add a course first');
+      showFlash(t('gv.addCourseFirst'));
       return;
     }
     setEditing(null);
@@ -100,7 +102,7 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
     }
     setShowAdd(false);
     setEditing(null);
-    showFlash(editing ? 'Grade updated' : 'Grade added');
+    showFlash(editing ? t('gv.gradeUpdated') : t('gv.gradeAdded'));
     if (session) {
       outbox.enqueue('upsert_grade', {
         id, subjectId: payload.subjectId, grade: payload.grade, weight: payload.weight, date: payload.date,
@@ -110,7 +112,7 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
 
   function delGrade(id) {
     dispatch({ type: 'DELETE_GRADE', id });
-    showFlash('Grade deleted');
+    showFlash(t('gv.gradeDeleted'));
     if (session) outbox.enqueue('delete_grade', { id });
   }
 
@@ -123,7 +125,7 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
     if (!semester) return;
     const stamp = new Date().toISOString();
     dispatch({ type: 'ARCHIVE_SEMESTER', semester, stamp });
-    showFlash(`Archived "${semester}"`);
+    showFlash(t('gv.archived', { name: semester }));
     // Snapshot the courses map at enqueue time so a queued retry doesn't
     // miss courses added later — the batch is what the user intended now.
     if (session) outbox.enqueue('archive_semester', { courses: state.courses, semester });
@@ -132,7 +134,7 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
     if (!semester) return;
     const stamp = new Date().toISOString();
     dispatch({ type: 'RESTORE_SEMESTER', semester, stamp });
-    showFlash(`Restored "${semester}"`);
+    showFlash(t('gv.restored', { name: semester }));
     if (session) outbox.enqueue('restore_semester', { courses: state.courses, semester });
   }
 
@@ -166,9 +168,9 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
           <div style={{ flex: 1 }}>
             <div className="gv-subject-name">{s.name}</div>
             <div className="gv-subject-meta">
-              {s.credits != null ? `${s.credits} CR` : '1 CR'}
+              {t('gv.cr', { count: s.credits != null ? s.credits : 1 })}
               {s.semester ? ` · ${s.semester}` : ''}
-              {` · ${own.length} grade${own.length === 1 ? '' : 's'}`}
+              {` · ${t('gv.grades', { count: own.length })}`}
             </div>
           </div>
           <div className="gv-subject-grade">{eff == null ? '—' : eff.toFixed(2)}</div>
@@ -176,7 +178,7 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
         {isOpen && (
           <div className="gv-rows">
             {own.length === 0 && (
-              <div style={{ fontSize: 12, color: 'var(--muted)', padding: '4px 0' }}>No grades for this course yet.</div>
+              <div style={{ fontSize: 12, color: 'var(--muted)', padding: '4px 0' }}>{t('gv.noGradesCourse')}</div>
             )}
             {own.sort((a, b) => (b.date || '').localeCompare(a.date || '')).map((g) => (
               <div key={g.id} className="gv-row">
@@ -187,13 +189,13 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
                 <span className="gv-row-meta">{g.date || '—'}</span>
                 <span />
                 <span className="gv-row-actions">
-                  <button onClick={() => { setEditing(g); setShowAdd({ subjectId: g.subjectId }); }} title="Edit">✎</button>
-                  <button className="danger" onClick={() => delGrade(g.id)} title="Delete">×</button>
+                  <button onClick={() => { setEditing(g); setShowAdd({ subjectId: g.subjectId }); }} title={t('common.edit')}>✎</button>
+                  <button className="danger" onClick={() => delGrade(g.id)} title={t('common.delete')}>×</button>
                 </span>
               </div>
             ))}
             <div style={{ marginTop: 8 }}>
-              <button className="btn-outline" onClick={(e) => { e.stopPropagation(); onAddClick(s.id); }}>+ Add grade to {s.name}</button>
+              <button className="btn-outline" onClick={(e) => { e.stopPropagation(); onAddClick(s.id); }}>{t('gv.addGradeTo', { name: s.name })}</button>
             </div>
           </div>
         )}
@@ -207,9 +209,9 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
       <div className="gv-wrap">
         <div className="gv-hero">
           <div className="gv-gpa">
-            <div className="gv-gpa-label">{mode === 'ib' ? 'IB Average' : 'GPA'}</div>
+            <div className="gv-gpa-label">{mode === 'ib' ? t('gv.ibAverage') : t('gv.gpa')}</div>
             <div className="gv-gpa-value">{gpa.toFixed(2)}</div>
-            <div className="gv-gpa-scale">{mode === 'ib' ? 'WEIGHTED 1–7 SCALE' : '4.0 SCALE'}</div>
+            <div className="gv-gpa-scale" style={{ textTransform: 'uppercase' }}>{mode === 'ib' ? t('gv.ibScale') : t('gv.usScale')}</div>
           </div>
           <div className="gv-mode">
             <button className={mode === 'ib' ? 'active' : ''} onClick={() => dispatch({ type: 'SET_GRADE_MODE', mode: 'ib' })}>IB</button>
@@ -218,10 +220,10 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
         </div>
 
         <div className="gv-toolbar">
-          <button className="btn" onClick={() => onAddClick()} disabled={subjects.length === 0}>+ Add Grade</button>
+          <button className="btn" onClick={() => onAddClick()} disabled={subjects.length === 0}>{t('gv.addGrade')}</button>
           {archivedSubjects.length > 0 && (
             <button className="btn-outline" onClick={() => setShowArchived((v) => !v)}>
-              {showArchived ? 'Hide' : 'Show'} archived ({archivedSubjects.length})
+              {showArchived ? t('gv.hideArchived', { count: archivedSubjects.length }) : t('gv.showArchived', { count: archivedSubjects.length })}
             </button>
           )}
         </div>
@@ -229,17 +231,17 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
         {subjects.length === 0 && (
           <div className="gv-empty">
             <div className="gv-empty-icon">⌗</div>
-            <div style={{ fontWeight: 600, marginBottom: 6, color: 'var(--text)' }}>No courses yet</div>
-            <div style={{ fontSize: 13 }}>Add a course from the sidebar to start tracking grades.</div>
+            <div style={{ fontWeight: 600, marginBottom: 6, color: 'var(--text)' }}>{t('gv.noCoursesTitle')}</div>
+            <div style={{ fontSize: 13 }}>{t('gv.noCoursesBody')}</div>
           </div>
         )}
 
         {subjects.length > 0 && grades.length === 0 && (
           <div className="gv-empty">
             <div className="gv-empty-icon">⌬</div>
-            <div style={{ fontWeight: 600, marginBottom: 6, color: 'var(--text)' }}>No grades yet</div>
-            <div style={{ fontSize: 13, marginBottom: 14 }}>Log a grade and your GPA will update.</div>
-            <button className="btn" onClick={() => onAddClick()}>+ Add your first grade</button>
+            <div style={{ fontWeight: 600, marginBottom: 6, color: 'var(--text)' }}>{t('gv.noGradesTitle')}</div>
+            <div style={{ fontSize: 13, marginBottom: 14 }}>{t('gv.noGradesBody')}</div>
+            <button className="btn" onClick={() => onAddClick()}>{t('gv.addFirstGrade')}</button>
           </div>
         )}
 
@@ -251,10 +253,10 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
         {activeGroups.map(([sem, list]) => (
           <div key={sem}>
             <div className="gv-sem-head">
-              <span className="gv-sem-label">{sem === '__nosem__' ? '(no semester)' : sem}</span>
-              <span className="gv-sem-count">{list.length} course{list.length === 1 ? '' : 's'}</span>
+              <span className="gv-sem-label">{sem === '__nosem__' ? t('gv.noSemester') : sem}</span>
+              <span className="gv-sem-count">{t('gv.courses', { count: list.length })}</span>
               {sem !== '__nosem__' && (
-                <button className="gv-sem-btn" onClick={() => archiveSem(sem)}>Archive semester</button>
+                <button className="gv-sem-btn" onClick={() => archiveSem(sem)}>{t('gv.archiveSemester')}</button>
               )}
             </div>
             {list.map((s) => renderSubjectCard(s))}
@@ -266,14 +268,14 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
             UX covers the common case; one-off restore is rare). */}
         {showArchived && archivedGroups.length > 0 && (
           <>
-            <div className="gv-arch-banner">Archived — not included in your GPA</div>
+            <div className="gv-arch-banner">{t('gv.archivedBanner')}</div>
             {archivedGroups.map(([sem, list]) => (
               <div key={`arch-${sem}`} className="gv-archived">
                 <div className="gv-sem-head">
-                  <span className="gv-sem-label">{sem === '__nosem__' ? '(no semester)' : sem}</span>
-                  <span className="gv-sem-count">{list.length} course{list.length === 1 ? '' : 's'}</span>
+                  <span className="gv-sem-label">{sem === '__nosem__' ? t('gv.noSemester') : sem}</span>
+                  <span className="gv-sem-count">{t('gv.courses', { count: list.length })}</span>
                   {sem !== '__nosem__' && (
-                    <button className="gv-sem-btn" onClick={() => restoreSem(sem)}>Restore</button>
+                    <button className="gv-sem-btn" onClick={() => restoreSem(sem)}>{t('gv.restore')}</button>
                   )}
                 </div>
                 {list.map((s) => renderSubjectCard(s))}
@@ -301,12 +303,13 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
 }
 
 function GradeEditModal({ mode, subjects, initial, isEdit, onSave, onDelete, onClose }) {
+  const { t } = useTranslation();
   const [subjectId, setSubjectId] = useState(initial.subjectId || subjects[0]?.id || '');
   const [grade, setGrade] = useState(initial.grade != null ? String(initial.grade) : '');
   const [weight, setWeight] = useState(initial.weight != null ? String(initial.weight) : '1');
   const [date, setDate] = useState(initial.date || new Date().toISOString().slice(0, 10));
 
-  const placeholder = mode === 'ib' ? 'e.g. 6.5 (1–7)' : 'e.g. 87 (0–100)';
+  const placeholder = mode === 'ib' ? t('gv.phIb') : t('gv.phUs');
 
   function submit() {
     const gNum = parseFloat(grade);
@@ -324,32 +327,32 @@ function GradeEditModal({ mode, subjects, initial, isEdit, onSave, onDelete, onC
   return (
     <div className="modal-overlay" role="dialog" aria-modal="true" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-title">{isEdit ? 'Edit Grade' : 'Add Grade'}</div>
+        <div className="modal-title">{isEdit ? t('gv.mEdit') : t('gv.mAdd')}</div>
         <div className="input-group">
-          <div className="input-label">Course</div>
+          <div className="input-label">{t('gv.fCourse')}</div>
           <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
             {subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </div>
         <div className="modal-grid">
           <div className="input-group">
-            <div className="input-label">Grade ({mode === 'ib' ? '1–7' : '0–100'})</div>
+            <div className="input-label">{mode === 'ib' ? t('gv.fGradeIb') : t('gv.fGradeUs')}</div>
             <input type="number" step="0.01" placeholder={placeholder} value={grade} onChange={(e) => setGrade(e.target.value)} autoFocus />
           </div>
           <div className="input-group">
-            <div className="input-label">Weight</div>
-            <input type="number" step="0.05" min="0" placeholder="e.g. 0.3" value={weight} onChange={(e) => setWeight(e.target.value)} />
+            <div className="input-label">{t('gv.fWeight')}</div>
+            <input type="number" step="0.05" min="0" placeholder={t('gv.phWeight')} value={weight} onChange={(e) => setWeight(e.target.value)} />
           </div>
         </div>
         <div className="input-group">
-          <div className="input-label">Date</div>
+          <div className="input-label">{t('gv.fDate')}</div>
           <input type="date" value={date || ''} onChange={(e) => setDate(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} />
         </div>
         <div style={{ display: 'flex', gap: 8, marginTop: 6, alignItems: 'center' }}>
-          <button className="btn" onClick={submit}>{isEdit ? 'Save' : 'Add Grade'}</button>
-          <button className="btn-outline" onClick={onClose}>Cancel</button>
+          <button className="btn" onClick={submit}>{isEdit ? t('common.save') : t('gv.bAdd')}</button>
+          <button className="btn-outline" onClick={onClose}>{t('common.cancel')}</button>
           {isEdit && onDelete && (
-            <button className="btn-outline" style={{ marginLeft: 'auto', color: '#c0392b', borderColor: '#c0392b' }} onClick={onDelete}>Delete</button>
+            <button className="btn-outline" style={{ marginLeft: 'auto', color: '#c0392b', borderColor: '#c0392b' }} onClick={onDelete}>{t('common.delete')}</button>
           )}
         </div>
       </div>

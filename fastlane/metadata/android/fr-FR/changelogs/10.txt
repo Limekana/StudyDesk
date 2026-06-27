@@ -1,0 +1,1 @@
+Prise en charge complète de six langues (anglais, finnois, français, allemand, espagnol, chinois) dans toutes les vues, plus le modèle année scolaire/période, l'historique des périodes en lecture seule avec moyenne par période, et un bilan d'étude IA optionnel après la session.

@@ -1,0 +1,13 @@
+StudyDesk es una app de ejecución de estudios para estudiantes.
+
+Funciones:
+* Introduce tus cursos y fechas límite; el motor Siguiente prioriza qué hacer ahora
+* Organiza los cursos por año escolar y periodo (jakso)
+* Historial de periodos de solo lectura con promedio por periodo
+* Califica en escalas IB y GPA
+* Temporizador Pomodoro integrado
+* Resumen de estudio con IA opcional tras una sesión
+
+Estética de papel cálida. Local primero; sincronización en la nube opcional ligada a la cuenta. Sin Google Play Services — el inicio de sesión de Google es un flujo web OAuth normal.
+
+Parte de la suite Limecore Nexus. Disponible en inglés, finlandés, francés, alemán, español y chino.

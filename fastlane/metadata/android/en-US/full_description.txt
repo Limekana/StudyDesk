@@ -1,0 +1,13 @@
+StudyDesk is a study execution app for students.
+
+Features:
+* Enter your courses and deadlines; the Next Up engine ranks what to do right now
+* Organise courses by school year and period (jakso)
+* Read-only Period History with per-period GPA
+* Grade on IB and GPA scales
+* Built-in Pomodoro focus timer
+* Optional AI study debrief after a session
+
+Warm paper aesthetic. Local-first; optional account-gated cloud sync. No Google Play Services — Google sign-in is a plain web OAuth flow.
+
+Part of the Limecore Nexus suite. Available in English, Finnish, French, German, Spanish and Chinese.
