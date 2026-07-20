@@ -319,7 +319,7 @@ function GradeEditModal({ mode, subjects, initial, isEdit, onSave, onDelete, onC
     onSave({
       subjectId,
       grade: gNum,
-      weight: isNaN(wNum) ? 1 : wNum,
+      weight: isNaN(wNum) || wNum < 0 ? 1 : wNum,
       date: date || null,
     });
   }

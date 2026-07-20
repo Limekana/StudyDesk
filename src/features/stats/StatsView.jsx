@@ -146,9 +146,12 @@ export default function StatsView({ state }) {
 
   // ── GPA trend: cumulative GPA per month over the trailing window ───────────
   const gpaTrend = useMemo(() => {
-    const activeCourses = Object.values(state.courses || {}).filter((c) => !c.deletedAt && !c.archivedAt);
+    // Include archived courses: this trend is HISTORICAL, so archiving a
+    // finished semester must NOT retroactively erase its grades from past
+    // months' data points (they're only soft-flagged, not deleted).
+    const trendCourses = Object.values(state.courses || {}).filter((c) => !c.deletedAt);
     const coursesMap = {};
-    for (const c of activeCourses) coursesMap[c.id] = c;
+    for (const c of trendCourses) coursesMap[c.id] = c;
     const grades = (state.grades || []).filter((g) => !g.deletedAt && g.date);
     if (grades.length === 0) return { points: [], min: 0, max: 0 };
 
@@ -166,6 +169,10 @@ export default function StatsView({ state }) {
 
   // ── v1.4 AI debrief insights: avg comprehension + recurring confusion ──────
   const aiInsights = useMemo(() => {
+    // Read-only "last 7 days" stats window: recomputing "now" per render is
+    // harmless (no state derived from it, no instability the user can see), so
+    // the react-hooks/purity guard is safe to waive for this one line.
+    // eslint-disable-next-line react-hooks/purity
     const weekAgo = Date.now() - 7 * 86400000;
     const week = sessions.filter((s) => new Date(s.startedAt).getTime() >= weekAgo);
     const comps = week.map((s) => s.aiComprehension).filter((c) => typeof c === 'number');

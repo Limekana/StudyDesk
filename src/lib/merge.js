@@ -9,7 +9,12 @@
 function newer(remoteIso, localIso) {
   if (!localIso) return true;
   if (!remoteIso) return false;
-  return remoteIso > localIso;
+  // Compare as instants, not raw strings. Local updatedAt is Date.toISOString()
+  // (`...sssZ`); remote updated_at is Postgres timestamptz text (`...+00:00`,
+  // variable-length fractional seconds, no `Z`). Lexicographic `>` only tracks
+  // real order when the date/seconds differ — for two writes in the same second
+  // the differing suffix can flip the result and clobber a newer edit.
+  return new Date(remoteIso).getTime() > new Date(localIso).getTime();
 }
 
 /**
