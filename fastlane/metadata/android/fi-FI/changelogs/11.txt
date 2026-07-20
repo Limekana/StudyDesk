@@ -1,0 +1,1 @@
+Virheenkorjauksia. Pilvisynkronointi vertaa aikaleimoja nyt hetkinä eikä tekstinä, joten samalla sekunnilla tehty muokkaus ei enää korvaudu vanhemmalla. Agenda- ja eräpäivälaskenta vaihtuu nyt oikein keskiyöllä sen sijaan, että käyttäisi sovelluksen käynnistyshetken päivämäärää. Opintopisteet tarkistetaan virheellisiltä arvoilta.

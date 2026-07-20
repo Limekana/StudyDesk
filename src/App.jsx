@@ -42,7 +42,11 @@ const DIFFICULTY_LABELS = { easy:"Easy", medium:"Medium", hard:"Hard", brutal:"B
 const DIFFICULTY_COLORS = { easy:"#2e7d52", medium:"#d4860a", hard:"#c0392b", brutal:"#6d3fa0" };
 const POMO_PRESETS = { focus:25, short:5, long:15 };
 
-const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+// Local midnight for "today", computed PER CALL — never frozen at module load.
+// A Capacitor WebView backgrounded overnight and resumed without a cold restart
+// would otherwise still think it's yesterday, mis-bucketing an assignment due
+// "today" into "later" and staling every due-date urgency calc.
+function todayMidnight(){ const d = new Date(); d.setHours(0,0,0,0); return d; }
 function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 // IDs that flow into Supabase MUST be proper UUIDs — the columns are typed `uuid`.
 // `uid()` above produces short nanoid-style strings (~12 chars) which Postgres rejects.
@@ -53,7 +57,7 @@ function newSyncId() { return crypto.randomUUID(); }
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function parseLocalDate(s){ if(!s) return null; const[y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); }
 function toLocalISO(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
-function daysUntil(s){ if(!s) return null; return Math.round((parseLocalDate(s)-TODAY)/86400000); }
+function daysUntil(s){ if(!s) return null; return Math.round((parseLocalDate(s)-todayMidnight())/86400000); }
 function fmtDate(s){ if(!s) return "No date"; return parseLocalDate(s).toLocaleDateString("en-GB",{day:"numeric",month:"short"}); }
 function fmtDateFull(s){ if(!s) return ""; return parseLocalDate(s).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"}); }
 function urgencyColor(d){ if(d===null) return "#aaa"; if(d<0) return "#c0392b"; if(d<=2) return "#c0392b"; if(d<=7) return "#d4860a"; return "#2e7d52"; }
@@ -311,7 +315,10 @@ function reducer(state, action) {
     // leak. The persist effect re-runs after this dispatch and writes the
     // INITIAL state to studydesk-v1, naturally clearing the previous user's
     // payload from localStorage.
-    case "RESET_AFTER_SIGNOUT": return INITIAL;
+    // Preserve gradeMode: it's a device-level UI-only display preference (IB vs
+    // US scale), not per-user academic data, so a US-scale user shouldn't lose
+    // it every sign-out. Everything else is wiped.
+    case "RESET_AFTER_SIGNOUT": return { ...INITIAL, gradeMode: state.gradeMode };
 
     default: return state;
   }
@@ -667,8 +674,13 @@ export default function App() {
       const saved = raw ? JSON.parse(raw) : {};
       // Normalize legacy course rows that pre-date credits/semester/timestamps.
       // v1.2 adds archivedAt — defaults to null (active) on rehydration.
+      // Guard each field's shape independently so a single malformed field
+      // (e.g. a non-array `assignments` from a partial write) falls back to
+      // empty for THAT field only — never throwing out to the catch, which
+      // would blank ALL local data and let the persist effect overwrite it.
+      const savedCourses = saved.courses && typeof saved.courses === "object" ? saved.courses : {};
       const courses = {};
-      for (const [id, c] of Object.entries(saved.courses || {})) {
+      for (const [id, c] of Object.entries(savedCourses)) {
         courses[id] = {
           notes: [],
           credits: 1,
@@ -706,7 +718,7 @@ export default function App() {
           needsPush = true;
         }
       }
-      const migratedGrades = (saved.grades || []).map(g => {
+      const migratedGrades = (Array.isArray(saved.grades) ? saved.grades : []).map(g => {
         const idOk = UUID_RE.test(g.id);
         const subjIdMapped = subjectIdMap[g.subjectId];
         const subjOk = !subjIdMapped || subjIdMapped === g.subjectId;
@@ -718,7 +730,7 @@ export default function App() {
           subjectId: subjIdMapped || g.subjectId,
         };
       });
-      const migratedSessions = (saved.studySessions || []).map(s => {
+      const migratedSessions = (Array.isArray(saved.studySessions) ? saved.studySessions : []).map(s => {
         const idOk = UUID_RE.test(s.id);
         const subjIdMapped = s.subjectId ? subjectIdMap[s.subjectId] : null;
         const subjOk = !s.subjectId || subjIdMapped === s.subjectId;
@@ -731,15 +743,15 @@ export default function App() {
         };
       });
       // Assignments, exams, actions are local-only but reference courseId — update.
-      const migratedAssignments = (saved.assignments || []).map(a =>
+      const migratedAssignments = (Array.isArray(saved.assignments) ? saved.assignments : []).map(a =>
         subjectIdMap[a.courseId] && subjectIdMap[a.courseId] !== a.courseId
           ? { ...a, courseId: subjectIdMap[a.courseId] }
           : a);
-      const migratedExams = (saved.exams || []).map(e =>
+      const migratedExams = (Array.isArray(saved.exams) ? saved.exams : []).map(e =>
         subjectIdMap[e.courseId] && subjectIdMap[e.courseId] !== e.courseId
           ? { ...e, courseId: subjectIdMap[e.courseId] }
           : e);
-      const migratedActions = (saved.actions || []).map(a =>
+      const migratedActions = (Array.isArray(saved.actions) ? saved.actions : []).map(a =>
         a.courseId && subjectIdMap[a.courseId] && subjectIdMap[a.courseId] !== a.courseId
           ? { ...a, courseId: subjectIdMap[a.courseId] }
           : a);
@@ -831,10 +843,13 @@ export default function App() {
   // auto-dismisses the notification on action tap, so accidental
   // double-taps that would un-toggle aren't reachable.
   useEffect(() => {
-    let handle = null;
-    (async () => {
-      try {
-        handle = await LocalNotifications.addListener(
+    // Hold the listener PROMISE and remove via it. With the old
+    // `let handle=null; (async)=>{handle=await add()}` pattern, React 19
+    // StrictMode's mount→cleanup→mount runs cleanup before the await resolves
+    // (handle still null → .remove() skipped), orphaning the first listener and
+    // double-registering — so "Mark done" fired TOGGLE_ASSIGNMENT twice (net
+    // no-op). The backButton listener below already uses this safe idiom.
+    const handlePromise = LocalNotifications.addListener(
           "localNotificationActionPerformed",
           (event) => {
             // v1.3.1 BUG-14 — body-tap navigation. @capacitor/local-notifications
@@ -856,11 +871,8 @@ export default function App() {
             dispatch({ type: "TOGGLE_ASSIGNMENT", id: assignmentId });
           },
         );
-      } catch (e) {
-        console.warn("[StudyDesk] action listener failed:", e);
-      }
-    })();
-    return () => { if (handle) handle.remove(); };
+    handlePromise.catch((e) => console.warn("[StudyDesk] action listener failed:", e));
+    return () => { handlePromise.then((h) => h.remove()).catch(() => {}); };
   }, []);
   // Notifications are only scheduled after onboarding completes — never on first open
   const handleOnboardingComplete = useCallback((courseData) => {
@@ -879,7 +891,6 @@ export default function App() {
   const [showAddExam, setShowAddExam] = useState(false);
   const [newCourseName, setNewCourseName] = useState("");
   const [colorIdx, setColorIdx] = useState(0);
-  const [showMobileCourses, setShowMobileCourses] = useState(false);
   const showFlash = useCallback((msg) => { setFlash(msg); setTimeout(()=>setFlash(null),2200); }, []);
 
   // ── Auth session ─────────────────────────────────────────────────────────────
@@ -1030,47 +1041,10 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id]);
 
-  // v1.1 — the topbar button is dual-mode (label flips between "Sign out"
-  // and "Sign in" based on whether we have a session). The handler must
-  // branch accordingly:
-  //   - Signed in → sign out + set guestMode=true. Setting guestMode TRUE
-  //     (not false) prevents the next cold start's auto-inherit logic from
-  //     silently re-signing-them-in via NCC's still-active session — bug
-  //     report 2026-05-28 "sign out buttons don't seem to do anything"
-  //     traced back to that loop. The user lands in guest mode (app stays
-  //     usable, no AuthGate flash); to re-sign-in they tap the now-flipped
-  //     "Sign in" button below, which routes to AuthGate.
-  //   - Guest mode → clear guestMode and dispatch. App.jsx re-renders to
-  //     AuthGate where the user picks a sign-in method.
-  const signOut = useCallback(async () => {
-    if (session?.user) {
-      // Clear the outbox BEFORE the auth round-trip so a queued retry
-      // can't race with sign-out and push the about-to-be-signed-out
-      // user's writes. Anything not yet drained is forfeit — that's the
-      // right trade vs. potentially leaking writes to the next signed-in
-      // user.
-      outbox.clear();
-      // v1.3 AUDIT-SD-FSG-2 — wipe the reducer state (courses, assignments,
-      // exams, grades, study sessions, GPA history) BEFORE the auth round-trip
-      // so the next signed-in user on a shared device doesn't inherit user A's
-      // academic record in the UI. The persist effect re-runs after this
-      // dispatch and writes INITIAL to localStorage, clearing the studydesk-v1
-      // blob. Parallel pattern to NCC AUDIT-FSG-2b + LimeLog AUDIT-LL-FSG-2.
-      dispatch({ type: "RESET_AFTER_SIGNOUT" });
-      setGuestMode(true);
-      window.dispatchEvent(new CustomEvent("studydesk:guest-mode-changed"));
-      try {
-        await supabase.auth.signOut();
-        showFlash(t('settings.signedOutLocal'));
-      } catch (e) {
-        showFlash(t('settings.signOutFailed', { msg: e.message }));
-      }
-    } else {
-      // Guest mode — exit to AuthGate so the user can pick a sign-in path.
-      setGuestMode(false);
-      window.dispatchEvent(new CustomEvent("studydesk:guest-mode-changed"));
-    }
-  }, [showFlash, session, t]);
+  // NOTE: the sign-out handler lives in SettingsView.onSignOut (identical logic
+  // incl. the guestMode=true anti-auto-re-sign-in fix). An earlier duplicate
+  // copy here was dead (never wired to a control) and was removed in the v1.7
+  // audit to avoid two divergent sign-out paths.
 
   // #26 — Android back button: dismiss modals first, then navigate home, then exit
   useEffect(() => {
@@ -1447,7 +1421,7 @@ function TimerView({ state, onTimerComplete }) {
         osc.start(ctx.currentTime + start); osc.stop(ctx.currentTime + start + dur + 0.05);
       };
       beep(880, 0, 0.18); beep(880, 0.25, 0.18); beep(1100, 0.5, 0.35);
-    } catch(_) {}
+    } catch {}
   }, []);
 
   const lockedInRef = useRef(lockedIn);
@@ -1722,7 +1696,7 @@ function TimerView({ state, onTimerComplete }) {
   </div>;
 }
 
-function StatusView({ state, dispatch, showFlash, onAddAsgn }) {
+function StatusView({ state, dispatch, onAddAsgn }) {
   const { t } = useTranslation();
   const courses=Object.values(state.courses); const ac=state.activeCourse;
   const assignments=ac?state.assignments.filter(a=>a.courseId===ac):state.assignments;
@@ -1827,7 +1801,7 @@ function EditCourseModal({ course, courses, onSave, onDelete, onClose }) {
   const doSave = () => {
     if(!name.trim()) return;
     const cr = parseFloat(credits);
-    onSave(name.trim(), color, isNaN(cr)?1:cr, semester.trim()||null, schoolYear.trim()||null);
+    onSave(name.trim(), color, isNaN(cr)||cr<0?1:cr, semester.trim()||null, schoolYear.trim()||null);
   };
   return <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={t('course.edit')} onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
     <div className="modal-title">{t('course.edit')}</div>
@@ -1858,7 +1832,7 @@ function EditCourseModal({ course, courses, onSave, onDelete, onClose }) {
 }
 
 // ── PlanView — unified planning surface (assignments + exams + courses) ────────
-function PlanView({ state, dispatch, showFlash, onAddAsgn, onAddExam, onAddCourse, onEditCourse }) {
+function PlanView({ state, dispatch, onAddAsgn, onAddExam, onAddCourse, onEditCourse }) {
   const { t, i18n } = useTranslation();
   const lang = (i18n.language || "en").split("-")[0];
   const courses = Object.values(state.courses).filter(c => !c.deletedAt);
@@ -1878,12 +1852,13 @@ function PlanView({ state, dispatch, showFlash, onAddAsgn, onAddExam, onAddCours
     const asgnEvents=state.assignments.filter(a=>!a.done&&a.dueDate===ds).map(a=>({type:"assignment",asgn:a,course:state.courses[a.courseId]}));
     return [...examEvents,...studyEvents,...asgnEvents];
   };
-  const dayIsToday=(date)=>toLocalISO(date)===toLocalISO(TODAY);
+  const dayIsToday=(date)=>toLocalISO(date)===toLocalISO(todayMidnight());
   const monthName=firstDay.toLocaleDateString(lang||"en-GB",{month:"long",year:"numeric"});
   const prevMonth=()=>setCalMonth(m=>m.month===0?{year:m.year-1,month:11}:{year:m.year,month:m.month-1});
   const nextMonth=()=>setCalMonth(m=>m.month===11?{year:m.year+1,month:0}:{year:m.year,month:m.month+1});
   const agendaEvents=[];
-  for(let i=0;i<60;i++){const d=new Date(TODAY);d.setDate(TODAY.getDate()+i);const ev=eventsOnDay(d);if(ev.length>0)agendaEvents.push({date:d,events:ev});}
+  const _agendaBase=todayMidnight();
+  for(let i=0;i<60;i++){const d=new Date(_agendaBase);d.setDate(_agendaBase.getDate()+i);const ev=eventsOnDay(d);if(ev.length>0)agendaEvents.push({date:d,events:ev});}
   const openAsgns=state.assignments.filter(a=>!a.done).sort((a,b)=>new Date(a.dueDate||"9999-12-31")-new Date(b.dueDate||"9999-12-31"));
   const openExams=state.exams.filter(e=>!e.done).sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));
   return <div>
@@ -2004,11 +1979,6 @@ function ActionsView({ state, dispatch, showFlash, onAddCourse }) {
   })();
   // Auto-purge manual actions: done items cleared at 3am the following day
   const now = Date.now();
-  const next3am = (() => {
-    const d = new Date(); d.setHours(3, 0, 0, 0);
-    if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
-    return d.getTime();
-  })();
   // Item is visible if: not done, OR done but next 3am hasn't passed since it was completed
   const visibleManual = state.actions.filter(a => {
     if (!a.done) return true;

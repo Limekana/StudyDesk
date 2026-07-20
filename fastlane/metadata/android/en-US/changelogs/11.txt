@@ -1,0 +1,1 @@
+Bug fixes. Cloud sync now compares timestamps as instants rather than text, so an edit made in the same second is no longer overwritten by an older one. Agenda and due-date calculations now roll over correctly at midnight instead of using a date fixed at app launch. Grade credits guard against invalid values.

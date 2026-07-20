@@ -71,7 +71,7 @@ export default function AuthGate() {
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
   const [nexusAvailable, setNexusAvailable] = useState(false);
-  const [nexusReason, setNexusReason] = useState('');
+  const [, setNexusReason] = useState('');
 
   // v1.4 — probe NCC's session provider on mount. If a session is available,
   // show the "Continue with Nexus" affordance as the primary option. Probe is

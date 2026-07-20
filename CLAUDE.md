@@ -35,3 +35,8 @@ StudyDesk is a study/homework planning app. React 19 + Vite + Capacitor 8 + Supa
 - Read `src/` first — only go to `android/` for native plugin or build config issues
 - When debugging builds: check `android/capacitor-cordova-android-plugins/` for plugin-related build failures
 - Don't read `node_modules/` or `dist/`
+
+## Data Contract (shared Supabase — binding)
+- Owns `subjects`, `grades`, `study_sessions`. Bidirectional sync with NCC on subjects/grades, resolved LWW on `updated_at`.
+- Schema change to an owned table = migration + NCC updated in the same milestone. Stop and confirm first (see `D:\emilh\Projects\CLAUDE.md`).
+- No TypeScript here: `npm run lint` must pass before any release build. It is the static gate.
