@@ -1,0 +1,1 @@
+Verpackungskorrektur für F-Droid: Entfernt den von Google eingefügten Abhängigkeits-Metadaten-Signaturblock aus dem Release-APK, damit reproduzierbare Builds bestehen. Keine Verhaltensänderung gegenüber 1.5.3.

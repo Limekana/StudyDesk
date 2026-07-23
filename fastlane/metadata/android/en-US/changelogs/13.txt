@@ -1,0 +1,1 @@
+Packaging fix for F-Droid: strip the Google-injected dependency-metadata signing block from the release APK so reproducible builds pass. No app behaviour change from 1.5.3.

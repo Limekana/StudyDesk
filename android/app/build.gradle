@@ -14,14 +14,22 @@ android {
         applicationId "com.StudyDesk.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 12
-        versionName "1.5.3"
+        versionCode 13
+        versionName "1.5.4"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
+    }
+    // The Android Gradle Plugin injects a Google-encrypted "Dependency
+    // metadata" blob into the APK signing block by default. It is
+    // non-reproducible and F-Droid's `check apk` scan rejects it
+    // ("Found extra signing block 'Dependency metadata'"). Disable it.
+    dependenciesInfo {
+        includeInApk false
+        includeInBundle false
     }
     // signingConfigs MUST be declared before buildTypes references
     // signingConfigs.release — Gradle resolves the container eagerly at

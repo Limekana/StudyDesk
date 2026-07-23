@@ -1,0 +1,1 @@
+Pakkauskorjaus F-Droidille: poistaa Googlen lisäämän riippuvuustietojen allekirjoituslohkon julkaisu-APK:sta, jotta toistettavat käännökset menevät läpi. Ei muutoksia sovelluksen toimintaan versiosta 1.5.3.
