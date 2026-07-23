@@ -1,0 +1,1 @@
+Corrección de compilación/publicación: la configuración de firma de Android estaba declarada en el orden incorrecto, por lo que nunca se pudo generar una versión firmada. Sin cambios de comportamiento respecto a la 1.5.2.

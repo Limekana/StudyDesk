@@ -1,0 +1,1 @@
+Build-/Release-Fix: Die Android-Signaturkonfiguration war in der falschen Reihenfolge deklariert, sodass nie ein signierter Release erzeugt werden konnte. Keine Verhaltensänderung gegenüber 1.5.2.

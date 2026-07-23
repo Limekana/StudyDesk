@@ -1,0 +1,1 @@
+Käännös-/julkaisukorjaus: Androidin allekirjoitusasetus oli määritelty väärässä järjestyksessä, joten allekirjoitettua julkaisua ei voitu koskaan tuottaa. Ei muutoksia sovelluksen toimintaan versiosta 1.5.2.

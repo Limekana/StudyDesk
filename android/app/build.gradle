@@ -14,13 +14,28 @@ android {
         applicationId "com.StudyDesk.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 11
-        versionName "1.5.2"
+        versionCode 12
+        versionName "1.5.3"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    // signingConfigs MUST be declared before buildTypes references
+    // signingConfigs.release — Gradle resolves the container eagerly at
+    // configuration time. Previously this block sat after buildTypes, so a
+    // release build with keystore.properties present threw "Could not get
+    // unknown property 'release'". It never surfaced because keystore.properties
+    // was absent (guard false), so StudyDesk had never produced a signed
+    // release. Mirrors NCC/LimeLog ordering.
+    signingConfigs {
+        release {
+            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+            storePassword keystoreProperties['storePassword']
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
         }
     }
     buildTypes {
@@ -30,14 +45,6 @@ android {
             if (keystorePropertiesFile.exists()) {
                 signingConfig signingConfigs.release
             }
-        }
-    }
-    signingConfigs {
-        release {
-            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
-            storePassword keystoreProperties['storePassword']
-            keyAlias keystoreProperties['keyAlias']
-            keyPassword keystoreProperties['keyPassword']
         }
     }
 }
