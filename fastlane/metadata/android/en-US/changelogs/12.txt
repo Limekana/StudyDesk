@@ -1,0 +1,1 @@
+Build/release fix: the Android signing config was declared in the wrong order, so a signed release could never be produced. No app behaviour changes from 1.5.2.

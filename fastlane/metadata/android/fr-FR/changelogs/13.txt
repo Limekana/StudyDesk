@@ -1,0 +1,1 @@
+Correctif d'empaquetage pour F-Droid : suppression du bloc de signature de métadonnées de dépendances injecté par Google afin que les builds reproductibles réussissent. Aucun changement de comportement depuis la 1.5.3.

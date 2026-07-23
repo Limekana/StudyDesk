@@ -1,0 +1,1 @@
+Correctif de compilation/publication : la configuration de signature Android était déclarée dans le mauvais ordre, empêchant toute génération d'une version signée. Aucun changement de comportement depuis la 1.5.2.

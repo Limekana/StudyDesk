@@ -1,0 +1,1 @@
+Corrección de empaquetado para F-Droid: elimina el bloque de firma de metadatos de dependencias inyectado por Google del APK de lanzamiento para que las compilaciones reproducibles pasen. Sin cambios de comportamiento respecto a 1.5.3.
