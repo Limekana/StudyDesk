@@ -26,7 +26,7 @@ const css = `
 
 /* Language switcher grid (v1.5.1) */
 .sv2-lang-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:184px;overflow-y:auto;overscroll-behavior:contain;}
-.sv2-lang-btn{font-family:var(--font-display);font-size:14px;color:var(--text);background:var(--bg);border:1px solid var(--border2);border-radius:9px;padding:11px 10px;cursor:pointer;text-align:left;transition:border-color .15s,background .15s;}
+.sv2-lang-btn{font-family:var(--font-display);font-size:14px;color:var(--text);background:var(--bg);border:1px solid var(--border2);border-radius:9px;padding:11px 10px;cursor:pointer;text-align:start;transition:border-color .15s,background .15s;}
 .sv2-lang-btn:hover{border-color:var(--muted2);}
 .sv2-lang-btn--on{border-color:var(--accent,#2e7d52);background:color-mix(in srgb,var(--accent,#2e7d52) 8%,transparent);color:var(--accent,#2e7d52);font-weight:600;}
 
@@ -47,7 +47,7 @@ const css = `
 .sv2-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;font-size:14px;}
 .sv2-row + .sv2-row{border-top:1px solid var(--border);}
 .sv2-row-label{color:var(--muted);font-size:13px;}
-.sv2-row-value{font-size:13px;color:var(--text);text-align:right;display:flex;align-items:center;gap:6px;}
+.sv2-row-value{font-size:13px;color:var(--text);text-align:end;display:flex;align-items:center;gap:6px;}
 .sv2-mode{display:inline-flex;border:1px solid var(--border2);border-radius:6px;overflow:hidden;}
 .sv2-mode button{background:transparent;border:none;padding:6px 14px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;color:var(--muted);}
 .sv2-mode button.active{background:var(--text);color:var(--bg);}
@@ -66,7 +66,7 @@ const css = `
 .sv2-tech[open] summary::before{content:"▾ ";}
 .sv2-tech-grid{margin-top:8px;display:flex;flex-direction:column;gap:6px;}
 .sv2-tech-item{display:flex;justify-content:space-between;gap:10px;font-family:var(--font-mono);font-size:11px;color:var(--muted);}
-.sv2-tech-item span:last-child{color:var(--muted2);text-align:right;word-break:break-all;}
+.sv2-tech-item span:last-child{color:var(--muted2);text-align:end;word-break:break-all;}
 .sv2-link{color:var(--muted);text-decoration:underline;}
 `;
 

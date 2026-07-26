@@ -16,7 +16,7 @@ const css = `
 .sv-item-title{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .sv-item-meta{font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:0.04em;}
 .sv-item-dur{font-family:var(--font-mono);font-size:11px;color:var(--muted);white-space:nowrap;}
-.sv-focus{display:inline-flex;gap:3px;margin-left:8px;vertical-align:middle;}
+.sv-focus{display:inline-flex;gap:3px;margin-inline-start:8px;vertical-align:middle;}
 .sv-focus-pip{width:5px;height:5px;border-radius:50%;background:var(--border2);}
 .sv-focus-pip.on{background:var(--text);}
 .sv-focus-row{display:flex;gap:6px;}

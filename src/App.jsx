@@ -192,7 +192,7 @@ const cssOnboard = `
 /* a strip of "washi tape" pinning the page at the top */
 .ob-card::before{content:"";position:absolute;top:-11px;left:50%;transform:translateX(-50%) rotate(-1.4deg);width:104px;height:22px;background:color-mix(in srgb,var(--warning) 18%,#fff);border:1px solid color-mix(in srgb,var(--warning) 28%,transparent);box-shadow:0 1px 2px rgba(0,0,0,0.05);}
 @keyframes obSettle{from{opacity:0;transform:translateY(10px) rotate(-0.4deg);}to{opacity:1;transform:none;}}
-.ob-pad{padding-left:18px;}            /* clear the red margin rule */
+.ob-pad{padding-inline-start:18px;}            /* clear the red margin rule */
 .ob-wordmark{font-family:var(--font-display);font-size:30px;font-weight:600;text-align:center;letter-spacing:-0.01em;margin-bottom:4px;}
 .ob-tagline{font-family:var(--font-mono);font-size:10px;color:var(--muted);text-align:center;letter-spacing:0.16em;text-transform:uppercase;margin-bottom:26px;}
 /* progress as inked ticks with a step count */
@@ -213,14 +213,14 @@ const cssOnboard = `
 .ob-langs{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:4px;max-height:184px;overflow-y:auto;overscroll-behavior:contain;}/* v1.8 — capped at ~3.5 rows so a 10-language list can't push this step's
    Continue button below the fold. Only bites once the list outgrows it, so
    the six-language layout is unchanged; the half-row is the scroll cue. */
-.ob-lang{font-family:var(--font-display);font-size:15px;color:var(--text);background:var(--bg);border:1px solid var(--border2);border-radius:3px;padding:12px 12px;cursor:pointer;text-align:left;transition:border-color 0.15s,background 0.15s,transform 0.12s var(--ease-settle);-webkit-tap-highlight-color:transparent;}
+.ob-lang{font-family:var(--font-display);font-size:15px;color:var(--text);background:var(--bg);border:1px solid var(--border2);border-radius:3px;padding:12px 12px;cursor:pointer;text-align:start;transition:border-color 0.15s,background 0.15s,transform 0.12s var(--ease-settle);-webkit-tap-highlight-color:transparent;}
 .ob-lang:hover{transform:translateY(-1px);}
 .ob-lang.on{border-color:var(--text);background:var(--surface2);box-shadow:inset 2px 0 0 var(--danger);}
 .ob-notif-box{position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:20px;margin-bottom:20px;text-align:center;}
 .ob-notif-icon{font-size:30px;margin-bottom:8px;}
 .ob-notif-title{font-family:var(--font-display);font-size:18px;font-weight:600;margin-bottom:8px;}
 .ob-notif-desc{font-size:13px;color:var(--muted);line-height:1.6;}
-@media(max-width:480px){.ob-card{padding:34px 20px 26px;background-position:15px 0,0 6px;}.ob-pad{padding-left:10px;}.ob-card::before{width:92px;}}`;
+@media(max-width:480px){.ob-card{padding:34px 20px 26px;background-position:15px 0,0 6px;}.ob-pad{padding-inline-start:10px;}.ob-card::before{width:92px;}}`;
 
 function reducer(state, action) {
   switch(action.type) {
@@ -344,19 +344,19 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 
 /* ── Desktop layout ── */
 .app{display:flex;height:100vh;overflow:hidden;}
-.sidebar{width:240px;min-width:240px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:none;}
+.sidebar{width:240px;min-width:240px;background:var(--surface);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;transition:none;}
 .sidebar-header{padding:24px 20px 16px;border-bottom:1px solid var(--border);}
 .sidebar-logo-wrap{display:flex;align-items:center;gap:12px;}
 .sidebar-logo{width:40px;height:40px;border-radius:10px;flex-shrink:0;}
 .sidebar-wordmark{font-family:var(--font-display);font-size:20px;font-weight:600;}
 .sidebar-sub{font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:3px;letter-spacing:0.05em;}
 .sidebar-nav{padding:12px 0;border-bottom:1px solid var(--border);}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:13px;cursor:pointer;color:var(--muted);transition:all 0.1s;border-left:2px solid transparent;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:13px;cursor:pointer;color:var(--muted);transition:all 0.1s;border-inline-start:2px solid transparent;}
 .nav-item:hover{color:var(--text);background:var(--surface2);}
 .nav-item.active{color:var(--text);border-left-color:var(--text);background:var(--surface2);}
 .sidebar-courses{flex:1;overflow-y:auto;padding:12px 0;}
 .courses-label{padding:4px 20px 8px;font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;color:var(--muted2);text-transform:uppercase;}
-.course-item{display:flex;align-items:center;gap:10px;padding:8px 20px;cursor:pointer;font-size:13px;transition:background 0.1s;border-left:2px solid transparent;}
+.course-item{display:flex;align-items:center;gap:10px;padding:8px 20px;cursor:pointer;font-size:13px;transition:background 0.1s;border-inline-start:2px solid transparent;}
 .course-item:hover{background:var(--surface2);}
 .course-item.active{background:var(--surface2);border-left-color:var(--text);}
 .course-pip{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
@@ -481,8 +481,8 @@ textarea{resize:vertical;min-height:80px;line-height:1.6;}select{cursor:pointer;
 @keyframes page-turn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
 .page-turn{animation:page-turn 160ms var(--ease-page-turn);}
 .timer-subtabs{display:flex;gap:0;border:1px solid var(--border2);border-radius:6px;overflow:hidden;max-width:340px;margin:16px auto 4px;}
-.timer-subtab{flex:1;background:transparent;border:none;padding:8px 10px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;color:var(--muted);transition:all 0.1s;border-right:1px solid var(--border2);}
-.timer-subtab:last-child{border-right:none;}
+.timer-subtab{flex:1;background:transparent;border:none;padding:8px 10px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;color:var(--muted);transition:all 0.1s;border-inline-end:1px solid var(--border2);}
+.timer-subtab:last-child{border-inline-end:none;}
 .timer-subtab.active{background:var(--text);color:var(--bg);}
 .modal-title{font-family:var(--font-display);font-size:18px;margin-bottom:20px;}
 .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
@@ -490,10 +490,17 @@ textarea{resize:vertical;min-height:80px;line-height:1.6;}select{cursor:pointer;
 .urgent-banner strong{color:#c0392b;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;}
 .empty{color:var(--muted2);font-family:var(--font-mono);font-size:11px;padding:20px 0;}
 .divider{height:1px;background:var(--border);margin:24px 0;}
-.flash{position:fixed;bottom:24px;right:24px;background:var(--text);color:var(--bg);padding:10px 18px;font-family:var(--font-mono);font-size:11px;border-radius:4px;animation:fadeup 0.2s ease;z-index:200;}
+/* v1.8 RTL — Unicode arrows are bidi-neutral and are NOT mirrored by the
+   layout engine, so a "next" arrow keeps pointing right in RTL and reads as
+   "back". Mirror them explicitly, and flip the disclosure chevron with them.
+   Applied by class so flat-trend arrows (→ meaning "unchanged") stay put. */
+[dir="rtl"] .rtl-mirror{display:inline-block;transform:scaleX(-1);}
+[dir="rtl"] .course-card-chevron{transform:scaleX(-1);}
+[dir="rtl"] .course-card-chevron.open{transform:scaleX(-1) rotate(-90deg);}
+.flash{position:fixed;bottom:24px;inset-inline-end:24px;background:var(--text);color:var(--bg);padding:10px 18px;font-family:var(--font-mono);font-size:11px;border-radius:4px;animation:fadeup 0.2s ease;z-index:200;}
 @keyframes fadeup{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 @media(max-width:768px){
-  .flash{bottom:calc(72px + env(safe-area-inset-bottom));right:14px;}
+  .flash{bottom:calc(72px + env(safe-area-inset-bottom));inset-inline-end:14px;}
   .modal-grid{grid-template-columns:1fr;}
   .input-row{flex-direction:column;align-items:stretch;}
   .btn,.btn-outline{text-align:center;}
@@ -503,7 +510,7 @@ textarea{resize:vertical;min-height:80px;line-height:1.6;}select{cursor:pointer;
 const css3 = `
 /* ── Home course cards ── */
 .home-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:28px;}
-.course-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:var(--shadow);border-left:3px solid transparent;overflow:hidden;}
+.course-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:var(--shadow);border-inline-start:3px solid transparent;overflow:hidden;}
 .course-card-compact{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;transition:background 0.1s;user-select:none;}
 .course-card-compact:hover{background:var(--surface2);}
 .course-card-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
@@ -511,14 +518,14 @@ const css3 = `
 .course-card-pills{display:flex;gap:5px;flex-shrink:0;}
 .course-card-pill{font-family:var(--font-mono);font-size:9px;padding:2px 7px;border-radius:20px;background:var(--surface2);color:var(--muted);border:1px solid var(--border);}
 .course-card-pill.urgent{background:rgba(192,57,43,0.1);color:#c0392b;border-color:rgba(192,57,43,0.2);}
-.course-card-chevron{font-size:10px;color:var(--muted2);transition:transform 0.2s;flex-shrink:0;margin-left:6px;}
+.course-card-chevron{font-size:10px;color:var(--muted2);transition:transform 0.2s;flex-shrink:0;margin-inline-start:6px;}
 .course-card-chevron.open{transform:rotate(90deg);}
 .course-card-detail{border-top:1px solid var(--border);padding:12px 16px 14px;background:var(--surface2);}
 .course-card-next{font-size:12px;color:var(--muted);line-height:1.7;}
 .course-card-actions{display:flex;gap:8px;margin-top:10px;}
 
 /* ── Exam cards ── */
-.exam-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;margin-bottom:12px;box-shadow:var(--shadow);border-left:4px solid transparent;overflow:hidden;}
+.exam-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;margin-bottom:12px;box-shadow:var(--shadow);border-inline-start:4px solid transparent;overflow:hidden;}
 .exam-card.done{opacity:0.5;}
 .exam-card-header{display:flex;align-items:flex-start;gap:12px;padding:16px 18px;cursor:pointer;user-select:none;}
 .exam-card-header:hover{background:rgba(0,0,0,0.018);}
@@ -589,9 +596,9 @@ const css3 = `
 .nextup-unlock-progress{display:flex;align-items:center;gap:8px;margin-bottom:16px;}
 .nextup-unlock-pip{width:32px;height:6px;border-radius:3px;background:var(--border2);transition:background 0.25s;}
 .nextup-unlock-pip.filled{background:#2e7d52;}
-.nextup-unlock-progress-label{font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-left:4px;}
+.nextup-unlock-progress-label{font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-inline-start:4px;}
 .suggest-banner{background:rgba(26,92,158,0.06);border:1px dashed rgba(26,92,158,0.3);border-radius:5px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;font-size:13px;flex-wrap:wrap;}
-.suggest-banner-label{font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;color:#1a5c9e;margin-right:4px;}
+.suggest-banner-label{font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;color:#1a5c9e;margin-inline-end:4px;}
 .quick-add-box{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px;margin-bottom:24px;box-shadow:var(--shadow);}
 @media(max-width:768px){
   .home-grid{grid-template-columns:1fr;}
@@ -1291,7 +1298,7 @@ function OnboardingView({ onComplete }) {
         ))}
       </div>
       <button className="btn" style={{width:"100%",padding:"13px",marginTop:16}} onClick={()=>setStep(1)}>
-        {t('sdob.continue')} →
+        {t('sdob.continue')} <span className="rtl-mirror" aria-hidden>→</span>
       </button>
     </Shell>
   );
@@ -1301,7 +1308,7 @@ function OnboardingView({ onComplete }) {
       <div className="ob-step-title">{t('sdob.welcomeTitle')}</div>
       <div className="ob-step-desc">{t('sdob.welcomeBody')}</div>
       <button className="btn" style={{width:"100%",padding:"13px"}} onClick={()=>setStep(2)}>
-        {t('sdob.getStarted')} →
+        {t('sdob.getStarted')} <span className="rtl-mirror" aria-hidden>→</span>
       </button>
     </Shell>
   );
@@ -1329,7 +1336,7 @@ function OnboardingView({ onComplete }) {
       </div>
       <button className="btn" style={{width:"100%",padding:"13px",marginTop:8}}
         onClick={()=>{ if(courseName.trim()) setStep(3); }}>
-        {t('sdob.continue')} →
+        {t('sdob.continue')} <span className="rtl-mirror" aria-hidden>→</span>
       </button>
       <div className="ob-skip" onClick={()=>setStep(3)}>{t('sdob.skip')}</div>
     </Shell>
@@ -1886,9 +1893,9 @@ function PlanView({ state, dispatch, onAddAsgn, onAddExam, onAddCourse, onEditCo
     <div className="divider"/>
     <div className="section-label">{t('av.pl.examsCalendar')}<button className="btn btn-sm" style={{marginLeft:"auto"}} onClick={onAddExam}>{t('av.pl.add')}</button></div>
     <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
-      <button className="btn-outline btn-sm" onClick={prevMonth}>←</button>
+      <button className="btn-outline btn-sm" onClick={prevMonth}><span className="rtl-mirror" aria-hidden>←</span></button>
       <span style={{fontFamily:"var(--font-display)",fontSize:16,flex:1}}>{monthName}</span>
-      <button className="btn-outline btn-sm" onClick={nextMonth}>→</button>
+      <button className="btn-outline btn-sm" onClick={nextMonth}><span className="rtl-mirror" aria-hidden>→</span></button>
     </div>
     <div className="calendar-grid cal-header-row" style={{marginBottom:0,gap:4}}>{["sun","mon","tue","wed","thu","fri","sat"].map(d=><div key={d} className="cal-header">{t(`av.cal.${d}`)}</div>)}</div>
     <div className="calendar-grid" style={{marginBottom:16}}>
@@ -1905,7 +1912,7 @@ function PlanView({ state, dispatch, onAddAsgn, onAddExam, onAddCourse, onEditCo
     <div className="section-label">{t('av.pl.courses')}<button className="btn btn-sm" style={{marginLeft:"auto"}} onClick={onAddCourse}>{t('av.pl.add')}</button></div>
     {courses.length===0&&<div className="empty">{t('av.pl.noCourses')}</div>}
     <div className="home-grid">
-      {courses.map(c=>{const openA=state.assignments.filter(a=>a.courseId===c.id&&!a.done);const openE=state.exams.filter(e=>e.courseId===c.id&&!e.done);const isOpen=!!expandedCourse[c.id];const nextA=openA.filter(a=>a.dueDate).sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate))[0];const nextE=[...openE].sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate))[0];const hasUrgent=openA.some(a=>{const d=daysUntil(a.dueDate);return d!==null&&d<=2;})||openE.some(e=>{const d=daysUntil(e.dueDate);return d!==null&&d<=5;});return <div key={c.id} className="course-card" style={{borderLeftColor:c.color}}><div role="button" tabIndex={0} className="course-card-compact" onClick={()=>setExpandedCourse(x=>({...x,[c.id]:!x[c.id]}))} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&setExpandedCourse(x=>({...x,[c.id]:!x[c.id]}))}><div className="course-card-left"><div className="course-card-name">{c.name}</div><div className="course-card-pills">{openA.length>0&&<span className={"course-card-pill"+(hasUrgent?" urgent":"")}>{t('av.pl.due',{count:openA.length})}</span>}{openE.length>0&&<span className="course-card-pill" style={{background:"rgba(109,63,160,0.08)",color:"#6d3fa0",borderColor:"rgba(109,63,160,0.18)"}}>{t('av.pl.exam',{count:openE.length})}</span>}{openA.length===0&&openE.length===0&&<span className="course-card-pill" style={{color:"#2e7d52",borderColor:"rgba(46,125,82,0.2)"}}>{t('av.pl.clear')}</span>}</div></div><span className={"course-card-chevron"+(isOpen?" open":"")}>▶</span></div>{isOpen&&<div className="course-card-detail"><div className="course-card-next">{nextE&&<div style={{color:"#6d3fa0",marginBottom:5,fontFamily:"var(--font-mono)",fontSize:11}}>📝 <strong>{nextE.title}</strong> — {urgencyLabel(daysUntil(nextE.dueDate),t)}</div>}{nextA&&<div style={{marginBottom:5}}>{t('av.pl.next')} <strong>{nextA.title}</strong><span style={{color:urgencyColor(daysUntil(nextA.dueDate)),marginLeft:6,fontFamily:"var(--font-mono)",fontSize:11}}>{urgencyLabel(daysUntil(nextA.dueDate),t)}</span></div>}{!nextA&&!nextE&&<span style={{color:"var(--muted2)",fontFamily:"var(--font-mono)",fontSize:11}}>{t('av.pl.nothingDue')}</span>}</div><div className="course-card-actions"><button className="btn-outline btn-sm" onClick={()=>onEditCourse({id:c.id,name:c.name,color:c.color})}>{t('av.pl.edit')}</button></div></div>}</div>;})}
+      {courses.map(c=>{const openA=state.assignments.filter(a=>a.courseId===c.id&&!a.done);const openE=state.exams.filter(e=>e.courseId===c.id&&!e.done);const isOpen=!!expandedCourse[c.id];const nextA=openA.filter(a=>a.dueDate).sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate))[0];const nextE=[...openE].sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate))[0];const hasUrgent=openA.some(a=>{const d=daysUntil(a.dueDate);return d!==null&&d<=2;})||openE.some(e=>{const d=daysUntil(e.dueDate);return d!==null&&d<=5;});return <div key={c.id} className="course-card" style={{borderInlineStartColor:c.color}}><div role="button" tabIndex={0} className="course-card-compact" onClick={()=>setExpandedCourse(x=>({...x,[c.id]:!x[c.id]}))} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&setExpandedCourse(x=>({...x,[c.id]:!x[c.id]}))}><div className="course-card-left"><div className="course-card-name">{c.name}</div><div className="course-card-pills">{openA.length>0&&<span className={"course-card-pill"+(hasUrgent?" urgent":"")}>{t('av.pl.due',{count:openA.length})}</span>}{openE.length>0&&<span className="course-card-pill" style={{background:"rgba(109,63,160,0.08)",color:"#6d3fa0",borderColor:"rgba(109,63,160,0.18)"}}>{t('av.pl.exam',{count:openE.length})}</span>}{openA.length===0&&openE.length===0&&<span className="course-card-pill" style={{color:"#2e7d52",borderColor:"rgba(46,125,82,0.2)"}}>{t('av.pl.clear')}</span>}</div></div><span className={"course-card-chevron"+(isOpen?" open":"")}>▶</span></div>{isOpen&&<div className="course-card-detail"><div className="course-card-next">{nextE&&<div style={{color:"#6d3fa0",marginBottom:5,fontFamily:"var(--font-mono)",fontSize:11}}>📝 <strong>{nextE.title}</strong> — {urgencyLabel(daysUntil(nextE.dueDate),t)}</div>}{nextA&&<div style={{marginBottom:5}}>{t('av.pl.next')} <strong>{nextA.title}</strong><span style={{color:urgencyColor(daysUntil(nextA.dueDate)),marginLeft:6,fontFamily:"var(--font-mono)",fontSize:11}}>{urgencyLabel(daysUntil(nextA.dueDate),t)}</span></div>}{!nextA&&!nextE&&<span style={{color:"var(--muted2)",fontFamily:"var(--font-mono)",fontSize:11}}>{t('av.pl.nothingDue')}</span>}</div><div className="course-card-actions"><button className="btn-outline btn-sm" onClick={()=>onEditCourse({id:c.id,name:c.name,color:c.color})}>{t('av.pl.edit')}</button></div></div>}</div>;})}
     </div>
   </div>;
 }
@@ -1922,7 +1929,7 @@ function ExamCard({ exam, courses, dispatch }) {
   const pct=topics.length>0?Math.round((doneCnt/topics.length)*100):0;
   const progressColor=pct===100?"#2e7d52":pct>50?"#d4860a":"#c0392b";
   const addTopic=()=>{ if(!topicInput.trim()) return; dispatch({type:"ADD_EXAM_TOPIC",examId:exam.id,title:topicInput.trim()}); setTopicInput(""); };
-  return <div className={"exam-card"+(exam.done?" done":"")} style={{borderLeftColor:course?.color||"var(--border2)"}}>
+  return <div className={"exam-card"+(exam.done?" done":"")} style={{borderInlineStartColor:course?.color||"var(--border2)"}}>
     <div className="exam-card-header" onClick={()=>setOpen(o=>!o)}>
       <div className={"asgn-check"+(exam.done?" checked":"")} style={{marginTop:5,flexShrink:0}} onClick={e=>{e.stopPropagation();dispatch({type:"TOGGLE_EXAM",id:exam.id});}}/>
       <div className="exam-card-header-info">

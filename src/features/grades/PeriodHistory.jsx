@@ -16,7 +16,7 @@ const css = `
 .ph-period{border:1px solid var(--border);border-radius:8px;background:var(--bg);margin-bottom:8px;overflow:hidden;}
 .ph-period-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 13px;cursor:pointer;}
 .ph-period-name{font-family:var(--font-display);font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;}
-.ph-period-meta{font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:right;white-space:nowrap;}
+.ph-period-meta{font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:end;white-space:nowrap;}
 .ph-gpa{font-family:var(--font-display);font-weight:600;color:var(--text);}
 .ph-caret{color:var(--muted2);font-size:11px;}
 .ph-courses{border-top:1px solid var(--border);padding:4px 13px 10px;}
