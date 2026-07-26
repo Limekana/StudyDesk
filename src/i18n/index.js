@@ -19,8 +19,12 @@ import fr from './locales/fr.json';
 import de from './locales/de.json';
 import es from './locales/es.json';
 import zh from './locales/zh.json';
+import hi from './locales/hi.json';
+import pt from './locales/pt.json';
+import id from './locales/id.json';
+import ar from './locales/ar.json';
 
-export const SUPPORTED_LANGS = ['en', 'fi', 'fr', 'de', 'es', 'zh'];
+export const SUPPORTED_LANGS = ['en', 'fi', 'fr', 'de', 'es', 'zh', 'hi', 'pt', 'id', 'ar'];
 
 export const LANG_STORAGE_KEY = 'limecore_lang';
 
@@ -32,6 +36,10 @@ export const LANGUAGE_NAMES = {
   de: 'Deutsch',
   es: 'Español',
   zh: '中文',
+  hi: 'हिन्दी',
+  pt: 'Português',
+  id: 'Bahasa Indonesia',
+  ar: 'العربية',
 };
 
 function isSupported(code) {
@@ -68,6 +76,29 @@ export function setLanguage(lang) {
   i18n.changeLanguage(lang);
 }
 
+
+/** Languages that render right-to-left. Arabic is the only one so far. */
+export const RTL_LANGS = ['ar'];
+
+export function isRtl(lang) {
+  return RTL_LANGS.includes(lang.split('-')[0]);
+}
+
+/**
+ * Mirror the document for RTL languages.
+ *
+ * Set on <html> rather than a React root so it covers portals (modals, the
+ * sign-out confirm) too, and so CSS logical properties resolve correctly for
+ * the whole tree. `lang` goes on at the same time — it drives hyphenation and
+ * font fallback, which matters for Devanagari and Arabic script.
+ */
+export function applyDirection(lang) {
+  if (typeof document === 'undefined') return;
+  const el = document.documentElement;
+  el.dir = isRtl(lang) ? 'rtl' : 'ltr';
+  el.lang = lang.split('-')[0];
+}
+
 i18n.use(initReactI18next).init({
   resources: {
     en: { translation: en },
@@ -76,6 +107,10 @@ i18n.use(initReactI18next).init({
     de: { translation: de },
     es: { translation: es },
     zh: { translation: zh },
+    hi: { translation: hi },
+    pt: { translation: pt },
+    id: { translation: id },
+    ar: { translation: ar },
   },
   lng: detectLanguage(),
   fallbackLng: 'en',
@@ -84,5 +119,8 @@ i18n.use(initReactI18next).init({
   returnNull: false,
   react: { useSuspense: false },
 });
+
+// Set <html dir>/<html lang> for the language i18n actually booted with.
+applyDirection(i18n.language || 'en');
 
 export default i18n;

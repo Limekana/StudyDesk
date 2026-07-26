@@ -1,6 +1,7 @@
 import { useState, useReducer, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { setLanguage, SUPPORTED_LANGS, LANGUAGE_NAMES } from "./i18n/index.js";
+import { useScrollSelectedIntoView } from "./lib/useScrollSelectedIntoView.js";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { App as CapApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
@@ -209,7 +210,9 @@ const cssOnboard = `
 .ob-skip{font-family:var(--font-mono);font-size:10px;color:var(--muted2);cursor:pointer;text-align:center;margin-top:16px;letter-spacing:0.08em;text-transform:uppercase;}
 .ob-skip:hover{color:var(--text);text-decoration:underline;text-underline-offset:3px;}
 /* language step — paper chips */
-.ob-langs{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:4px;}
+.ob-langs{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:4px;max-height:184px;overflow-y:auto;overscroll-behavior:contain;}/* v1.8 — capped at ~3.5 rows so a 10-language list can't push this step's
+   Continue button below the fold. Only bites once the list outgrows it, so
+   the six-language layout is unchanged; the half-row is the scroll cue. */
 .ob-lang{font-family:var(--font-display);font-size:15px;color:var(--text);background:var(--bg);border:1px solid var(--border2);border-radius:3px;padding:12px 12px;cursor:pointer;text-align:left;transition:border-color 0.15s,background 0.15s,transform 0.12s var(--ease-settle);-webkit-tap-highlight-color:transparent;}
 .ob-lang:hover{transform:translateY(-1px);}
 .ob-lang.on{border-color:var(--text);background:var(--surface2);box-shadow:inset 2px 0 0 var(--danger);}
@@ -1249,6 +1252,7 @@ export default function App() {
 function OnboardingView({ onComplete }) {
   const { t, i18n } = useTranslation();
   const currentLang = (i18n.language || "en").split("-")[0];
+  const langRef = useScrollSelectedIntoView();
   const [step, setStep] = useState(0);
   const [courseName, setCourseName] = useState("");
   const [colorIdx, setColorIdx] = useState(0);
@@ -1278,7 +1282,7 @@ function OnboardingView({ onComplete }) {
     <Shell>
       <div className="ob-step-title">{t('sdob.langTitle')}</div>
       <div className="ob-step-desc">{t('sdob.langBody')}</div>
-      <div className="ob-langs">
+      <div className="ob-langs" ref={langRef}>
         {SUPPORTED_LANGS.map((code)=>(
           <button key={code} className={"ob-lang"+(currentLang===code?" on":"")}
             onClick={()=>setLanguage(code)} aria-pressed={currentLang===code}>
@@ -1964,6 +1968,7 @@ function ExamCard({ exam, courses, dispatch }) {
 function ActionsView({ state, dispatch, showFlash, onAddCourse }) {
   const { t, i18n } = useTranslation();
   const currentLang = (i18n.language || "en").split("-")[0];
+  const langRef = useScrollSelectedIntoView();
   const [newText, setNewText] = useState(""); const [newBucket, setNewBucket] = useState("today"); const [newCourse, setNewCourse] = useState("");
   const courses = Object.values(state.courses).filter(c => !c.deletedAt);
   // v1.5 (5D) — active = non-archived. When every course is archived (a new
@@ -2034,7 +2039,7 @@ function ActionsView({ state, dispatch, showFlash, onAddCourse }) {
             the localStorage override and applies live. */}
         <div style={{marginTop:18}}>
           <div style={{fontFamily:"var(--font-mono)",fontSize:10,letterSpacing:"0.18em",color:"var(--muted2)",textTransform:"uppercase",marginBottom:8}}>{t('settings.language')}</div>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          <div ref={langRef} style={{display:"flex",gap:6,flexWrap:"wrap",maxHeight:184,overflowY:"auto",overscrollBehavior:"contain"}}>
             {SUPPORTED_LANGS.map((code)=>(
               <button
                 key={code}

@@ -1,6 +1,7 @@
 import { useState, useCallback, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import { setLanguage, SUPPORTED_LANGS, LANGUAGE_NAMES } from '../../i18n/index.js';
+import { useScrollSelectedIntoView } from '../../lib/useScrollSelectedIntoView.js';
 import { supabase } from '../../lib/supabase.js';
 import { setGuestMode } from '../../lib/guestMode.js';
 import PeriodHistory from '../grades/PeriodHistory.jsx';
@@ -24,7 +25,7 @@ const css = `
 .sv2-section-title{font-family:var(--font-mono);font-size:10px;letter-spacing:0.18em;color:var(--muted2);text-transform:uppercase;margin-bottom:14px;}
 
 /* Language switcher grid (v1.5.1) */
-.sv2-lang-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.sv2-lang-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:184px;overflow-y:auto;overscroll-behavior:contain;}
 .sv2-lang-btn{font-family:var(--font-display);font-size:14px;color:var(--text);background:var(--bg);border:1px solid var(--border2);border-radius:9px;padding:11px 10px;cursor:pointer;text-align:left;transition:border-color .15s,background .15s;}
 .sv2-lang-btn:hover{border-color:var(--muted2);}
 .sv2-lang-btn--on{border-color:var(--accent,#2e7d52);background:color-mix(in srgb,var(--accent,#2e7d52) 8%,transparent);color:var(--accent,#2e7d52);font-weight:600;}
@@ -84,6 +85,7 @@ function fmtTime(iso, t, lang) {
 export default function SettingsView({ state, dispatch, showFlash, session }) {
   const { t, i18n } = useTranslation();
   const currentLang = (i18n.language || 'en').split('-')[0];
+  const langRef = useScrollSelectedIntoView();
   const lang = currentLang; // for locale-aware date formatting in fmtTime
   const [pulling, setPulling] = useState(false);
   const [lastPullAt, setLastPullAt] = useState(null);
@@ -196,7 +198,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
         {/* ── Language ── */}
         <div className="sv2-section">
           <div className="sv2-section-title">{t('settings.language')}</div>
-          <div className="sv2-lang-grid">
+          <div className="sv2-lang-grid" ref={langRef}>
             {SUPPORTED_LANGS.map((code) => (
               <button
                 key={code}
