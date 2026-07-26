@@ -36,6 +36,9 @@ const BUCKET_COLORS = {
   later:     { bg: "#2e7d52", text: "#fff" },
 };
 const ASSIGN_TYPES = ["Essay","Problem Set","Lab","Reading","Exam","Project","Quiz","Other"];
+/** Sentinel preset that reveals the free-text label field (v1.8). Never stored
+ *  as an assignment's type — the user's own label is stored instead. */
+const OTHER_ASSIGN_TYPE = "Other";
 const COURSE_COLORS = ["#c0392b","#d4860a","#2e7d52","#1a5c9e","#6d3fa0","#b5470b","#1e7d7d","#8b4a62"];
 const DIFFICULTY_DAYS   = { easy:3, medium:7, hard:14, brutal:21 };
 const DIFFICULTY_LABELS = { easy:"Easy", medium:"Medium", hard:"Hard", brutal:"Brutal" };
@@ -1743,7 +1746,16 @@ function AsgnItem({ asgn, courses, dispatch }) {
 function AddAsgnModal({ courses, activeCourse, onAdd, onClose }) {
   const { t } = useTranslation();
   const [title,setTitle]=useState(""); const [courseId,setCourse]=useState(activeCourse||(courses[0]?.id??"")); const [type,setType]=useState(ASSIGN_TYPES[0]); const [dueDate,setDueDate]=useState(""); const [notes,setNotes]=useState("");
-  const submit=()=>{ if(!title.trim()||!courseId) return; onAdd({title:title.trim(),courseId,type,dueDate,notes}); };
+  // v1.8 — "Other" used to be a dead end: it stored the literal string "Other"
+  // with no way to say what the assignment actually was. Picking it now reveals
+  // a label field and the custom text is what gets stored, so `type` stays a
+  // plain string and no existing assignment changes shape. Assignments are
+  // local-only — no Supabase table exists and NCC never reads them — so this
+  // has no sync or cross-app surface.
+  const [customType,setCustomType]=useState("");
+  const isOtherType = type===OTHER_ASSIGN_TYPE;
+  const resolvedType = isOtherType ? customType.trim() : type;
+  const submit=()=>{ if(!title.trim()||!courseId||!resolvedType) return; onAdd({title:title.trim(),courseId,type:resolvedType,dueDate,notes}); };
   return <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={t('av.md.addAssignment')} onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
     <div className="modal-title">{t('av.md.addAssignment')}</div>
     <div className="input-group"><div className="input-label">{t('av.md.title')}</div><input type="text" placeholder={t('av.md.titlePh')} value={title} onChange={e=>setTitle(e.target.value)} autoFocus/></div>
@@ -1751,6 +1763,7 @@ function AddAsgnModal({ courses, activeCourse, onAdd, onClose }) {
       <div className="input-group"><div className="input-label">{t('av.md.course')}</div><select value={courseId} onChange={e=>setCourse(e.target.value)}>{courses.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
       <div className="input-group"><div className="input-label">{t('av.md.type')}</div><select value={type} onChange={e=>setType(e.target.value)}>{ASSIGN_TYPES.map(ty=><option key={ty} value={ty}>{t(`av.assignType.${ty}`,{defaultValue:ty})}</option>)}</select></div>
     </div>
+    {isOtherType&&<div className="input-group"><input type="text" placeholder={t('av.md.typeCustomPh')} value={customType} onChange={e=>setCustomType(e.target.value)} aria-label={t('av.md.type')} autoFocus/></div>}
     <div className="input-group"><div className="input-label">{t('av.md.dueDateOpt')}</div><input type="date" value={dueDate} onChange={e=>setDueDate(e.target.value)}/></div>
     <div className="input-group"><div className="input-label">{t('av.md.notesOpt')}</div><textarea placeholder={t('av.md.asgnNotesPh')} value={notes} onChange={e=>setNotes(e.target.value)} style={{minHeight:60}}/></div>
     <div style={{display:"flex",gap:8,marginTop:4}}><button className="btn" onClick={submit}>{t('av.md.addAssignment')}</button><button className="btn-outline" onClick={onClose}>{t('common.cancel')}</button></div>
