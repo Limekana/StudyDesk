@@ -195,6 +195,16 @@ function isObviousPlaceholder(val) {
   if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val)) return true;
   // Version strings like `1.2.3-beta.4` — too short anyway, but be explicit.
   if (/^\d+\.\d+\.\d+/.test(val)) return true;
+  // Lowercase kebab-case identifiers — `limelog-body-metrics-prefs`, and every
+  // other localStorage / Preferences key in these apps. They trip the heuristic
+  // purely because the constant holding them is named *_KEY. A real credential
+  // is high-entropy: base64 secrets carry mixed case, hex secrets carry no
+  // hyphens, and UUIDs are already excluded above. An all-lowercase slug of
+  // dictionary-ish words is a name, not a value.
+  if (/^[a-z0-9]+(?:-[a-z0-9]+)+$/.test(val)) return true;
+  // Same for snake_case and dotted identifiers (`wt_exercise_prs`,
+  // `com.limecore.nexus.something`).
+  if (/^[a-z0-9]+(?:[_.][a-z0-9]+)+$/.test(val)) return true;
   return false;
 }
 
