@@ -2,6 +2,7 @@ import { useState, useReducer, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { setLanguage, SUPPORTED_LANGS, LANGUAGE_NAMES } from "./i18n/index.js";
 import { useScrollSelectedIntoView } from "./lib/useScrollSelectedIntoView.js";
+import { parseLocalDate, fmtDate, fmtDateFull, fmtTime, fmtToday } from "./lib/dates.js";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { App as CapApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
@@ -59,11 +60,8 @@ function uid() { return Date.now().toString(36)+Math.random().toString(36).slice
 // study sessions). Browser-native, no extra dep.
 function newSyncId() { return crypto.randomUUID(); }
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-function parseLocalDate(s){ if(!s) return null; const[y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); }
 function toLocalISO(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function daysUntil(s){ if(!s) return null; return Math.round((parseLocalDate(s)-todayMidnight())/86400000); }
-function fmtDate(s){ if(!s) return "No date"; return parseLocalDate(s).toLocaleDateString("en-GB",{day:"numeric",month:"short"}); }
-function fmtDateFull(s){ if(!s) return ""; return parseLocalDate(s).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"}); }
 function urgencyColor(d){ if(d===null) return "#aaa"; if(d<0) return "#c0392b"; if(d<=2) return "#c0392b"; if(d<=7) return "#d4860a"; return "#2e7d52"; }
 function urgencyLabel(d, t){ if(d===null||!t) return ""; if(d<0) return t('av.urgency.overdue',{n:Math.abs(d)}); if(d===0) return t('av.urgency.dueToday'); if(d===1) return t('av.urgency.dueTomorrow'); return t('av.urgency.daysLeft',{n:d}); }
 function addDays(s,n){ const d=parseLocalDate(s); d.setDate(d.getDate()+n); return toLocalISO(d); }
@@ -1073,7 +1071,7 @@ export default function App() {
     return () => { handler.then(h=>h.remove()); };
   }, [showAddCourse,showAddAsgn,showAddExam,editingCourse,state.view]);
   const courses = Object.values(state.courses).filter(c => !c.deletedAt);
-  const todayStr = new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
+  const todayStr = fmtToday();
   const urgent = state.assignments.filter(a=>{ if(a.done) return false; const d=daysUntil(a.dueDate); return d!==null&&d<=0; });
   const urgentExams = state.exams.filter(e=>!e.done&&daysUntil(e.dueDate)!==null&&daysUntil(e.dueDate)<=3);
   const addCourse = () => {
@@ -1697,7 +1695,7 @@ function TimerView({ state, onTimerComplete }) {
           <div className="section-label">{t('av.tm.todaysSessions')}</div>
           {todayList.map(s=>{
             const c = s.subjectId ? state.courses[s.subjectId] : null;
-            const ts = s.startedAt ? new Date(s.startedAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : "";
+            const ts = fmtTime(s.startedAt);
             return <div key={s.id} className="pomo-log-entry">
               <span className="pomo-log-badge">{ts}</span>
               <span>{c?.name || s.notes || "—"}</span>
@@ -1745,7 +1743,7 @@ function AsgnItem({ asgn, courses, dispatch }) {
       <div className="asgn-meta">
         {course&&<span className="asgn-course" style={{background:course.color+"18",color:course.color}}>{course.name}</span>}
         {asgn.type&&<span className="asgn-type">{t(`av.assignType.${asgn.type}`,{defaultValue:asgn.type})}</span>}
-        {asgn.dueDate&&<span className="asgn-due" style={{color:asgn.done?"var(--muted2)":urgencyColor(days)}}>{fmtDate(asgn.dueDate)} · {urgencyLabel(days,t)}</span>}
+        {asgn.dueDate&&<span className="asgn-due" style={{color:asgn.done?"var(--muted2)":urgencyColor(days)}}>{fmtDate(asgn.dueDate,t)} · {urgencyLabel(days,t)}</span>}
       </div>
       {asgn.notes&&<div className="asgn-notes">{asgn.notes}</div>}
     </div>
@@ -1877,7 +1875,7 @@ function PlanView({ state, dispatch, onAddAsgn, onAddExam, onAddCourse, onEditCo
     return [...examEvents,...studyEvents,...asgnEvents];
   };
   const dayIsToday=(date)=>toLocalISO(date)===toLocalISO(todayMidnight());
-  const monthName=firstDay.toLocaleDateString(lang||"en-GB",{month:"long",year:"numeric"});
+  const monthName=firstDay.toLocaleDateString(lang||"en",{month:"long",year:"numeric"});
   const prevMonth=()=>setCalMonth(m=>m.month===0?{year:m.year-1,month:11}:{year:m.year,month:m.month-1});
   const nextMonth=()=>setCalMonth(m=>m.month===11?{year:m.year+1,month:0}:{year:m.year,month:m.month+1});
   const agendaEvents=[];
@@ -1903,7 +1901,7 @@ function PlanView({ state, dispatch, onAddAsgn, onAddExam, onAddCourse, onEditCo
     </div>
     <div className="cal-agenda" style={{marginBottom:16}}>
       {agendaEvents.length===0&&<div className="empty">{t('av.pl.nothingComingUp')}</div>}
-      {agendaEvents.map((entry,i)=>{const label=entry.date.toLocaleDateString(lang||"en-GB",{weekday:"short",day:"numeric",month:"short"});return <div key={i} className="cal-agenda-item"><div className="cal-agenda-date">{label}</div><div className="cal-agenda-pills">{entry.events.map((ev,j)=>{if(ev.type==="exam"||ev.type==="study"){const c=ev.course;return <div key={j} className="cal-agenda-pill" style={{background:ev.type==="exam"?"rgba(109,63,160,0.10)":"rgba(26,92,158,0.08)"}}><span>{ev.type==="exam"?"📝":"📚"}</span><span style={{fontFamily:"var(--font-mono)",fontSize:11,color:ev.type==="exam"?"#6d3fa0":"#1a5c9e"}}>{ev.type==="exam"?t('av.pl.examWord'):t('av.pl.studyWord')}</span><span style={{fontSize:13}}>{ev.exam.title}</span>{c&&<span className="asgn-course" style={{background:c.color+"18",color:c.color}}>{c.name}</span>}</div>;}const c=ev.course;return <div key={j} className="cal-agenda-pill" style={{background:c?c.color+"18":"var(--surface2)"}}><span>◷</span><span style={{fontFamily:"var(--font-mono)",fontSize:11,color:c?.color||"var(--muted)"}}>{t('av.pl.dueWord')}</span><span style={{fontSize:13}}>{ev.asgn.title}</span>{c&&<span className="asgn-course" style={{background:c.color+"18",color:c.color}}>{c.name}</span>}</div>;})}</div></div>;})}
+      {agendaEvents.map((entry,i)=>{const label=entry.date.toLocaleDateString(lang||"en",{weekday:"short",day:"numeric",month:"short"});return <div key={i} className="cal-agenda-item"><div className="cal-agenda-date">{label}</div><div className="cal-agenda-pills">{entry.events.map((ev,j)=>{if(ev.type==="exam"||ev.type==="study"){const c=ev.course;return <div key={j} className="cal-agenda-pill" style={{background:ev.type==="exam"?"rgba(109,63,160,0.10)":"rgba(26,92,158,0.08)"}}><span>{ev.type==="exam"?"📝":"📚"}</span><span style={{fontFamily:"var(--font-mono)",fontSize:11,color:ev.type==="exam"?"#6d3fa0":"#1a5c9e"}}>{ev.type==="exam"?t('av.pl.examWord'):t('av.pl.studyWord')}</span><span style={{fontSize:13}}>{ev.exam.title}</span>{c&&<span className="asgn-course" style={{background:c.color+"18",color:c.color}}>{c.name}</span>}</div>;}const c=ev.course;return <div key={j} className="cal-agenda-pill" style={{background:c?c.color+"18":"var(--surface2)"}}><span>◷</span><span style={{fontFamily:"var(--font-mono)",fontSize:11,color:c?.color||"var(--muted)"}}>{t('av.pl.dueWord')}</span><span style={{fontSize:13}}>{ev.asgn.title}</span>{c&&<span className="asgn-course" style={{background:c.color+"18",color:c.color}}>{c.name}</span>}</div>;})}</div></div>;})}
     </div>
     {openExams.map(e=><ExamCard key={e.id} exam={e} courses={state.courses} dispatch={dispatch}/>)}
     {openExams.length===0&&<div className="empty">{t('av.pl.noExams')}</div>}
@@ -1937,7 +1935,7 @@ function ExamCard({ exam, courses, dispatch }) {
         <div className="exam-card-meta">
           {course&&<span className="asgn-course" style={{background:course.color+"18",color:course.color}}>{course.name}</span>}
           <span className="tag tag-exam">{t('av.ec.examTag')}</span>
-          {exam.dueDate&&<span style={{fontFamily:"var(--font-mono)",fontSize:11,fontWeight:500,color:exam.done?"var(--muted2)":urgencyColor(days)}}>{fmtDate(exam.dueDate)} · {urgencyLabel(days,t)}</span>}
+          {exam.dueDate&&<span style={{fontFamily:"var(--font-mono)",fontSize:11,fontWeight:500,color:exam.done?"var(--muted2)":urgencyColor(days)}}>{fmtDate(exam.dueDate,t)} · {urgencyLabel(days,t)}</span>}
         </div>
         {topics.length>0&&<div className="exam-header-progress"><div className="exam-header-progress-track"><div className="exam-header-progress-fill" style={{width:pct+"%",background:progressColor}}/></div><span className="exam-header-progress-txt">{t('av.ec.topicsCount',{done:doneCnt,total:topics.length})}{pct===100?" ✓":""}</span></div>}
       </div>

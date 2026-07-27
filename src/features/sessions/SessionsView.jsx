@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as outbox from '../../lib/outbox.js';
+import { fmtTime } from '../../lib/dates.js';
 
 const css = `
 .sv-wrap{padding:16px 24px 80px;max-width:780px;margin:0 auto;}
@@ -37,11 +38,6 @@ function fmtDateHeader(iso, t, lang) {
   if (sameDay(d, today)) return t('sv.todayHead');
   if (sameDay(d, yesterday)) return t('sv.yesterdayHead');
   return d.toLocaleDateString(lang || 'en', { weekday: 'long', day: 'numeric', month: 'long', year: d.getFullYear() !== today.getFullYear() ? 'numeric' : undefined }).toUpperCase();
-}
-
-function fmtTime(iso) {
-  if (!iso) return '';
-  return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
 export default function SessionsView({ state, dispatch, showFlash, session }) {

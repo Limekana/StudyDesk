@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { analyseStudySession } from '../../lib/aiStudyDebrief.js';
+import { fmtTime } from '../../lib/dates.js';
 
 export default function SaveSessionSheet({ pending, courses, onSave, onClose, canDebrief = false }) {
   const { t } = useTranslation();
@@ -77,9 +78,7 @@ export default function SaveSessionSheet({ pending, courses, onSave, onClose, ca
             <input
               type="text"
               readOnly
-              value={pending.startedAt
-                ? new Date(pending.startedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-                : ''}
+              value={fmtTime(pending.startedAt)}
               style={{ background: 'var(--surface2)' }}
             />
           </div>
