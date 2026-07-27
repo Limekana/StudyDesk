@@ -353,7 +353,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
             </button>
             <a
               className="btn-outline"
-              href="https://github.com/Limekana/StudyDesk/blob/main/PRIVACY.md"
+              href="https://limekana.github.io/nexus-command-center/legal/privacy.html"
               target="_blank"
               rel="noopener noreferrer"
             >

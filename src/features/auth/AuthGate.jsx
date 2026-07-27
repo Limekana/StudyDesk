@@ -373,7 +373,7 @@ export default function AuthGate() {
           <div className="auth-legal-note">
             {t('auth.ageNote')}{' '}
             <a
-              href="https://github.com/Limekana/StudyDesk/blob/main/PRIVACY.md"
+              href="https://limekana.github.io/nexus-command-center/legal/privacy.html"
               target="_blank"
               rel="noopener noreferrer"
             >
