@@ -11,6 +11,8 @@
   },
   "scripts": {
     "dev": "vite",
+    "prepare": "git config core.hooksPath .githooks || true",
+    "check:secrets": "node scripts/check-secrets.mjs --all",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
