@@ -35,7 +35,9 @@
     "errWeakPassword": "Escolha uma senha mais forte.",
     "errEmailNotConfirmed": "Confirme seu e-mail primeiro — o link está na sua caixa de entrada.",
     "errRateLimited": "Muitas tentativas. Aguarde um momento e tente de novo.",
-    "errNetwork": "Não foi possível conectar ao servidor. Verifique sua conexão e tente de novo."
+    "errNetwork": "Não foi possível conectar ao servidor. Verifique sua conexão e tente de novo.",
+    "ageNote": "Você precisa ter 16 anos ou mais para criar uma conta (13 onde a lei local permitir). Abaixo dessa idade, use o modo convidado — nada sai do seu aparelho.",
+    "privacyLink": "Política de privacidade"
   },
   "app": {
     "name": "StudyDesk",

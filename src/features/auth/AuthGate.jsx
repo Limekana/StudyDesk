@@ -71,6 +71,8 @@ const authCss = `
 .auth-guest button:hover{color:var(--text);}
 .auth-guest button:disabled{opacity:0.5;cursor:not-allowed;}
 .auth-guest-note{font-family:var(--font-mono);font-size:10px;letter-spacing:0.06em;color:var(--muted2);text-align:center;margin:0 12px;line-height:1.4;}
+.auth-legal-note{font-size:10px;color:var(--muted2);text-align:center;margin:10px 12px 0;line-height:1.5;}
+.auth-legal-note a{color:var(--muted);text-decoration:underline;}
 /* v1.8 — ACT-4. Short viewports get tighter chrome so the guest link survives
    the expanded email form too. Keyed on height, not width: the fold problem is
    vertical, and 380x732 phones must keep the roomier editorial spacing. */
@@ -362,6 +364,21 @@ export default function AuthGate() {
           </button>
           <div className="auth-guest-note">
             {t('auth.guestNote')}
+          </div>
+          {/* GDPR Art. 8 — consent for an information society service is only
+              valid from 16 (13 in some member states). We cannot verify ages and
+              are not expected to, but a study app aimed at students should say
+              the limit rather than stay silent, and should point at the option
+              that needs no account. */}
+          <div className="auth-legal-note">
+            {t('auth.ageNote')}{' '}
+            <a
+              href="https://github.com/Limekana/StudyDesk/blob/main/PRIVACY.md"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t('auth.privacyLink')}
+            </a>
           </div>
         </div>
       </div>

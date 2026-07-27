@@ -109,7 +109,9 @@
     "errWeakPassword": "Choisissez un mot de passe plus fort.",
     "errEmailNotConfirmed": "Confirmez d'abord votre e-mail — le lien est dans votre boîte de réception.",
     "errRateLimited": "Trop de tentatives. Patientez un instant, puis réessayez.",
-    "errNetwork": "Serveur injoignable. Vérifiez votre connexion et réessayez."
+    "errNetwork": "Serveur injoignable. Vérifiez votre connexion et réessayez.",
+    "ageNote": "Vous devez avoir 16 ans ou plus pour créer un compte (13 ans si la loi locale le permet). En dessous, utilisez le mode invité — rien ne quitte votre appareil.",
+    "privacyLink": "Politique de confidentialité"
   },
   "settings": {
     "cloudSync": "Synchro cloud",

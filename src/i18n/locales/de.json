@@ -108,7 +108,9 @@
     "errWeakPassword": "Wähle ein stärkeres Passwort.",
     "errEmailNotConfirmed": "Bestätige zuerst deine E-Mail — der Link ist in deinem Postfach.",
     "errRateLimited": "Zu viele Versuche. Warte einen Moment und versuche es erneut.",
-    "errNetwork": "Server nicht erreichbar. Prüfe deine Verbindung und versuche es erneut."
+    "errNetwork": "Server nicht erreichbar. Prüfe deine Verbindung und versuche es erneut.",
+    "ageNote": "Für ein Konto musst du mindestens 16 sein (13, wo das lokale Recht es erlaubt). Jünger? Nutze den Gastmodus — nichts verlässt dein Gerät.",
+    "privacyLink": "Datenschutzerklärung"
   },
   "settings": {
     "cloudSync": "Cloud-Sync",

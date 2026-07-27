@@ -108,7 +108,9 @@
     "errWeakPassword": "Choose a stronger password.",
     "errEmailNotConfirmed": "Confirm your email first — check your inbox for the link.",
     "errRateLimited": "Too many attempts. Wait a moment, then try again.",
-    "errNetwork": "Couldn't reach the server. Check your connection and try again."
+    "errNetwork": "Couldn't reach the server. Check your connection and try again.",
+    "ageNote": "You must be 16+ to create an account (13+ where local law allows). Under that age, use guest mode — nothing leaves your device.",
+    "privacyLink": "Privacy policy"
   },
   "settings": {
     "cloudSync": "Cloud sync",

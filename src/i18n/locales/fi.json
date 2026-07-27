@@ -108,7 +108,9 @@
     "errWeakPassword": "Valitse vahvempi salasana.",
     "errEmailNotConfirmed": "Vahvista ensin sähköpostisi — tarkista linkki postilaatikostasi.",
     "errRateLimited": "Liian monta yritystä. Odota hetki ja yritä uudelleen.",
-    "errNetwork": "Palvelimeen ei saatu yhteyttä. Tarkista verkkoyhteytesi ja yritä uudelleen."
+    "errNetwork": "Palvelimeen ei saatu yhteyttä. Tarkista verkkoyhteytesi ja yritä uudelleen.",
+    "ageNote": "Tilin luomiseen vaaditaan 16 vuoden ikä (13, jos paikallinen laki sallii). Nuorempana käytä vierastilaa — mikään ei poistu laitteeltasi.",
+    "privacyLink": "Tietosuojaseloste"
   },
   "settings": {
     "cloudSync": "Pilvisynkronointi",

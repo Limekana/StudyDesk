@@ -108,7 +108,9 @@
     "errWeakPassword": "请选择更强的密码。",
     "errEmailNotConfirmed": "请先确认邮箱——确认链接已发送到你的收件箱。",
     "errRateLimited": "尝试次数过多。请稍候再试。",
-    "errNetwork": "无法连接服务器。请检查网络后重试。"
+    "errNetwork": "无法连接服务器。请检查网络后重试。",
+    "ageNote": "创建账户需年满 16 岁（当地法律允许时为 13 岁）。未达年龄请使用访客模式 —— 数据不会离开你的设备。",
+    "privacyLink": "隐私政策"
   },
   "settings": {
     "cloudSync": "云同步",
