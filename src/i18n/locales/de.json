@@ -159,7 +159,21 @@
     "license": "Lizenz",
     "justNow": "gerade eben",
     "minAgo": "vor {{n}} Min",
-    "hAgo": "vor {{n}} Std"
+    "hAgo": "vor {{n}} Std",
+    "yourData": "Deine Daten",
+    "yourDataNote": "Lade alles herunter, was StudyDesk über dich speichert, oder lösche es dauerhaft. Ganz ohne Anfrage.",
+    "exportData": "Meine Daten exportieren",
+    "exportDone": "Gespeichert: {{name}}",
+    "exportFailed": "Export fehlgeschlagen: {{msg}}",
+    "privacyPolicy": "Datenschutzerklärung",
+    "dangerZone": "Gefahrenbereich",
+    "deleteAccount": "Konto löschen",
+    "deletingAccount": "Wird gelöscht…",
+    "deleteAccountNote": "Löscht dauerhaft dein Konto, deine Kurse, Noten und Lernsitzungen. Nicht rückgängig zu machen, ohne Wiederherstellungsfrist.",
+    "deleteAccountConfirm1": "Konto und alle Daten löschen? Das lässt sich nicht rückgängig machen.",
+    "deleteAccountConfirm2": "Letzte Chance — alles wird sofort gelöscht. Fortfahren?",
+    "deleteAccountDone": "Dein Konto und deine Daten wurden gelöscht.",
+    "deleteAccountFailed": "Konto konnte nicht gelöscht werden: {{msg}}"
   },
   "sdob": {
     "brand": "Schluss mit Grübeln. Fang an zu lernen.",

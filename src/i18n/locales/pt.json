@@ -161,7 +161,21 @@
     "justNow": "agora mesmo",
     "minAgo": "há {{n}} min",
     "hAgo": "há {{n}} h",
-    "stillPending_many": "{{count}} itens ainda pendentes"
+    "stillPending_many": "{{count}} itens ainda pendentes",
+    "yourData": "Seus dados",
+    "yourDataNote": "Baixe tudo o que o StudyDesk guarda sobre você, ou apague permanentemente. Sem precisar pedir.",
+    "exportData": "Exportar meus dados",
+    "exportDone": "Salvo: {{name}}",
+    "exportFailed": "Falha ao exportar: {{msg}}",
+    "privacyPolicy": "Política de privacidade",
+    "dangerZone": "Zona de risco",
+    "deleteAccount": "Apagar minha conta",
+    "deletingAccount": "Apagando…",
+    "deleteAccountNote": "Apaga permanentemente sua conta, disciplinas, notas e sessões de estudo. Não pode ser desfeito e não há período de recuperação.",
+    "deleteAccountConfirm1": "Apagar sua conta e todos os seus dados? Isso não pode ser desfeito.",
+    "deleteAccountConfirm2": "Última chance — tudo será apagado imediatamente. Continuar?",
+    "deleteAccountDone": "Sua conta e seus dados foram apagados.",
+    "deleteAccountFailed": "Não foi possível apagar a conta: {{msg}}"
   },
   "sdob": {
     "brand": "Pare de decidir. Comece a estudar.",

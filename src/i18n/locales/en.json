@@ -159,7 +159,21 @@
     "license": "License",
     "justNow": "just now",
     "minAgo": "{{n}}m ago",
-    "hAgo": "{{n}}h ago"
+    "hAgo": "{{n}}h ago",
+    "yourData": "Your data",
+    "yourDataNote": "Download everything StudyDesk holds about you, or delete it permanently. No need to ask us.",
+    "exportData": "Export my data",
+    "exportDone": "Saved {{name}}",
+    "exportFailed": "Export failed: {{msg}}",
+    "privacyPolicy": "Privacy policy",
+    "dangerZone": "Danger zone",
+    "deleteAccount": "Delete my account",
+    "deletingAccount": "Deleting…",
+    "deleteAccountNote": "Permanently erases your account, courses, grades and study sessions. This cannot be undone and there is no recovery window.",
+    "deleteAccountConfirm1": "Delete your account and all of your data? This cannot be undone.",
+    "deleteAccountConfirm2": "Last chance — everything will be erased immediately. Continue?",
+    "deleteAccountDone": "Your account and data have been deleted.",
+    "deleteAccountFailed": "Could not delete account: {{msg}}"
   },
   "sdob": {
     "brand": "Stop deciding. Start studying.",

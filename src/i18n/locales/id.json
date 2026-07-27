@@ -157,7 +157,21 @@
     "license": "Lisensi",
     "justNow": "baru saja",
     "minAgo": "{{n}} mnt lalu",
-    "hAgo": "{{n}} jam lalu"
+    "hAgo": "{{n}} jam lalu",
+    "yourData": "Data kamu",
+    "yourDataNote": "Unduh semua yang disimpan StudyDesk tentangmu, atau hapus permanen. Tanpa perlu meminta kami.",
+    "exportData": "Ekspor data saya",
+    "exportDone": "Tersimpan {{name}}",
+    "exportFailed": "Ekspor gagal: {{msg}}",
+    "privacyPolicy": "Kebijakan privasi",
+    "dangerZone": "Zona berbahaya",
+    "deleteAccount": "Hapus akun saya",
+    "deletingAccount": "Menghapus…",
+    "deleteAccountNote": "Menghapus permanen akun, mata kuliah, nilai, dan sesi belajarmu. Tidak dapat dibatalkan dan tanpa masa pemulihan.",
+    "deleteAccountConfirm1": "Hapus akun dan semua datamu? Tindakan ini tidak dapat dibatalkan.",
+    "deleteAccountConfirm2": "Kesempatan terakhir — semuanya akan langsung dihapus. Lanjutkan?",
+    "deleteAccountDone": "Akun dan datamu telah dihapus.",
+    "deleteAccountFailed": "Tidak dapat menghapus akun: {{msg}}"
   },
   "sdob": {
     "brand": "Berhenti menimbang. Mulai belajar.",

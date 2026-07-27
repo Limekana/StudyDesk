@@ -159,7 +159,21 @@
     "license": "许可证",
     "justNow": "刚刚",
     "minAgo": "{{n}} 分钟前",
-    "hAgo": "{{n}} 小时前"
+    "hAgo": "{{n}} 小时前",
+    "yourData": "你的数据",
+    "yourDataNote": "下载 StudyDesk 保存的所有关于你的数据，或将其永久删除。无需联系我们。",
+    "exportData": "导出我的数据",
+    "exportDone": "已保存 {{name}}",
+    "exportFailed": "导出失败：{{msg}}",
+    "privacyPolicy": "隐私政策",
+    "dangerZone": "危险区域",
+    "deleteAccount": "删除我的账户",
+    "deletingAccount": "正在删除…",
+    "deleteAccountNote": "永久删除你的账户、课程、成绩与学习记录。此操作无法撤销，也没有恢复期。",
+    "deleteAccountConfirm1": "删除你的账户和所有数据？此操作无法撤销。",
+    "deleteAccountConfirm2": "最后确认 —— 所有数据将立即删除。继续吗？",
+    "deleteAccountDone": "你的账户和数据已被删除。",
+    "deleteAccountFailed": "无法删除账户：{{msg}}"
   },
   "sdob": {
     "brand": "别再纠结，开始学习。",

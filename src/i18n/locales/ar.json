@@ -167,7 +167,21 @@
     "license": "الترخيص",
     "justNow": "الآن",
     "minAgo": "قبل {{n}} د",
-    "hAgo": "قبل {{n}} س"
+    "hAgo": "قبل {{n}} س",
+    "yourData": "بياناتك",
+    "yourDataNote": "نزّل كل ما يحتفظ به StudyDesk عنك، أو احذفه نهائيًا. دون الحاجة إلى مراسلتنا.",
+    "exportData": "تصدير بياناتي",
+    "exportDone": "تم حفظ {{name}}",
+    "exportFailed": "فشل التصدير: {{msg}}",
+    "privacyPolicy": "سياسة الخصوصية",
+    "dangerZone": "منطقة خطرة",
+    "deleteAccount": "حذف حسابي",
+    "deletingAccount": "جارٍ الحذف…",
+    "deleteAccountNote": "يمحو نهائيًا حسابك ومقرراتك ودرجاتك وجلسات دراستك. لا يمكن التراجع ولا توجد فترة استرداد.",
+    "deleteAccountConfirm1": "حذف حسابك وكل بياناتك؟ لا يمكن التراجع عن هذا.",
+    "deleteAccountConfirm2": "فرصة أخيرة — سيُمحى كل شيء فورًا. هل تريد المتابعة؟",
+    "deleteAccountDone": "تم حذف حسابك وبياناتك.",
+    "deleteAccountFailed": "تعذّر حذف الحساب: {{msg}}"
   },
   "sdob": {
     "brand": "كفى ترددًا. ابدأ الدراسة.",

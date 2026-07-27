@@ -159,7 +159,21 @@
     "license": "Lisenssi",
     "justNow": "juuri nyt",
     "minAgo": "{{n}} min sitten",
-    "hAgo": "{{n}} t sitten"
+    "hAgo": "{{n}} t sitten",
+    "yourData": "Omat tietosi",
+    "yourDataNote": "Lataa kaikki StudyDeskin sinusta säilyttämä tieto tai poista se pysyvästi. Ei tarvitse pyytää meiltä.",
+    "exportData": "Vie tietoni",
+    "exportDone": "Tallennettu {{name}}",
+    "exportFailed": "Vienti epäonnistui: {{msg}}",
+    "privacyPolicy": "Tietosuojaseloste",
+    "dangerZone": "Vaaravyöhyke",
+    "deleteAccount": "Poista tilini",
+    "deletingAccount": "Poistetaan…",
+    "deleteAccountNote": "Poistaa pysyvästi tilisi, kurssisi, arvosanasi ja opiskelusessiosi. Tätä ei voi kumota eikä palauttaa.",
+    "deleteAccountConfirm1": "Poistetaanko tilisi ja kaikki tietosi? Tätä ei voi kumota.",
+    "deleteAccountConfirm2": "Viimeinen mahdollisuus — kaikki poistetaan välittömästi. Jatketaanko?",
+    "deleteAccountDone": "Tilisi ja tietosi on poistettu.",
+    "deleteAccountFailed": "Tilin poisto epäonnistui: {{msg}}"
   },
   "sdob": {
     "brand": "Lopeta miettiminen. Aloita opiskelu.",

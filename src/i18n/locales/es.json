@@ -161,7 +161,21 @@
     "justNow": "ahora mismo",
     "minAgo": "hace {{n}} min",
     "hAgo": "hace {{n}} h",
-    "stillPending_many": "{{count}} elementos aún pendientes"
+    "stillPending_many": "{{count}} elementos aún pendientes",
+    "yourData": "Tus datos",
+    "yourDataNote": "Descarga todo lo que StudyDesk guarda sobre ti, o bórralo permanentemente. Sin pedírnoslo.",
+    "exportData": "Exportar mis datos",
+    "exportDone": "Guardado: {{name}}",
+    "exportFailed": "Error al exportar: {{msg}}",
+    "privacyPolicy": "Política de privacidad",
+    "dangerZone": "Zona de riesgo",
+    "deleteAccount": "Eliminar mi cuenta",
+    "deletingAccount": "Eliminando…",
+    "deleteAccountNote": "Borra permanentemente tu cuenta, cursos, notas y sesiones de estudio. No se puede deshacer ni recuperar.",
+    "deleteAccountConfirm1": "¿Eliminar tu cuenta y todos tus datos? Esto no se puede deshacer.",
+    "deleteAccountConfirm2": "Última oportunidad: todo se borrará de inmediato. ¿Continuar?",
+    "deleteAccountDone": "Tu cuenta y tus datos han sido eliminados.",
+    "deleteAccountFailed": "No se pudo eliminar la cuenta: {{msg}}"
   },
   "sdob": {
     "brand": "Deja de decidir. Empieza a estudiar.",

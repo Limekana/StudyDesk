@@ -7,6 +7,7 @@ import { setGuestMode } from '../../lib/guestMode.js';
 import PeriodHistory from '../grades/PeriodHistory.jsx';
 import * as sync from '../../lib/sync.js';
 import * as outbox from '../../lib/outbox.js';
+import { downloadExport, deleteAccount } from '../../lib/dataRights.js';
 import pkg from '../../../package.json';
 
 // v1.3.1 — initials for the account avatar (mirrors App.jsx's topbar avatar).
@@ -52,6 +53,10 @@ const css = `
 .sv2-mode button{background:transparent;border:none;padding:6px 14px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;color:var(--muted);}
 .sv2-mode button.active{background:var(--text);color:var(--bg);}
 .sv2-action{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;}
+.sv2-danger{margin-top:20px;padding-top:16px;border-top:1px solid var(--danger-border);}
+.sv2-danger-title{font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--danger);margin-bottom:6px;}
+.sv2-danger-btn{margin-top:12px;color:var(--danger);border-color:var(--danger-border);}
+.sv2-danger-btn:active{background:var(--danger-bg);}
 .sv2-signout{background:var(--danger);color:var(--danger-on);border:none;padding:10px 18px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:6px;font-weight:500;}
 .sv2-signout:hover{opacity:0.85;}
 .sv2-signin{background:var(--text);color:var(--bg);border:none;padding:10px 18px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:6px;font-weight:500;}
@@ -91,6 +96,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
   const [lastPullAt, setLastPullAt] = useState(null);
   const [signingOut, setSigningOut] = useState(false);
   const [draining, setDraining] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const outboxStatus = useSyncExternalStore(
     outbox.subscribe,
@@ -134,6 +140,44 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
       setSigningOut(false);
     }
   }, [showFlash, dispatch, t]);
+
+  // ── GDPR Art. 20 — portability ─────────────────────────────────────────────
+  const onExport = useCallback(() => {
+    try {
+      const name = downloadExport(state, session);
+      showFlash(t('settings.exportDone', { name }));
+    } catch (e) {
+      showFlash(t('settings.exportFailed', { msg: e.message }));
+    }
+  }, [state, session, showFlash, t]);
+
+  // ── GDPR Art. 17 — erasure ─────────────────────────────────────────────────
+  // Two confirmations, because this is irreversible and there is no recovery
+  // window: the account row is gone and every cascade has fired.
+  const onDeleteAccount = useCallback(async () => {
+    if (!confirm(t('settings.deleteAccountConfirm1'))) return;
+    if (!confirm(t('settings.deleteAccountConfirm2'))) return;
+    setDeleting(true);
+    try {
+      await deleteAccount({
+        clearLocal: async () => {
+          outbox.clear();
+          dispatch({ type: 'RESET_AFTER_SIGNOUT' });
+          for (const k of ['studydesk-v1', 'studydesk-needs-initial-push',
+                           'studydesk-onboarded', 'studydesk-grade-mode', 'sd-timer']) {
+            try { localStorage.removeItem(k); } catch { /* private mode */ }
+          }
+          setGuestMode(true);
+          window.dispatchEvent(new CustomEvent('studydesk:guest-mode-changed'));
+        },
+      });
+      showFlash(t('settings.deleteAccountDone'));
+    } catch (e) {
+      showFlash(t('settings.deleteAccountFailed', { msg: e.message }));
+    } finally {
+      setDeleting(false);
+    }
+  }, [dispatch, showFlash, t]);
 
   // v1.3.1 — guests sign in from here now that the topbar button is gone.
   // Flipping guestMode off routes the app back to AuthGate.
@@ -295,6 +339,38 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
           <div className="sv2-section-title">{t('history.title')}</div>
           <PeriodHistory courses={state.courses} grades={grades} mode={mode} />
           <div className="sv2-note">{t('history.note')}</div>
+        </div>
+
+        {/* ── Your data — GDPR Art. 17 / 20 ─────────────────────────────
+             Deliberately buttons rather than a "write to us" address: a right
+             the user has to request is a right most of them never exercise. */}
+        <div className="sv2-section">
+          <div className="sv2-section-title">{t('settings.yourData')}</div>
+          <div className="sv2-note">{t('settings.yourDataNote')}</div>
+          <div className="sv2-action">
+            <button className="btn-outline" onClick={onExport}>
+              {t('settings.exportData')}
+            </button>
+            <a
+              className="btn-outline"
+              href="https://github.com/Limekana/StudyDesk/blob/main/PRIVACY.md"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t('settings.privacyPolicy')}
+            </a>
+          </div>
+          <div className="sv2-danger">
+            <div className="sv2-danger-title">{t('settings.dangerZone')}</div>
+            <div className="sv2-note">{t('settings.deleteAccountNote')}</div>
+            <button
+              className="btn-outline sv2-danger-btn"
+              onClick={onDeleteAccount}
+              disabled={deleting}
+            >
+              {deleting ? t('settings.deletingAccount') : t('settings.deleteAccount')}
+            </button>
+          </div>
         </div>
 
         {/* ── About ── */}
