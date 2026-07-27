@@ -62,7 +62,8 @@
     "course_other": "{{count}} asignaturas",
     "gpaIb": "Media IB",
     "gpaUs": "Media",
-    "noGrades": "Sin notas"
+    "noGrades": "Sin notas",
+    "course_many": "{{count}} asignaturas"
   },
   "nextup": {
     "newPeriodTitle": "¿Nuevo periodo? Empieza añadiendo tus asignaturas",
@@ -159,7 +160,8 @@
     "license": "Licencia",
     "justNow": "ahora mismo",
     "minAgo": "hace {{n}} min",
-    "hAgo": "hace {{n}} h"
+    "hAgo": "hace {{n}} h",
+    "stillPending_many": "{{count}} elementos aún pendientes"
   },
   "sdob": {
     "brand": "Deja de decidir. Empieza a estudiar.",
@@ -220,7 +222,9 @@
     "fWeight": "Ponderación",
     "phWeight": "p. ej. 0.3",
     "fDate": "Fecha",
-    "bAdd": "Añadir nota"
+    "bAdd": "Añadir nota",
+    "grades_many": "{{count}} notas",
+    "courses_many": "{{count}} cursos"
   },
   "sv": {
     "today": "Hoy",
@@ -373,7 +377,8 @@
       "edit": "Editar",
       "examWord": "EXAMEN",
       "studyWord": "ESTUDIO",
-      "dueWord": "VENCE"
+      "dueWord": "VENCE",
+      "exam_many": "{{count}} exámenes"
     },
     "cal": {
       "sun": "Dom",

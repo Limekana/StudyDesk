@@ -62,7 +62,8 @@
     "course_other": "{{count}} cours",
     "gpaIb": "Moy. IB",
     "gpaUs": "Moyenne",
-    "noGrades": "Aucune note"
+    "noGrades": "Aucune note",
+    "course_many": "{{count}} cours"
   },
   "nextup": {
     "newPeriodTitle": "Nouvelle période ? Commence par ajouter tes cours",
@@ -159,7 +160,8 @@
     "license": "Licence",
     "justNow": "à l’instant",
     "minAgo": "il y a {{n}} min",
-    "hAgo": "il y a {{n}} h"
+    "hAgo": "il y a {{n}} h",
+    "stillPending_many": "{{count}} éléments encore en attente"
   },
   "sdob": {
     "brand": "Arrête de choisir. Commence à réviser.",
@@ -220,7 +222,9 @@
     "fWeight": "Pondération",
     "phWeight": "p. ex. 0.3",
     "fDate": "Date",
-    "bAdd": "Ajouter une note"
+    "bAdd": "Ajouter une note",
+    "grades_many": "{{count}} notes",
+    "courses_many": "{{count}} cours"
   },
   "sv": {
     "today": "Aujourd’hui",
@@ -373,7 +377,8 @@
       "edit": "Modifier",
       "examWord": "EXAMEN",
       "studyWord": "ÉTUDE",
-      "dueWord": "À RENDRE"
+      "dueWord": "À RENDRE",
+      "exam_many": "{{count}} examens"
     },
     "cal": {
       "sun": "Dim",
