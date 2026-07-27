@@ -3,7 +3,12 @@
 **Last updated: 27 July 2026**
 
 StudyDesk is made by **Limecore Studio**. This policy explains what the app
-stores, where it goes, and what you can do about it. It describes the app as it
+stores, where it goes, and what you can do about it.
+
+> StudyDesk shares one account system and one database with the other Limecore
+> apps. The **[suite-wide privacy policy](https://limekana.github.io/nexus-command-center/legal/privacy.html)**
+> is the canonical version and covers all three; this page is the StudyDesk-only
+> view of the same thing. It describes the app as it
 actually behaves — if you find something here that does not match what the app
 does, that is a bug and we want to hear about it.
 
@@ -108,9 +113,10 @@ will delete it.
 ## How long it is kept
 
 - **Your data is kept until you delete it.** We do not expire accounts.
-- When you delete a course, grade or session in the app, it is first marked
-  deleted so the change can reach your other devices, then **permanently erased
-  within 30 days**.
+- When you delete a course, grade or session in the app, it is marked deleted and
+  hidden immediately, and the marker is kept so the deletion reaches your other
+  devices. Those markers are removed from the database when you delete your
+  account.
 - When you **delete your account**, everything is erased immediately and
   irreversibly — account, courses, grades, sessions and AI notes. Nothing is
   retained, and there is no recovery window. Backups roll off within 7 days.
