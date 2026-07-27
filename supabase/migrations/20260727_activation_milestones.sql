@@ -1,7 +1,6 @@
 -- Funnel instrumentation — activation milestones on profiles.
 --
--- NOT APPLIED. This file is prepared for review; schema changes need explicit
--- sign-off before they run against the production database.
+-- APPLIED 2026-07-27 with sign-off. Kept here as the record of what ran.
 --
 -- Why columns rather than an analytics SDK: F-Droid's inclusion policy forbids
 -- proprietary tracking and analytics libraries by name (Google Play Services,
@@ -91,3 +90,15 @@ update public.profiles p
    set first_session_at = ss.first_at
   from (select user_id, min(created_at) as first_at from public.study_sessions group by 1) ss
  where ss.user_id = p.id and p.first_session_at is null;
+
+-- Applied as a follow-up in the same session: the function is SECURITY DEFINER
+-- (it writes to profiles rows the inserting user has no policy for), which meant
+-- PostgREST exposed it at /rest/v1/rpc/mark_activation_milestone to anon and
+-- authenticated. Calling it outside a trigger is harmless — tg_table_name is
+-- null so every branch falls through — but an exposed SECURITY DEFINER function
+-- should not be left in place on that argument alone. Triggers run the function
+-- as the table owner and ignore EXECUTE grants, so this changes nothing about
+-- how the triggers behave.
+revoke execute on function public.mark_activation_milestone() from public;
+revoke execute on function public.mark_activation_milestone() from anon;
+revoke execute on function public.mark_activation_milestone() from authenticated;

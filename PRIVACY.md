@@ -27,7 +27,7 @@ does, that is a bug and we want to hear about it.
 The data controller is **Limecore Studio** (sole trader, Helsinki, Finland).
 
 Contact for anything in this policy, including data requests:
-**<!-- CONTACT_EMAIL -->** — or open an issue at
+**l1m3core@gmail.com** — or open an issue at
 <https://github.com/Limekana/StudyDesk/issues> if it is not something you mind
 being public.
 
