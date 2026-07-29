@@ -181,7 +181,11 @@
     "deleteAccountConfirm1": "Poistetaanko tilisi ja kaikki tietosi? Tätä ei voi kumota.",
     "deleteAccountConfirm2": "Viimeinen mahdollisuus — kaikki poistetaan välittömästi. Jatketaanko?",
     "deleteAccountDone": "Tilisi ja tietosi on poistettu.",
-    "deleteAccountFailed": "Tilin poisto epäonnistui: {{msg}}"
+    "deleteAccountFailed": "Tilin poisto epäonnistui: {{msg}}",
+    "remindersLbl": "Muistutukset",
+    "reminders": "Opiskelumuistutukset",
+    "remindersOnNote": "Päällä — saat päivittäisen koosteen sekä muistutukset ennen palautuksia ja kokeita.",
+    "remindersOffNote": "Pois — ei ilmoituksia, eikä StudyDesk pyydä ilmoituslupaa."
   },
   "sdob": {
     "brand": "Lopeta miettiminen. Aloita opiskelu.",

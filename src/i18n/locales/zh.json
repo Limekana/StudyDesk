@@ -181,7 +181,11 @@
     "deleteAccountConfirm1": "删除你的账户和所有数据？此操作无法撤销。",
     "deleteAccountConfirm2": "最后确认 —— 所有数据将立即删除。继续吗？",
     "deleteAccountDone": "你的账户和数据已被删除。",
-    "deleteAccountFailed": "无法删除账户：{{msg}}"
+    "deleteAccountFailed": "无法删除账户：{{msg}}",
+    "remindersLbl": "提醒",
+    "reminders": "学习提醒",
+    "remindersOnNote": "已开启 — 你将收到每日摘要，以及作业和考试截止前的提醒。",
+    "remindersOffNote": "已关闭 — 没有通知，StudyDesk 也不会请求通知权限。"
   },
   "sdob": {
     "brand": "别再纠结，开始学习。",

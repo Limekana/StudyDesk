@@ -181,7 +181,11 @@
     "deleteAccountConfirm1": "Konto und alle Daten löschen? Das lässt sich nicht rückgängig machen.",
     "deleteAccountConfirm2": "Letzte Chance — alles wird sofort gelöscht. Fortfahren?",
     "deleteAccountDone": "Dein Konto und deine Daten wurden gelöscht.",
-    "deleteAccountFailed": "Konto konnte nicht gelöscht werden: {{msg}}"
+    "deleteAccountFailed": "Konto konnte nicht gelöscht werden: {{msg}}",
+    "remindersLbl": "Erinnerungen",
+    "reminders": "Lern-Erinnerungen",
+    "remindersOnNote": "An — du bekommst eine tägliche Übersicht und Hinweise vor Abgaben und Prüfungen.",
+    "remindersOffNote": "Aus — keine Benachrichtigungen, und StudyDesk fragt nicht nach der Benachrichtigungsberechtigung."
   },
   "sdob": {
     "brand": "Schluss mit Grübeln. Fang an zu lernen.",

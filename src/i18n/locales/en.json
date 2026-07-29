@@ -181,7 +181,11 @@
     "deleteAccountConfirm1": "Delete your account and all of your data? This cannot be undone.",
     "deleteAccountConfirm2": "Last chance — everything will be erased immediately. Continue?",
     "deleteAccountDone": "Your account and data have been deleted.",
-    "deleteAccountFailed": "Could not delete account: {{msg}}"
+    "deleteAccountFailed": "Could not delete account: {{msg}}",
+    "remindersLbl": "Reminders",
+    "reminders": "Study reminders",
+    "remindersOnNote": "On — you'll get a daily digest and alerts before assignments and exams are due.",
+    "remindersOffNote": "Off — no notifications, and StudyDesk will not ask for notification permission."
   },
   "sdob": {
     "brand": "Stop deciding. Start studying.",

@@ -94,6 +94,21 @@ async function registerActionTypesOnce() {
   }
 }
 
+/** Cancels every pending notification without asking for permission.
+ *  Used when reminders are switched off — scheduling and unscheduling must not
+ *  share a path, because the scheduling path prompts and the off path must
+ *  never prompt. */
+async function cancelAllNotifications() {
+  try {
+    const pending = await LocalNotifications.getPending();
+    if (pending.notifications.length > 0) {
+      await LocalNotifications.cancel({ notifications: pending.notifications });
+    }
+  } catch (e) {
+    console.error("[StudyDesk] cancelAllNotifications failed:", e);
+  }
+}
+
 async function scheduleNotifications(exams, assignments, courses) {
   try {
     const perm = await LocalNotifications.requestPermissions();
@@ -171,6 +186,7 @@ const INITIAL = {
   grades:[], studySessions:[],
   gradeMode:"ib",                  // 'ib' | 'us' — UI-only, persisted locally
   aiEnabled:false,                 // AI debrief opt-in — device-level, persisted locally
+  notifEnabled:true,               // reminders opt-in — set at onboarding, changeable in Settings
   view:"actions", activeCourse:null,
 };
 
@@ -309,6 +325,7 @@ function reducer(state, action) {
     // ── Settings ──
     case "SET_GRADE_MODE": return {...state,gradeMode:action.mode==="us"?"us":"ib"};
     case "SET_AI_ENABLED": return {...state,aiEnabled:!!action.on};
+    case "SET_NOTIF_ENABLED": return {...state,notifEnabled:!!action.on};
 
     // ── Sync: bulk merge from Supabase pull (LWW logic in merge.js) ──
     case "MERGE_REMOTE":   return applyRemotePull(state, action.remote);
@@ -717,6 +734,18 @@ export default function App() {
       const aiEnabled = (() => {
         try { return localStorage.getItem("studydesk-ai-enabled") === "1"; } catch { return false; }
       })();
+      // Reminders. The key is absent for everyone who onboarded before this
+      // preference existed, and those users have already been through the
+      // permission prompt — so absent-but-onboarded means keep scheduling, and
+      // only an explicit "Maybe later" writes a "0". A blanket default of false
+      // would silently stop reminders for every existing install.
+      const notifEnabled = (() => {
+        try {
+          const raw = localStorage.getItem("studydesk-notifications");
+          if (raw !== null) return raw === "1";
+          return localStorage.getItem("studydesk-onboarded") === "1";
+        } catch { return true; }
+      })();
 
       // ── v1.0.4 UUID migration ────────────────────────────────────────────────
       // Earlier versions used short uid() strings for IDs. Supabase columns are
@@ -797,6 +826,7 @@ export default function App() {
         activeCourse: migratedActiveCourse,
         gradeMode,
         aiEnabled,
+        notifEnabled,
         view: "actions",
       };
     } catch { return init; }
@@ -823,17 +853,29 @@ export default function App() {
   useEffect(() => {
     try { localStorage.setItem("studydesk-ai-enabled", state.aiEnabled ? "1" : "0"); } catch {}
   }, [state.aiEnabled]);
+  useEffect(() => {
+    try { localStorage.setItem("studydesk-notifications", state.notifEnabled ? "1" : "0"); } catch {}
+  }, [state.notifEnabled]);
 
   // Schedule notifications after onboarding with fresh state (#21 fix)
   // Reschedule notifications whenever exams or assignments change (not just onboarding)
   useEffect(() => {
-    if (onboarded) {
+    if (!onboarded) return;
+    // notifEnabled is what makes "Maybe later" mean anything. Before this gate
+    // both onboarding buttons ran the same path, so declining still reached
+    // scheduleNotifications — which calls requestPermissions() and therefore
+    // raised the very OS prompt the user had just declined.
+    if (state.notifEnabled) {
       scheduleNotifications(state.exams, state.assignments, state.courses);
+    } else {
+      // Turning them off must also clear anything already scheduled, or
+      // reminders keep arriving from a previous session's schedule.
+      cancelAllNotifications();
     }
     // state.courses belongs here: notification bodies carry the course name, so
     // renaming a course left stale text scheduled until an exam or assignment
     // happened to change.
-  }, [onboarded, state.exams, state.assignments, state.courses]);
+  }, [onboarded, state.notifEnabled, state.exams, state.assignments, state.courses]);
 
   // v1.3 — outbox drain triggers. The outbox holds pending Supabase writes
   // when the device is offline or a sync call failed; this effect re-runs
@@ -905,10 +947,14 @@ export default function App() {
     return () => { handlePromise.then((h) => h.remove()).catch(() => {}); };
   }, []);
   // Notifications are only scheduled after onboarding completes — never on first open
-  const handleOnboardingComplete = useCallback((courseData) => {
+  const handleOnboardingComplete = useCallback((courseData, opts = {}) => {
     if (courseData) {
       dispatch({type:"ADD_COURSE", name:courseData.name, color:courseData.color});
     }
+    // `notifications` carries which of the two step-3 buttons was pressed.
+    // Default true so any caller that omits it (or a skip that never reaches
+    // step 3) behaves as before; only an explicit false opts out.
+    dispatch({type:"SET_NOTIF_ENABLED", on: opts.notifications !== false});
     try { localStorage.setItem("studydesk-onboarded","1"); } catch {}
     setOnboarded(true);
     // Notifications scheduled via useEffect watching onboarded — avoids stale closure (#21)
@@ -1378,10 +1424,14 @@ function OnboardingView({ onComplete }) {
         <div className="ob-notif-title">{t('sdob.notifTitle')}</div>
         <div className="ob-notif-desc">{t('sdob.notifBody')}</div>
       </div>
-      <button className="btn" style={{width:"100%",padding:"13px",marginBottom:10}} onClick={()=>onComplete(result())}>
+      {/* These two buttons were wired to the identical handler, so "Maybe
+          later" completed onboarding exactly like "Enable reminders" and the
+          OS permission prompt fired either way. The choice now travels with
+          the completion. */}
+      <button className="btn" style={{width:"100%",padding:"13px",marginBottom:10}} onClick={()=>onComplete(result(), { notifications: true })}>
         {t('sdob.enableReminders')}
       </button>
-      <button className="btn-outline" style={{width:"100%",padding:"11px"}} onClick={()=>onComplete(result())}>
+      <button className="btn-outline" style={{width:"100%",padding:"11px"}} onClick={()=>onComplete(result(), { notifications: false })}>
         {t('sdob.maybeLater')}
       </button>
     </OnboardingShell>

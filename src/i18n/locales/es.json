@@ -183,7 +183,11 @@
     "deleteAccountConfirm1": "¿Eliminar tu cuenta y todos tus datos? Esto no se puede deshacer.",
     "deleteAccountConfirm2": "Última oportunidad: todo se borrará de inmediato. ¿Continuar?",
     "deleteAccountDone": "Tu cuenta y tus datos han sido eliminados.",
-    "deleteAccountFailed": "No se pudo eliminar la cuenta: {{msg}}"
+    "deleteAccountFailed": "No se pudo eliminar la cuenta: {{msg}}",
+    "remindersLbl": "Recordatorios",
+    "reminders": "Recordatorios de estudio",
+    "remindersOnNote": "Activados: recibirás un resumen diario y avisos antes de las entregas y los exámenes.",
+    "remindersOffNote": "Desactivados: sin notificaciones, y StudyDesk no pedirá permiso para enviarlas."
   },
   "sdob": {
     "brand": "Deja de decidir. Empieza a estudiar.",

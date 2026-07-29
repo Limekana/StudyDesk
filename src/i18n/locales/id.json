@@ -179,7 +179,11 @@
     "deleteAccountConfirm1": "Hapus akun dan semua datamu? Tindakan ini tidak dapat dibatalkan.",
     "deleteAccountConfirm2": "Kesempatan terakhir — semuanya akan langsung dihapus. Lanjutkan?",
     "deleteAccountDone": "Akun dan datamu telah dihapus.",
-    "deleteAccountFailed": "Tidak dapat menghapus akun: {{msg}}"
+    "deleteAccountFailed": "Tidak dapat menghapus akun: {{msg}}",
+    "remindersLbl": "Pengingat",
+    "reminders": "Pengingat belajar",
+    "remindersOnNote": "Aktif — Anda akan menerima ringkasan harian serta peringatan sebelum tugas dan ujian jatuh tempo.",
+    "remindersOffNote": "Nonaktif — tidak ada notifikasi, dan StudyDesk tidak akan meminta izin notifikasi."
   },
   "sdob": {
     "brand": "Berhenti menimbang. Mulai belajar.",

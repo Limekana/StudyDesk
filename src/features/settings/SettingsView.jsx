@@ -317,6 +317,36 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
           </div>
         </div>
 
+        {/* ── Reminders ──
+             Onboarding's "Maybe later" now genuinely declines, which makes
+             this row necessary: without it, declining once was irreversible
+             short of a reinstall. */}
+        <div className="sv2-section">
+          <div className="sv2-section-title">{t('settings.remindersLbl')}</div>
+          <div className="sv2-row">
+            <span className="sv2-row-label">{t('settings.reminders')}</span>
+            <span className="sv2-row-value">
+              <span className="sv2-mode">
+                <button
+                  className={!state.notifEnabled ? 'active' : ''}
+                  onClick={() => dispatch({ type: 'SET_NOTIF_ENABLED', on: false })}
+                >
+                  {t('settings.aiOff')}
+                </button>
+                <button
+                  className={state.notifEnabled ? 'active' : ''}
+                  onClick={() => dispatch({ type: 'SET_NOTIF_ENABLED', on: true })}
+                >
+                  {t('settings.aiOn')}
+                </button>
+              </span>
+            </span>
+          </div>
+          <div className="sv2-note">
+            {state.notifEnabled ? t('settings.remindersOnNote') : t('settings.remindersOffNote')}
+          </div>
+        </div>
+
         {/* ── Grades ── */}
         <div className="sv2-section">
           <div className="sv2-section-title">{t('settings.gradesLbl')}</div>

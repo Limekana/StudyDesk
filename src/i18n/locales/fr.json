@@ -183,7 +183,11 @@
     "deleteAccountConfirm1": "Supprimer votre compte et toutes vos données ? Action irréversible.",
     "deleteAccountConfirm2": "Dernière chance — tout sera effacé immédiatement. Continuer ?",
     "deleteAccountDone": "Votre compte et vos données ont été supprimés.",
-    "deleteAccountFailed": "Suppression impossible : {{msg}}"
+    "deleteAccountFailed": "Suppression impossible : {{msg}}",
+    "remindersLbl": "Rappels",
+    "reminders": "Rappels de révision",
+    "remindersOnNote": "Activés — vous recevrez un résumé quotidien et des alertes avant les rendus et les examens.",
+    "remindersOffNote": "Désactivés — aucune notification, et StudyDesk ne demandera pas l'autorisation d'en envoyer."
   },
   "sdob": {
     "brand": "Arrête de choisir. Commence à réviser.",

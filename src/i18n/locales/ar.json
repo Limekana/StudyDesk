@@ -189,7 +189,11 @@
     "deleteAccountConfirm1": "حذف حسابك وكل بياناتك؟ لا يمكن التراجع عن هذا.",
     "deleteAccountConfirm2": "فرصة أخيرة — سيُمحى كل شيء فورًا. هل تريد المتابعة؟",
     "deleteAccountDone": "تم حذف حسابك وبياناتك.",
-    "deleteAccountFailed": "تعذّر حذف الحساب: {{msg}}"
+    "deleteAccountFailed": "تعذّر حذف الحساب: {{msg}}",
+    "remindersLbl": "التذكيرات",
+    "reminders": "تذكيرات المذاكرة",
+    "remindersOnNote": "مُفعّلة — ستصلك خلاصة يومية وتنبيهات قبل مواعيد التسليم والاختبارات.",
+    "remindersOffNote": "مُعطّلة — لا إشعارات، ولن يطلب StudyDesk إذن الإشعارات."
   },
   "sdob": {
     "brand": "كفى ترددًا. ابدأ الدراسة.",

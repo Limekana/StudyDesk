@@ -183,7 +183,11 @@
     "deleteAccountConfirm1": "Apagar sua conta e todos os seus dados? Isso não pode ser desfeito.",
     "deleteAccountConfirm2": "Última chance — tudo será apagado imediatamente. Continuar?",
     "deleteAccountDone": "Sua conta e seus dados foram apagados.",
-    "deleteAccountFailed": "Não foi possível apagar a conta: {{msg}}"
+    "deleteAccountFailed": "Não foi possível apagar a conta: {{msg}}",
+    "remindersLbl": "Lembretes",
+    "reminders": "Lembretes de estudo",
+    "remindersOnNote": "Ligados — você receberá um resumo diário e avisos antes das entregas e provas.",
+    "remindersOffNote": "Desligados — sem notificações, e o StudyDesk não pedirá permissão para enviá-las."
   },
   "sdob": {
     "brand": "Pare de decidir. Comece a estudar.",
