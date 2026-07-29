@@ -347,6 +347,30 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
         <div className="sv2-section">
           <div className="sv2-section-title">{t('settings.yourData')}</div>
           <div className="sv2-note">{t('settings.yourDataNote')}</div>
+          {/* AI debrief opt-in. Off by default — flipping it on is the consent,
+              and the note you type is exactly what gets sent. */}
+          <div className="sv2-row">
+            <span className="sv2-row-label">{t('settings.aiDebrief')}</span>
+            <span className="sv2-row-value">
+              <span className="sv2-mode">
+                <button
+                  className={!state.aiEnabled ? 'active' : ''}
+                  onClick={() => dispatch({ type: 'SET_AI_ENABLED', on: false })}
+                >
+                  {t('settings.aiOff')}
+                </button>
+                <button
+                  className={state.aiEnabled ? 'active' : ''}
+                  onClick={() => dispatch({ type: 'SET_AI_ENABLED', on: true })}
+                >
+                  {t('settings.aiOn')}
+                </button>
+              </span>
+            </span>
+          </div>
+          <div className="sv2-note">
+            {state.aiEnabled ? t('settings.aiDebriefOnNote') : t('settings.aiDebriefOffNote')}
+          </div>
           <div className="sv2-action">
             <button className="btn-outline" onClick={onExport}>
               {t('settings.exportData')}

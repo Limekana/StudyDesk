@@ -170,6 +170,7 @@ const INITIAL = {
   courses:{}, assignments:[], actions:[], exams:[],
   grades:[], studySessions:[],
   gradeMode:"ib",                  // 'ib' | 'us' — UI-only, persisted locally
+  aiEnabled:false,                 // AI debrief opt-in — device-level, persisted locally
   view:"actions", activeCourse:null,
 };
 
@@ -307,6 +308,7 @@ function reducer(state, action) {
 
     // ── Settings ──
     case "SET_GRADE_MODE": return {...state,gradeMode:action.mode==="us"?"us":"ib"};
+    case "SET_AI_ENABLED": return {...state,aiEnabled:!!action.on};
 
     // ── Sync: bulk merge from Supabase pull (LWW logic in merge.js) ──
     case "MERGE_REMOTE":   return applyRemotePull(state, action.remote);
@@ -322,6 +324,10 @@ function reducer(state, action) {
     // Preserve gradeMode: it's a device-level UI-only display preference (IB vs
     // US scale), not per-user academic data, so a US-scale user shouldn't lose
     // it every sign-out. Everything else is wiped.
+    // aiEnabled is deliberately NOT preserved, and this is not an oversight:
+    // it records one person's consent to send their notes to Google. Carrying
+    // it across a sign-out would opt the next person in on a device they just
+    // signed into, having never been asked. It falls back to INITIAL's false.
     case "RESET_AFTER_SIGNOUT": return { ...INITIAL, gradeMode: state.gradeMode };
 
     default: return state;
@@ -706,6 +712,11 @@ export default function App() {
       const gradeMode = (() => {
         try { return localStorage.getItem("studydesk-grade-mode") === "us" ? "us" : "ib"; } catch { return "ib"; }
       })();
+      // Absent key reads as false, so every existing install starts opted out
+      // rather than inheriting an "on" it was never asked about.
+      const aiEnabled = (() => {
+        try { return localStorage.getItem("studydesk-ai-enabled") === "1"; } catch { return false; }
+      })();
 
       // ── v1.0.4 UUID migration ────────────────────────────────────────────────
       // Earlier versions used short uid() strings for IDs. Supabase columns are
@@ -785,6 +796,7 @@ export default function App() {
         studySessions: migratedSessions,
         activeCourse: migratedActiveCourse,
         gradeMode,
+        aiEnabled,
         view: "actions",
       };
     } catch { return init; }
@@ -807,6 +819,10 @@ export default function App() {
   useEffect(() => {
     try { localStorage.setItem("studydesk-grade-mode", state.gradeMode); } catch {}
   }, [state.gradeMode]);
+  // Same treatment for the AI opt-in: device-level, not synced academic data.
+  useEffect(() => {
+    try { localStorage.setItem("studydesk-ai-enabled", state.aiEnabled ? "1" : "0"); } catch {}
+  }, [state.aiEnabled]);
 
   // Schedule notifications after onboarding with fresh state (#21 fix)
   // Reschedule notifications whenever exams or assignments change (not just onboarding)
@@ -1240,7 +1256,7 @@ export default function App() {
       <SaveSessionSheet
         pending={pendingSession}
         courses={courses}
-        canDebrief={!!session}
+        canDebrief={!!session && state.aiEnabled}
         onClose={()=>setPendingSession(null)}
         onSave={async ({subjectId, durationMinutes, notes, startedAt, focusRating, aiDebriefRaw, aiSubjectCovered, aiComprehension, aiConfusionFlags, aiSessionSummary}) => {
           const id = newSyncId();

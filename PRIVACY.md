@@ -1,6 +1,6 @@
 # StudyDesk — Privacy Policy
 
-**Last updated: 27 July 2026**
+**Last updated: 29 July 2026**
 
 StudyDesk is made by **Limecore Studio**. This policy explains what the app
 stores, where it goes, and what you can do about it.
@@ -57,7 +57,7 @@ Your data is stored in a **Supabase** database hosted in **Stockholm, Sweden
 | **Courses** | Name, colour, credits, semester, school year. |
 | **Grades** | The grade, its weight, the date, and any note you wrote. |
 | **Study sessions** | Start time, duration, focus rating, and any note you wrote. |
-| **AI debrief** (only if you use it) | The note you typed, plus what the model extracted from it: topic, a 1–5 comprehension rating, concepts you flagged as confusing, and a one-line summary. |
+| **AI debrief** (only if you switch it on) | The note you typed, plus what the model extracted from it: topic, a 1–5 comprehension rating, concepts you flagged as confusing, and a one-line summary. |
 
 We do not collect your location, contacts, photos, device identifiers, or
 advertising IDs. The app requests no such permissions.
@@ -75,15 +75,17 @@ anybody, for any purpose.
 email address, name and profile picture. Google's handling of your Google
 account is governed by [their privacy policy](https://policies.google.com/privacy).
 
-**Google (Gemini)** — only if you use the AI debrief. The note you type is sent
-to Google's Gemini model to extract structured fields from it. This may be
+**Google (Gemini)** — only if you switch on the AI debrief. The note you type is
+sent to Google's Gemini model to extract structured fields from it. This may be
 processed outside the EU, under the Standard Contractual Clauses Google offers
-for international transfers.
+for international transfers. We do not send your email address, your name or
+your account ID with it.
 
-**The AI debrief is opt-in.** It only runs when you type a note and press the
-button. If you never use it, nothing is ever sent to Gemini. If you would rather
-keep your notes entirely between you and the database, simply do not use it —
-everything else in the app works exactly the same.
+**The AI debrief is off until you switch it on**, under
+Settings → Your data → AI debrief. It stays off after a fresh install, and it
+does not carry over to the next person who signs in on the same device. While it
+is off, nothing is ever sent to Gemini and everything else in the app works
+exactly the same.
 
 ---
 
@@ -91,9 +93,10 @@ everything else in the app works exactly the same.
 
 - **To provide the app** (Article 6(1)(b) — performance of a contract): your
   courses, grades and sessions. Without them there is no app.
-- **Your consent** (Article 6(1)(a)): the AI debrief. You give it by choosing to
-  use the feature, and you withdraw it by not using it and deleting any notes
-  you already sent.
+- **Your consent** (Article 6(1)(a)): the AI debrief. You give it by switching
+  the feature on in Settings, and you withdraw it by switching it off. To remove
+  what was already sent, delete the sessions those notes belong to, or delete
+  your account.
 
 ---
 
