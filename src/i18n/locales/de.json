@@ -169,6 +169,7 @@
     "aiOff": "Aus",
     "aiDebriefOnNote": "An — nach einer Lerneinheit kannst du eine Notiz schreiben und Google Gemini das Thema, dein Verständnis und offene Fragen herausziehen lassen. Gesendet wird genau die Notiz, die du schreibst.",
     "aiDebriefOffNote": "Aus — es wird nichts an Google gesendet. Alles andere in StudyDesk funktioniert genau gleich.",
+    "aiTrainingNote": "Google betreibt das über den kostenlosen Tarif — was du sendest, kann zum Training künftiger Modelle verwendet werden. Lass es aus, wenn das nichts für dich ist.",
     "exportData": "Meine Daten exportieren",
     "exportDone": "Gespeichert: {{name}}",
     "exportFailed": "Export fehlgeschlagen: {{msg}}",

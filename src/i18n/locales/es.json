@@ -171,6 +171,7 @@
     "aiOff": "No",
     "aiDebriefOnNote": "Activado: tras una sesión puedes escribir una nota y dejar que Google Gemini extraiga el tema, cuánto entendiste y lo que te resultó confuso. Se envía exactamente la nota que escribes.",
     "aiDebriefOffNote": "Desactivado: no se envía nada a Google. Todo lo demás en StudyDesk funciona igual.",
+    "aiTrainingNote": "Google lo ejecuta en su nivel gratuito, así que lo que envíes puede usarse para entrenar sus futuros modelos. Déjalo desactivado si no te convence.",
     "exportData": "Exportar mis datos",
     "exportDone": "Guardado: {{name}}",
     "exportFailed": "Error al exportar: {{msg}}",

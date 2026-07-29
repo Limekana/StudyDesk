@@ -87,6 +87,16 @@ does not carry over to the next person who signs in on the same device. While it
 is off, nothing is ever sent to Gemini and everything else in the app works
 exactly the same.
 
+> **Read this before you switch it on.** StudyDesk uses Google's *free* Gemini
+> tier, and on that tier **Google may use what is sent to improve its products,
+> including training future versions of its models**. In practice that means the
+> words you type into a debrief could end up as training data at Google. That is
+> the trade-off for the feature costing nothing to run, and we would rather say
+> so plainly than bury it. **If that is not acceptable to you, leave the switch
+> off** — nothing else in the app changes. If we ever move to Google's paid tier,
+> where this use is contractually excluded, we will update this file and say so
+> in the app.
+
 ---
 
 ## Why we are allowed to store it

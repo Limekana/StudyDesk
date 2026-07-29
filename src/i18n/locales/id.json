@@ -167,6 +167,7 @@
     "aiOff": "Nonaktif",
     "aiDebriefOnNote": "Aktif — setelah sesi belajar Anda dapat menulis catatan dan Google Gemini akan menarik topik, seberapa paham Anda, serta hal yang membingungkan. Yang dikirim persis catatan yang Anda tulis.",
     "aiDebriefOffNote": "Nonaktif — tidak ada yang dikirim ke Google. Semua fitur StudyDesk lainnya bekerja sama persis.",
+    "aiTrainingNote": "Google menjalankannya di tingkat gratis, jadi apa yang Anda kirim dapat dipakai untuk melatih model mereka berikutnya. Biarkan nonaktif jika itu tidak cocok bagi Anda.",
     "exportData": "Ekspor data saya",
     "exportDone": "Tersimpan {{name}}",
     "exportFailed": "Ekspor gagal: {{msg}}",

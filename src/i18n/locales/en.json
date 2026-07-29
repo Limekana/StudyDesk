@@ -169,6 +169,7 @@
     "aiOff": "Off",
     "aiDebriefOnNote": "On — after a study session you can write a note and have Google Gemini pull out the topic, how well you understood it, and anything confusing. The note you type is what gets sent.",
     "aiDebriefOffNote": "Off — nothing is sent to Google. Everything else in StudyDesk works exactly the same.",
+    "aiTrainingNote": "Google runs this on their free tier, which means what you send may be used to train their future models. Leave it off if that is not for you.",
     "exportData": "Export my data",
     "exportDone": "Saved {{name}}",
     "exportFailed": "Export failed: {{msg}}",

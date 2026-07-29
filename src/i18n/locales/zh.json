@@ -169,6 +169,7 @@
     "aiOff": "关闭",
     "aiDebriefOnNote": "已开启 — 学习结束后，你可以写一段笔记，由 Google Gemini 提取主题、掌握程度和困惑之处。发送的正是你所写的笔记。",
     "aiDebriefOffNote": "已关闭 — 不会向 Google 发送任何内容。StudyDesk 的其他功能完全不变。",
+    "aiTrainingNote": "Google 通过免费方案运行此功能，因此你发送的内容可能被用于训练其未来的模型。若不能接受，请保持关闭。",
     "exportData": "导出我的数据",
     "exportDone": "已保存 {{name}}",
     "exportFailed": "导出失败：{{msg}}",

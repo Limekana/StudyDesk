@@ -371,6 +371,9 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
           <div className="sv2-note">
             {state.aiEnabled ? t('settings.aiDebriefOnNote') : t('settings.aiDebriefOffNote')}
           </div>
+          {/* Free-tier disclosure — informed consent belongs at the switch,
+              not only in PRIVACY.md. */}
+          <div className="sv2-note">{t('settings.aiTrainingNote')}</div>
           <div className="sv2-action">
             <button className="btn-outline" onClick={onExport}>
               {t('settings.exportData')}

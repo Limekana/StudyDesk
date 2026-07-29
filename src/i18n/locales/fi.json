@@ -169,6 +169,7 @@
     "aiOff": "Pois",
     "aiDebriefOnNote": "Päällä — opiskelujakson jälkeen voit kirjoittaa muistiinpanon, josta Google Gemini poimii aiheen, ymmärryksesi tason ja epäselvät kohdat. Lähetettävä sisältö on juuri kirjoittamasi muistiinpano.",
     "aiDebriefOffNote": "Pois — Googlelle ei lähetetä mitään. Kaikki muu StudyDeskissä toimii täsmälleen samoin.",
+    "aiTrainingNote": "Google ajaa tämän ilmaisella tasolla, joten lähettämääsi voidaan käyttää heidän tulevien mallien kouluttamiseen. Jätä pois päältä, jos se ei sovi sinulle.",
     "exportData": "Vie tietoni",
     "exportDone": "Tallennettu {{name}}",
     "exportFailed": "Vienti epäonnistui: {{msg}}",
