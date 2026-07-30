@@ -185,7 +185,14 @@
     "remindersLbl": "Muistutukset",
     "reminders": "Opiskelumuistutukset",
     "remindersOnNote": "Päällä — saat päivittäisen koosteen sekä muistutukset ennen palautuksia ja kokeita.",
-    "remindersOffNote": "Pois — ei ilmoituksia, eikä StudyDesk pyydä ilmoituslupaa."
+    "remindersOffNote": "Pois — ei ilmoituksia, eikä StudyDesk pyydä ilmoituslupaa.",
+    "scaleMin": "Alin",
+    "scaleMax": "Ylin",
+    "scalePass": "Läpäisyraja",
+    "scaleDirection": "Kumpi pää on paras",
+    "scaleHighBest": "Korkea",
+    "scaleLowBest": "Matala",
+    "gradeNoteCustom": "Oma numeroasteikkosi — keskiarvo on painotettu keskiarvo kuten IB:ssä. Tallennetaan vain tälle laitteelle eikä synkronoidu. Oppilaitoksesi virallinen laskenta on aina se, joka ratkaisee."
   },
   "sdob": {
     "brand": "Lopeta miettiminen. Aloita opiskelu.",
@@ -246,7 +253,9 @@
     "fWeight": "Painotus",
     "phWeight": "esim. 0.3",
     "fDate": "Päivämäärä",
-    "bAdd": "Lisää arvosana"
+    "bAdd": "Lisää arvosana",
+    "modeCustom": "Oma",
+    "scaleSummary": "{{min}}–{{max}} · läpäisy {{pass}} · {{best}} paras"
   },
   "sv": {
     "today": "Tänään",

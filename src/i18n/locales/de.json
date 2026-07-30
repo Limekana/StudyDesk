@@ -185,7 +185,14 @@
     "remindersLbl": "Erinnerungen",
     "reminders": "Lern-Erinnerungen",
     "remindersOnNote": "An — du bekommst eine tägliche Übersicht und Hinweise vor Abgaben und Prüfungen.",
-    "remindersOffNote": "Aus — keine Benachrichtigungen, und StudyDesk fragt nicht nach der Benachrichtigungsberechtigung."
+    "remindersOffNote": "Aus — keine Benachrichtigungen, und StudyDesk fragt nicht nach der Benachrichtigungsberechtigung.",
+    "scaleMin": "Niedrigste",
+    "scaleMax": "Höchste",
+    "scalePass": "Bestehensgrenze",
+    "scaleDirection": "Welches Ende ist am besten",
+    "scaleHighBest": "Hoch",
+    "scaleLowBest": "Niedrig",
+    "gradeNoteCustom": "Deine eigene Notenskala — der Schnitt ist ein gewichtetes Mittel wie bei IB. Nur auf diesem Gerät gespeichert, wird nicht synchronisiert. Maßgeblich bleibt immer die offizielle Berechnung deiner Schule."
   },
   "sdob": {
     "brand": "Schluss mit Grübeln. Fang an zu lernen.",
@@ -246,7 +253,9 @@
     "fWeight": "Gewichtung",
     "phWeight": "z. B. 0.3",
     "fDate": "Datum",
-    "bAdd": "Note hinzufügen"
+    "bAdd": "Note hinzufügen",
+    "modeCustom": "Eigene",
+    "scaleSummary": "{{min}}–{{max}} · bestanden ab {{pass}} · {{best}} am besten"
   },
   "sv": {
     "today": "Heute",

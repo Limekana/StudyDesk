@@ -17,6 +17,7 @@ import GradesView from "./features/grades/GradesView.jsx";
 import SessionsView from "./features/sessions/SessionsView.jsx";
 import SaveSessionSheet from "./features/sessions/SaveSessionSheet.jsx";
 import { avatarInitials } from "./lib/avatarInitials.js";
+import { isGradeMode, normalizeScale, DEFAULT_CUSTOM_SCALE } from "./lib/gradeScale.js";
 import { GuestAvatar } from "./lib/avatar.jsx";
 import StatsView from "./features/stats/StatsView.jsx";
 import SettingsView from "./features/settings/SettingsView.jsx";
@@ -177,7 +178,8 @@ async function scheduleNotifications(exams, assignments, courses) {
 const INITIAL = {
   courses:{}, assignments:[], actions:[], exams:[],
   grades:[], studySessions:[],
-  gradeMode:"ib",                  // 'ib' | 'us' — UI-only, persisted locally
+  gradeMode:"ib",                  // 'ib' | 'us' | 'custom' — persisted locally
+  customScale:DEFAULT_CUSTOM_SCALE, // bounds for gradeMode 'custom' (SD-F4)
   aiEnabled:false,                 // AI debrief opt-in — device-level, persisted locally
   notifEnabled:true,               // reminders opt-in — set at onboarding, changeable in Settings
   view:"actions", activeCourse:null,
@@ -316,7 +318,13 @@ function reducer(state, action) {
     case "DELETE_SESSION": { const stamp=new Date().toISOString(); return {...state,studySessions:(state.studySessions||[]).map(s=>s.id===action.id?{...s,deletedAt:stamp,updatedAt:stamp}:s)}; }
 
     // ── Settings ──
-    case "SET_GRADE_MODE": return {...state,gradeMode:action.mode==="us"?"us":"ib"};
+    // The old form was `action.mode==="us"?"us":"ib"`, which silently coerced
+    // any unrecognised mode to 'ib' — a third mode would have vanished with no
+    // error anywhere. Validated against the known set instead.
+    case "SET_GRADE_MODE":
+      return {...state, gradeMode: isGradeMode(action.mode) ? action.mode : state.gradeMode};
+    case "SET_CUSTOM_SCALE":
+      return {...state, customScale: normalizeScale(action.scale)};
     case "SET_AI_ENABLED": return {...state,aiEnabled:!!action.on};
     case "SET_NOTIF_ENABLED": return {...state,notifEnabled:!!action.on};
 
@@ -331,14 +339,15 @@ function reducer(state, action) {
     // leak. The persist effect re-runs after this dispatch and writes the
     // INITIAL state to studydesk-v1, naturally clearing the previous user's
     // payload from localStorage.
-    // Preserve gradeMode: it's a device-level UI-only display preference (IB vs
-    // US scale), not per-user academic data, so a US-scale user shouldn't lose
-    // it every sign-out. Everything else is wiped.
+    // Preserve gradeMode and customScale: they are device-level display
+    // configuration (which scale the numbers are on), not per-user academic
+    // data, so a user on the Finnish 4-10 scale shouldn't lose it every
+    // sign-out. Everything else is wiped.
     // aiEnabled is deliberately NOT preserved, and this is not an oversight:
     // it records one person's consent to send their notes to Google. Carrying
     // it across a sign-out would opt the next person in on a device they just
     // signed into, having never been asked. It falls back to INITIAL's false.
-    case "RESET_AFTER_SIGNOUT": return { ...INITIAL, gradeMode: state.gradeMode };
+    case "RESET_AFTER_SIGNOUT": return { ...INITIAL, gradeMode: state.gradeMode, customScale: state.customScale };
 
     default: return state;
   }
@@ -720,7 +729,16 @@ export default function App() {
         };
       }
       const gradeMode = (() => {
-        try { return localStorage.getItem("studydesk-grade-mode") === "us" ? "us" : "ib"; } catch { return "ib"; }
+        try {
+          const raw = localStorage.getItem("studydesk-grade-mode");
+          return isGradeMode(raw) ? raw : "ib";
+        } catch { return "ib"; }
+      })();
+      const customScale = (() => {
+        try {
+          const raw = localStorage.getItem("studydesk-grade-scale");
+          return raw ? normalizeScale(JSON.parse(raw)) : DEFAULT_CUSTOM_SCALE;
+        } catch { return DEFAULT_CUSTOM_SCALE; }
       })();
       // Absent key reads as false, so every existing install starts opted out
       // rather than inheriting an "on" it was never asked about.
@@ -818,6 +836,7 @@ export default function App() {
         studySessions: migratedSessions,
         activeCourse: migratedActiveCourse,
         gradeMode,
+        customScale,
         aiEnabled,
         notifEnabled,
         view: "actions",
@@ -842,6 +861,9 @@ export default function App() {
   useEffect(() => {
     try { localStorage.setItem("studydesk-grade-mode", state.gradeMode); } catch {}
   }, [state.gradeMode]);
+  useEffect(() => {
+    try { localStorage.setItem("studydesk-grade-scale", JSON.stringify(state.customScale)); } catch {}
+  }, [state.customScale]);
   // Same treatment for the AI opt-in: device-level, not synced academic data.
   useEffect(() => {
     try { localStorage.setItem("studydesk-ai-enabled", state.aiEnabled ? "1" : "0"); } catch {}

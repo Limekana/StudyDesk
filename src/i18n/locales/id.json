@@ -183,7 +183,14 @@
     "remindersLbl": "Pengingat",
     "reminders": "Pengingat belajar",
     "remindersOnNote": "Aktif — Anda akan menerima ringkasan harian serta peringatan sebelum tugas dan ujian jatuh tempo.",
-    "remindersOffNote": "Nonaktif — tidak ada notifikasi, dan StudyDesk tidak akan meminta izin notifikasi."
+    "remindersOffNote": "Nonaktif — tidak ada notifikasi, dan StudyDesk tidak akan meminta izin notifikasi.",
+    "scaleMin": "Terendah",
+    "scaleMax": "Tertinggi",
+    "scalePass": "Batas lulus",
+    "scaleDirection": "Ujung mana yang terbaik",
+    "scaleHighBest": "Tinggi",
+    "scaleLowBest": "Rendah",
+    "gradeNoteCustom": "Skala angka Anda sendiri — rata-ratanya adalah rata-rata terbobot, sama seperti IB. Disimpan hanya di perangkat ini dan tidak disinkronkan. Perhitungan resmi sekolah Anda tetap yang berlaku."
   },
   "sdob": {
     "brand": "Berhenti menimbang. Mulai belajar.",
@@ -242,7 +249,9 @@
     "fWeight": "Bobot",
     "phWeight": "mis. 0,3",
     "fDate": "Tanggal",
-    "bAdd": "Tambah nilai"
+    "bAdd": "Tambah nilai",
+    "modeCustom": "Khusus",
+    "scaleSummary": "{{min}}–{{max}} · lulus {{pass}} · {{best}} terbaik"
   },
   "sv": {
     "today": "Hari ini",

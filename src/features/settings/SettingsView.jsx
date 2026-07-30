@@ -10,6 +10,7 @@ import * as outbox from '../../lib/outbox.js';
 import { downloadExport, deleteAccount } from '../../lib/dataRights.js';
 import { useConfirm } from '../../lib/useConfirm.js';
 import { avatarInitials } from '../../lib/avatarInitials.js';
+import { scaleFor, normalizeScale, describeScale } from '../../lib/gradeScale.js';
 import { GuestAvatar } from '../../lib/avatar.jsx';
 import pkg from '../../../package.json';
 
@@ -45,6 +46,14 @@ const css = `
 .sv2-mode{display:inline-flex;border:1px solid var(--border2);border-radius:6px;overflow:hidden;}
 .sv2-mode button{background:transparent;border:none;padding:6px 14px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;color:var(--muted);}
 .sv2-mode button.active{background:var(--text);color:var(--bg);}
+
+/* Custom grade scale editor (SD-F4) — only rendered when Custom is active. */
+.sv2-scale{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:10px;}
+.sv2-scale-field{display:flex;flex-direction:column;gap:4px;flex:1 1 84px;}
+.sv2-scale-field span{font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted2);}
+.sv2-scale-field input{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;font-size:14px;color:var(--text);}
+.sv2-scale-dir{flex:1 1 100%;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.sv2-scale .sv2-note{flex:1 1 100%;margin:0;}
 .sv2-action{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;}
 .sv2-danger{margin-top:20px;padding-top:16px;border-top:1px solid var(--danger-border);}
 .sv2-danger-title{font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--danger);margin-bottom:6px;}
@@ -113,6 +122,19 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
   const sessions = (state.studySessions || []).filter((s) => !s.deletedAt);
 
   const mode = state.gradeMode || 'ib';
+  // The draft holds raw strings so a half-typed value survives a keystroke:
+  // normalising on every change would snap an emptied field back to its default
+  // and make the input impossible to edit. The reducer always receives the
+  // normalised value, so the rest of the app never sees a partial scale.
+  const [scaleDraft, setScaleDraft] = useState(() => ({ ...scaleFor('custom', state.customScale) }));
+  const activeScale = normalizeScale(scaleDraft);
+  const setScale = useCallback((patch) => {
+    setScaleDraft((prev) => {
+      const next = { ...prev, ...patch };
+      dispatch({ type: 'SET_CUSTOM_SCALE', scale: next });
+      return next;
+    });
+  }, [dispatch]);
 
   const onSignOut = useCallback(async () => {
     if (!(await confirm(t('settings.signOutConfirm')))) return;
@@ -350,11 +372,57 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
               <span className="sv2-mode">
                 <button className={mode === 'ib' ? 'active' : ''} onClick={() => dispatch({ type: 'SET_GRADE_MODE', mode: 'ib' })}>IB</button>
                 <button className={mode === 'us' ? 'active' : ''} onClick={() => dispatch({ type: 'SET_GRADE_MODE', mode: 'us' })}>US</button>
+                <button className={mode === 'custom' ? 'active' : ''} onClick={() => dispatch({ type: 'SET_GRADE_MODE', mode: 'custom' })}>{t('gv.modeCustom')}</button>
               </span>
             </span>
           </div>
+          {/* SD-F4 — the editor only appears once Custom is the active mode, so
+              the section stays a single row for the IB and US majority. */}
+          {mode === 'custom' && (
+            <div className="sv2-scale">
+              <label className="sv2-scale-field">
+                <span>{t('settings.scaleMin')}</span>
+                <input
+                  type="number" step="0.5" value={scaleDraft.min}
+                  onChange={(e) => setScale({ min: e.target.value })}
+                />
+              </label>
+              <label className="sv2-scale-field">
+                <span>{t('settings.scaleMax')}</span>
+                <input
+                  type="number" step="0.5" value={scaleDraft.max}
+                  onChange={(e) => setScale({ max: e.target.value })}
+                />
+              </label>
+              <label className="sv2-scale-field">
+                <span>{t('settings.scalePass')}</span>
+                <input
+                  type="number" step="0.5" value={scaleDraft.passMark}
+                  onChange={(e) => setScale({ passMark: e.target.value })}
+                />
+              </label>
+              <div className="sv2-scale-dir">
+                <span className="sv2-row-label">{t('settings.scaleDirection')}</span>
+                <span className="sv2-mode">
+                  <button
+                    className={scaleDraft.direction === 'up' ? 'active' : ''}
+                    onClick={() => setScale({ direction: 'up' })}
+                  >
+                    {t('settings.scaleHighBest')}
+                  </button>
+                  <button
+                    className={scaleDraft.direction === 'down' ? 'active' : ''}
+                    onClick={() => setScale({ direction: 'down' })}
+                  >
+                    {t('settings.scaleLowBest')}
+                  </button>
+                </span>
+              </div>
+              <div className="sv2-note">{describeScale(activeScale, t)}</div>
+            </div>
+          )}
           <div className="sv2-note">
-            {t('settings.gradeNote')}
+            {mode === 'custom' ? t('settings.gradeNoteCustom') : t('settings.gradeNote')}
           </div>
         </div>
 

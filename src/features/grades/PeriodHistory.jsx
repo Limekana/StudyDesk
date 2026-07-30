@@ -78,7 +78,7 @@ export default function PeriodHistory({ courses, grades, mode = 'ib' }) {
     );
   }
 
-  const gpaLabel = mode === 'ib' ? t('history.gpaIb') : t('history.gpaUs');
+  const gpaLabel = mode === 'us' ? t('history.gpaUs') : t('history.gpaIb');
 
   return (
     <>

@@ -319,8 +319,8 @@ export default function StatsView({ state }) {
         {/* GPA trend */}
         <div className="st-card">
           <div className="st-card-head">
-            <span className="st-card-title">{mode === 'ib' ? t('st.ibTrend') : t('st.gpaTrend')}</span>
-            <span className="st-card-note">{mode === 'ib' ? t('st.ibScale') : t('st.usScale')}</span>
+            <span className="st-card-title">{mode === 'us' ? t('st.gpaTrend') : t('st.ibTrend')}</span>
+            <span className="st-card-note">{mode === 'us' ? t('st.usScale') : t('st.ibScale')}</span>
           </div>
           {gpaTrend.points.length < 2 ? (
             <div className="st-empty">

@@ -52,6 +52,7 @@ export function buildExport(state, session) {
     exams: state.exams || [],
     settings: {
       gradeMode: state.gradeMode ?? null,
+      customScale: state.customScale ?? null,
       language: (() => {
         try { return localStorage.getItem('limecore_lang'); } catch { return null; }
       })(),

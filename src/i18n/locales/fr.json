@@ -187,7 +187,14 @@
     "remindersLbl": "Rappels",
     "reminders": "Rappels de révision",
     "remindersOnNote": "Activés — vous recevrez un résumé quotidien et des alertes avant les rendus et les examens.",
-    "remindersOffNote": "Désactivés — aucune notification, et StudyDesk ne demandera pas l'autorisation d'en envoyer."
+    "remindersOffNote": "Désactivés — aucune notification, et StudyDesk ne demandera pas l'autorisation d'en envoyer.",
+    "scaleMin": "Minimum",
+    "scaleMax": "Maximum",
+    "scalePass": "Seuil d'admission",
+    "scaleDirection": "Quelle extrémité est la meilleure",
+    "scaleHighBest": "Haut",
+    "scaleLowBest": "Bas",
+    "gradeNoteCustom": "Votre propre échelle numérique — la moyenne est une moyenne pondérée, comme en IB. Enregistrée sur cet appareil uniquement, sans synchronisation. Le calcul officiel de votre établissement fait toujours foi."
   },
   "sdob": {
     "brand": "Arrête de choisir. Commence à réviser.",
@@ -250,7 +257,9 @@
     "fDate": "Date",
     "bAdd": "Ajouter une note",
     "grades_many": "{{count}} notes",
-    "courses_many": "{{count}} cours"
+    "courses_many": "{{count}} cours",
+    "modeCustom": "Perso",
+    "scaleSummary": "{{min}}–{{max}} · admis {{pass}} · {{best}} = meilleur"
   },
   "sv": {
     "today": "Aujourd’hui",

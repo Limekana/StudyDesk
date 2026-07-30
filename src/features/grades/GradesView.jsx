@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { calculateGPA, subjectEffectiveGrade, subjectsWithEffectiveGrades } from '../../lib/gpa.js';
+import { scaleFor, describeScale } from '../../lib/gradeScale.js';
 import * as outbox from '../../lib/outbox.js';
 
 // Grade rows go straight to Supabase, where `id` is a strict UUID column.
@@ -55,6 +56,7 @@ const css = `
 export default function GradesView({ state, dispatch, showFlash, session }) {
   const { t } = useTranslation();
   const mode = state.gradeMode || 'ib';
+  const scale = scaleFor(mode, state.customScale);
   // v1.2 — archive-aware. `activeSubjects` drives the GPA and the primary
   // list; `archivedSubjects` rendered separately when the toggle is on.
   const allSubjects = Object.values(state.courses || {}).filter((s) => !s.deletedAt);
@@ -209,13 +211,16 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
       <div className="gv-wrap">
         <div className="gv-hero">
           <div className="gv-gpa">
-            <div className="gv-gpa-label">{mode === 'ib' ? t('gv.ibAverage') : t('gv.gpa')}</div>
+            <div className="gv-gpa-label">{mode === 'us' ? t('gv.gpa') : t('gv.ibAverage')}</div>
             <div className="gv-gpa-value">{gpa.toFixed(2)}</div>
-            <div className="gv-gpa-scale" style={{ textTransform: 'uppercase' }}>{mode === 'ib' ? t('gv.ibScale') : t('gv.usScale')}</div>
+            <div className="gv-gpa-scale" style={{ textTransform: 'uppercase' }}>
+              {mode === 'custom' ? describeScale(scale, t) : mode === 'us' ? t('gv.usScale') : t('gv.ibScale')}
+            </div>
           </div>
           <div className="gv-mode">
             <button className={mode === 'ib' ? 'active' : ''} onClick={() => dispatch({ type: 'SET_GRADE_MODE', mode: 'ib' })}>IB</button>
             <button className={mode === 'us' ? 'active' : ''} onClick={() => dispatch({ type: 'SET_GRADE_MODE', mode: 'us' })}>US</button>
+            <button className={mode === 'custom' ? 'active' : ''} onClick={() => dispatch({ type: 'SET_GRADE_MODE', mode: 'custom' })}>{t('gv.modeCustom')}</button>
           </div>
         </div>
 
@@ -287,6 +292,7 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
         {showAdd && (
           <GradeEditModal
             mode={mode}
+            scale={scale}
             subjects={subjects}
             initial={editing ? {
               subjectId: editing.subjectId, grade: editing.grade, weight: editing.weight, date: editing.date,
@@ -302,14 +308,16 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
   );
 }
 
-function GradeEditModal({ mode, subjects, initial, isEdit, onSave, onDelete, onClose }) {
+function GradeEditModal({ mode, scale, subjects, initial, isEdit, onSave, onDelete, onClose }) {
   const { t } = useTranslation();
   const [subjectId, setSubjectId] = useState(initial.subjectId || subjects[0]?.id || '');
   const [grade, setGrade] = useState(initial.grade != null ? String(initial.grade) : '');
   const [weight, setWeight] = useState(initial.weight != null ? String(initial.weight) : '1');
   const [date, setDate] = useState(initial.date || new Date().toISOString().slice(0, 10));
 
-  const placeholder = mode === 'ib' ? t('gv.phIb') : t('gv.phUs');
+  const placeholder = mode === 'custom'
+    ? `${scale.min}\u2013${scale.max}`
+    : mode === 'us' ? t('gv.phUs') : t('gv.phIb');
 
   function submit() {
     const gNum = parseFloat(grade);
@@ -336,8 +344,8 @@ function GradeEditModal({ mode, subjects, initial, isEdit, onSave, onDelete, onC
         </div>
         <div className="modal-grid">
           <div className="input-group">
-            <div className="input-label">{mode === 'ib' ? t('gv.fGradeIb') : t('gv.fGradeUs')}</div>
-            <input type="number" step="0.01" placeholder={placeholder} value={grade} onChange={(e) => setGrade(e.target.value)} autoFocus />
+            <div className="input-label">{mode === 'us' ? t('gv.fGradeUs') : t('gv.fGradeIb')}</div>
+            <input type="number" step="0.01" min={scale.min} max={scale.max} placeholder={placeholder} value={grade} onChange={(e) => setGrade(e.target.value)} autoFocus />
           </div>
           <div className="input-group">
             <div className="input-label">{t('gv.fWeight')}</div>

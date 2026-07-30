@@ -187,7 +187,14 @@
     "remindersLbl": "Lembretes",
     "reminders": "Lembretes de estudo",
     "remindersOnNote": "Ligados — você receberá um resumo diário e avisos antes das entregas e provas.",
-    "remindersOffNote": "Desligados — sem notificações, e o StudyDesk não pedirá permissão para enviá-las."
+    "remindersOffNote": "Desligados — sem notificações, e o StudyDesk não pedirá permissão para enviá-las.",
+    "scaleMin": "Mínima",
+    "scaleMax": "Máxima",
+    "scalePass": "Nota de aprovação",
+    "scaleDirection": "Qual extremo é o melhor",
+    "scaleHighBest": "Alto",
+    "scaleLowBest": "Baixo",
+    "gradeNoteCustom": "Sua própria escala numérica — a média é uma média ponderada, como no IB. Guardada apenas neste aparelho e não sincroniza. O cálculo oficial da sua instituição é sempre o que vale."
   },
   "sdob": {
     "brand": "Pare de decidir. Comece a estudar.",
@@ -250,7 +257,9 @@
     "fDate": "Data",
     "bAdd": "Adicionar nota",
     "grades_many": "{{count}} notas",
-    "courses_many": "{{count}} disciplinas"
+    "courses_many": "{{count}} disciplinas",
+    "modeCustom": "Própria",
+    "scaleSummary": "{{min}}–{{max}} · aprovação {{pass}} · {{best}} é o melhor"
   },
   "sv": {
     "today": "Hoje",
