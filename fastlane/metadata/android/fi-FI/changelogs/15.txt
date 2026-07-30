@@ -1,0 +1,5 @@
+Tehtävät, kokeet ja muistiinpanot synkronoituvat nyt laitteiden välillä.
+
+Aiemmin vain kurssit ja arvosanat synkronoituivat, joten tabletilla lisätty läksy ei näkynyt puhelimessa. Kaikki nykyinen sisältösi siirretään pilveen kerran automaattisesti, kun avaat tämän version kirjautuneena.
+
+Lisäksi: uuden tilin voi vahvistaa sähköpostin 6-numeroisella koodilla linkin napauttamisen sijaan.

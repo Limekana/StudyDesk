@@ -112,7 +112,18 @@
     "errRateLimited": "Zu viele Versuche. Warte einen Moment und versuche es erneut.",
     "errNetwork": "Server nicht erreichbar. Prüfe deine Verbindung und versuche es erneut.",
     "ageNote": "Für ein Konto musst du mindestens 16 sein (13, wo das lokale Recht es erlaubt). Jünger? Nutze den Gastmodus — nichts verlässt dein Gerät.",
-    "privacyLink": "Datenschutzerklärung"
+    "privacyLink": "Datenschutzerklärung",
+    "otpTitle": "Code eingeben",
+    "otpSub": "Wir haben einen 6-stelligen Code gesendet an",
+    "otpLabel": "Bestätigungscode",
+    "otpSubmit": "Konto bestätigen",
+    "otpHint": "Der Code ist 60 Minuten gültig.",
+    "otpResend": "Neuen Code senden",
+    "otpResendIn": "Neuer Code in",
+    "otpSent": "Neuer Code gesendet.",
+    "otpBack": "Andere E-Mail-Adresse verwenden",
+    "errOtp": "Dieser Code hat nicht funktioniert. Bitte prüfen und erneut versuchen.",
+    "errOtpResend": "Neuer Code konnte nicht gesendet werden. Bitte gleich noch einmal versuchen."
   },
   "settings": {
     "cloudSync": "Cloud-Sync",

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useReducer } from "react";
+import { useState, useEffect, useCallback, useReducer, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { setLanguage, SUPPORTED_LANGS, LANGUAGE_NAMES } from "./i18n/index.js";
 import { useScrollSelectedIntoView } from "./lib/useScrollSelectedIntoView.js";
@@ -9,6 +9,7 @@ import { Capacitor } from "@capacitor/core";
 import { supabase } from "./lib/supabase.js";
 import AuthGate from "./features/auth/AuthGate.jsx";
 import { isGuestMode, setGuestMode } from "./lib/guestMode.js";
+import { scheduleOriginStamp } from "./lib/originMarker.js";
 import { inheritFromNexus } from "./lib/suiteSso.js";
 import * as sync from "./lib/sync.js";
 import * as outbox from "./lib/outbox.js";
@@ -252,19 +253,25 @@ function reducer(state, action) {
         activeCourse:state.activeCourse===action.id?null:state.activeCourse,
       };
     }
-    case "ADD_ASSIGNMENT":  { const a={id:uid(),courseId:action.courseId,title:action.title,type:action.assignType,dueDate:action.dueDate,notes:action.notes||"",done:false}; return {...state,assignments:[...state.assignments,a]}; }
-    case "TOGGLE_ASSIGNMENT": return {...state,assignments:state.assignments.map(a=>a.id===action.id?{...a,done:!a.done}:a)};
-    case "EDIT_ASSIGNMENT":   return {...state,assignments:state.assignments.map(a=>a.id===action.id?{...a,title:action.title,dueDate:action.dueDate,notes:action.notes}:a)};
+    // v1.7 (StudyDesk#6) — these three now sync, so they carry `updatedAt` for
+    // LWW and use newSyncId() (a real UUID) instead of uid(). Deletes stay hard
+    // removals: applyRemotePull drops remotely-deleted rows the same way, so
+    // local state never holds a tombstone and no render site needs a new guard.
+    case "ADD_ASSIGNMENT":  { const a={id:action.id||newSyncId(),courseId:action.courseId,title:action.title,type:action.assignType,dueDate:action.dueDate,notes:action.notes||"",done:false,updatedAt:action.updatedAt||new Date().toISOString()}; return {...state,assignments:[...state.assignments,a]}; }
+    case "TOGGLE_ASSIGNMENT": return {...state,assignments:state.assignments.map(a=>a.id===action.id?{...a,done:!a.done,updatedAt:new Date().toISOString()}:a)};
+    case "EDIT_ASSIGNMENT":   return {...state,assignments:state.assignments.map(a=>a.id===action.id?{...a,title:action.title,dueDate:action.dueDate,notes:action.notes,updatedAt:new Date().toISOString()}:a)};
     case "DELETE_ASSIGNMENT": return {...state,assignments:state.assignments.filter(a=>a.id!==action.id)};
-    case "ADD_EXAM":    { const e={id:uid(),courseId:action.courseId,title:action.title,dueDate:action.dueDate,difficulty:action.difficulty||"medium",notes:action.notes||"",done:false,topics:[]}; return {...state,exams:[...state.exams,e]}; }
-    case "TOGGLE_EXAM": return {...state,exams:state.exams.map(e=>e.id===action.id?{...e,done:!e.done}:e)};
+    case "ADD_EXAM":    { const e={id:action.id||newSyncId(),courseId:action.courseId,title:action.title,dueDate:action.dueDate,difficulty:action.difficulty||"medium",notes:action.notes||"",done:false,topics:[],updatedAt:action.updatedAt||new Date().toISOString()}; return {...state,exams:[...state.exams,e]}; }
+    case "TOGGLE_EXAM": return {...state,exams:state.exams.map(e=>e.id===action.id?{...e,done:!e.done,updatedAt:new Date().toISOString()}:e)};
     case "DELETE_EXAM": return {...state,exams:state.exams.filter(e=>e.id!==action.id)};
-    case "UPDATE_EXAM_DIFFICULTY": return {...state,exams:state.exams.map(e=>e.id===action.id?{...e,difficulty:action.difficulty}:e)};
-    case "ADD_EXAM_TOPIC":    return {...state,exams:state.exams.map(e=>e.id===action.examId?{...e,topics:[...(e.topics||[]),{id:uid(),title:action.title,done:false}]}:e)};
-    case "TOGGLE_EXAM_TOPIC": return {...state,exams:state.exams.map(e=>e.id===action.examId?{...e,topics:(e.topics||[]).map(t=>t.id===action.topicId?{...t,done:!t.done}:t)}:e)};
-    case "DELETE_EXAM_TOPIC": return {...state,exams:state.exams.map(e=>e.id===action.examId?{...e,topics:(e.topics||[]).filter(t=>t.id!==action.topicId)}:e)};
-    case "ADD_ACTION":    { const a={id:uid(),text:action.text,bucket:action.bucket||"today",courseId:action.courseId||null,done:false,suggested:action.suggested||false,sourceId:action.sourceId||null}; return {...state,actions:[...state.actions,a]}; }
-    case "TOGGLE_ACTION": return {...state,actions:state.actions.map(a=>a.id===action.id?{...a,done:!a.done,doneAt:!a.done?Date.now():null}:a)};
+    case "UPDATE_EXAM_DIFFICULTY": return {...state,exams:state.exams.map(e=>e.id===action.id?{...e,difficulty:action.difficulty,updatedAt:new Date().toISOString()}:e)};
+    // Topic ids stay uid(): they live inside the exam's jsonb payload and are
+    // never rows of their own, so Postgres never sees them as a uuid column.
+    case "ADD_EXAM_TOPIC":    return {...state,exams:state.exams.map(e=>e.id===action.examId?{...e,topics:[...(e.topics||[]),{id:uid(),title:action.title,done:false}],updatedAt:new Date().toISOString()}:e)};
+    case "TOGGLE_EXAM_TOPIC": return {...state,exams:state.exams.map(e=>e.id===action.examId?{...e,topics:(e.topics||[]).map(t=>t.id===action.topicId?{...t,done:!t.done}:t),updatedAt:new Date().toISOString()}:e)};
+    case "DELETE_EXAM_TOPIC": return {...state,exams:state.exams.map(e=>e.id===action.examId?{...e,topics:(e.topics||[]).filter(t=>t.id!==action.topicId),updatedAt:new Date().toISOString()}:e)};
+    case "ADD_ACTION":    { const a={id:action.id||newSyncId(),text:action.text,bucket:action.bucket||"today",courseId:action.courseId||null,done:false,suggested:action.suggested||false,sourceId:action.sourceId||null,updatedAt:action.updatedAt||new Date().toISOString()}; return {...state,actions:[...state.actions,a]}; }
+    case "TOGGLE_ACTION": return {...state,actions:state.actions.map(a=>a.id===action.id?{...a,done:!a.done,doneAt:!a.done?Date.now():null,updatedAt:new Date().toISOString()}:a)};
     case "DELETE_ACTION": return {...state,actions:state.actions.filter(a=>a.id!==action.id)};
     case "SET_VIEW":      return {...state,view:action.view,activeCourse:action.course!==undefined?action.course:state.activeCourse};
 
@@ -421,19 +428,59 @@ export default function App() {
           subjectId: s.subjectId ? (subjIdMapped || s.subjectId) : null,
         };
       });
-      // Assignments, exams, actions are local-only but reference courseId — update.
-      const migratedAssignments = (Array.isArray(saved.assignments) ? saved.assignments : []).map(a =>
-        subjectIdMap[a.courseId] && subjectIdMap[a.courseId] !== a.courseId
-          ? { ...a, courseId: subjectIdMap[a.courseId] }
-          : a);
-      const migratedExams = (Array.isArray(saved.exams) ? saved.exams : []).map(e =>
-        subjectIdMap[e.courseId] && subjectIdMap[e.courseId] !== e.courseId
-          ? { ...e, courseId: subjectIdMap[e.courseId] }
-          : e);
-      const migratedActions = (Array.isArray(saved.actions) ? saved.actions : []).map(a =>
-        a.courseId && subjectIdMap[a.courseId] && subjectIdMap[a.courseId] !== a.courseId
-          ? { ...a, courseId: subjectIdMap[a.courseId] }
-          : a);
+      // ── v1.7 assignment/exam/action UUID migration (StudyDesk#6) ────────────
+      // These were local-only until v1.7 and used short uid() ids, which the
+      // new `uuid` columns reject outright. Re-key them here, exactly as the
+      // v1.0.4 pass above did for courses/grades/sessions, and mark the batch
+      // for the one-shot push so a user's existing homework reaches the cloud
+      // rather than only newly created items.
+      //
+      // asgnIdMap/examIdMap are kept because manual actions can carry a
+      // sourceId pointing at an assignment or exam. Re-keying the target
+      // without remapping the reference would silently break "mark done" on
+      // the suggested-action row.
+      const asgnIdMap = {};
+      const examIdMap = {};
+      const migratedAssignments = (Array.isArray(saved.assignments) ? saved.assignments : []).map(a => {
+        const idOk = UUID_RE.test(a.id);
+        const mappedCourse = subjectIdMap[a.courseId];
+        const courseOk = !mappedCourse || mappedCourse === a.courseId;
+        if (!idOk) asgnIdMap[a.id] = crypto.randomUUID();
+        if (idOk && courseOk) return a;
+        needsPush = true;
+        return {
+          ...a,
+          id: idOk ? a.id : asgnIdMap[a.id],
+          courseId: mappedCourse || a.courseId,
+        };
+      });
+      const migratedExams = (Array.isArray(saved.exams) ? saved.exams : []).map(e => {
+        const idOk = UUID_RE.test(e.id);
+        const mappedCourse = subjectIdMap[e.courseId];
+        const courseOk = !mappedCourse || mappedCourse === e.courseId;
+        if (!idOk) examIdMap[e.id] = crypto.randomUUID();
+        if (idOk && courseOk) return e;
+        needsPush = true;
+        return {
+          ...e,
+          id: idOk ? e.id : examIdMap[e.id],
+          courseId: mappedCourse || e.courseId,
+        };
+      });
+      const migratedActions = (Array.isArray(saved.actions) ? saved.actions : []).map(a => {
+        const idOk = UUID_RE.test(a.id);
+        const mappedCourse = a.courseId ? subjectIdMap[a.courseId] : null;
+        const courseOk = !a.courseId || mappedCourse === a.courseId;
+        const mappedSource = a.sourceId ? (asgnIdMap[a.sourceId] || examIdMap[a.sourceId]) : null;
+        if (idOk && courseOk && !mappedSource) return a;
+        needsPush = true;
+        return {
+          ...a,
+          id: idOk ? a.id : crypto.randomUUID(),
+          courseId: a.courseId ? (mappedCourse || a.courseId) : null,
+          sourceId: mappedSource || a.sourceId || null,
+        };
+      });
       const migratedActiveCourse = saved.activeCourse && subjectIdMap[saved.activeCourse]
         ? subjectIdMap[saved.activeCourse]
         : saved.activeCourse || null;
@@ -639,9 +686,13 @@ export default function App() {
       }
 
       if (!cancelled) setSession(data.session);
+      // ACT-5 — cover the restored-session path too, not just fresh sign-ins.
+      // Every account that predates this instrumentation only ever appears here.
+      scheduleOriginStamp(data.session?.user ?? null);
     })();
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
+      scheduleOriginStamp(s?.user ?? null);
       // v1.1 — any successful sign-in clears guestMode so the user resumes
       // normal session-based flow. Without this, a user who signed out
       // (which sets guestMode=true to prevent next-launch auto-inherit
@@ -667,9 +718,13 @@ export default function App() {
     return () => window.removeEventListener("studydesk:guest-mode-changed", onChange);
   }, []);
 
+  // v1.7 — true once the first pull of this session has settled. The push
+  // reconciler below stays disarmed until then.
+  const pulledOnceRef = useRef(false);
+
   // ── Sync: initial pull + Realtime, gated on sign-in ─────────────────────────
   useEffect(() => {
-    if (!session) { sync.stopRealtime(); return; }
+    if (!session) { sync.stopRealtime(); pulledOnceRef.current = false; return; }
     let cancelled = false;
     const doPull = async () => {
       try {
@@ -677,6 +732,12 @@ export default function App() {
         if (!cancelled) dispatch({ type: "MERGE_REMOTE", remote });
       } catch (e) {
         console.error("[StudyDesk] pull failed:", e);
+      } finally {
+        // v1.7 — arm the push reconciler on SETTLE, not on success. If the pull
+        // failed we still want later local edits to sync; blocking on a healthy
+        // pull would mean one flaky launch silently stops pushing for the whole
+        // session. LWW plus the outbox already handle a stale starting point.
+        if (!cancelled) pulledOnceRef.current = true;
       }
     };
     doPull();
@@ -738,6 +799,38 @@ export default function App() {
           pushed++;
         } catch (e) { failed++; console.error("[StudyDesk] initial push session failed:", s.id, e); }
       }
+      // v1.7 (StudyDesk#6) — assignments/exams/actions. These run AFTER courses
+      // because both carry a NOT NULL subject_id FK; a course that failed above
+      // would take its homework down with it, which is why failures are counted
+      // rather than thrown (the flag stays set and the whole batch retries).
+      // Rows whose course no longer exists locally are skipped rather than
+      // attempted: the FK would reject them and burn a retry every launch.
+      for (const a of (state.assignments || [])) {
+        if (cancelled) return;
+        if (!a.courseId || !state.courses[a.courseId]) continue;
+        try {
+          await sync.upsertAssignment({ id: a.id, courseId: a.courseId, title: a.title, type: a.type, dueDate: a.dueDate, notes: a.notes, done: a.done });
+          pushed++;
+        } catch (e) { failed++; console.error("[StudyDesk] initial push assignment failed:", a.id, e); }
+      }
+      for (const ex of (state.exams || [])) {
+        if (cancelled) return;
+        if (!ex.courseId || !state.courses[ex.courseId]) continue;
+        try {
+          await sync.upsertExam({ id: ex.id, courseId: ex.courseId, title: ex.title, dueDate: ex.dueDate, difficulty: ex.difficulty, notes: ex.notes, done: ex.done, topics: ex.topics });
+          pushed++;
+        } catch (e) { failed++; console.error("[StudyDesk] initial push exam failed:", ex.id, e); }
+      }
+      // Only manual to-dos. The suggested ones are derived from assignments and
+      // exams on every render and must never reach the cloud, or they would
+      // come back as duplicate real rows alongside the freshly derived ones.
+      for (const ac of (state.actions || []).filter(x => !x.suggested)) {
+        if (cancelled) return;
+        try {
+          await sync.upsertAction({ id: ac.id, text: ac.text, bucket: ac.bucket, courseId: ac.courseId, done: ac.done });
+          pushed++;
+        } catch (e) { failed++; console.error("[StudyDesk] initial push action failed:", ac.id, e); }
+      }
       if (failed === 0) {
         try { localStorage.removeItem("studydesk-needs-initial-push"); } catch {}
         if (pushed > 0) showFlash(t('av.flash.syncedLegacy', { n: pushed }));
@@ -748,6 +841,86 @@ export default function App() {
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id]);
+
+  // ── v1.7 push reconciler for assignments / exams / actions (StudyDesk#6) ────
+  //
+  // Courses, grades and sessions enqueue their own pushes at each call site.
+  // These three deliberately do not, and the reason is structural: they are
+  // mutated from ~15 places across AsgnItem, ExamCard and ActionsView, none of
+  // which receive `session`. Threading it through every one of those props
+  // would be a wide change to working components, and any call site missed
+  // would be an edit that silently never syncs — the exact bug being fixed.
+  //
+  // Instead: diff the three arrays after every state change and enqueue what
+  // actually moved. One place, no call sites to miss, and it picks up any
+  // future mutation path for free.
+  const pushBaseline = useRef(null);
+  useEffect(() => {
+    if (!session) { pushBaseline.current = null; return; }
+    // Wait for the first pull to settle before arming. Pushing local rows
+    // before knowing the remote state would stamp them updated_at = now and
+    // let a stale device win against a newer edit made elsewhere.
+    if (!pulledOnceRef.current) return;
+
+    const snap = (list, fields) => {
+      const m = new Map();
+      for (const x of list || []) m.set(x.id, fields(x));
+      return m;
+    };
+    // Compare on updatedAt, not deep equality — every mutation stamps it, so
+    // this is both cheaper and immune to unrelated field churn.
+    const stamp = (x) => x.updatedAt || '';
+    const next = {
+      assignments: snap(state.assignments, stamp),
+      exams: snap(state.exams, stamp),
+      actions: snap((state.actions || []).filter((a) => !a.suggested), stamp),
+    };
+
+    // First run after a pull: record the baseline, push nothing. What is on
+    // screen right now is already reconciled with the cloud.
+    if (!pushBaseline.current) { pushBaseline.current = next; return; }
+
+    const prev = pushBaseline.current;
+    const byId = (list) => new Map((list || []).map((x) => [x.id, x]));
+    const assignmentsById = byId(state.assignments);
+    const examsById = byId(state.exams);
+    const actionsById = byId(state.actions);
+
+    for (const [id, s] of next.assignments) {
+      if (prev.assignments.get(id) === s) continue;
+      const a = assignmentsById.get(id);
+      if (!a?.courseId) continue;
+      outbox.enqueue('upsert_assignment', { id, courseId: a.courseId, title: a.title, type: a.type, dueDate: a.dueDate, notes: a.notes, done: a.done });
+    }
+    for (const id of prev.assignments.keys()) {
+      if (!next.assignments.has(id)) outbox.enqueue('delete_assignment', { id });
+    }
+
+    for (const [id, s] of next.exams) {
+      if (prev.exams.get(id) === s) continue;
+      const e = examsById.get(id);
+      if (!e?.courseId) continue;
+      outbox.enqueue('upsert_exam', { id, courseId: e.courseId, title: e.title, dueDate: e.dueDate, difficulty: e.difficulty, notes: e.notes, done: e.done, topics: e.topics });
+    }
+    for (const id of prev.exams.keys()) {
+      if (!next.exams.has(id)) outbox.enqueue('delete_exam', { id });
+    }
+
+    for (const [id, s] of next.actions) {
+      if (prev.actions.get(id) === s) continue;
+      const a = actionsById.get(id);
+      if (!a) continue;
+      outbox.enqueue('upsert_action', { id, text: a.text, bucket: a.bucket, courseId: a.courseId, done: a.done });
+    }
+    for (const id of prev.actions.keys()) {
+      if (!next.actions.has(id)) outbox.enqueue('delete_action', { id });
+    }
+
+    pushBaseline.current = next;
+  // `session` is read for the sign-in gate only; the identity that matters is
+  // the user id, which the pull effect already keys on.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id, state.assignments, state.exams, state.actions]);
 
   // NOTE: the sign-out handler lives in SettingsView.onSignOut (identical logic
   // incl. the guestMode=true anti-auto-re-sign-in fix). An earlier duplicate

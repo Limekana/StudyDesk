@@ -113,7 +113,18 @@
     "errRateLimited": "Trop de tentatives. Patientez un instant, puis réessayez.",
     "errNetwork": "Serveur injoignable. Vérifiez votre connexion et réessayez.",
     "ageNote": "Vous devez avoir 16 ans ou plus pour créer un compte (13 ans si la loi locale le permet). En dessous, utilisez le mode invité — rien ne quitte votre appareil.",
-    "privacyLink": "Politique de confidentialité"
+    "privacyLink": "Politique de confidentialité",
+    "otpTitle": "Saisissez votre code",
+    "otpSub": "Nous avons envoyé un code à 6 chiffres à",
+    "otpLabel": "Code de vérification",
+    "otpSubmit": "Confirmer le compte",
+    "otpHint": "Le code est valable 60 minutes.",
+    "otpResend": "Envoyer un nouveau code",
+    "otpResendIn": "Nouveau code dans",
+    "otpSent": "Nouveau code envoyé.",
+    "otpBack": "Utiliser une autre adresse e-mail",
+    "errOtp": "Ce code n'a pas fonctionné. Vérifiez-le et réessayez.",
+    "errOtpResend": "Impossible d'envoyer un nouveau code. Réessayez dans un instant."
   },
   "settings": {
     "cloudSync": "Synchro cloud",

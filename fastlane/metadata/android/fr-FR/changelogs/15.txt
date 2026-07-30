@@ -1,0 +1,5 @@
+Les devoirs, les examens et les tâches se synchronisent maintenant entre vos appareils.
+
+Jusqu'ici seuls les cours et les notes se synchronisaient : un devoir ajouté sur une tablette n'apparaissait jamais sur le téléphone. Tout ce que vous avez déjà est envoyé une seule fois, automatiquement, au premier lancement de cette version en étant connecté.
+
+Aussi : confirmez un nouveau compte avec un code à 6 chiffres reçu par e-mail, sans avoir à toucher le lien.

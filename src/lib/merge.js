@@ -99,11 +99,76 @@ function mergeSession(localSession, remoteRow) {
   return localSession;
 }
 
+// v1.7 (StudyDesk#6) — assignments, exams and manual to-dos. Local shape uses
+// `courseId` where the DB says `subject_id`; everything else is a straight
+// rename. Same LWW rule as the three above: whole-row replace when remote wins.
+
+function mergeAssignment(localA, remoteRow) {
+  const remote = {
+    id: remoteRow.id,
+    courseId: remoteRow.subject_id,
+    title: remoteRow.title,
+    type: remoteRow.type || null,
+    // The local UI binds these to text inputs, which cannot hold null without
+    // React flipping the field to uncontrolled — keep the empty-string shape
+    // the reducer already creates.
+    dueDate: remoteRow.due_date || '',
+    notes: remoteRow.notes || '',
+    done: Boolean(remoteRow.done),
+    updatedAt: remoteRow.updated_at || null,
+    deletedAt: remoteRow.deleted_at || null,
+  };
+  if (!localA) return remote;
+  if (newer(remote.updatedAt, localA.updatedAt)) return remote;
+  return localA;
+}
+
+function mergeExam(localE, remoteRow) {
+  const remote = {
+    id: remoteRow.id,
+    courseId: remoteRow.subject_id,
+    title: remoteRow.title,
+    dueDate: remoteRow.due_date || '',
+    difficulty: remoteRow.difficulty || 'medium',
+    notes: remoteRow.notes || '',
+    done: Boolean(remoteRow.done),
+    // Topics travel as jsonb. Guard the shape — the local UI maps over this
+    // unconditionally, so a null from a malformed row would crash the view.
+    topics: Array.isArray(remoteRow.topics) ? remoteRow.topics : [],
+    updatedAt: remoteRow.updated_at || null,
+    deletedAt: remoteRow.deleted_at || null,
+  };
+  if (!localE) return remote;
+  if (newer(remote.updatedAt, localE.updatedAt)) return remote;
+  return localE;
+}
+
+function mergeAction(localA, remoteRow) {
+  const remote = {
+    id: remoteRow.id,
+    courseId: remoteRow.subject_id || null,
+    text: remoteRow.text,
+    bucket: remoteRow.bucket || 'today',
+    done: Boolean(remoteRow.done),
+    // Only manually created to-dos are ever pushed, so anything arriving from
+    // the cloud is by definition manual. Stamping these explicitly keeps them
+    // from being mistaken for the derived suggestions the Actions view
+    // computes on every render.
+    suggested: false,
+    sourceId: null,
+    updatedAt: remoteRow.updated_at || null,
+    deletedAt: remoteRow.deleted_at || null,
+  };
+  if (!localA) return remote;
+  if (newer(remote.updatedAt, localA.updatedAt)) return remote;
+  return localA;
+}
+
 /**
  * Apply a full remote pull to the reducer state. Returns a new state object.
  *
  * @param {object} state Current reducer state.
- * @param {{subjects:Array, grades:Array, sessions:Array}} remote
+ * @param {{subjects:Array, grades:Array, sessions:Array, assignments:Array, exams:Array, actions:Array}} remote
  */
 export function applyRemotePull(state, remote) {
   // Subjects → state.courses (keyed by id).
@@ -126,5 +191,41 @@ export function applyRemotePull(state, remote) {
   }
   const studySessions = Array.from(sessionById.values());
 
-  return { ...state, courses, grades, studySessions };
+  // v1.7 — assignments / exams / actions. `remote.*` are defaulted rather than
+  // assumed: a client that pulled before these tables existed (or a partial
+  // response) must leave local data untouched instead of blanking it.
+  //
+  // Deletes are applied by REMOVAL here, not by keeping a tombstone in local
+  // state — unlike courses/grades/sessions above.
+  //
+  // Why the difference: assignments, exams and actions are read in ~20 places
+  // across App.jsx, none of which filter `deletedAt` today, because a local
+  // delete has always spliced the row straight out of the array. Introducing
+  // tombstones would mean adding a guard to every one of those call sites, and
+  // a single miss puts a deleted assignment back on a user's screen. Dropping
+  // the row instead keeps local state exactly the shape every existing render
+  // path already expects, so this feature adds no new way for the working
+  // views to break.
+  //
+  // Trade-off, accepted deliberately: a delete on one device beats a
+  // simultaneous edit on another rather than going to LWW. For homework that
+  // is the intuitive outcome — the thing is gone — and it is the same rule the
+  // local delete already applies.
+  const mergeList = (localList, remoteRows, mergeFn) => {
+    const byId = new Map((localList || []).map((x) => [x.id, x]));
+    for (const row of remoteRows || []) {
+      if (row.deleted_at) { byId.delete(row.id); continue; }
+      byId.set(row.id, mergeFn(byId.get(row.id), row));
+    }
+    return Array.from(byId.values());
+  };
+
+  const assignments = mergeList(state.assignments, remote.assignments, mergeAssignment);
+  const exams = mergeList(state.exams, remote.exams, mergeExam);
+  // Only manual to-dos live in state.actions; the Actions view derives its
+  // suggestions from assignments/exams at render time and never persists them,
+  // so there is nothing extra to filter out here.
+  const actions = mergeList(state.actions, remote.actions, mergeAction);
+
+  return { ...state, courses, grades, studySessions, assignments, exams, actions };
 }
