@@ -8,17 +8,10 @@ import PeriodHistory from '../grades/PeriodHistory.jsx';
 import * as sync from '../../lib/sync.js';
 import * as outbox from '../../lib/outbox.js';
 import { downloadExport, deleteAccount } from '../../lib/dataRights.js';
+import { useConfirm } from '../../lib/useConfirm.js';
+import { avatarInitials } from '../../lib/avatarInitials.js';
+import { GuestAvatar } from '../../lib/avatar.jsx';
 import pkg from '../../../package.json';
-
-// v1.3.1 — initials for the account avatar (mirrors App.jsx's topbar avatar).
-function avatarInitials(session) {
-  const email = session?.user?.email;
-  if (!email) return '·';
-  const local = email.split('@')[0] || '';
-  const parts = local.split(/[.\-_]+/).filter(Boolean);
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-  return local.slice(0, 2).toUpperCase() || '·';
-}
 
 const css = `
 .sv2-wrap{padding:16px 24px 80px;max-width:680px;margin:0 auto;}
@@ -89,6 +82,7 @@ function fmtTime(iso, t, lang) {
 
 export default function SettingsView({ state, dispatch, showFlash, session }) {
   const { t, i18n } = useTranslation();
+  const confirm = useConfirm();
   const currentLang = (i18n.language || 'en').split('-')[0];
   const langRef = useScrollSelectedIntoView();
   const lang = currentLang; // for locale-aware date formatting in fmtTime
@@ -121,7 +115,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
   const mode = state.gradeMode || 'ib';
 
   const onSignOut = useCallback(async () => {
-    if (!confirm(t('settings.signOutConfirm'))) return;
+    if (!(await confirm(t('settings.signOutConfirm')))) return;
     setSigningOut(true);
     try {
       // Drain-then-wipe order preserved from the v1.1.1 / AUDIT-SD-FSG-2 work:
@@ -139,7 +133,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
     } finally {
       setSigningOut(false);
     }
-  }, [showFlash, dispatch, t]);
+  }, [confirm, showFlash, dispatch, t]);
 
   // ── GDPR Art. 20 — portability ─────────────────────────────────────────────
   const onExport = useCallback(() => {
@@ -155,8 +149,8 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
   // Two confirmations, because this is irreversible and there is no recovery
   // window: the account row is gone and every cascade has fired.
   const onDeleteAccount = useCallback(async () => {
-    if (!confirm(t('settings.deleteAccountConfirm1'))) return;
-    if (!confirm(t('settings.deleteAccountConfirm2'))) return;
+    if (!(await confirm(t('settings.deleteAccountConfirm1')))) return;
+    if (!(await confirm(t('settings.deleteAccountConfirm2')))) return;
     setDeleting(true);
     try {
       await deleteAccount({
@@ -177,7 +171,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
     } finally {
       setDeleting(false);
     }
-  }, [dispatch, showFlash, t]);
+  }, [confirm, dispatch, showFlash, t]);
 
   // v1.3.1 — guests sign in from here now that the topbar button is gone.
   // Flipping guestMode off routes the app back to AuthGate.
@@ -214,7 +208,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
         {/* ── Account hero ── */}
         <div className="sv2-section">
           <div className="sv2-hero">
-            <div className="sv2-avatar">{avatarInitials(session)}</div>
+            <div className="sv2-avatar">{avatarInitials(session) ?? <GuestAvatar/>}</div>
             <div className="sv2-hero-info">
               <div className="sv2-hero-name">{session ? userEmail : t('settings.guest')}</div>
               <div className="sv2-hero-status">

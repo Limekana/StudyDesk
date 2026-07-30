@@ -16,20 +16,13 @@ import { applyRemotePull } from "./lib/merge.js";
 import GradesView from "./features/grades/GradesView.jsx";
 import SessionsView from "./features/sessions/SessionsView.jsx";
 import SaveSessionSheet from "./features/sessions/SaveSessionSheet.jsx";
+import { avatarInitials } from "./lib/avatarInitials.js";
+import { GuestAvatar } from "./lib/avatar.jsx";
 import StatsView from "./features/stats/StatsView.jsx";
 import SettingsView from "./features/settings/SettingsView.jsx";
 
 // v1.3.1 — initials for the top-right profile avatar (opens Settings, like NCC).
 // Derives 1–2 letters from the signed-in email's local part; guests get "·".
-function avatarInitials(session) {
-  const email = session?.user?.email;
-  if (!email) return "·";
-  const local = email.split("@")[0] || "";
-  const parts = local.split(/[.\-_]+/).filter(Boolean);
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-  return local.slice(0, 2).toUpperCase() || "·";
-}
-
 const BUCKETS = ["today", "this_week", "later"];
 const BUCKET_LABELS = { today: "TODAY", this_week: "THIS WEEK", later: "LATER" };
 const BUCKET_COLORS = {
@@ -1222,7 +1215,7 @@ export default function App() {
               onClick={()=>dispatch({type:"SET_VIEW",view:"settings"})}
               title={session?.user?.email ? t('av.chrome.settingsWith', { email: session.user.email }) : t('av.chrome.settings')}
               aria-label={t('av.chrome.openSettings')}>
-              {avatarInitials(session)}
+              {avatarInitials(session) ?? <GuestAvatar/>}
             </button>
           </div>
         </div>
