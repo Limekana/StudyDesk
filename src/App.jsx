@@ -422,10 +422,14 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
     border-top:1px solid var(--border);
     padding-bottom:env(safe-area-inset-bottom);
   }
-  .mobile-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 4px 12px;cursor:pointer;color:var(--muted);font-size:9px;font-family:var(--font-mono);letter-spacing:0.04em;gap:4px;border-top:2px solid transparent;transition:all 0.1s;-webkit-tap-highlight-color:transparent;}
+  /* SD-F2 — the glyph row is gone; the label is the whole tab now.
+     min-height keeps the tap target at 52px, which removing an 18px icon plus
+     its 4px gap would otherwise have cut to ~36px. 11px monospace fits the
+     worst label the app ships, Spanish "Temporizador" at 12 characters, in
+     roughly 65px of the ~90px each of the four tabs gets on a 360px screen. */
+  .mobile-tab{flex:1;display:flex;align-items:center;justify-content:center;min-height:52px;padding:8px 4px;cursor:pointer;color:var(--muted);font-size:11px;font-family:var(--font-mono);letter-spacing:0.03em;text-align:center;line-height:1.25;border-top:2px solid transparent;transition:all 0.1s;-webkit-tap-highlight-color:transparent;}
   .mobile-tab:active{background:var(--surface2);}
   .mobile-tab.active{color:var(--text);border-top-color:var(--text);}
-  .mobile-tab-icon{font-size:18px;line-height:1;}
   /* Course strip — fixed just above the tab bar */
   .mobile-courses-bar{
     display:flex;align-items:center;
@@ -1169,12 +1173,12 @@ export default function App() {
   };
 
   const views = [
-    {id:"actions",  label:t('nav.study'),  icon:"◎"},
-    {id:"plan",     label:t('nav.plan'),   icon:"◈"},
-    {id:"grades",   label:t('nav.grades'), icon:"⌗"},
+    {id:"actions",  label:t('nav.study')},
+    {id:"plan",     label:t('nav.plan')},
+    {id:"grades",   label:t('nav.grades')},
     // v1.3 — Timer now hosts Log + Stats as sub-tabs (see TimerView), so they
     // no longer take their own bottom-bar slots — keeps the nav uncrowded.
-    {id:"timer",    label:t('nav.timer'),  icon:"◉"},
+    {id:"timer",    label:t('nav.timer')},
     // v1.3.1 — Settings is no longer a nav tab; it opens from the top-right
     // profile avatar (matches NCC/LimeLog). Still a valid `state.view`.
   ];
@@ -1210,7 +1214,11 @@ export default function App() {
         </div>
         <nav className="sidebar-nav">
           {views.map(v=><div key={v.id} role="button" tabIndex={0} className={"nav-item"+(state.view===v.id?" active":"")} onClick={()=>dispatch({type:"SET_VIEW",view:v.id})} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&dispatch({type:"SET_VIEW",view:v.id})}>
-            <span style={{width:16,textAlign:"center",fontSize:13}}>{v.icon}</span>{v.label}
+            {/* The desktop sidebar rendered the same glyphs as the mobile tab
+                bar, so it loses them for the same reason, and it has room for
+                the label on its own. Dropping `icon` from `views` without this
+                would have left four empty 16px spans here. */}
+            {v.label}
           </div>)}
         </nav>
         <div className="sidebar-courses">
@@ -1287,7 +1295,7 @@ export default function App() {
         {views.map(v=><div key={v.id} role="button" tabIndex={0} className={"mobile-tab"+(state.view===v.id?" active":"")}
           onClick={()=>dispatch({type:"SET_VIEW",view:v.id})}
           onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&dispatch({type:"SET_VIEW",view:v.id})}>
-          <span className="mobile-tab-icon">{v.icon}</span>{v.label}
+          {v.label}
         </div>)}
       </nav>
       </div>
