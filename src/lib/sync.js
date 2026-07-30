@@ -117,6 +117,17 @@ export async function deleteSubject(id) {
     .update({ deleted_at: stamp, updated_at: stamp })
     .eq('subject_id', id);
   if (gErr) throw gErr;
+  // v1.7 — assignments and exams cascade too, matching the local reducer, which
+  // drops both when a course is deleted. study_actions deliberately do NOT:
+  // locally they survive with a dangling courseId, and silently destroying a
+  // user's to-do list because it happened to be tagged to a deleted course
+  // would be a worse surprise than an orphaned tag.
+  const [aErr, eErr] = await Promise.all([
+    supabase.from('assignments').update({ deleted_at: stamp, updated_at: stamp }).eq('subject_id', id),
+    supabase.from('exams').update({ deleted_at: stamp, updated_at: stamp }).eq('subject_id', id),
+  ]).then((rs) => rs.map((r) => r.error));
+  if (aErr) throw aErr;
+  if (eErr) throw eErr;
   const { error } = await supabase
     .from('subjects')
     .update({ deleted_at: stamp, updated_at: stamp })
@@ -216,23 +227,123 @@ export async function deleteStudySession(id) {
   if (error) throw error;
 }
 
+// ── assignments · exams · actions ────────────────────────────────────────────
+//
+// v1.7 (StudyDesk#6). These three were local-only until now: a user with a
+// phone and a tablet saw courses and grades sync while homework silently
+// stayed put. They follow the same contract as everything above — client-set
+// updated_at for LWW, soft delete via deleted_at, never a hard DELETE.
+
+export async function upsertAssignment({ id, courseId, title, type, dueDate, notes, done }) {
+  if (!courseId) throw new Error('courseId is required (assignment must reference a course)');
+  const userId = await currentUserId();
+  const { error } = await supabase.from('assignments').upsert({
+    id,
+    user_id: userId,
+    subject_id: courseId,
+    title,
+    type: type ?? null,
+    // The local model stores an empty string when the user clears the date;
+    // `date` columns reject '' but accept null.
+    due_date: dueDate || null,
+    notes: notes || null,
+    done: Boolean(done),
+    updated_at: nowISO(),
+  });
+  if (error) throw error;
+  return id;
+}
+
+export async function deleteAssignment(id) {
+  const stamp = nowISO();
+  const { error } = await supabase
+    .from('assignments')
+    .update({ deleted_at: stamp, updated_at: stamp })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function upsertExam({ id, courseId, title, dueDate, difficulty, notes, done, topics }) {
+  if (!courseId) throw new Error('courseId is required (exam must reference a course)');
+  const userId = await currentUserId();
+  const { error } = await supabase.from('exams').upsert({
+    id,
+    user_id: userId,
+    subject_id: courseId,
+    title,
+    due_date: dueDate || null,
+    difficulty: difficulty ?? null,
+    notes: notes || null,
+    done: Boolean(done),
+    // Topics ride along inside the exam row. Guard the shape: a corrupt local
+    // value would otherwise fail the jsonb column and block the whole push.
+    topics: Array.isArray(topics) ? topics : [],
+    updated_at: nowISO(),
+  });
+  if (error) throw error;
+  return id;
+}
+
+export async function deleteExam(id) {
+  const stamp = nowISO();
+  const { error } = await supabase
+    .from('exams')
+    .update({ deleted_at: stamp, updated_at: stamp })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function upsertAction({ id, text, bucket, courseId, done }) {
+  const userId = await currentUserId();
+  const { error } = await supabase.from('study_actions').upsert({
+    id,
+    user_id: userId,
+    // Unlike assignments/exams, a to-do need not belong to a course.
+    subject_id: courseId || null,
+    text,
+    bucket: bucket || 'today',
+    done: Boolean(done),
+    updated_at: nowISO(),
+  });
+  if (error) throw error;
+  return id;
+}
+
+export async function deleteAction(id) {
+  const stamp = nowISO();
+  const { error } = await supabase
+    .from('study_actions')
+    .update({ deleted_at: stamp, updated_at: stamp })
+    .eq('id', id);
+  if (error) throw error;
+}
+
 // ── pull (full sync) ─────────────────────────────────────────────────────────
 
 export async function pullAllStudyData() {
   // Pull EVERYTHING including soft-deleted rows so the local LWW merge
   // can correctly tombstone things the user deleted on another device.
-  const [subjectsRes, gradesRes, sessionsRes] = await Promise.all([
+  const [subjectsRes, gradesRes, sessionsRes, assignmentsRes, examsRes, actionsRes] = await Promise.all([
     supabase.from('subjects').select('*'),
     supabase.from('grades').select('*'),
     supabase.from('study_sessions').select('*'),
+    supabase.from('assignments').select('*'),
+    supabase.from('exams').select('*'),
+    supabase.from('study_actions').select('*'),
   ]);
   if (subjectsRes.error) throw subjectsRes.error;
   if (gradesRes.error) throw gradesRes.error;
   if (sessionsRes.error) throw sessionsRes.error;
+  if (assignmentsRes.error) throw assignmentsRes.error;
+  if (examsRes.error) throw examsRes.error;
+  if (actionsRes.error) throw actionsRes.error;
   return {
     subjects: subjectsRes.data || [],
     grades: gradesRes.data || [],
     sessions: sessionsRes.data || [],
+    assignments: assignmentsRes.data || [],
+    exams: examsRes.data || [],
+    actions: actionsRes.data || [],
   };
 }
 

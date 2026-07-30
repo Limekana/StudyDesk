@@ -260,6 +260,16 @@ const KIND_DISPATCH = {
   log_session: (p) => sync.logStudySession(p),
   update_session: (p) => sync.updateStudySession(p),
   delete_session: (p) => sync.deleteStudySession(p.id),
+  // v1.7 (StudyDesk#6) — assignments, exams and manual to-dos. Upserts carry
+  // the whole entity rather than a patch, so a retry after a later local edit
+  // still converges: the queued payload is a snapshot, and the newest write
+  // wins on updated_at like everything else here.
+  upsert_assignment: (p) => sync.upsertAssignment(p),
+  delete_assignment: (p) => sync.deleteAssignment(p.id),
+  upsert_exam: (p) => sync.upsertExam(p),
+  delete_exam: (p) => sync.deleteExam(p.id),
+  upsert_action: (p) => sync.upsertAction(p),
+  delete_action: (p) => sync.deleteAction(p.id),
   // Semester archive/restore: stored as a single batch op so a retry doesn't
   // re-fire one course per item if the user archived a 6-course semester.
   // `courses` snapshot is captured at enqueue time so the batch is stable.

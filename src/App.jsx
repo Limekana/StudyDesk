@@ -253,19 +253,25 @@ function reducer(state, action) {
         activeCourse:state.activeCourse===action.id?null:state.activeCourse,
       };
     }
-    case "ADD_ASSIGNMENT":  { const a={id:uid(),courseId:action.courseId,title:action.title,type:action.assignType,dueDate:action.dueDate,notes:action.notes||"",done:false}; return {...state,assignments:[...state.assignments,a]}; }
-    case "TOGGLE_ASSIGNMENT": return {...state,assignments:state.assignments.map(a=>a.id===action.id?{...a,done:!a.done}:a)};
-    case "EDIT_ASSIGNMENT":   return {...state,assignments:state.assignments.map(a=>a.id===action.id?{...a,title:action.title,dueDate:action.dueDate,notes:action.notes}:a)};
+    // v1.7 (StudyDesk#6) — these three now sync, so they carry `updatedAt` for
+    // LWW and use newSyncId() (a real UUID) instead of uid(). Deletes stay hard
+    // removals: applyRemotePull drops remotely-deleted rows the same way, so
+    // local state never holds a tombstone and no render site needs a new guard.
+    case "ADD_ASSIGNMENT":  { const a={id:action.id||newSyncId(),courseId:action.courseId,title:action.title,type:action.assignType,dueDate:action.dueDate,notes:action.notes||"",done:false,updatedAt:action.updatedAt||new Date().toISOString()}; return {...state,assignments:[...state.assignments,a]}; }
+    case "TOGGLE_ASSIGNMENT": return {...state,assignments:state.assignments.map(a=>a.id===action.id?{...a,done:!a.done,updatedAt:new Date().toISOString()}:a)};
+    case "EDIT_ASSIGNMENT":   return {...state,assignments:state.assignments.map(a=>a.id===action.id?{...a,title:action.title,dueDate:action.dueDate,notes:action.notes,updatedAt:new Date().toISOString()}:a)};
     case "DELETE_ASSIGNMENT": return {...state,assignments:state.assignments.filter(a=>a.id!==action.id)};
-    case "ADD_EXAM":    { const e={id:uid(),courseId:action.courseId,title:action.title,dueDate:action.dueDate,difficulty:action.difficulty||"medium",notes:action.notes||"",done:false,topics:[]}; return {...state,exams:[...state.exams,e]}; }
-    case "TOGGLE_EXAM": return {...state,exams:state.exams.map(e=>e.id===action.id?{...e,done:!e.done}:e)};
+    case "ADD_EXAM":    { const e={id:action.id||newSyncId(),courseId:action.courseId,title:action.title,dueDate:action.dueDate,difficulty:action.difficulty||"medium",notes:action.notes||"",done:false,topics:[],updatedAt:action.updatedAt||new Date().toISOString()}; return {...state,exams:[...state.exams,e]}; }
+    case "TOGGLE_EXAM": return {...state,exams:state.exams.map(e=>e.id===action.id?{...e,done:!e.done,updatedAt:new Date().toISOString()}:e)};
     case "DELETE_EXAM": return {...state,exams:state.exams.filter(e=>e.id!==action.id)};
-    case "UPDATE_EXAM_DIFFICULTY": return {...state,exams:state.exams.map(e=>e.id===action.id?{...e,difficulty:action.difficulty}:e)};
-    case "ADD_EXAM_TOPIC":    return {...state,exams:state.exams.map(e=>e.id===action.examId?{...e,topics:[...(e.topics||[]),{id:uid(),title:action.title,done:false}]}:e)};
-    case "TOGGLE_EXAM_TOPIC": return {...state,exams:state.exams.map(e=>e.id===action.examId?{...e,topics:(e.topics||[]).map(t=>t.id===action.topicId?{...t,done:!t.done}:t)}:e)};
-    case "DELETE_EXAM_TOPIC": return {...state,exams:state.exams.map(e=>e.id===action.examId?{...e,topics:(e.topics||[]).filter(t=>t.id!==action.topicId)}:e)};
-    case "ADD_ACTION":    { const a={id:uid(),text:action.text,bucket:action.bucket||"today",courseId:action.courseId||null,done:false,suggested:action.suggested||false,sourceId:action.sourceId||null}; return {...state,actions:[...state.actions,a]}; }
-    case "TOGGLE_ACTION": return {...state,actions:state.actions.map(a=>a.id===action.id?{...a,done:!a.done,doneAt:!a.done?Date.now():null}:a)};
+    case "UPDATE_EXAM_DIFFICULTY": return {...state,exams:state.exams.map(e=>e.id===action.id?{...e,difficulty:action.difficulty,updatedAt:new Date().toISOString()}:e)};
+    // Topic ids stay uid(): they live inside the exam's jsonb payload and are
+    // never rows of their own, so Postgres never sees them as a uuid column.
+    case "ADD_EXAM_TOPIC":    return {...state,exams:state.exams.map(e=>e.id===action.examId?{...e,topics:[...(e.topics||[]),{id:uid(),title:action.title,done:false}],updatedAt:new Date().toISOString()}:e)};
+    case "TOGGLE_EXAM_TOPIC": return {...state,exams:state.exams.map(e=>e.id===action.examId?{...e,topics:(e.topics||[]).map(t=>t.id===action.topicId?{...t,done:!t.done}:t),updatedAt:new Date().toISOString()}:e)};
+    case "DELETE_EXAM_TOPIC": return {...state,exams:state.exams.map(e=>e.id===action.examId?{...e,topics:(e.topics||[]).filter(t=>t.id!==action.topicId),updatedAt:new Date().toISOString()}:e)};
+    case "ADD_ACTION":    { const a={id:action.id||newSyncId(),text:action.text,bucket:action.bucket||"today",courseId:action.courseId||null,done:false,suggested:action.suggested||false,sourceId:action.sourceId||null,updatedAt:action.updatedAt||new Date().toISOString()}; return {...state,actions:[...state.actions,a]}; }
+    case "TOGGLE_ACTION": return {...state,actions:state.actions.map(a=>a.id===action.id?{...a,done:!a.done,doneAt:!a.done?Date.now():null,updatedAt:new Date().toISOString()}:a)};
     case "DELETE_ACTION": return {...state,actions:state.actions.filter(a=>a.id!==action.id)};
     case "SET_VIEW":      return {...state,view:action.view,activeCourse:action.course!==undefined?action.course:state.activeCourse};
 
