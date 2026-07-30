@@ -1,0 +1,5 @@
+Nouvelles langues : hindi, portugais, indonésien et arabe, avec prise en charge de la mise en page de droite à gauche. L'écran de connexion est maintenant traduit lui aussi, il n'apparaît donc plus en anglais avant le reste de l'application.
+
+Barème de notes personnalisé à côté d'IB et US. Couleurs de cours personnalisées. Export des données et suppression du compte dans les paramètres. Le récapitulatif d'étude par IA est désormais optionnel et désactivé par défaut.
+
+Corrections : « Peut-être plus tard » à l'étape des notifications refuse maintenant réellement, l'option invité est accessible sur les petits écrans, et le premier lancement n'accueille plus les nouveaux utilisateurs par « Bon retour ».

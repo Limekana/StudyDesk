@@ -1,0 +1,5 @@
+Neue Sprachen: Hindi, Portugiesisch, Indonesisch und Arabisch, inklusive Rechts-nach-links-Layout. Auch der Anmeldebildschirm ist jetzt übersetzt und erscheint nicht mehr auf Englisch, bevor der Rest der App folgt.
+
+Eigene Notenskala neben IB und US. Eigene Kursfarben. Datenexport und Kontolöschung in den Einstellungen. Die KI-Lernzusammenfassung ist jetzt optional und standardmäßig aus.
+
+Korrekturen: „Vielleicht später“ im Benachrichtigungsschritt lehnt nun wirklich ab, die Gast-Option ist auch auf kleineren Bildschirmen erreichbar, und der erste Start begrüßt neue Nutzer nicht mehr mit „Willkommen zurück“.
