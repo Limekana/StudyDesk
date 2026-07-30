@@ -60,3 +60,20 @@ export function fmtTime(iso) {
 export function fmtToday(date = new Date()) {
   return date.toLocaleDateString(formatLocale(), { weekday: 'long', day: 'numeric', month: 'long' });
 }
+
+/** Local YYYY-MM-DD for a Date, without the UTC shift `toISOString` would
+ *  apply. Moved here from App.jsx (SD-6) alongside addDays, which calls it. */
+export function toLocalISO(d) {
+  return d.getFullYear() + '-'
+    + String(d.getMonth() + 1).padStart(2, '0') + '-'
+    + String(d.getDate()).padStart(2, '0');
+}
+
+/** `s` shifted by `n` days, as a local YYYY-MM-DD string. Moved here from
+ *  App.jsx (SD-6): it is a date helper, and both of the functions it calls
+ *  already live in this module. */
+export function addDays(s, n) {
+  const d = parseLocalDate(s);
+  d.setDate(d.getDate() + n);
+  return toLocalISO(d);
+}

@@ -1,0 +1,43 @@
+/* First-run onboarding: the notebook-page card and its steps.
+   Extracted from App.jsx (SD-6), where it lived as the `cssOnboard` template
+   literal. Verbatim — no rules were merged, reordered or renamed, so this
+   commit changes where the CSS lives and nothing about what it does. */
+
+.ob-wrap{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px 20px;background:var(--bg);overflow:hidden;}
+/* faint ruled-paper atmosphere behind the page */
+.ob-wrap::before{content:"";position:absolute;inset:0;background-image:repeating-linear-gradient(var(--bg),var(--bg) 31px,var(--border) 31px,var(--border) 32px);opacity:0.35;pointer-events:none;}
+.ob-card{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:40px 34px 32px;width:100%;max-width:440px;
+  box-shadow:0 1px 0 var(--border2),0 18px 40px -18px rgba(40,30,15,0.28);
+  /* notebook page: ruled lines + a red margin rule down the left */
+  background-image:linear-gradient(var(--danger) 0 0),repeating-linear-gradient(transparent,transparent 31px,color-mix(in srgb,var(--border) 70%,transparent) 31px,color-mix(in srgb,var(--border) 70%,transparent) 32px);
+  background-size:1.5px 100%,100% 100%;background-position:22px 0,0 6px;background-repeat:no-repeat,repeat;
+  animation:obSettle 0.5s var(--ease-settle) both;}
+/* a strip of "washi tape" pinning the page at the top */
+.ob-card::before{content:"";position:absolute;top:-11px;left:50%;transform:translateX(-50%) rotate(-1.4deg);width:104px;height:22px;background:color-mix(in srgb,var(--warning) 18%,#fff);border:1px solid color-mix(in srgb,var(--warning) 28%,transparent);box-shadow:0 1px 2px rgba(0,0,0,0.05);}
+@keyframes obSettle{from{opacity:0;transform:translateY(10px) rotate(-0.4deg);}to{opacity:1;transform:none;}}
+.ob-pad{padding-inline-start:18px;}            /* clear the red margin rule */
+.ob-wordmark{font-family:var(--font-display);font-size:30px;font-weight:600;text-align:center;letter-spacing:-0.01em;margin-bottom:4px;}
+.ob-tagline{font-family:var(--font-mono);font-size:10px;color:var(--muted);text-align:center;letter-spacing:0.16em;text-transform:uppercase;margin-bottom:26px;}
+/* progress as inked ticks with a step count */
+.ob-steps{display:flex;align-items:center;gap:7px;justify-content:center;margin-bottom:26px;}
+.ob-step-dot{width:24px;height:3px;border-radius:0;background:var(--border2);transition:background 0.3s var(--ease-paper),transform 0.3s var(--ease-paper);transform-origin:left;}
+.ob-step-dot.active{background:var(--text);transform:scaleX(1.18);}
+.ob-step-dot.done{background:var(--muted);}
+.ob-step-body{animation:obPage 0.4s var(--ease-page-turn) both;}
+@keyframes obPage{from{opacity:0;transform:translateX(8px);}to{opacity:1;transform:none;}}
+.ob-step-title{font-family:var(--font-display);font-size:23px;font-weight:600;line-height:1.18;margin-bottom:10px;}
+.ob-step-desc{font-size:13.5px;color:var(--muted);margin-bottom:22px;line-height:1.62;}
+.ob-skip{font-family:var(--font-mono);font-size:10px;color:var(--muted2);cursor:pointer;text-align:center;margin-top:16px;letter-spacing:0.08em;text-transform:uppercase;}
+.ob-skip:hover{color:var(--text);text-decoration:underline;text-underline-offset:3px;}
+/* language step — paper chips */
+.ob-langs{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:4px;max-height:184px;overflow-y:auto;overscroll-behavior:contain;}/* v1.8 — capped at ~3.5 rows so a 10-language list can't push this step's
+   Continue button below the fold. Only bites once the list outgrows it, so
+   the six-language layout is unchanged; the half-row is the scroll cue. */
+.ob-lang{font-family:var(--font-display);font-size:15px;color:var(--text);background:var(--bg);border:1px solid var(--border2);border-radius:3px;padding:12px 12px;cursor:pointer;text-align:start;transition:border-color 0.15s,background 0.15s,transform 0.12s var(--ease-settle);-webkit-tap-highlight-color:transparent;}
+.ob-lang:hover{transform:translateY(-1px);}
+.ob-lang.on{border-color:var(--text);background:var(--surface2);box-shadow:inset 2px 0 0 var(--danger);}
+.ob-notif-box{position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:20px;margin-bottom:20px;text-align:center;}
+.ob-notif-icon{font-size:30px;margin-bottom:8px;}
+.ob-notif-title{font-family:var(--font-display);font-size:18px;font-weight:600;margin-bottom:8px;}
+.ob-notif-desc{font-size:13px;color:var(--muted);line-height:1.6;}
+@media(max-width:480px){.ob-card{padding:34px 20px 26px;background-position:15px 0,0 6px;}.ob-pad{padding-inline-start:10px;}.ob-card::before{width:92px;}}

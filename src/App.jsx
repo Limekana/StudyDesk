@@ -1,8 +1,8 @@
-import { useState, useReducer, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useReducer } from "react";
 import { useTranslation } from "react-i18next";
 import { setLanguage, SUPPORTED_LANGS, LANGUAGE_NAMES } from "./i18n/index.js";
 import { useScrollSelectedIntoView } from "./lib/useScrollSelectedIntoView.js";
-import { parseLocalDate, fmtDate, fmtDateFull, fmtTime, fmtToday } from "./lib/dates.js";
+import { parseLocalDate, toLocalISO, addDays, fmtDate, fmtDateFull, fmtToday } from "./lib/dates.js";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { App as CapApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
@@ -19,6 +19,15 @@ import SaveSessionSheet from "./features/sessions/SaveSessionSheet.jsx";
 import { avatarInitials } from "./lib/avatarInitials.js";
 import { isGradeMode, normalizeScale, DEFAULT_CUSTOM_SCALE } from "./lib/gradeScale.js";
 import CoursePicker from "./lib/CoursePicker.jsx";
+import { ASSIGN_TYPES, OTHER_ASSIGN_TYPE } from "./lib/assignTypes.js";
+import { DIFFICULTY_DAYS, DIFFICULTY_COLORS } from "./lib/examDifficulty.js";
+import { AddAsgnModal, AddExamModal, EditCourseModal } from "./features/plan/CourseModals.jsx";
+import TimerView from "./features/timer/TimerView.jsx";
+// Cascade order preserved from the old css+css2+css3+css4+cssOnboard concat.
+import './styles/base.css';
+import './styles/forms.css';
+import './styles/cards.css';
+import './styles/onboarding.css';
 import { COURSE_COLORS } from "./lib/courseColors.js";
 import { GuestAvatar } from "./lib/avatar.jsx";
 import StatsView from "./features/stats/StatsView.jsx";
@@ -33,13 +42,9 @@ const BUCKET_COLORS = {
   this_week: { bg: "#d4860a", text: "#fff" },
   later:     { bg: "#2e7d52", text: "#fff" },
 };
-const ASSIGN_TYPES = ["Essay","Problem Set","Lab","Reading","Exam","Project","Quiz","Other"];
 /** Sentinel preset that reveals the free-text label field (v1.8). Never stored
  *  as an assignment's type — the user's own label is stored instead. */
-const OTHER_ASSIGN_TYPE = "Other";
-const DIFFICULTY_DAYS   = { easy:3, medium:7, hard:14, brutal:21 };
 const DIFFICULTY_LABELS = { easy:"Easy", medium:"Medium", hard:"Hard", brutal:"Brutal" };
-const DIFFICULTY_COLORS = { easy:"#2e7d52", medium:"#d4860a", hard:"#c0392b", brutal:"#6d3fa0" };
 const POMO_PRESETS = { focus:25, short:5, long:15 };
 
 // Local midnight for "today", computed PER CALL — never frozen at module load.
@@ -55,13 +60,10 @@ function uid() { return Date.now().toString(36)+Math.random().toString(36).slice
 // study sessions). Browser-native, no extra dep.
 function newSyncId() { return crypto.randomUUID(); }
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-function toLocalISO(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function daysUntil(s){ if(!s) return null; return Math.round((parseLocalDate(s)-todayMidnight())/86400000); }
 function urgencyColor(d){ if(d===null) return "#aaa"; if(d<0) return "#c0392b"; if(d<=2) return "#c0392b"; if(d<=7) return "#d4860a"; return "#2e7d52"; }
 function urgencyLabel(d, t){ if(d===null||!t) return ""; if(d<0) return t('av.urgency.overdue',{n:Math.abs(d)}); if(d===0) return t('av.urgency.dueToday'); if(d===1) return t('av.urgency.dueTomorrow'); return t('av.urgency.daysLeft',{n:d}); }
-function addDays(s,n){ const d=parseLocalDate(s); d.setDate(d.getDate()+n); return toLocalISO(d); }
 function studyStartDate(e){ return addDays(e.dueDate,-DIFFICULTY_DAYS[e.difficulty||"medium"]); }
-function fmtMMSS(sec){ return String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0"); }
 
 // ── Notifications ─────────────────────────────────────────────────────────────
 // Action-type IDs for tap-action buttons. Registered once at app start via
@@ -190,45 +192,6 @@ const INITIAL = {
 // Direction: editorial / paper. A first-run wizard that feels like opening a
 // fresh notebook — ruled lines, a red margin rule, a taped top corner, Playfair
 // display ink, and a soft page-settle on each step.
-const cssOnboard = `
-.ob-wrap{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px 20px;background:var(--bg);overflow:hidden;}
-/* faint ruled-paper atmosphere behind the page */
-.ob-wrap::before{content:"";position:absolute;inset:0;background-image:repeating-linear-gradient(var(--bg),var(--bg) 31px,var(--border) 31px,var(--border) 32px);opacity:0.35;pointer-events:none;}
-.ob-card{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:40px 34px 32px;width:100%;max-width:440px;
-  box-shadow:0 1px 0 var(--border2),0 18px 40px -18px rgba(40,30,15,0.28);
-  /* notebook page: ruled lines + a red margin rule down the left */
-  background-image:linear-gradient(var(--danger) 0 0),repeating-linear-gradient(transparent,transparent 31px,color-mix(in srgb,var(--border) 70%,transparent) 31px,color-mix(in srgb,var(--border) 70%,transparent) 32px);
-  background-size:1.5px 100%,100% 100%;background-position:22px 0,0 6px;background-repeat:no-repeat,repeat;
-  animation:obSettle 0.5s var(--ease-settle) both;}
-/* a strip of "washi tape" pinning the page at the top */
-.ob-card::before{content:"";position:absolute;top:-11px;left:50%;transform:translateX(-50%) rotate(-1.4deg);width:104px;height:22px;background:color-mix(in srgb,var(--warning) 18%,#fff);border:1px solid color-mix(in srgb,var(--warning) 28%,transparent);box-shadow:0 1px 2px rgba(0,0,0,0.05);}
-@keyframes obSettle{from{opacity:0;transform:translateY(10px) rotate(-0.4deg);}to{opacity:1;transform:none;}}
-.ob-pad{padding-inline-start:18px;}            /* clear the red margin rule */
-.ob-wordmark{font-family:var(--font-display);font-size:30px;font-weight:600;text-align:center;letter-spacing:-0.01em;margin-bottom:4px;}
-.ob-tagline{font-family:var(--font-mono);font-size:10px;color:var(--muted);text-align:center;letter-spacing:0.16em;text-transform:uppercase;margin-bottom:26px;}
-/* progress as inked ticks with a step count */
-.ob-steps{display:flex;align-items:center;gap:7px;justify-content:center;margin-bottom:26px;}
-.ob-step-dot{width:24px;height:3px;border-radius:0;background:var(--border2);transition:background 0.3s var(--ease-paper),transform 0.3s var(--ease-paper);transform-origin:left;}
-.ob-step-dot.active{background:var(--text);transform:scaleX(1.18);}
-.ob-step-dot.done{background:var(--muted);}
-.ob-step-body{animation:obPage 0.4s var(--ease-page-turn) both;}
-@keyframes obPage{from{opacity:0;transform:translateX(8px);}to{opacity:1;transform:none;}}
-.ob-step-title{font-family:var(--font-display);font-size:23px;font-weight:600;line-height:1.18;margin-bottom:10px;}
-.ob-step-desc{font-size:13.5px;color:var(--muted);margin-bottom:22px;line-height:1.62;}
-.ob-skip{font-family:var(--font-mono);font-size:10px;color:var(--muted2);cursor:pointer;text-align:center;margin-top:16px;letter-spacing:0.08em;text-transform:uppercase;}
-.ob-skip:hover{color:var(--text);text-decoration:underline;text-underline-offset:3px;}
-/* language step — paper chips */
-.ob-langs{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:4px;max-height:184px;overflow-y:auto;overscroll-behavior:contain;}/* v1.8 — capped at ~3.5 rows so a 10-language list can't push this step's
-   Continue button below the fold. Only bites once the list outgrows it, so
-   the six-language layout is unchanged; the half-row is the scroll cue. */
-.ob-lang{font-family:var(--font-display);font-size:15px;color:var(--text);background:var(--bg);border:1px solid var(--border2);border-radius:3px;padding:12px 12px;cursor:pointer;text-align:start;transition:border-color 0.15s,background 0.15s,transform 0.12s var(--ease-settle);-webkit-tap-highlight-color:transparent;}
-.ob-lang:hover{transform:translateY(-1px);}
-.ob-lang.on{border-color:var(--text);background:var(--surface2);box-shadow:inset 2px 0 0 var(--danger);}
-.ob-notif-box{position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:20px;margin-bottom:20px;text-align:center;}
-.ob-notif-icon{font-size:30px;margin-bottom:8px;}
-.ob-notif-title{font-family:var(--font-display);font-size:18px;font-weight:600;margin-bottom:8px;}
-.ob-notif-desc{font-size:13px;color:var(--muted);line-height:1.6;}
-@media(max-width:480px){.ob-card{padding:34px 20px 26px;background-position:15px 0,0 6px;}.ob-pad{padding-inline-start:10px;}.ob-card::before{width:92px;}}`;
 
 function reducer(state, action) {
   switch(action.type) {
@@ -352,357 +315,9 @@ function reducer(state, action) {
 }
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
-const css = `
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-h1,h2,h3,h4,h5,h6{font-weight:inherit;font-size:inherit;}
-:root{--bg:#f5f2ed;--surface:#faf8f4;--surface2:#f0ece4;--border:#e0d9cf;--border2:#cfc8bc;--text:#1a1814;--muted:#6b6560;--muted2:#7a7570;--danger:#c0392b;--danger-bg:#fee;--danger-border:#fcc;--danger-on:#fff;--warning:#b5470b;--warning-bg:#fff4e6;--warning-border:#f0d4a0;--font-display:'Playfair Display',serif;--font-mono:'DM Mono',monospace;--font-sans:'DM Sans',sans-serif;--shadow:0 1px 3px rgba(0,0,0,0.08);--shadow-md:0 4px 12px rgba(0,0,0,0.08);--ease-paper:cubic-bezier(0.4,0,0.2,1);--ease-page-turn:cubic-bezier(0.3,0,0.2,1);--ease-settle:cubic-bezier(0.16,1,0.3,1);}
-html,body,#root{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-sans);overscroll-behavior:none;}
-/* Paper grain texture overlay */
-body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:0.035;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");background-repeat:repeat;background-size:128px 128px;}
-::selection{background:#d4c9b8;}
-::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
-*:focus-visible{outline:2px solid var(--text);outline-offset:2px;border-radius:2px;}
 
-/* ── Desktop layout ── */
-.app{display:flex;height:100vh;overflow:hidden;}
-.sidebar{width:240px;min-width:240px;background:var(--surface);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;transition:none;}
-.sidebar-header{padding:24px 20px 16px;border-bottom:1px solid var(--border);}
-.sidebar-logo-wrap{display:flex;align-items:center;gap:12px;}
-.sidebar-logo{width:40px;height:40px;border-radius:10px;flex-shrink:0;}
-.sidebar-wordmark{font-family:var(--font-display);font-size:20px;font-weight:600;}
-.sidebar-sub{font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:3px;letter-spacing:0.05em;}
-.sidebar-nav{padding:12px 0;border-bottom:1px solid var(--border);}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:13px;cursor:pointer;color:var(--muted);transition:all 0.1s;border-inline-start:2px solid transparent;}
-.nav-item:hover{color:var(--text);background:var(--surface2);}
-.nav-item.active{color:var(--text);border-left-color:var(--text);background:var(--surface2);}
-.sidebar-courses{flex:1;overflow-y:auto;padding:12px 0;}
-.courses-label{padding:4px 20px 8px;font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;color:var(--muted2);text-transform:uppercase;}
-.course-item{display:flex;align-items:center;gap:10px;padding:8px 20px;cursor:pointer;font-size:13px;transition:background 0.1s;border-inline-start:2px solid transparent;}
-.course-item:hover{background:var(--surface2);}
-.course-item.active{background:var(--surface2);border-left-color:var(--text);}
-.course-pip{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.course-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.course-count{font-family:var(--font-mono);font-size:10px;color:var(--muted2);}
-.course-edit-btn{opacity:0;font-size:13px;color:var(--muted);cursor:pointer;padding:0 2px;transition:opacity 0.1s,color 0.1s;line-height:1;}
-.course-item:hover .course-edit-btn{opacity:1;}
-.course-edit-btn:hover{color:var(--text);}
-.add-course-btn{display:flex;align-items:center;gap:8px;padding:8px 20px;color:var(--muted);font-size:12px;cursor:pointer;transition:color 0.1s;}
-.add-course-btn:hover{color:var(--text);}
-.main{flex:1;overflow-y:auto;display:flex;flex-direction:column;background:var(--bg);}
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 32px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:10;}
-.topbar-title{font-family:var(--font-display);font-size:22px;font-weight:500;}
-.topbar-avatar{width:36px;height:36px;min-width:36px;border-radius:50%;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-family:var(--font-display);font-size:14px;font-weight:600;letter-spacing:0.02em;cursor:pointer;display:flex;align-items:center;justify-content:center;text-transform:uppercase;transition:all 0.12s var(--ease-paper,ease);-webkit-tap-highlight-color:transparent;}
-.topbar-avatar:hover{border-color:var(--text);}
-.topbar-avatar.active{background:var(--text);color:var(--bg);border-color:var(--text);}
-.topbar-date{font-family:var(--font-mono);font-size:11px;color:var(--muted);}
-.content{padding:32px;flex:1;max-width:900px;width:100%;margin:0 auto;}
-@media(max-width:768px){
-  .content{padding:16px 14px;max-width:100%;margin:0;}
-}
 
-/* ── Mobile layout — fixed bottom tab bar ── */
-@media(max-width:768px){
-  .app{display:block;height:100dvh;overflow:hidden;position:relative;}
-  /* Hide entire sidebar on mobile — tab bar is fixed, not inside sidebar */
-  .sidebar{display:none;}
-  /* Main scrolls within remaining space above the fixed tab bar */
-  .main{height:100dvh;overflow-y:auto;padding-bottom:calc(64px + env(safe-area-inset-bottom));}
-  .topbar{padding:14px 16px 12px;position:sticky;top:0;z-index:10;}
-  .topbar-title{font-size:18px;}
-  .content{padding:16px 14px;max-width:100%;}
-  /* Fixed bottom tab bar — always at the bottom, never overlaps status bar */
-  .mobile-tabbar{
-    display:flex;
-    position:fixed;
-    bottom:0;
-    left:0;
-    right:0;
-    z-index:50;
-    background:var(--surface);
-    border-top:1px solid var(--border);
-    padding-bottom:env(safe-area-inset-bottom);
-  }
-  /* SD-F2 — the glyph row is gone; the label is the whole tab now.
-     min-height keeps the tap target at 52px, which removing an 18px icon plus
-     its 4px gap would otherwise have cut to ~36px. 11px monospace fits the
-     worst label the app ships, Spanish "Temporizador" at 12 characters, in
-     roughly 65px of the ~90px each of the four tabs gets on a 360px screen. */
-  .mobile-tab{flex:1;display:flex;align-items:center;justify-content:center;min-height:52px;padding:8px 4px;cursor:pointer;color:var(--muted);font-size:11px;font-family:var(--font-mono);letter-spacing:0.03em;text-align:center;line-height:1.25;border-top:2px solid transparent;transition:all 0.1s;-webkit-tap-highlight-color:transparent;}
-  .mobile-tab:active{background:var(--surface2);}
-  .mobile-tab.active{color:var(--text);border-top-color:var(--text);}
-  /* Course strip — fixed just above the tab bar */
-  .mobile-courses-bar{
-    display:flex;align-items:center;
-    position:fixed;
-    bottom:calc(64px + env(safe-area-inset-bottom));
-    left:0;right:0;
-    z-index:49;
-    background:var(--surface);
-    border-top:1px solid var(--border);
-    overflow:hidden;
-    transition:max-height 0.25s ease;
-    max-height:0;
-  }
-  .mobile-courses-bar.open{max-height:56px;}
-  .mobile-courses-scroll{display:flex;gap:6px;padding:10px 14px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex:1;}
-  .mobile-courses-scroll::-webkit-scrollbar{display:none;}
-  .mobile-course-chip{display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;white-space:nowrap;font-size:12px;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;}
-  .mobile-course-chip.active{border-color:var(--text);}
-  .mobile-course-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
-  .mobile-course-add{padding:6px 12px;background:transparent;border:1px dashed var(--border2);border-radius:20px;font-size:12px;color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0;}
-}
-@media(min-width:769px){
-  .mobile-tabbar,.mobile-courses-bar{display:none!important;}
-}
-`;
 
-const css2 = `
-/* ── Shared components ── */
-input[type=text],input[type=date],select,textarea{background:var(--surface);border:1px solid var(--border2);color:var(--text);padding:9px 12px;font-family:var(--font-sans);font-size:13px;border-radius:4px;outline:none;transition:border-color 0.15s;width:100%;}
-input[type=text]:focus,input[type=date]:focus,select:focus,textarea:focus{border-color:#aaa;}
-textarea{resize:vertical;min-height:80px;line-height:1.6;}select{cursor:pointer;}
-.input-group{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
-.input-label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;}
-.input-row{display:flex;gap:8px;align-items:flex-start;}
-.btn{background:#3d2e1e;color:#faf8f4;border:none;padding:9px 18px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:4px;transition:opacity 0.1s;white-space:nowrap;font-weight:500;}
-.btn:hover{opacity:0.8;}.btn-sm{padding:6px 12px;font-size:10px;}
-.btn-outline{background:transparent;color:var(--muted);border:1px solid var(--border2);padding:7px 14px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:4px;transition:all 0.1s;}
-.btn-outline:hover{color:var(--text);border-color:var(--text);}
-.btn-danger-text{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:16px;padding:2px 6px;transition:color 0.1s;}
-.btn-danger-text:hover{color:#c0392b;}
-.btn-red{background:#c0392b;color:#fff;border:none;padding:8px 16px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:4px;transition:opacity 0.1s;}
-.btn-red:hover{opacity:0.85;}
-.section-label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:10px;}
-.section-label::after{content:'';flex:1;height:1px;background:var(--border);}
-.asgn-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:5px;margin-bottom:8px;box-shadow:var(--shadow);}
-.asgn-item.done{opacity:0.45;}
-.asgn-check{width:17px;height:17px;border:1.5px solid var(--border2);border-radius:3px;flex-shrink:0;margin-top:2px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
-.asgn-check:hover{border-color:var(--text);}
-.asgn-check.checked{background:var(--text);border-color:var(--text);}
-.asgn-check.checked::after{content:'';display:block;width:4px;height:7px;border:2px solid var(--bg);border-top:none;border-left:none;transform:rotate(45deg) translate(-1px,-1px);}
-.asgn-body{flex:1;min-width:0;}
-.asgn-title{font-size:14px;font-weight:500;margin-bottom:4px;}
-.asgn-title.done{text-decoration:line-through;color:var(--muted);}
-.asgn-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-.asgn-course{font-family:var(--font-mono);font-size:10px;font-weight:500;padding:2px 7px;border-radius:20px;}
-.asgn-type{font-family:var(--font-mono);font-size:10px;color:var(--muted);}
-.asgn-due{font-family:var(--font-mono);font-size:10px;font-weight:500;}
-.asgn-notes{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.5;}
-.tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-family:var(--font-mono);font-size:10px;font-weight:500;}
-.tag-exam{background:rgba(109,63,160,0.12);color:#6d3fa0;}
-.action-item{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;background:var(--surface);border:1px solid var(--border);border-radius:5px;margin-bottom:6px;box-shadow:var(--shadow);}
-.action-item.done{opacity:0.4;}
-.action-item.suggested{border-style:dashed;background:rgba(26,92,158,0.04);}
-.action-text{flex:1;font-size:13px;line-height:1.5;}
-.action-text.done{text-decoration:line-through;color:var(--muted);}
-.bucket-section{margin-bottom:24px;}
-.bucket-header{font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:10px;}
-.bucket-header::after{content:'';flex:1;height:1px;background:var(--border);}
-.bucket-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
-.modal-overlay{position:fixed;inset:0;background:rgba(26,24,20,0.32);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeOverlay 200ms var(--ease-paper);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);}
-.modal{background:rgba(250,248,244,0.82);backdrop-filter:blur(16px) saturate(1.05);-webkit-backdrop-filter:blur(16px) saturate(1.05);border:1px solid var(--border);border-top:1px solid rgba(250,248,244,0.95);border-radius:8px;padding:28px;width:500px;max-width:94vw;max-height:90vh;overflow-y:auto;box-shadow:0 12px 36px rgba(26,24,20,0.18),0 1px 0 rgba(255,255,255,0.7) inset;animation:slideModal 280ms var(--ease-settle);}
-@keyframes fadeOverlay{from{opacity:0;}to{opacity:1;}}
-@keyframes slideModal{from{opacity:0;transform:translateY(10px) scale(0.98);}to{opacity:1;transform:translateY(0) scale(1);}}
-@keyframes page-turn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
-.page-turn{animation:page-turn 160ms var(--ease-page-turn);}
-.timer-subtabs{display:flex;gap:0;border:1px solid var(--border2);border-radius:6px;overflow:hidden;max-width:340px;margin:16px auto 4px;}
-.timer-subtab{flex:1;background:transparent;border:none;padding:8px 10px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;color:var(--muted);transition:all 0.1s;border-inline-end:1px solid var(--border2);}
-.timer-subtab:last-child{border-inline-end:none;}
-.timer-subtab.active{background:var(--text);color:var(--bg);}
-.modal-title{font-family:var(--font-display);font-size:18px;margin-bottom:20px;}
-.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.urgent-banner{background:rgba(192,57,43,0.08);border:1px solid rgba(192,57,43,0.25);border-radius:5px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px;font-size:13px;}
-.urgent-banner strong{color:#c0392b;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;}
-.empty{color:var(--muted2);font-family:var(--font-mono);font-size:11px;padding:20px 0;}
-.divider{height:1px;background:var(--border);margin:24px 0;}
-/* v1.8 RTL — Unicode arrows are bidi-neutral and are NOT mirrored by the
-   layout engine, so a "next" arrow keeps pointing right in RTL and reads as
-   "back". Mirror them explicitly, and flip the disclosure chevron with them.
-   Applied by class so flat-trend arrows (→ meaning "unchanged") stay put. */
-[dir="rtl"] .rtl-mirror{display:inline-block;transform:scaleX(-1);}
-[dir="rtl"] .course-card-chevron{transform:scaleX(-1);}
-[dir="rtl"] .course-card-chevron.open{transform:scaleX(-1) rotate(-90deg);}
-.flash{position:fixed;bottom:24px;inset-inline-end:24px;background:var(--text);color:var(--bg);padding:10px 18px;font-family:var(--font-mono);font-size:11px;border-radius:4px;animation:fadeup 0.2s ease;z-index:200;}
-@keyframes fadeup{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
-@media(max-width:768px){
-  .flash{bottom:calc(72px + env(safe-area-inset-bottom));inset-inline-end:14px;}
-  .modal-grid{grid-template-columns:1fr;}
-  .input-row{flex-direction:column;align-items:stretch;}
-  .btn,.btn-outline{text-align:center;}
-}
-`;
-
-const css3 = `
-/* ── Home course cards ── */
-.home-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:28px;}
-.course-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:var(--shadow);border-inline-start:3px solid transparent;overflow:hidden;}
-.course-card-compact{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;transition:background 0.1s;user-select:none;}
-.course-card-compact:hover{background:var(--surface2);}
-.course-card-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
-.course-card-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.course-card-pills{display:flex;gap:5px;flex-shrink:0;}
-.course-card-pill{font-family:var(--font-mono);font-size:9px;padding:2px 7px;border-radius:20px;background:var(--surface2);color:var(--muted);border:1px solid var(--border);}
-.course-card-pill.urgent{background:rgba(192,57,43,0.1);color:#c0392b;border-color:rgba(192,57,43,0.2);}
-.course-card-chevron{font-size:10px;color:var(--muted2);transition:transform 0.2s;flex-shrink:0;margin-inline-start:6px;}
-.course-card-chevron.open{transform:rotate(90deg);}
-.course-card-detail{border-top:1px solid var(--border);padding:12px 16px 14px;background:var(--surface2);}
-.course-card-next{font-size:12px;color:var(--muted);line-height:1.7;}
-.course-card-actions{display:flex;gap:8px;margin-top:10px;}
-
-/* ── Exam cards ── */
-.exam-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;margin-bottom:12px;box-shadow:var(--shadow);border-inline-start:4px solid transparent;overflow:hidden;}
-.exam-card.done{opacity:0.5;}
-.exam-card-header{display:flex;align-items:flex-start;gap:12px;padding:16px 18px;cursor:pointer;user-select:none;}
-.exam-card-header:hover{background:rgba(0,0,0,0.018);}
-.exam-card-header-info{flex:1;min-width:0;}
-.exam-card-title{font-size:15px;font-weight:600;margin-bottom:6px;}
-.exam-card-title.done{text-decoration:line-through;color:var(--muted);}
-.exam-card-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.exam-card-body{padding:0 18px 18px;border-top:1px solid var(--border);}
-.exam-card-notes{font-size:12px;color:var(--muted);line-height:1.5;padding-top:12px;margin-bottom:10px;}
-.exam-header-progress{display:flex;align-items:center;gap:8px;margin-top:7px;}
-.exam-header-progress-track{flex:1;height:4px;background:var(--border);border-radius:99px;overflow:hidden;max-width:120px;}
-.exam-header-progress-fill{height:100%;border-radius:99px;transition:width 0.3s;}
-.exam-header-progress-txt{font-family:var(--font-mono);font-size:10px;color:var(--muted2);white-space:nowrap;}
-.study-plan-bar{background:var(--surface2);border-radius:4px;padding:10px 12px;margin:12px 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.study-plan-label{font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.05em;}
-.study-plan-date{font-family:var(--font-mono);font-size:11px;font-weight:500;}
-.difficulty-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-family:var(--font-mono);font-size:10px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all 0.1s;}
-.topics-section{padding-top:8px;}
-.topics-section-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
-.topics-section-label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;color:var(--muted);text-transform:uppercase;white-space:nowrap;}
-.topics-big-progress-wrap{flex:1;height:6px;background:var(--border);border-radius:99px;overflow:hidden;}
-.topics-big-progress-bar{height:100%;border-radius:99px;transition:width 0.35s;}
-.topics-big-progress-txt{font-family:var(--font-mono);font-size:11px;color:var(--muted);white-space:nowrap;}
-.topic-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:5px;margin-bottom:4px;cursor:pointer;transition:background 0.1s;}
-.topic-item:hover{background:var(--surface2);}
-.topic-check{width:20px;height:20px;border:2px solid var(--border2);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
-.topic-check:hover{border-color:var(--text);}
-.topic-check.checked{background:var(--text);border-color:var(--text);}
-.topic-check.checked::after{content:'';display:block;width:5px;height:8px;border:2px solid var(--bg);border-top:none;border-left:none;transform:rotate(45deg) translate(-1px,-1px);}
-.topic-title{font-size:14px;flex:1;line-height:1.4;}
-.topic-title.done{text-decoration:line-through;color:var(--muted2);}
-.topic-del{opacity:0;background:none;border:none;color:var(--muted2);cursor:pointer;font-size:16px;padding:0 4px;transition:opacity 0.1s,color 0.1s;}
-.topic-item:hover .topic-del{opacity:1;}
-.topic-del:hover{color:#c0392b;}
-.topics-empty{font-family:var(--font-mono);font-size:11px;color:var(--muted2);padding:14px 12px;text-align:center;border:1px dashed var(--border);border-radius:5px;margin-bottom:12px;}
-.topic-add-row{display:flex;gap:6px;margin-top:6px;}
-.topic-add-row input{font-size:13px;padding:9px 12px;}
-.topic-add-btn{background:var(--text);color:var(--bg);border:none;padding:9px 16px;font-family:var(--font-mono);font-size:10px;border-radius:4px;cursor:pointer;white-space:nowrap;transition:opacity 0.1s;}
-.topic-add-btn:hover{opacity:0.8;}
-
-/* ── Calendar — desktop grid, mobile agenda ── */
-.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:24px;}
-.cal-header{font-family:var(--font-mono);font-size:10px;color:var(--muted);text-align:center;padding:4px 0;letter-spacing:0.05em;}
-.cal-day{min-height:64px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:4px 6px;}
-.cal-day.today{border-color:var(--text);}
-.cal-day.other-month{opacity:0.35;}
-.cal-day-num{font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-bottom:3px;}
-.cal-day.today .cal-day-num{color:var(--text);font-weight:600;}
-.cal-event{font-size:9px;padding:2px 5px;border-radius:3px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--font-mono);font-weight:500;}
-.cal-exam{background:rgba(109,63,160,0.15);color:#6d3fa0;}
-.cal-study{background:rgba(26,92,158,0.12);color:#1a5c9e;}
-/* Mobile agenda replaces grid */
-.cal-agenda{display:none;}
-.cal-agenda-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);}
-.cal-agenda-date{font-family:var(--font-mono);font-size:11px;color:var(--muted);width:54px;flex-shrink:0;padding-top:2px;}
-.cal-agenda-pills{display:flex;flex-direction:column;gap:5px;flex:1;}
-.cal-agenda-pill{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:4px;font-size:12px;}
-@media(max-width:600px){
-  .calendar-grid,.cal-header-row{display:none!important;}
-  .cal-agenda{display:block;}
-}
-
-.nextup-unlock{display:flex;gap:16px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:24px;margin-bottom:24px;box-shadow:var(--shadow);}
-.nextup-unlock-icon{font-size:28px;color:var(--border2);flex-shrink:0;margin-top:2px;}
-.nextup-unlock-body{flex:1;}
-.nextup-unlock-title{font-family:var(--font-display);font-size:17px;font-weight:500;color:var(--text);margin-bottom:8px;line-height:1.35;}
-.nextup-unlock-sub{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:16px;}
-.nextup-unlock-progress{display:flex;align-items:center;gap:8px;margin-bottom:16px;}
-.nextup-unlock-pip{width:32px;height:6px;border-radius:3px;background:var(--border2);transition:background 0.25s;}
-.nextup-unlock-pip.filled{background:#2e7d52;}
-.nextup-unlock-progress-label{font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-inline-start:4px;}
-.suggest-banner{background:rgba(26,92,158,0.06);border:1px dashed rgba(26,92,158,0.3);border-radius:5px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;font-size:13px;flex-wrap:wrap;}
-.suggest-banner-label{font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;color:#1a5c9e;margin-inline-end:4px;}
-.quick-add-box{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px;margin-bottom:24px;box-shadow:var(--shadow);}
-@media(max-width:768px){
-  .home-grid{grid-template-columns:1fr;}
-  .quick-add-box .input-row{flex-direction:row;}
-  .quick-add-box .input-row select{max-width:110px;}
-  .study-plan-bar{flex-direction:column;align-items:flex-start;gap:6px;}
-  .topic-item{padding:12px 10px;}
-}
-`;
-
-const css4 = `
-/* ── Pomodoro Timer ── */
-.pomo-time{font-family:var(--font-display);font-size:48px;font-weight:500;letter-spacing:-0.02em;line-height:1;}
-.pomo-phase{font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);}
-.pomo-controls{display:flex;gap:12px;margin-bottom:28px;align-items:center;}
-.pomo-btn-main{background:var(--text);color:var(--bg);border:none;width:56px;height:56px;border-radius:50%;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity 0.1s;box-shadow:var(--shadow-md);}
-.pomo-btn-main:hover{opacity:0.8;}
-.pomo-btn-sec{background:transparent;color:var(--muted);border:1px solid var(--border2);width:40px;height:40px;border-radius:50%;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.1s;align-self:center;}
-.pomo-btn-sec:hover{color:var(--text);border-color:var(--text);}
-.pomo-segments{display:flex;gap:6px;margin-bottom:28px;}
-.pomo-seg{width:10px;height:10px;border-radius:50%;background:var(--border);transition:background 0.3s;}
-.pomo-seg.done{background:var(--text);}
-.pomo-seg.current{background:var(--muted);}
-.pomo-presets{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:28px;}
-.pomo-preset-btn{font-family:var(--font-mono);font-size:10px;padding:6px 14px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all 0.1s;letter-spacing:0.05em;}
-.pomo-preset-btn.active{background:var(--text);color:var(--bg);border-color:var(--text);}
-.pomo-task-row{width:100%;max-width:380px;display:flex;flex-direction:column;gap:8px;}
-.pomo-task-label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;}
-.pomo-session-log{width:100%;max-width:380px;margin-top:24px;}
-.pomo-log-entry{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);}
-.pomo-log-badge{font-family:var(--font-mono);font-size:9px;padding:2px 8px;border-radius:20px;background:var(--surface2);border:1px solid var(--border);white-space:nowrap;}
-.pomo-ring-wrap{position:relative;width:220px;height:220px;margin:0 auto 28px auto;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
-.pomo-ring-svg{position:absolute;top:0;left:0;width:100%;height:100%;}
-.pomo-ring-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;pointer-events:none;width:100%;}
-@media(max-width:480px){
-  .pomo-ring-wrap{width:200px;height:200px;}
-}
-/* ── Paused-state ring ── */
-.pomo-btn-main{position:relative;}
-.pomo-btn-main.paused::after{content:'';position:absolute;inset:-7px;border-radius:50%;border:2px dashed var(--text);opacity:0.28;animation:pomo-spin-ring 10s linear infinite;}
-@keyframes pomo-spin-ring{to{transform:rotate(360deg);}}
-/* ── Timer-complete animation ── */
-.pomo-ring-done{animation:ring-pulse 0.8s ease;}
-@keyframes ring-pulse{0%{transform:scale(1);}45%{transform:scale(1.05);}100%{transform:scale(1);}}
-.pomo-time-flash{animation:time-flash 0.7s ease;}
-@keyframes time-flash{0%{opacity:1;}35%{opacity:0.2;}100%{opacity:1;}}
-
-/* ── Lock In: entry button on the regular timer ── */
-.lockin-enter{margin-top:18px;background:#1a1814;color:#faf8f4;border:1px solid #1a1814;padding:10px 22px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;border-radius:99px;transition:transform 0.1s,opacity 0.1s;}
-.lockin-enter:hover{opacity:0.85;transform:scale(1.02);}
-.lockin-enter:active{transform:scale(0.98);}
-
-/* ── Lock In takeover (full-screen, dark, distraction-stripped) ── */
-.lockin-wrap{position:fixed;inset:0;z-index:50;background:radial-gradient(ellipse at center, #1f1c17 0%, #0e0c09 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:40px 20px;color:#faf8f4;animation:lockin-fade 0.3s ease;}
-@keyframes lockin-fade{from{opacity:0;}to{opacity:1;}}
-.lockin-top{position:absolute;top:32px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;}
-.lockin-badge{font-family:var(--font-mono);font-size:10px;letter-spacing:0.35em;color:rgba(250,248,244,0.45);}
-.lockin-task{font-family:var(--font-display);font-size:18px;color:rgba(250,248,244,0.85);max-width:80vw;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.lockin-ring{width:260px;height:260px;margin:0;}
-.lockin-ring .pomo-time{font-size:56px;letter-spacing:-0.02em;}
-.lockin-task-input{background:transparent;border:none;border-bottom:1px solid rgba(250,248,244,0.15);color:#faf8f4;padding:10px 4px;font-family:var(--font-display);font-size:17px;text-align:center;width:min(360px,80vw);outline:none;transition:border-color 0.15s;}
-.lockin-task-input:focus{border-bottom-color:rgba(250,248,244,0.45);}
-.lockin-task-input::placeholder{color:rgba(250,248,244,0.3);}
-.lockin-controls{display:flex;justify-content:center;}
-.lockin-btn-main{background:#faf8f4;color:#1a1814;border:none;width:72px;height:72px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.1s,opacity 0.1s;box-shadow:0 4px 24px rgba(0,0,0,0.5);}
-.lockin-btn-main:hover{opacity:0.9;transform:scale(1.04);}
-.lockin-btn-main:active{transform:scale(0.96);}
-.lockin-presets{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
-.lockin-preset{background:transparent;color:rgba(250,248,244,0.5);border:1px solid rgba(250,248,244,0.2);padding:6px 14px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;border-radius:99px;cursor:pointer;transition:all 0.1s;}
-.lockin-preset.active{background:rgba(250,248,244,0.12);color:#faf8f4;border-color:rgba(250,248,244,0.4);}
-.lockin-preset:disabled{opacity:0.3;cursor:not-allowed;}
-.lockin-exit{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);background:transparent;border:1px solid rgba(250,248,244,0.18);color:rgba(250,248,244,0.55);padding:9px 22px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;cursor:pointer;border-radius:99px;transition:all 0.15s;}
-.lockin-exit:hover{color:#faf8f4;border-color:rgba(250,248,244,0.45);}
-
-/* While locked in, hide the desktop sidebar and mobile tab bar so nothing pulls focus */
-body.locked-in .sidebar,body.locked-in .mobile-tabbar,body.locked-in .topbar{display:none !important;}
-body.locked-in .main{padding:0;}
-body.locked-in .content{padding:0;max-width:none;}
-`;
 
 // ── Root App ──────────────────────────────────────────────────────────────────
 export default function App() {
@@ -1187,17 +802,17 @@ export default function App() {
   // Auth gate: show login UI until Supabase confirms a session.
   // (session === undefined while the initial getSession() call is in flight.)
   if (session === undefined) {
-    return <><style>{css+css2+css3+css4+cssOnboard}</style><div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",letterSpacing:"0.1em"}}>{t('av.chrome.loading')}</div></>;
+    return <><div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",letterSpacing:"0.1em"}}>{t('av.chrome.loading')}</div></>;
   }
   // v1.1 — bypass AuthGate when the user opted into guest mode. The rest of
   // the app runs identically; cloud sync remains gated on `session` which is
   // still null, so realtime stays off and outbox enqueue calls are no-ops.
   if (session === null && !guest) {
-    return <><style>{css+css2+css3+css4+cssOnboard}</style><AuthGate/></>;
+    return <><AuthGate/></>;
   }
 
   return (<>
-    <style>{css+css2+css3+css4+cssOnboard}</style>
+    
     {!onboarded && <OnboardingView onComplete={handleOnboardingComplete}/>}
     {onboarded && (
       <div className="app">
@@ -1461,359 +1076,6 @@ function OnboardingView({ onComplete }) {
   return null;
 }
 
-// ── Pomodoro Timer ────────────────────────────────────────────────────────────
-// Module scope so the hooks below can close over them without the exhaustive-deps
-// rule flagging them — they are literal constants, but declared inside the
-// component the rule cannot prove they are stable across renders.
-const FOCUS_SECS = 25*60, SHORT_SECS = 5*60, LONG_SECS = 15*60;
-
-function TimerView({ state, onTimerComplete }) {
-  const { t } = useTranslation();
-
-  // Restore persisted timer state from localStorage so tab-switching doesn't reset
-  const _saved = (() => { try { return JSON.parse(localStorage.getItem('sd-timer')||'{}'); } catch { return {}; } })();
-
-  const [customFocus, setCustomFocus] = useState(_saved.customFocus||25);
-  const [phase, setPhase] = useState(_saved.phase||"focus"); // focus | short | long
-  // If timer was running when user left, compute corrected secsLeft
-  const _initSecs = (() => {
-    if (_saved.running && _saved.startedAt && _saved.secsAtStart) {
-      const elapsed = Math.floor((Date.now() - _saved.startedAt) / 1000);
-      const corrected = _saved.secsAtStart - elapsed;
-      return corrected > 0 ? corrected : 0;
-    }
-    return _saved.secsLeft || FOCUS_SECS;
-  })();
-  const [secsLeft, setSecsLeft] = useState(_initSecs);
-  // If timer ran out while away, don't auto-resume
-  const [running, setRunning] = useState(_saved.running && _initSecs > 0 ? true : false);
-  const [session, setSession] = useState(_saved.session||0); // 0-3, cycles every 4
-  const [focusDone, setFocusDone] = useState(_saved.focusDone||0); // total focus sessions today
-  const [task, setTask] = useState(_saved.task||"");
-  const [timerDone, setTimerDone] = useState(false);
-  // Lock In: a no-break, no-nav, no-distraction focus mode. Persists
-  // across tab switches so coming back to Timer keeps you in flow.
-  const [lockedIn, setLockedIn] = useState(_saved.lockedIn || false);
-  // Track when the current focus phase started, so SaveSessionSheet
-  // can write an accurate `started_at` timestamp to Supabase.
-  const phaseStartedAtRef = useRef(_saved.phaseStartedAt || null);
-  const intervalRef = useRef(null);
-  const phaseRef = useRef(phase);
-  const sessionRef = useRef(session);
-  const focusDoneRef = useRef(focusDone);
-  const taskRef = useRef(task);
-  const customFocusRef = useRef(customFocus);
-  useEffect(()=>{ phaseRef.current=phase; },[phase]);
-  useEffect(()=>{ sessionRef.current=session; },[session]);
-  useEffect(()=>{ focusDoneRef.current=focusDone; },[focusDone]);
-  useEffect(()=>{ taskRef.current=task; },[task]);
-  useEffect(()=>{ customFocusRef.current=customFocus; },[customFocus]);
-
-  // Persist timer state to localStorage so tab-switching preserves it
-  useEffect(() => {
-    try {
-      localStorage.setItem('sd-timer', JSON.stringify({
-        customFocus, phase, secsLeft, running, session, focusDone, task, lockedIn,
-        startedAt: startedAtRef.current,
-        secsAtStart: secsAtStartRef.current,
-        phaseStartedAt: phaseStartedAtRef.current,
-      }));
-    } catch {}
-  }, [customFocus, phase, secsLeft, running, session, focusDone, task, lockedIn]);
-
-  // Background-safe elapsed tracking refs
-  const startedAtRef = useRef(null);
-  const secsAtStartRef = useRef(null);
-
-  // Vibration + beep on phase end
-  const fireCompletionAlert = useCallback(() => {
-    if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const beep = (freq, start, dur) => {
-        const osc = ctx.createOscillator(); const gain = ctx.createGain();
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.frequency.value = freq; osc.type = 'sine';
-        gain.gain.setValueAtTime(0.35, ctx.currentTime + start);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
-        osc.start(ctx.currentTime + start); osc.stop(ctx.currentTime + start + dur + 0.05);
-      };
-      beep(880, 0, 0.18); beep(880, 0.25, 0.18); beep(1100, 0.5, 0.35);
-    } catch {}
-  }, []);
-
-  const lockedInRef = useRef(lockedIn);
-  useEffect(()=>{ lockedInRef.current = lockedIn; }, [lockedIn]);
-
-  const handlePhaseEnd = useCallback(() => {
-    clearInterval(intervalRef.current);
-    startedAtRef.current = null;
-    setRunning(false);
-    setTimerDone(true);
-    setTimeout(()=>setTimerDone(false), 1500);
-    fireCompletionAlert();
-    const p=phaseRef.current, sess=sessionRef.current, fd=focusDoneRef.current, cf=customFocusRef.current;
-    if (p==='focus') {
-      setFocusDone(fd+1);
-      // Raise the SaveSessionSheet — user explicitly opts in to logging.
-      const startedAtIso = phaseStartedAtRef.current
-        ? new Date(phaseStartedAtRef.current).toISOString()
-        : new Date(Date.now() - cf*60*1000).toISOString();
-      onTimerComplete?.({
-        durationMinutes: cf,
-        task: taskRef.current,
-        startedAt: startedAtIso,
-      });
-      phaseStartedAtRef.current = null;
-      // Lock In skips break cycling — stays on focus, ready for the next block.
-      // Regular Pomodoro cycles short / long breaks every 4 focus sessions.
-      if (lockedInRef.current) {
-        setPhase('focus');
-        setSecsLeft(cf*60);
-      } else {
-        const nextSession=(sess+1)%4;
-        setSession(nextSession);
-        const nextPhase=nextSession===0?'long':'short';
-        setPhase(nextPhase);
-        setSecsLeft(nextPhase==='long'?LONG_SECS:SHORT_SECS);
-      }
-    } else {
-      setPhase('focus');
-      setSecsLeft(cf*60);
-    }
-  }, [fireCompletionAlert, onTimerComplete]);
-
-  const tick = useCallback(() => {
-    setSecsLeft(s => { if (s <= 1) { handlePhaseEnd(); return 0; } return s - 1; });
-  }, [handlePhaseEnd]);
-
-  // Background correction: recalculate elapsed on app resume
-  useEffect(() => {
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible' && running && startedAtRef.current !== null) {
-        const elapsed = Math.floor((Date.now() - startedAtRef.current) / 1000);
-        const corrected = (secsAtStartRef.current || 0) - elapsed;
-        if (corrected <= 0) { handlePhaseEnd(); }
-        else {
-          setSecsLeft(corrected);
-          startedAtRef.current = Date.now();
-          secsAtStartRef.current = corrected;
-        }
-      }
-    };
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => document.removeEventListener('visibilitychange', onVisibility);
-  }, [running, handlePhaseEnd]);
-
-  const courses = Object.values(state.courses).filter(c => !c.deletedAt);
-  const totalSecs = phase==="focus" ? customFocus*60 : phase==="short" ? SHORT_SECS : LONG_SECS;
-  const pct = secsLeft / totalSecs;
-  const R = 100, CIRC = 2*Math.PI*R;
-  const phaseColor = phase==="focus" ? "#1a1814" : phase==="short" ? "#2e7d52" : "#1a5c9e";
-
-  useEffect(() => {
-    if (running) {
-      startedAtRef.current = Date.now();
-      secsAtStartRef.current = secsLeft;
-      // The actual 1s tick — without this the timer doesn't advance.
-      intervalRef.current = setInterval(tick, 1000);
-      // Capture the phase start so onTimerComplete can report an accurate started_at.
-      // For focus phases, only set this if we're actually beginning a fresh phase
-      // (not resuming from a pause mid-phase). Approximation: if secsLeft equals
-      // the full duration, treat as a fresh start.
-      if (phaseRef.current === 'focus' && secsLeft === customFocusRef.current*60) {
-        phaseStartedAtRef.current = Date.now();
-      } else if (phaseRef.current === 'focus' && phaseStartedAtRef.current == null) {
-        // Resuming a paused focus that never had a start recorded — back-compute.
-        phaseStartedAtRef.current = Date.now() - (customFocusRef.current*60 - secsLeft) * 1000;
-      }
-    } else {
-      clearInterval(intervalRef.current);
-      startedAtRef.current = null;
-    }
-    return () => clearInterval(intervalRef.current);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running, tick]);
-
-  const toggle = () => setRunning(r=>!r);
-  const reset = () => { setRunning(false); setSecsLeft(phase==="focus"?customFocus*60:phase==="short"?SHORT_SECS:LONG_SECS); };
-  const skip = () => {
-    setRunning(false);
-    if (phase==="focus") { const np=(session+1)%4===0?"long":"short"; setPhase(np); setSecsLeft(np==="long"?LONG_SECS:SHORT_SECS); setSession(s=>(s+1)%4); }
-    else { setPhase("focus"); setSecsLeft(customFocus*60); }
-  };
-  const changeCustom = (v) => { if(!running){ setCustomFocus(v); if(phase==="focus") setSecsLeft(v*60); } };
-
-  // Toggle Lock In: force a clean focus phase, hide nav, no breaks.
-  // Exiting Lock In stops the timer cleanly so the user explicitly chooses
-  // whether to keep going in regular mode.
-  const toggleLockIn = () => {
-    setLockedIn(li => {
-      const next = !li;
-      if (next) {
-        // Entering Lock In — reset to a fresh focus block at current custom duration.
-        setPhase("focus");
-        setSecsLeft(customFocus * 60);
-        setSession(0);
-      } else {
-        // Exiting Lock In — stop and let the user reorient.
-        setRunning(false);
-      }
-      return next;
-    });
-  };
-
-  // While locked in we add a body class so the bottom mobile tab bar and
-  // desktop sidebar can hide via CSS. Cleans up on unmount / toggle-off.
-  useEffect(() => {
-    if (lockedIn) document.body.classList.add('locked-in');
-    else document.body.classList.remove('locked-in');
-    return () => document.body.classList.remove('locked-in');
-  }, [lockedIn]);
-
-  // ── Lock In takeover view ───────────────────────────────────────────────
-  if (lockedIn) {
-    return <div className="lockin-wrap">
-      <div className="lockin-top">
-        <span className="lockin-badge">{t('av.tm.lockIn')}</span>
-        <span className="lockin-task">{task || t('av.tm.deepFocus')}</span>
-      </div>
-      <div className={"pomo-ring-wrap lockin-ring"+(timerDone?" pomo-ring-done":"")}>
-        <svg className="pomo-ring-svg" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="110" cy="110" r={R} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="6"/>
-          <circle cx="110" cy="110" r={R} fill="none"
-            stroke="#faf8f4" strokeWidth="6" strokeLinecap="round"
-            strokeDasharray={CIRC}
-            strokeDashoffset={CIRC*(1-pct)}
-            transform="rotate(-90 110 110)"/>
-        </svg>
-        <div className="pomo-ring-label">
-          <div className={"pomo-time"+(timerDone?" pomo-time-flash":"")} style={{color:"#faf8f4"}}>{fmtMMSS(secsLeft)}</div>
-          <div className="pomo-phase" style={{color:"rgba(250,248,244,0.5)"}}>{t('av.tm.focusDone',{n:focusDone})}</div>
-        </div>
-      </div>
-      <input
-        type="text"
-        className="lockin-task-input"
-        placeholder={t('av.tm.lockPlaceholder')}
-        value={task}
-        onChange={e=>setTask(e.target.value)}
-      />
-      <div className="lockin-controls">
-        <button className="lockin-btn-main" onClick={toggle} aria-label={running?t('av.tm.pause'):t('av.tm.start')}>
-          {running
-            ? <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><rect x="5" y="4" width="4" height="16" rx="1"/><rect x="15" y="4" width="4" height="16" rx="1"/></svg>
-            : <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><polygon points="6,3 20,12 6,21"/></svg>
-          }
-        </button>
-      </div>
-      <div className="lockin-presets">
-        {[25,45,60,90].map(m=><button key={m} className={"lockin-preset"+(customFocus===m?" active":"")} onClick={()=>changeCustom(m)} disabled={running}>{m}m</button>)}
-      </div>
-      <button className="lockin-exit" onClick={toggleLockIn}>{t('av.tm.endSession')}</button>
-    </div>;
-  }
-
-  return <div style={{display:"flex",flexDirection:"column",alignItems:"center",paddingTop:24,paddingBottom:32}}>
-    <div className={"pomo-ring-wrap"+(timerDone?" pomo-ring-done":"")}>
-      <svg className="pomo-ring-svg" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="110" cy="110" r={R} fill="none" stroke="var(--border)" strokeWidth="8"/>
-        <circle cx="110" cy="110" r={R} fill="none"
-          stroke={phaseColor} strokeWidth="8" strokeLinecap="round"
-          strokeDasharray={CIRC}
-          strokeDashoffset={CIRC*(1-pct)}
-          transform="rotate(-90 110 110)"/>
-      </svg>
-      <div className="pomo-ring-label">
-        <div className={"pomo-time"+(timerDone?" pomo-time-flash":"")} style={{color:phaseColor}}>{fmtMMSS(secsLeft)}</div>
-        <div className="pomo-phase">{phase==="focus"?t('av.tm.focus'):phase==="short"?t('av.tm.shortBreak'):t('av.tm.longBreak')}</div>
-      </div>
-    </div>
-    <div className="pomo-segments">
-      {[0,1,2,3].map(i=><div key={i} className={"pomo-seg"+(i<focusDone%4?"done":i===session&&phase==="focus"?"current":"")}/>)}
-    </div>
-    <div className="pomo-controls">
-      <button className="pomo-btn-sec" onClick={reset} title={t('av.tm.reset')}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3.3-6.7"/><polyline points="3 3 3 8 8 8"/></svg>
-      </button>
-      <button className={"pomo-btn-main"+(!running && secsLeft < totalSecs?" paused":"")} onClick={toggle}>
-        {running
-          ? <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20" aria-hidden="true"><rect x="5" y="4" width="4" height="16" rx="1"/><rect x="15" y="4" width="4" height="16" rx="1"/></svg>
-          : <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20" aria-hidden="true"><polygon points="6,3 20,12 6,21"/></svg>
-        }
-      </button>
-      <button className="pomo-btn-sec" onClick={skip} title={t('av.tm.skip')}>
-        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" aria-hidden="true"><polygon points="5,4 15,12 5,20"/><rect x="17" y="4" width="3" height="16" rx="1"/></svg>
-      </button>
-    </div>
-    {phase==="focus"&&<div className="pomo-presets">
-      {[15,20,25,30,45,60].map(m=><button key={m} className={"pomo-preset-btn"+(customFocus===m?" active":"")} onClick={()=>changeCustom(m)}>{m}m</button>)}
-    </div>}
-    <button className="lockin-enter" onClick={toggleLockIn} title={t('av.tm.lockInTitle')}>
-      🔒 {t('av.tm.lockInBtn')}
-    </button>
-    <div className="pomo-task-row">
-      <div className="pomo-task-label">{t('av.tm.studying')}</div>
-      <input type="text" placeholder={t('av.tm.workingPlaceholder')} value={task} onChange={e=>setTask(e.target.value)} style={{fontSize:14,padding:"10px 12px"}}/>
-      {courses.length>0&&<select aria-label={t('av.tm.quickFillAria')} value="" onChange={e=>setTask(e.target.value)} style={{marginTop:6}}>
-        <option value="">{t('av.tm.quickFillOption')}</option>
-        {courses.map(c=><option key={c.id} value={c.name}>{c.name}</option>)}
-      </select>}
-    </div>
-    {(()=>{
-      const sessions = (state.studySessions||[]).filter(s=>!s.deletedAt);
-      if (sessions.length === 0) return null;
-      const today = new Date().toISOString().slice(0,10);
-      const dateKey = (iso) => iso ? iso.slice(0,10) : null;
-      const todayList = sessions
-        .filter(s => dateKey(s.startedAt) === today)
-        .sort((a,b)=> (b.startedAt||"").localeCompare(a.startedAt||""));
-      // Weekly summary: group by ISO Monday-week
-      const getWeekKey = (iso) => {
-        if(!iso) return null;
-        const d = new Date(iso); if (isNaN(d.getTime())) return null;
-        const day = d.getDay(); const diff = d.getDate() - day + (day===0?-6:1);
-        const mon = new Date(d); mon.setDate(diff);
-        return mon.toISOString().slice(0,10);
-      };
-      const weekMap = {};
-      sessions.forEach(s => {
-        const wk = getWeekKey(s.startedAt); if(!wk) return;
-        weekMap[wk] = (weekMap[wk]||0) + (Number(s.durationMinutes)||0);
-      });
-      const weeks = Object.entries(weekMap).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,8);
-      const thisWeekKey = getWeekKey(new Date().toISOString());
-      return <div className="pomo-session-log">
-        <div className="section-label" style={{marginTop:24}}>{t('av.tm.weeklyHours')}</div>
-        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>
-          {weeks.map(([wk,mins])=>{
-            const hrs = (mins/60).toFixed(1);
-            const label = wk===thisWeekKey?t('av.tm.thisWeek'):t('av.tm.wk',{n:wk.slice(5)});
-            const barH = Math.max(4, Math.round((mins/600)*48));
-            return <div key={wk} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,minWidth:44}}>
-              <span style={{fontFamily:"var(--font-mono)",fontSize:9,color:"var(--muted2)"}}>{hrs}h</span>
-              <div style={{width:28,height:barH,background:wk===thisWeekKey?"var(--text)":"var(--border2)",borderRadius:2,alignSelf:"flex-end"}}/>
-              <span style={{fontFamily:"var(--font-mono)",fontSize:8,color:"var(--muted2)",textAlign:"center"}}>{label}</span>
-            </div>;
-          })}
-        </div>
-        {todayList.length>0 && <>
-          <div className="section-label">{t('av.tm.todaysSessions')}</div>
-          {todayList.map(s=>{
-            const c = s.subjectId ? state.courses[s.subjectId] : null;
-            const ts = fmtTime(s.startedAt);
-            return <div key={s.id} className="pomo-log-entry">
-              <span className="pomo-log-badge">{ts}</span>
-              <span>{c?.name || s.notes || "—"}</span>
-              <span style={{marginLeft:"auto",fontFamily:"var(--font-mono)",fontSize:10,color:"var(--muted2)"}}>{s.durationMinutes}m</span>
-            </div>;
-          })}
-        </>}
-      </div>;
-    })()}
-  </div>;
-}
-
 function StatusView({ state, dispatch, onAddAsgn }) {
   const { t } = useTranslation();
   const courses=Object.values(state.courses); const ac=state.activeCourse;
@@ -1858,108 +1120,6 @@ function AsgnItem({ asgn, courses, dispatch }) {
   </div>;
 }
 
-function AddAsgnModal({ courses, activeCourse, onAdd, onClose }) {
-  const { t } = useTranslation();
-  const [title,setTitle]=useState(""); const [courseId,setCourse]=useState(activeCourse||(courses[0]?.id??"")); const [type,setType]=useState(ASSIGN_TYPES[0]); const [dueDate,setDueDate]=useState(""); const [notes,setNotes]=useState("");
-  // v1.8 — "Other" used to be a dead end: it stored the literal string "Other"
-  // with no way to say what the assignment actually was. Picking it now reveals
-  // a label field and the custom text is what gets stored, so `type` stays a
-  // plain string and no existing assignment changes shape. Assignments are
-  // local-only — no Supabase table exists and NCC never reads them — so this
-  // has no sync or cross-app surface.
-  const [customType,setCustomType]=useState("");
-  const isOtherType = type===OTHER_ASSIGN_TYPE;
-  const resolvedType = isOtherType ? customType.trim() : type;
-  const submit=()=>{ if(!title.trim()||!courseId||!resolvedType) return; onAdd({title:title.trim(),courseId,type:resolvedType,dueDate,notes}); };
-  return <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={t('av.md.addAssignment')} onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
-    <div className="modal-title">{t('av.md.addAssignment')}</div>
-    <div className="input-group"><div className="input-label">{t('av.md.title')}</div><input type="text" placeholder={t('av.md.titlePh')} value={title} onChange={e=>setTitle(e.target.value)} autoFocus/></div>
-    <div className="modal-grid">
-      <div className="input-group"><div className="input-label">{t('av.md.course')}</div><select value={courseId} onChange={e=>setCourse(e.target.value)}>{courses.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
-      <div className="input-group"><div className="input-label">{t('av.md.type')}</div><select value={type} onChange={e=>setType(e.target.value)}>{ASSIGN_TYPES.map(ty=><option key={ty} value={ty}>{t(`av.assignType.${ty}`,{defaultValue:ty})}</option>)}</select></div>
-    </div>
-    {isOtherType&&<div className="input-group"><input type="text" placeholder={t('av.md.typeCustomPh')} value={customType} onChange={e=>setCustomType(e.target.value)} aria-label={t('av.md.type')} autoFocus/></div>}
-    <div className="input-group"><div className="input-label">{t('av.md.dueDateOpt')}</div><input type="date" value={dueDate} onChange={e=>setDueDate(e.target.value)}/></div>
-    <div className="input-group"><div className="input-label">{t('av.md.notesOpt')}</div><textarea placeholder={t('av.md.asgnNotesPh')} value={notes} onChange={e=>setNotes(e.target.value)} style={{minHeight:60}}/></div>
-    <div style={{display:"flex",gap:8,marginTop:4}}><button className="btn" onClick={submit}>{t('av.md.addAssignment')}</button><button className="btn-outline" onClick={onClose}>{t('common.cancel')}</button></div>
-  </div></div>;
-}
-
-function AddExamModal({ courses, activeCourse, onAdd, onClose }) {
-  const { t } = useTranslation();
-  const [title,setTitle]=useState(""); const [courseId,setCourse]=useState(activeCourse||(courses[0]?.id??"")); const [dueDate,setDueDate]=useState(""); const [difficulty,setDiff]=useState("medium"); const [notes,setNotes]=useState("");
-  const submit=()=>{ if(!title.trim()||!courseId||!dueDate) return; onAdd({title:title.trim(),courseId,dueDate,difficulty,notes}); };
-  return <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={t('av.md.addExam')} onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
-    <div className="modal-title">{t('av.md.addExam')}</div>
-    <div className="input-group"><div className="input-label">{t('av.md.examSubject')}</div><input type="text" placeholder={t('av.md.examTitlePh')} value={title} onChange={e=>setTitle(e.target.value)} autoFocus/></div>
-    <div className="modal-grid">
-      <div className="input-group"><div className="input-label">{t('av.md.course')}</div><select value={courseId} onChange={e=>setCourse(e.target.value)}>{courses.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
-      <div className="input-group"><div className="input-label">{t('av.md.examDate')}</div><input type="date" value={dueDate} onChange={e=>setDueDate(e.target.value)}/></div>
-    </div>
-    <div className="input-group"><div className="input-label">{t('av.md.difficultyLabel')}</div>
-      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-        {["easy","medium","hard","brutal"].map(d=>(
-          <span key={d} className="difficulty-pill" style={{background:difficulty===d?DIFFICULTY_COLORS[d]+"18":"transparent",color:difficulty===d?DIFFICULTY_COLORS[d]:"var(--muted2)",borderColor:difficulty===d?DIFFICULTY_COLORS[d]:"var(--border2)",padding:"6px 14px",fontSize:12}} onClick={()=>setDiff(d)}>
-            {t(`av.difficulty.${d}`)} <span style={{opacity:0.6,fontSize:10}}>({DIFFICULTY_DAYS[d]}d)</span>
-          </span>
-        ))}
-      </div>
-    </div>
-    {dueDate&&<div style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",marginBottom:12,padding:"8px 12px",background:"var(--surface2)",borderRadius:4}}>
-      📚 {t('av.ec.studyStart')} <strong>{fmtDateFull(addDays(dueDate,-DIFFICULTY_DAYS[difficulty]))}</strong>
-    </div>}
-    <div className="input-group"><div className="input-label">{t('av.md.notesOpt')}</div><textarea placeholder={t('av.md.examNotesPh')} value={notes} onChange={e=>setNotes(e.target.value)} style={{minHeight:60}}/></div>
-    <div style={{display:"flex",gap:8,marginTop:4}}><button className="btn" onClick={submit}>{t('av.md.addExam')}</button><button className="btn-outline" onClick={onClose}>{t('common.cancel')}</button></div>
-  </div></div>;
-}
-
-function EditCourseModal({ course, courses, onSave, onDelete, onClose }) {
-  const { t } = useTranslation();
-  const [name,setName]=useState(course.name);
-  const [color,setColor]=useState(course.color);
-  const [credits,setCredits]=useState(course.credits!=null?String(course.credits):"1");
-  const [semester,setSemester]=useState(course.semester||"");
-  const [schoolYear,setSchoolYear]=useState(course.schoolYear||"");
-  const [confirmDelete,setConfirmDelete]=useState(false);
-  // v1.5 — autocomplete options from previously-used period / school-year
-  // values so free-text input stays consistent before the history view (5C).
-  const allCourses = Object.values(courses||{});
-  const periodOptions = [...new Set(allCourses.map(c=>c.semester).filter(Boolean))].sort();
-  const yearOptions = [...new Set(allCourses.map(c=>c.schoolYear).filter(Boolean))].sort();
-  const doSave = () => {
-    if(!name.trim()) return;
-    const cr = parseFloat(credits);
-    onSave(name.trim(), color, isNaN(cr)||cr<0?1:cr, semester.trim()||null, schoolYear.trim()||null);
-  };
-  return <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={t('course.edit')} onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
-    <div className="modal-title">{t('course.edit')}</div>
-    <div className="input-group"><div className="input-label">{t('course.name')}</div><input type="text" value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doSave()} autoFocus/></div>
-    <div className="modal-grid">
-      <div className="input-group"><div className="input-label">{t('course.credits')}</div><input type="number" step="0.5" min="0" value={credits} onChange={e=>setCredits(e.target.value)}/></div>
-      <div className="input-group"><div className="input-label">{t('course.period')}</div><input type="text" list="period-options" placeholder={t('course.periodPlaceholder')} value={semester} onChange={e=>setSemester(e.target.value)}/>
-        <datalist id="period-options">{periodOptions.map(p=><option key={p} value={p}/>)}</datalist></div>
-    </div>
-    <div className="input-group"><div className="input-label">{t('course.schoolYear')}</div><input type="text" list="schoolyear-options" placeholder={t('course.yearPlaceholder')} value={schoolYear} onChange={e=>setSchoolYear(e.target.value)}/>
-      <datalist id="schoolyear-options">{yearOptions.map(y=><option key={y} value={y}/>)}</datalist></div>
-    <div className="input-group"><div className="input-label">{t('course.color')}</div>
-      <CoursePicker value={color} onChange={setColor}/>
-    </div>
-    <div style={{display:"flex",gap:8,marginTop:8,alignItems:"center"}}>
-      <button className="btn" onClick={doSave}>{t('common.save')}</button>
-      <button className="btn-outline" onClick={onClose}>{t('common.cancel')}</button>
-      <span style={{flex:1}}/>
-      {!confirmDelete
-        ?<button className="btn-outline" style={{color:"#c0392b",borderColor:"#c0392b"}} onClick={()=>setConfirmDelete(true)}>{t('course.delete')}</button>
-        :<div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <span style={{fontFamily:"var(--font-mono)",fontSize:11,color:"#c0392b"}}>{t('course.deleteConfirm')}</span>
-          <button className="btn-red" onClick={onDelete}>{t('course.yesDelete')}</button>
-          <button className="btn-outline" onClick={()=>setConfirmDelete(false)}>{t('course.no')}</button>
-        </div>}
-    </div>
-  </div></div>;
-}
-
-// ── PlanView — unified planning surface (assignments + exams + courses) ────────
 function PlanView({ state, dispatch, onAddAsgn, onAddExam, onAddCourse, onEditCourse }) {
   const { t, i18n } = useTranslation();
   const lang = (i18n.language || "en").split("-")[0];
