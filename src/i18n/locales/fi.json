@@ -112,7 +112,18 @@
     "errRateLimited": "Liian monta yritystä. Odota hetki ja yritä uudelleen.",
     "errNetwork": "Palvelimeen ei saatu yhteyttä. Tarkista verkkoyhteytesi ja yritä uudelleen.",
     "ageNote": "Tilin luomiseen vaaditaan 16 vuoden ikä (13, jos paikallinen laki sallii). Nuorempana käytä vierastilaa — mikään ei poistu laitteeltasi.",
-    "privacyLink": "Tietosuojaseloste"
+    "privacyLink": "Tietosuojaseloste",
+    "otpTitle": "Syötä koodi",
+    "otpSub": "Lähetimme 6-numeroisen koodin osoitteeseen",
+    "otpLabel": "Vahvistuskoodi",
+    "otpSubmit": "Vahvista tili",
+    "otpHint": "Koodi on voimassa 60 minuuttia.",
+    "otpResend": "Lähetä uusi koodi",
+    "otpResendIn": "Uusi koodi lähetettävissä",
+    "otpSent": "Uusi koodi lähetetty.",
+    "otpBack": "Käytä toista sähköpostiosoitetta",
+    "errOtp": "Koodi ei kelvannut. Tarkista se ja yritä uudelleen.",
+    "errOtpResend": "Uuden koodin lähetys epäonnistui. Yritä hetken kuluttua."
   },
   "settings": {
     "cloudSync": "Pilvisynkronointi",

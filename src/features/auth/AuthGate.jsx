@@ -63,6 +63,20 @@ const authCss = `
    Tokens live in :root in App.jsx so the editorial palette controls destructive surfaces too. */
 .auth-error{background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger);padding:10px 12px;border-radius:4px;font-size:12px;margin-bottom:14px;}
 .auth-info{background:var(--surface2);border:1px solid var(--border);color:var(--muted);padding:10px 12px;border-radius:4px;font-size:12px;margin-bottom:14px;}
+/* v1.7 — code confirmation step. The code sits in a ruled well so it reads as
+   something written onto the page rather than a form control, which is the
+   paper metaphor the rest of the app runs on. Monospace + wide tracking makes
+   six digits scannable; text-indent cancels the trailing gap letter-spacing
+   adds after the last character so the string stays optically centred. */
+.auth-otp-to{font-family:var(--font-mono);font-size:12px;color:var(--text);word-break:break-all;margin:-6px 0 18px;text-align:center;}
+.auth-otp-input{width:100%;text-align:center;font-family:var(--font-mono);font-size:30px;font-weight:700;letter-spacing:0.3em;text-indent:0.3em;padding:14px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);}
+.auth-otp-input:focus{outline:none;border-color:var(--accent);}
+.auth-otp-input::placeholder{color:var(--muted2);letter-spacing:0.3em;}
+.auth-otp-hint{font-family:var(--font-mono);font-size:10px;letter-spacing:0.06em;color:var(--muted2);text-align:center;margin-top:8px;}
+.auth-otp-actions{display:flex;flex-direction:column;align-items:center;gap:2px;margin-top:16px;}
+.auth-otp-actions button{background:none;border:none;color:var(--text);font:inherit;font-size:13px;cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:12px 10px;min-height:44px;}
+.auth-otp-actions button:disabled{opacity:0.45;cursor:not-allowed;text-decoration:none;}
+.auth-otp-back{color:var(--muted) !important;font-size:12px !important;}
 /* v1.1 auth UX — Continue as guest. Lives outside auth-card, visually distinct
    from the sign-in options so it doesn't read as a third login method. The
    caption below explains the local-only trade-off. */
@@ -116,6 +130,15 @@ export default function AuthGate() {
   const [loading, setLoading] = useState(false);
   const [nexusAvailable, setNexusAvailable] = useState(false);
   const [, setNexusReason] = useState('');
+  // v1.7 — code confirmation step. "Confirm email" is ON in the Supabase
+  // project, so signUp() returns no session and the account sits unconfirmed
+  // until the user acts on the email. 7 of 37 email signups were stuck in that
+  // state on 2026-07-30; Google signups, which skip confirmation entirely, had
+  // none. Typing a code is immune to the mail-client link pre-fetch that spends
+  // a single-use token before the user ever taps it.
+  const [otpStep, setOtpStep] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [resendIn, setResendIn] = useState(0);
 
   // v1.4 — probe NCC's session provider on mount. If a session is available,
   // show the "Continue with Nexus" affordance as the primary option. Probe is
@@ -205,16 +228,68 @@ export default function AuthGate() {
       if (mode === 'signup') {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        // Email confirmation is disabled in the Supabase project — session lands immediately.
-        // If it's ever re-enabled, surface a friendly note.
+        // v1.7 — "Confirm email" is ON in the project, so this returns no
+        // session and the account is unusable until confirmed. (An older
+        // comment here claimed confirmation was disabled; that stopped being
+        // true and the only symptom was a passive "check your email" note.)
+        // Move to the code step so the user can finish without leaving the app.
         const { data } = await supabase.auth.getSession();
-        if (!data.session) setInfo(t('auth.infoConfirm'));
+        if (!data.session) {
+          setOtpStep(true);
+          setResendIn(30);
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
     } catch (e) {
       setErr(translateAuthError(e, t));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Resend cooldown. Supabase enforces its own per-user interval (60s at time
+  // of writing) and returns an opaque rate-limit error if you beat it, so the
+  // visible countdown is what stops a user hammering the button into an error.
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const id = setTimeout(() => setResendIn((n) => n - 1), 1000);
+    return () => clearTimeout(id);
+  }, [resendIn]);
+
+  async function onVerify(e) {
+    e.preventDefault();
+    setErr(''); setInfo(''); setLoading(true);
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email,
+        token: otpCode.replace(/\D/g, ''),
+        type: 'signup',
+      });
+      if (error) throw error;
+      // On success onAuthStateChange fires and App.jsx swaps the gate out.
+    } catch (e) {
+      setErr(translateAuthError(e, t, 'auth.errOtp'));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function onResend() {
+    if (resendIn > 0 || loading) return;
+    setErr(''); setInfo(''); setLoading(true);
+    try {
+      const { error } = await supabase.auth.resend({ type: 'signup', email });
+      if (error) throw error;
+      setInfo(t('auth.otpSent'));
+      setResendIn(60);
+    } catch (e) {
+      setErr(translateAuthError(e, t, 'auth.errOtpResend'));
+      // Still start the cooldown — the usual cause of a failure here is having
+      // hit the server-side interval, and re-enabling the button immediately
+      // just invites the same error again.
+      setResendIn(60);
     } finally {
       setLoading(false);
     }
@@ -259,22 +334,72 @@ export default function AuthGate() {
               page. A first-run user who taps "Sign in" gets the returning
               framing, which is then correct — they're asserting they have one. */}
           <div className="auth-title">
-            {firstRun && mode === 'signup'
-              ? t('auth.titleFirstRun')
-              : mode === 'signup'
-                ? t('auth.titleSignup')
-                : t('auth.titleSignin')}
+            {otpStep
+              ? t('auth.otpTitle')
+              : firstRun && mode === 'signup'
+                ? t('auth.titleFirstRun')
+                : mode === 'signup'
+                  ? t('auth.titleSignup')
+                  : t('auth.titleSignin')}
           </div>
           <div className="auth-sub">
-            {firstRun && mode === 'signup'
-              ? t('auth.subFirstRun')
-              : mode === 'signup'
-                ? t('auth.subSignup')
-                : t('auth.subSignin')}
+            {otpStep
+              ? t('auth.otpSub')
+              : firstRun && mode === 'signup'
+                ? t('auth.subFirstRun')
+                : mode === 'signup'
+                  ? t('auth.subSignup')
+                  : t('auth.subSignin')}
           </div>
 
           {err && <div className="auth-error">{err}</div>}
           {info && <div className="auth-info">{info}</div>}
+
+          {otpStep ? (
+            <>
+              <div className="auth-otp-to">{email}</div>
+              <form onSubmit={onVerify}>
+                <div className="input-group">
+                  <label className="input-label">{t('auth.otpLabel')}</label>
+                  <input
+                    className="auth-otp-input"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    autoFocus
+                    placeholder="••••••"
+                    maxLength={6}
+                    value={otpCode}
+                    /* Strip non-digits on the way in rather than validating on
+                       submit — pasting from a mail client often brings spaces
+                       or a stray newline along with the code. */
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="btn auth-submit"
+                  disabled={loading || otpCode.length !== 6}
+                >
+                  {loading ? '…' : t('auth.otpSubmit')}
+                </button>
+              </form>
+              <div className="auth-otp-hint">{t('auth.otpHint')}</div>
+              <div className="auth-otp-actions">
+                <button type="button" onClick={onResend} disabled={loading || resendIn > 0}>
+                  {resendIn > 0 ? `${t('auth.otpResendIn')} ${resendIn}s` : t('auth.otpResend')}
+                </button>
+                <button
+                  type="button"
+                  className="auth-otp-back"
+                  onClick={() => { setOtpStep(false); setOtpCode(''); setErr(''); setInfo(''); }}
+                >
+                  {t('auth.otpBack')}
+                </button>
+              </div>
+            </>
+          ) : (
+          <>
 
           {nexusAvailable && (
             <>
@@ -343,6 +468,8 @@ export default function AuthGate() {
               <>{t('auth.newHere')} <button onClick={() => { setMode('signup'); setErr(''); setInfo(''); }}>{t('auth.linkSignup')}</button></>
             )}
           </div>
+          </>
+          )}
           </>
           )}
         </div>

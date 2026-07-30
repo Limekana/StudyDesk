@@ -112,7 +112,18 @@
     "errRateLimited": "尝试次数过多。请稍候再试。",
     "errNetwork": "无法连接服务器。请检查网络后重试。",
     "ageNote": "创建账户需年满 16 岁（当地法律允许时为 13 岁）。未达年龄请使用访客模式 —— 数据不会离开你的设备。",
-    "privacyLink": "隐私政策"
+    "privacyLink": "隐私政策",
+    "otpTitle": "输入验证码",
+    "otpSub": "我们已将 6 位验证码发送至",
+    "otpLabel": "验证码",
+    "otpSubmit": "确认账户",
+    "otpHint": "验证码 60 分钟内有效。",
+    "otpResend": "重新发送验证码",
+    "otpResendIn": "重新发送需等待",
+    "otpSent": "新验证码已发送。",
+    "otpBack": "使用其他邮箱",
+    "errOtp": "验证码无效，请检查后重试。",
+    "errOtpResend": "无法发送新验证码，请稍后再试。"
   },
   "settings": {
     "cloudSync": "云同步",
