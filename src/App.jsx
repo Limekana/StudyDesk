@@ -9,6 +9,7 @@ import { Capacitor } from "@capacitor/core";
 import { supabase } from "./lib/supabase.js";
 import AuthGate from "./features/auth/AuthGate.jsx";
 import { isGuestMode, setGuestMode } from "./lib/guestMode.js";
+import { scheduleOriginStamp } from "./lib/originMarker.js";
 import { inheritFromNexus } from "./lib/suiteSso.js";
 import * as sync from "./lib/sync.js";
 import * as outbox from "./lib/outbox.js";
@@ -639,9 +640,13 @@ export default function App() {
       }
 
       if (!cancelled) setSession(data.session);
+      // ACT-5 — cover the restored-session path too, not just fresh sign-ins.
+      // Every account that predates this instrumentation only ever appears here.
+      scheduleOriginStamp(data.session?.user ?? null);
     })();
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
+      scheduleOriginStamp(s?.user ?? null);
       // v1.1 — any successful sign-in clears guestMode so the user resumes
       // normal session-based flow. Without this, a user who signed out
       // (which sets guestMode=true to prevent next-launch auto-inherit
