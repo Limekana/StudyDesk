@@ -1,0 +1,78 @@
+/* Shared form controls, inputs, buttons, modals.
+   Extracted from App.jsx (SD-6), where it lived as the `css2` template
+   literal. Verbatim — no rules were merged, reordered or renamed, so this
+   commit changes where the CSS lives and nothing about what it does. */
+
+/* ── Shared components ── */
+input[type=text],input[type=date],select,textarea{background:var(--surface);border:1px solid var(--border2);color:var(--text);padding:9px 12px;font-family:var(--font-sans);font-size:13px;border-radius:4px;outline:none;transition:border-color 0.15s;width:100%;}
+input[type=text]:focus,input[type=date]:focus,select:focus,textarea:focus{border-color:#aaa;}
+textarea{resize:vertical;min-height:80px;line-height:1.6;}select{cursor:pointer;}
+.input-group{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+.input-label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;}
+.input-row{display:flex;gap:8px;align-items:flex-start;}
+.btn{background:#3d2e1e;color:#faf8f4;border:none;padding:9px 18px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:4px;transition:opacity 0.1s;white-space:nowrap;font-weight:500;}
+.btn:hover{opacity:0.8;}.btn-sm{padding:6px 12px;font-size:10px;}
+.btn-outline{background:transparent;color:var(--muted);border:1px solid var(--border2);padding:7px 14px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:4px;transition:all 0.1s;}
+.btn-outline:hover{color:var(--text);border-color:var(--text);}
+.btn-danger-text{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:16px;padding:2px 6px;transition:color 0.1s;}
+.btn-danger-text:hover{color:#c0392b;}
+.btn-red{background:#c0392b;color:#fff;border:none;padding:8px 16px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:4px;transition:opacity 0.1s;}
+.btn-red:hover{opacity:0.85;}
+.section-label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+.asgn-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:5px;margin-bottom:8px;box-shadow:var(--shadow);}
+.asgn-item.done{opacity:0.45;}
+.asgn-check{width:17px;height:17px;border:1.5px solid var(--border2);border-radius:3px;flex-shrink:0;margin-top:2px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
+.asgn-check:hover{border-color:var(--text);}
+.asgn-check.checked{background:var(--text);border-color:var(--text);}
+.asgn-check.checked::after{content:'';display:block;width:4px;height:7px;border:2px solid var(--bg);border-top:none;border-left:none;transform:rotate(45deg) translate(-1px,-1px);}
+.asgn-body{flex:1;min-width:0;}
+.asgn-title{font-size:14px;font-weight:500;margin-bottom:4px;}
+.asgn-title.done{text-decoration:line-through;color:var(--muted);}
+.asgn-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.asgn-course{font-family:var(--font-mono);font-size:10px;font-weight:500;padding:2px 7px;border-radius:20px;}
+.asgn-type{font-family:var(--font-mono);font-size:10px;color:var(--muted);}
+.asgn-due{font-family:var(--font-mono);font-size:10px;font-weight:500;}
+.asgn-notes{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.5;}
+.tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-family:var(--font-mono);font-size:10px;font-weight:500;}
+.tag-exam{background:rgba(109,63,160,0.12);color:#6d3fa0;}
+.action-item{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;background:var(--surface);border:1px solid var(--border);border-radius:5px;margin-bottom:6px;box-shadow:var(--shadow);}
+.action-item.done{opacity:0.4;}
+.action-item.suggested{border-style:dashed;background:rgba(26,92,158,0.04);}
+.action-text{flex:1;font-size:13px;line-height:1.5;}
+.action-text.done{text-decoration:line-through;color:var(--muted);}
+.bucket-section{margin-bottom:24px;}
+.bucket-header{font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:10px;}
+.bucket-header::after{content:'';flex:1;height:1px;background:var(--border);}
+.bucket-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.modal-overlay{position:fixed;inset:0;background:rgba(26,24,20,0.32);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeOverlay 200ms var(--ease-paper);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);}
+.modal{background:rgba(250,248,244,0.82);backdrop-filter:blur(16px) saturate(1.05);-webkit-backdrop-filter:blur(16px) saturate(1.05);border:1px solid var(--border);border-top:1px solid rgba(250,248,244,0.95);border-radius:8px;padding:28px;width:500px;max-width:94vw;max-height:90vh;overflow-y:auto;box-shadow:0 12px 36px rgba(26,24,20,0.18),0 1px 0 rgba(255,255,255,0.7) inset;animation:slideModal 280ms var(--ease-settle);}
+@keyframes fadeOverlay{from{opacity:0;}to{opacity:1;}}
+@keyframes slideModal{from{opacity:0;transform:translateY(10px) scale(0.98);}to{opacity:1;transform:translateY(0) scale(1);}}
+@keyframes page-turn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+.page-turn{animation:page-turn 160ms var(--ease-page-turn);}
+.timer-subtabs{display:flex;gap:0;border:1px solid var(--border2);border-radius:6px;overflow:hidden;max-width:340px;margin:16px auto 4px;}
+.timer-subtab{flex:1;background:transparent;border:none;padding:8px 10px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;color:var(--muted);transition:all 0.1s;border-inline-end:1px solid var(--border2);}
+.timer-subtab:last-child{border-inline-end:none;}
+.timer-subtab.active{background:var(--text);color:var(--bg);}
+.modal-title{font-family:var(--font-display);font-size:18px;margin-bottom:20px;}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.urgent-banner{background:rgba(192,57,43,0.08);border:1px solid rgba(192,57,43,0.25);border-radius:5px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px;font-size:13px;}
+.urgent-banner strong{color:#c0392b;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;}
+.empty{color:var(--muted2);font-family:var(--font-mono);font-size:11px;padding:20px 0;}
+.divider{height:1px;background:var(--border);margin:24px 0;}
+/* v1.8 RTL — Unicode arrows are bidi-neutral and are NOT mirrored by the
+   layout engine, so a "next" arrow keeps pointing right in RTL and reads as
+   "back". Mirror them explicitly, and flip the disclosure chevron with them.
+   Applied by class so flat-trend arrows (→ meaning "unchanged") stay put. */
+[dir="rtl"] .rtl-mirror{display:inline-block;transform:scaleX(-1);}
+[dir="rtl"] .course-card-chevron{transform:scaleX(-1);}
+[dir="rtl"] .course-card-chevron.open{transform:scaleX(-1) rotate(-90deg);}
+.flash{position:fixed;bottom:24px;inset-inline-end:24px;background:var(--text);color:var(--bg);padding:10px 18px;font-family:var(--font-mono);font-size:11px;border-radius:4px;animation:fadeup 0.2s ease;z-index:200;}
+@keyframes fadeup{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+@media(max-width:768px){
+  .flash{bottom:calc(72px + env(safe-area-inset-bottom));inset-inline-end:14px;}
+  .modal-grid{grid-template-columns:1fr;}
+  .input-row{flex-direction:column;align-items:stretch;}
+  .btn,.btn-outline{text-align:center;}
+}

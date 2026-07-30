@@ -1,22 +1,18 @@
 import { useState, useCallback, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import { setLanguage, SUPPORTED_LANGS, LANGUAGE_NAMES } from '../../i18n/index.js';
+import { useScrollSelectedIntoView } from '../../lib/useScrollSelectedIntoView.js';
 import { supabase } from '../../lib/supabase.js';
 import { setGuestMode } from '../../lib/guestMode.js';
 import PeriodHistory from '../grades/PeriodHistory.jsx';
 import * as sync from '../../lib/sync.js';
 import * as outbox from '../../lib/outbox.js';
+import { downloadExport, deleteAccount } from '../../lib/dataRights.js';
+import { useConfirm } from '../../lib/useConfirm.js';
+import { avatarInitials } from '../../lib/avatarInitials.js';
+import { scaleFor, normalizeScale, describeScale } from '../../lib/gradeScale.js';
+import { GuestAvatar } from '../../lib/avatar.jsx';
 import pkg from '../../../package.json';
-
-// v1.3.1 — initials for the account avatar (mirrors App.jsx's topbar avatar).
-function avatarInitials(session) {
-  const email = session?.user?.email;
-  if (!email) return '·';
-  const local = email.split('@')[0] || '';
-  const parts = local.split(/[.\-_]+/).filter(Boolean);
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-  return local.slice(0, 2).toUpperCase() || '·';
-}
 
 const css = `
 .sv2-wrap{padding:16px 24px 80px;max-width:680px;margin:0 auto;}
@@ -24,8 +20,8 @@ const css = `
 .sv2-section-title{font-family:var(--font-mono);font-size:10px;letter-spacing:0.18em;color:var(--muted2);text-transform:uppercase;margin-bottom:14px;}
 
 /* Language switcher grid (v1.5.1) */
-.sv2-lang-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.sv2-lang-btn{font-family:var(--font-display);font-size:14px;color:var(--text);background:var(--bg);border:1px solid var(--border2);border-radius:9px;padding:11px 10px;cursor:pointer;text-align:left;transition:border-color .15s,background .15s;}
+.sv2-lang-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:184px;overflow-y:auto;overscroll-behavior:contain;}
+.sv2-lang-btn{font-family:var(--font-display);font-size:14px;color:var(--text);background:var(--bg);border:1px solid var(--border2);border-radius:9px;padding:11px 10px;cursor:pointer;text-align:start;transition:border-color .15s,background .15s;}
 .sv2-lang-btn:hover{border-color:var(--muted2);}
 .sv2-lang-btn--on{border-color:var(--accent,#2e7d52);background:color-mix(in srgb,var(--accent,#2e7d52) 8%,transparent);color:var(--accent,#2e7d52);font-weight:600;}
 
@@ -46,11 +42,23 @@ const css = `
 .sv2-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;font-size:14px;}
 .sv2-row + .sv2-row{border-top:1px solid var(--border);}
 .sv2-row-label{color:var(--muted);font-size:13px;}
-.sv2-row-value{font-size:13px;color:var(--text);text-align:right;display:flex;align-items:center;gap:6px;}
+.sv2-row-value{font-size:13px;color:var(--text);text-align:end;display:flex;align-items:center;gap:6px;}
 .sv2-mode{display:inline-flex;border:1px solid var(--border2);border-radius:6px;overflow:hidden;}
 .sv2-mode button{background:transparent;border:none;padding:6px 14px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;color:var(--muted);}
 .sv2-mode button.active{background:var(--text);color:var(--bg);}
+
+/* Custom grade scale editor (SD-F4) — only rendered when Custom is active. */
+.sv2-scale{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:10px;}
+.sv2-scale-field{display:flex;flex-direction:column;gap:4px;flex:1 1 84px;}
+.sv2-scale-field span{font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted2);}
+.sv2-scale-field input{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;font-size:14px;color:var(--text);}
+.sv2-scale-dir{flex:1 1 100%;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.sv2-scale .sv2-note{flex:1 1 100%;margin:0;}
 .sv2-action{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;}
+.sv2-danger{margin-top:20px;padding-top:16px;border-top:1px solid var(--danger-border);}
+.sv2-danger-title{font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--danger);margin-bottom:6px;}
+.sv2-danger-btn{margin-top:12px;color:var(--danger);border-color:var(--danger-border);}
+.sv2-danger-btn:active{background:var(--danger-bg);}
 .sv2-signout{background:var(--danger);color:var(--danger-on);border:none;padding:10px 18px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:6px;font-weight:500;}
 .sv2-signout:hover{opacity:0.85;}
 .sv2-signin{background:var(--text);color:var(--bg);border:none;padding:10px 18px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:6px;font-weight:500;}
@@ -65,7 +73,7 @@ const css = `
 .sv2-tech[open] summary::before{content:"▾ ";}
 .sv2-tech-grid{margin-top:8px;display:flex;flex-direction:column;gap:6px;}
 .sv2-tech-item{display:flex;justify-content:space-between;gap:10px;font-family:var(--font-mono);font-size:11px;color:var(--muted);}
-.sv2-tech-item span:last-child{color:var(--muted2);text-align:right;word-break:break-all;}
+.sv2-tech-item span:last-child{color:var(--muted2);text-align:end;word-break:break-all;}
 .sv2-link{color:var(--muted);text-decoration:underline;}
 `;
 
@@ -83,12 +91,15 @@ function fmtTime(iso, t, lang) {
 
 export default function SettingsView({ state, dispatch, showFlash, session }) {
   const { t, i18n } = useTranslation();
+  const confirm = useConfirm();
   const currentLang = (i18n.language || 'en').split('-')[0];
+  const langRef = useScrollSelectedIntoView();
   const lang = currentLang; // for locale-aware date formatting in fmtTime
   const [pulling, setPulling] = useState(false);
   const [lastPullAt, setLastPullAt] = useState(null);
   const [signingOut, setSigningOut] = useState(false);
   const [draining, setDraining] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const outboxStatus = useSyncExternalStore(
     outbox.subscribe,
@@ -111,9 +122,22 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
   const sessions = (state.studySessions || []).filter((s) => !s.deletedAt);
 
   const mode = state.gradeMode || 'ib';
+  // The draft holds raw strings so a half-typed value survives a keystroke:
+  // normalising on every change would snap an emptied field back to its default
+  // and make the input impossible to edit. The reducer always receives the
+  // normalised value, so the rest of the app never sees a partial scale.
+  const [scaleDraft, setScaleDraft] = useState(() => ({ ...scaleFor('custom', state.customScale) }));
+  const activeScale = normalizeScale(scaleDraft);
+  const setScale = useCallback((patch) => {
+    setScaleDraft((prev) => {
+      const next = { ...prev, ...patch };
+      dispatch({ type: 'SET_CUSTOM_SCALE', scale: next });
+      return next;
+    });
+  }, [dispatch]);
 
   const onSignOut = useCallback(async () => {
-    if (!confirm(t('settings.signOutConfirm'))) return;
+    if (!(await confirm(t('settings.signOutConfirm')))) return;
     setSigningOut(true);
     try {
       // Drain-then-wipe order preserved from the v1.1.1 / AUDIT-SD-FSG-2 work:
@@ -131,7 +155,45 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
     } finally {
       setSigningOut(false);
     }
-  }, [showFlash, dispatch, t]);
+  }, [confirm, showFlash, dispatch, t]);
+
+  // ── GDPR Art. 20 — portability ─────────────────────────────────────────────
+  const onExport = useCallback(() => {
+    try {
+      const name = downloadExport(state, session);
+      showFlash(t('settings.exportDone', { name }));
+    } catch (e) {
+      showFlash(t('settings.exportFailed', { msg: e.message }));
+    }
+  }, [state, session, showFlash, t]);
+
+  // ── GDPR Art. 17 — erasure ─────────────────────────────────────────────────
+  // Two confirmations, because this is irreversible and there is no recovery
+  // window: the account row is gone and every cascade has fired.
+  const onDeleteAccount = useCallback(async () => {
+    if (!(await confirm(t('settings.deleteAccountConfirm1')))) return;
+    if (!(await confirm(t('settings.deleteAccountConfirm2')))) return;
+    setDeleting(true);
+    try {
+      await deleteAccount({
+        clearLocal: async () => {
+          outbox.clear();
+          dispatch({ type: 'RESET_AFTER_SIGNOUT' });
+          for (const k of ['studydesk-v1', 'studydesk-needs-initial-push',
+                           'studydesk-onboarded', 'studydesk-grade-mode', 'sd-timer']) {
+            try { localStorage.removeItem(k); } catch { /* private mode */ }
+          }
+          setGuestMode(true);
+          window.dispatchEvent(new CustomEvent('studydesk:guest-mode-changed'));
+        },
+      });
+      showFlash(t('settings.deleteAccountDone'));
+    } catch (e) {
+      showFlash(t('settings.deleteAccountFailed', { msg: e.message }));
+    } finally {
+      setDeleting(false);
+    }
+  }, [confirm, dispatch, showFlash, t]);
 
   // v1.3.1 — guests sign in from here now that the topbar button is gone.
   // Flipping guestMode off routes the app back to AuthGate.
@@ -168,7 +230,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
         {/* ── Account hero ── */}
         <div className="sv2-section">
           <div className="sv2-hero">
-            <div className="sv2-avatar">{avatarInitials(session)}</div>
+            <div className="sv2-avatar">{avatarInitials(session) ?? <GuestAvatar/>}</div>
             <div className="sv2-hero-info">
               <div className="sv2-hero-name">{session ? userEmail : t('settings.guest')}</div>
               <div className="sv2-hero-status">
@@ -196,7 +258,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
         {/* ── Language ── */}
         <div className="sv2-section">
           <div className="sv2-section-title">{t('settings.language')}</div>
-          <div className="sv2-lang-grid">
+          <div className="sv2-lang-grid" ref={langRef}>
             {SUPPORTED_LANGS.map((code) => (
               <button
                 key={code}
@@ -271,6 +333,36 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
           </div>
         </div>
 
+        {/* ── Reminders ──
+             Onboarding's "Maybe later" now genuinely declines, which makes
+             this row necessary: without it, declining once was irreversible
+             short of a reinstall. */}
+        <div className="sv2-section">
+          <div className="sv2-section-title">{t('settings.remindersLbl')}</div>
+          <div className="sv2-row">
+            <span className="sv2-row-label">{t('settings.reminders')}</span>
+            <span className="sv2-row-value">
+              <span className="sv2-mode">
+                <button
+                  className={!state.notifEnabled ? 'active' : ''}
+                  onClick={() => dispatch({ type: 'SET_NOTIF_ENABLED', on: false })}
+                >
+                  {t('settings.aiOff')}
+                </button>
+                <button
+                  className={state.notifEnabled ? 'active' : ''}
+                  onClick={() => dispatch({ type: 'SET_NOTIF_ENABLED', on: true })}
+                >
+                  {t('settings.aiOn')}
+                </button>
+              </span>
+            </span>
+          </div>
+          <div className="sv2-note">
+            {state.notifEnabled ? t('settings.remindersOnNote') : t('settings.remindersOffNote')}
+          </div>
+        </div>
+
         {/* ── Grades ── */}
         <div className="sv2-section">
           <div className="sv2-section-title">{t('settings.gradesLbl')}</div>
@@ -280,11 +372,57 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
               <span className="sv2-mode">
                 <button className={mode === 'ib' ? 'active' : ''} onClick={() => dispatch({ type: 'SET_GRADE_MODE', mode: 'ib' })}>IB</button>
                 <button className={mode === 'us' ? 'active' : ''} onClick={() => dispatch({ type: 'SET_GRADE_MODE', mode: 'us' })}>US</button>
+                <button className={mode === 'custom' ? 'active' : ''} onClick={() => dispatch({ type: 'SET_GRADE_MODE', mode: 'custom' })}>{t('gv.modeCustom')}</button>
               </span>
             </span>
           </div>
+          {/* SD-F4 — the editor only appears once Custom is the active mode, so
+              the section stays a single row for the IB and US majority. */}
+          {mode === 'custom' && (
+            <div className="sv2-scale">
+              <label className="sv2-scale-field">
+                <span>{t('settings.scaleMin')}</span>
+                <input
+                  type="number" step="0.5" value={scaleDraft.min}
+                  onChange={(e) => setScale({ min: e.target.value })}
+                />
+              </label>
+              <label className="sv2-scale-field">
+                <span>{t('settings.scaleMax')}</span>
+                <input
+                  type="number" step="0.5" value={scaleDraft.max}
+                  onChange={(e) => setScale({ max: e.target.value })}
+                />
+              </label>
+              <label className="sv2-scale-field">
+                <span>{t('settings.scalePass')}</span>
+                <input
+                  type="number" step="0.5" value={scaleDraft.passMark}
+                  onChange={(e) => setScale({ passMark: e.target.value })}
+                />
+              </label>
+              <div className="sv2-scale-dir">
+                <span className="sv2-row-label">{t('settings.scaleDirection')}</span>
+                <span className="sv2-mode">
+                  <button
+                    className={scaleDraft.direction === 'up' ? 'active' : ''}
+                    onClick={() => setScale({ direction: 'up' })}
+                  >
+                    {t('settings.scaleHighBest')}
+                  </button>
+                  <button
+                    className={scaleDraft.direction === 'down' ? 'active' : ''}
+                    onClick={() => setScale({ direction: 'down' })}
+                  >
+                    {t('settings.scaleLowBest')}
+                  </button>
+                </span>
+              </div>
+              <div className="sv2-note">{describeScale(activeScale, t)}</div>
+            </div>
+          )}
           <div className="sv2-note">
-            {t('settings.gradeNote')}
+            {mode === 'custom' ? t('settings.gradeNoteCustom') : t('settings.gradeNote')}
           </div>
         </div>
 
@@ -293,6 +431,65 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
           <div className="sv2-section-title">{t('history.title')}</div>
           <PeriodHistory courses={state.courses} grades={grades} mode={mode} />
           <div className="sv2-note">{t('history.note')}</div>
+        </div>
+
+        {/* ── Your data — GDPR Art. 17 / 20 ─────────────────────────────
+             Deliberately buttons rather than a "write to us" address: a right
+             the user has to request is a right most of them never exercise. */}
+        <div className="sv2-section">
+          <div className="sv2-section-title">{t('settings.yourData')}</div>
+          <div className="sv2-note">{t('settings.yourDataNote')}</div>
+          {/* AI debrief opt-in. Off by default — flipping it on is the consent,
+              and the note you type is exactly what gets sent. */}
+          <div className="sv2-row">
+            <span className="sv2-row-label">{t('settings.aiDebrief')}</span>
+            <span className="sv2-row-value">
+              <span className="sv2-mode">
+                <button
+                  className={!state.aiEnabled ? 'active' : ''}
+                  onClick={() => dispatch({ type: 'SET_AI_ENABLED', on: false })}
+                >
+                  {t('settings.aiOff')}
+                </button>
+                <button
+                  className={state.aiEnabled ? 'active' : ''}
+                  onClick={() => dispatch({ type: 'SET_AI_ENABLED', on: true })}
+                >
+                  {t('settings.aiOn')}
+                </button>
+              </span>
+            </span>
+          </div>
+          <div className="sv2-note">
+            {state.aiEnabled ? t('settings.aiDebriefOnNote') : t('settings.aiDebriefOffNote')}
+          </div>
+          {/* Free-tier disclosure — informed consent belongs at the switch,
+              not only in PRIVACY.md. */}
+          <div className="sv2-note">{t('settings.aiTrainingNote')}</div>
+          <div className="sv2-action">
+            <button className="btn-outline" onClick={onExport}>
+              {t('settings.exportData')}
+            </button>
+            <a
+              className="btn-outline"
+              href="https://limekana.github.io/nexus-command-center/legal/privacy.html"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t('settings.privacyPolicy')}
+            </a>
+          </div>
+          <div className="sv2-danger">
+            <div className="sv2-danger-title">{t('settings.dangerZone')}</div>
+            <div className="sv2-note">{t('settings.deleteAccountNote')}</div>
+            <button
+              className="btn-outline sv2-danger-btn"
+              onClick={onDeleteAccount}
+              disabled={deleting}
+            >
+              {deleting ? t('settings.deletingAccount') : t('settings.deleteAccount')}
+            </button>
+          </div>
         </div>
 
         {/* ── About ── */}

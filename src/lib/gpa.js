@@ -4,7 +4,7 @@
 /**
  * US percentage → 4.0 grade points (standard letter-grade ladder).
  */
-export function gradeToPoints(percent) {
+function gradeToPoints(percent) {
   if (percent >= 93) return 4.0;
   if (percent >= 90) return 3.7;
   if (percent >= 87) return 3.3;

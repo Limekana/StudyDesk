@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop, 'feature/**', 'claude/**']
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      # Scans every tracked file, not just staged ones — nothing is staged in
+      # CI, so the default (hook) mode would pass vacuously.
+      #
+      # This matters more here than in the sibling repos: StudyDesk is already
+      # merged into F-Droid with AutoUpdateMode: Version, so a new tag ships to
+      # users with no MR review in the loop. CI is the only gate.
+      - name: Secret scan
+        run: node scripts/check-secrets.mjs --all
+
+      # The working agreement calls this gate mandatory. Two releases shipped
+      # broken because it was skipped by hand; this makes it structural.
+      - name: Build gate
+        run: npm run build
+
+      # There is no TypeScript here by design, so lint is the only static
+      # check this app has.
+      - name: Lint
+        run: npm run lint

@@ -1,0 +1,106 @@
+/* Tokens, reset, app shell, sidebar and bottom tab bar.
+   Extracted from App.jsx (SD-6), where it lived as the `css` template
+   literal. Verbatim — no rules were merged, reordered or renamed, so this
+   commit changes where the CSS lives and nothing about what it does. */
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+h1,h2,h3,h4,h5,h6{font-weight:inherit;font-size:inherit;}
+:root{--bg:#f5f2ed;--surface:#faf8f4;--surface2:#f0ece4;--border:#e0d9cf;--border2:#cfc8bc;--text:#1a1814;--muted:#6b6560;--muted2:#7a7570;--danger:#c0392b;--danger-bg:#fee;--danger-border:#fcc;--danger-on:#fff;--warning:#b5470b;--warning-bg:#fff4e6;--warning-border:#f0d4a0;--font-display:'Playfair Display',serif;--font-mono:'DM Mono',monospace;--font-sans:'DM Sans',sans-serif;--shadow:0 1px 3px rgba(0,0,0,0.08);--shadow-md:0 4px 12px rgba(0,0,0,0.08);--ease-paper:cubic-bezier(0.4,0,0.2,1);--ease-page-turn:cubic-bezier(0.3,0,0.2,1);--ease-settle:cubic-bezier(0.16,1,0.3,1);}
+html,body,#root{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-sans);overscroll-behavior:none;}
+/* Paper grain texture overlay */
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:0.035;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");background-repeat:repeat;background-size:128px 128px;}
+::selection{background:#d4c9b8;}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+*:focus-visible{outline:2px solid var(--text);outline-offset:2px;border-radius:2px;}
+
+/* ── Desktop layout ── */
+.app{display:flex;height:100vh;overflow:hidden;}
+.sidebar{width:240px;min-width:240px;background:var(--surface);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;transition:none;}
+.sidebar-header{padding:24px 20px 16px;border-bottom:1px solid var(--border);}
+.sidebar-logo-wrap{display:flex;align-items:center;gap:12px;}
+.sidebar-logo{width:40px;height:40px;border-radius:10px;flex-shrink:0;}
+.sidebar-wordmark{font-family:var(--font-display);font-size:20px;font-weight:600;}
+.sidebar-sub{font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:3px;letter-spacing:0.05em;}
+.sidebar-nav{padding:12px 0;border-bottom:1px solid var(--border);}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:13px;cursor:pointer;color:var(--muted);transition:all 0.1s;border-inline-start:2px solid transparent;}
+.nav-item:hover{color:var(--text);background:var(--surface2);}
+.nav-item.active{color:var(--text);border-left-color:var(--text);background:var(--surface2);}
+.sidebar-courses{flex:1;overflow-y:auto;padding:12px 0;}
+.courses-label{padding:4px 20px 8px;font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;color:var(--muted2);text-transform:uppercase;}
+.course-item{display:flex;align-items:center;gap:10px;padding:8px 20px;cursor:pointer;font-size:13px;transition:background 0.1s;border-inline-start:2px solid transparent;}
+.course-item:hover{background:var(--surface2);}
+.course-item.active{background:var(--surface2);border-left-color:var(--text);}
+.course-pip{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.course-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.course-count{font-family:var(--font-mono);font-size:10px;color:var(--muted2);}
+.course-edit-btn{opacity:0;font-size:13px;color:var(--muted);cursor:pointer;padding:0 2px;transition:opacity 0.1s,color 0.1s;line-height:1;}
+.course-item:hover .course-edit-btn{opacity:1;}
+.course-edit-btn:hover{color:var(--text);}
+.add-course-btn{display:flex;align-items:center;gap:8px;padding:8px 20px;color:var(--muted);font-size:12px;cursor:pointer;transition:color 0.1s;}
+.add-course-btn:hover{color:var(--text);}
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column;background:var(--bg);}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 32px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:10;}
+.topbar-title{font-family:var(--font-display);font-size:22px;font-weight:500;}
+.topbar-avatar{width:36px;height:36px;min-width:36px;border-radius:50%;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-family:var(--font-display);font-size:14px;font-weight:600;letter-spacing:0.02em;cursor:pointer;display:flex;align-items:center;justify-content:center;text-transform:uppercase;transition:all 0.12s var(--ease-paper,ease);-webkit-tap-highlight-color:transparent;}
+.topbar-avatar:hover{border-color:var(--text);}
+.topbar-avatar.active{background:var(--text);color:var(--bg);border-color:var(--text);}
+.topbar-date{font-family:var(--font-mono);font-size:11px;color:var(--muted);}
+.content{padding:32px;flex:1;max-width:900px;width:100%;margin:0 auto;}
+@media(max-width:768px){
+  .content{padding:16px 14px;max-width:100%;margin:0;}
+}
+
+/* ── Mobile layout — fixed bottom tab bar ── */
+@media(max-width:768px){
+  .app{display:block;height:100dvh;overflow:hidden;position:relative;}
+  /* Hide entire sidebar on mobile — tab bar is fixed, not inside sidebar */
+  .sidebar{display:none;}
+  /* Main scrolls within remaining space above the fixed tab bar */
+  .main{height:100dvh;overflow-y:auto;padding-bottom:calc(64px + env(safe-area-inset-bottom));}
+  .topbar{padding:14px 16px 12px;position:sticky;top:0;z-index:10;}
+  .topbar-title{font-size:18px;}
+  .content{padding:16px 14px;max-width:100%;}
+  /* Fixed bottom tab bar — always at the bottom, never overlaps status bar */
+  .mobile-tabbar{
+    display:flex;
+    position:fixed;
+    bottom:0;
+    left:0;
+    right:0;
+    z-index:50;
+    background:var(--surface);
+    border-top:1px solid var(--border);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  /* SD-F2 — the glyph row is gone; the label is the whole tab now.
+     min-height keeps the tap target at 52px, which removing an 18px icon plus
+     its 4px gap would otherwise have cut to ~36px. 11px monospace fits the
+     worst label the app ships, Spanish "Temporizador" at 12 characters, in
+     roughly 65px of the ~90px each of the four tabs gets on a 360px screen. */
+  .mobile-tab{flex:1;display:flex;align-items:center;justify-content:center;min-height:52px;padding:8px 4px;cursor:pointer;color:var(--muted);font-size:11px;font-family:var(--font-mono);letter-spacing:0.03em;text-align:center;line-height:1.25;border-top:2px solid transparent;transition:all 0.1s;-webkit-tap-highlight-color:transparent;}
+  .mobile-tab:active{background:var(--surface2);}
+  .mobile-tab.active{color:var(--text);border-top-color:var(--text);}
+  /* Course strip — fixed just above the tab bar */
+  .mobile-courses-bar{
+    display:flex;align-items:center;
+    position:fixed;
+    bottom:calc(64px + env(safe-area-inset-bottom));
+    left:0;right:0;
+    z-index:49;
+    background:var(--surface);
+    border-top:1px solid var(--border);
+    overflow:hidden;
+    transition:max-height 0.25s ease;
+    max-height:0;
+  }
+  .mobile-courses-bar.open{max-height:56px;}
+  .mobile-courses-scroll{display:flex;gap:6px;padding:10px 14px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex:1;}
+  .mobile-courses-scroll::-webkit-scrollbar{display:none;}
+  .mobile-course-chip{display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;white-space:nowrap;font-size:12px;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;}
+  .mobile-course-chip.active{border-color:var(--text);}
+  .mobile-course-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+  .mobile-course-add{padding:6px 12px;background:transparent;border:1px dashed var(--border2);border-radius:20px;font-size:12px;color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0;}
+}
+@media(min-width:769px){
+  .mobile-tabbar,.mobile-courses-bar{display:none!important;}
+}

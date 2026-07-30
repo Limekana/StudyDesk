@@ -1,0 +1,23 @@
+#!/usr/bin/env sh
+# StudyDesk — pre-commit hook.
+#
+# Currently runs the secret detector. Add more checks here as the project
+# grows (lint, typecheck, etc.) — but keep them fast. Anything > ~1s erodes
+# the habit of committing small.
+#
+# To bypass in an emergency: `git commit --no-verify`. Use sparingly.
+
+set -e
+
+# Find node. Capacitor on Windows, macOS, and Linux all have node installed
+# globally; fall back to npx if PATH doesn't include node directly.
+if command -v node >/dev/null 2>&1; then
+  NODE_BIN=node
+elif command -v npx >/dev/null 2>&1; then
+  NODE_BIN="npx --no-install node"
+else
+  echo "pre-commit: node not found on PATH — skipping secret scan"
+  exit 0
+fi
+
+$NODE_BIN scripts/check-secrets.mjs

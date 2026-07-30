@@ -39,7 +39,7 @@ const css = `
 .st-split-name{flex:1;min-width:0;font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .st-split-bar-track{flex:2;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;}
 .st-split-bar-fill{height:100%;border-radius:4px;}
-.st-split-val{font-family:var(--font-mono);font-size:10px;color:var(--muted);white-space:nowrap;width:52px;text-align:right;}
+.st-split-val{font-family:var(--font-mono);font-size:10px;color:var(--muted);white-space:nowrap;width:52px;text-align:end;}
 
 /* Streak */
 .st-streak-dots{display:flex;gap:5px;margin-top:10px;flex-wrap:wrap;}
@@ -319,8 +319,8 @@ export default function StatsView({ state }) {
         {/* GPA trend */}
         <div className="st-card">
           <div className="st-card-head">
-            <span className="st-card-title">{mode === 'ib' ? t('st.ibTrend') : t('st.gpaTrend')}</span>
-            <span className="st-card-note">{mode === 'ib' ? t('st.ibScale') : t('st.usScale')}</span>
+            <span className="st-card-title">{mode === 'us' ? t('st.gpaTrend') : t('st.ibTrend')}</span>
+            <span className="st-card-note">{mode === 'us' ? t('st.usScale') : t('st.ibScale')}</span>
           </div>
           {gpaTrend.points.length < 2 ? (
             <div className="st-empty">

@@ -1,0 +1,72 @@
+/* Pomodoro timer and its controls.
+   Extracted from App.jsx (SD-6), where it lived as the `css4` template
+   literal. Verbatim — no rules were merged, reordered or renamed, so this
+   commit changes where the CSS lives and nothing about what it does. */
+
+/* ── Pomodoro Timer ── */
+.pomo-time{font-family:var(--font-display);font-size:48px;font-weight:500;letter-spacing:-0.02em;line-height:1;}
+.pomo-phase{font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);}
+.pomo-controls{display:flex;gap:12px;margin-bottom:28px;align-items:center;}
+.pomo-btn-main{background:var(--text);color:var(--bg);border:none;width:56px;height:56px;border-radius:50%;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity 0.1s;box-shadow:var(--shadow-md);}
+.pomo-btn-main:hover{opacity:0.8;}
+.pomo-btn-sec{background:transparent;color:var(--muted);border:1px solid var(--border2);width:40px;height:40px;border-radius:50%;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.1s;align-self:center;}
+.pomo-btn-sec:hover{color:var(--text);border-color:var(--text);}
+.pomo-segments{display:flex;gap:6px;margin-bottom:28px;}
+.pomo-seg{width:10px;height:10px;border-radius:50%;background:var(--border);transition:background 0.3s;}
+.pomo-seg.done{background:var(--text);}
+.pomo-seg.current{background:var(--muted);}
+.pomo-presets{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:28px;}
+.pomo-preset-btn{font-family:var(--font-mono);font-size:10px;padding:6px 14px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all 0.1s;letter-spacing:0.05em;}
+.pomo-preset-btn.active{background:var(--text);color:var(--bg);border-color:var(--text);}
+.pomo-task-row{width:100%;max-width:380px;display:flex;flex-direction:column;gap:8px;}
+.pomo-task-label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;}
+.pomo-session-log{width:100%;max-width:380px;margin-top:24px;}
+.pomo-log-entry{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);}
+.pomo-log-badge{font-family:var(--font-mono);font-size:9px;padding:2px 8px;border-radius:20px;background:var(--surface2);border:1px solid var(--border);white-space:nowrap;}
+.pomo-ring-wrap{position:relative;width:220px;height:220px;margin:0 auto 28px auto;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.pomo-ring-svg{position:absolute;top:0;left:0;width:100%;height:100%;}
+.pomo-ring-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;pointer-events:none;width:100%;}
+@media(max-width:480px){
+  .pomo-ring-wrap{width:200px;height:200px;}
+}
+/* ── Paused-state ring ── */
+.pomo-btn-main{position:relative;}
+.pomo-btn-main.paused::after{content:'';position:absolute;inset:-7px;border-radius:50%;border:2px dashed var(--text);opacity:0.28;animation:pomo-spin-ring 10s linear infinite;}
+@keyframes pomo-spin-ring{to{transform:rotate(360deg);}}
+/* ── Timer-complete animation ── */
+.pomo-ring-done{animation:ring-pulse 0.8s ease;}
+@keyframes ring-pulse{0%{transform:scale(1);}45%{transform:scale(1.05);}100%{transform:scale(1);}}
+.pomo-time-flash{animation:time-flash 0.7s ease;}
+@keyframes time-flash{0%{opacity:1;}35%{opacity:0.2;}100%{opacity:1;}}
+
+/* ── Lock In: entry button on the regular timer ── */
+.lockin-enter{margin-top:18px;background:#1a1814;color:#faf8f4;border:1px solid #1a1814;padding:10px 22px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;border-radius:99px;transition:transform 0.1s,opacity 0.1s;}
+.lockin-enter:hover{opacity:0.85;transform:scale(1.02);}
+.lockin-enter:active{transform:scale(0.98);}
+
+/* ── Lock In takeover (full-screen, dark, distraction-stripped) ── */
+.lockin-wrap{position:fixed;inset:0;z-index:50;background:radial-gradient(ellipse at center, #1f1c17 0%, #0e0c09 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:40px 20px;color:#faf8f4;animation:lockin-fade 0.3s ease;}
+@keyframes lockin-fade{from{opacity:0;}to{opacity:1;}}
+.lockin-top{position:absolute;top:32px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;}
+.lockin-badge{font-family:var(--font-mono);font-size:10px;letter-spacing:0.35em;color:rgba(250,248,244,0.45);}
+.lockin-task{font-family:var(--font-display);font-size:18px;color:rgba(250,248,244,0.85);max-width:80vw;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.lockin-ring{width:260px;height:260px;margin:0;}
+.lockin-ring .pomo-time{font-size:56px;letter-spacing:-0.02em;}
+.lockin-task-input{background:transparent;border:none;border-bottom:1px solid rgba(250,248,244,0.15);color:#faf8f4;padding:10px 4px;font-family:var(--font-display);font-size:17px;text-align:center;width:min(360px,80vw);outline:none;transition:border-color 0.15s;}
+.lockin-task-input:focus{border-bottom-color:rgba(250,248,244,0.45);}
+.lockin-task-input::placeholder{color:rgba(250,248,244,0.3);}
+.lockin-controls{display:flex;justify-content:center;}
+.lockin-btn-main{background:#faf8f4;color:#1a1814;border:none;width:72px;height:72px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.1s,opacity 0.1s;box-shadow:0 4px 24px rgba(0,0,0,0.5);}
+.lockin-btn-main:hover{opacity:0.9;transform:scale(1.04);}
+.lockin-btn-main:active{transform:scale(0.96);}
+.lockin-presets{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.lockin-preset{background:transparent;color:rgba(250,248,244,0.5);border:1px solid rgba(250,248,244,0.2);padding:6px 14px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;border-radius:99px;cursor:pointer;transition:all 0.1s;}
+.lockin-preset.active{background:rgba(250,248,244,0.12);color:#faf8f4;border-color:rgba(250,248,244,0.4);}
+.lockin-preset:disabled{opacity:0.3;cursor:not-allowed;}
+.lockin-exit{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);background:transparent;border:1px solid rgba(250,248,244,0.18);color:rgba(250,248,244,0.55);padding:9px 22px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;cursor:pointer;border-radius:99px;transition:all 0.15s;}
+.lockin-exit:hover{color:#faf8f4;border-color:rgba(250,248,244,0.45);}
+
+/* While locked in, hide the desktop sidebar and mobile tab bar so nothing pulls focus */
+body.locked-in .sidebar,body.locked-in .mobile-tabbar,body.locked-in .topbar{display:none !important;}
+body.locked-in .main{padding:0;}
+body.locked-in .content{padding:0;max-width:none;}
