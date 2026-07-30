@@ -370,7 +370,10 @@ function schedulePull(pullAll) {
 export function startRealtime(onChange) {
   if (channel) return;
   const c = supabase.channel('studydesk-sync');
-  for (const table of ['subjects', 'grades', 'study_sessions']) {
+  // v1.7 — assignments/exams/study_actions joined the set (StudyDesk#6). All
+  // six coalesce into the same debounced pull, so adding three tables costs one
+  // extra subscription each, not three extra round-trips.
+  for (const table of ['subjects', 'grades', 'study_sessions', 'assignments', 'exams', 'study_actions']) {
     c.on(
       'postgres_changes',
       { event: '*', schema: 'public', table },

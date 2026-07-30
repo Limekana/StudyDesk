@@ -1,0 +1,5 @@
+Aufgaben, Prüfungen und To-dos werden jetzt zwischen Geräten synchronisiert.
+
+Bisher wurden nur Kurse und Noten synchronisiert — auf dem Tablet eingetragene Hausaufgaben erschienen nie auf dem Handy. Alle vorhandenen Einträge werden beim ersten angemeldeten Start dieser Version einmalig automatisch hochgeladen.
+
+Außerdem: neues Konto per 6-stelligem Code aus der E-Mail bestätigen, statt den Link antippen zu müssen.

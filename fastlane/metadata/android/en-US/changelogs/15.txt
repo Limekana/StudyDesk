@@ -1,0 +1,5 @@
+Assignments, exams and tasks now sync between your devices.
+
+Until now only courses and grades synced, so homework added on a tablet never appeared on a phone. Everything you already have is uploaded once, automatically, the first time you open this version while signed in.
+
+Also: confirm a new account with a 6-digit code from the email instead of having to tap the link.

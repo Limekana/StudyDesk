@@ -1,0 +1,5 @@
+Las tareas, los exámenes y los pendientes ahora se sincronizan entre dispositivos.
+
+Hasta ahora solo se sincronizaban los cursos y las notas, así que los deberes añadidos en una tablet nunca aparecían en el móvil. Todo lo que ya tienes se sube una vez, automáticamente, la primera vez que abras esta versión con la sesión iniciada.
+
+Además: confirma una cuenta nueva con un código de 6 dígitos del correo en lugar de tener que tocar el enlace.
