@@ -50,7 +50,9 @@
     "deleteConfirm": "Poistetaanko kaikki tiedot?",
     "yesDelete": "Kyllä, poista",
     "no": "Ei",
-    "updated": "Kurssi päivitetty"
+    "updated": "Kurssi päivitetty",
+    "colorSwatch": "Väri {{hex}}",
+    "colorCustom": "Valitse mikä tahansa väri"
   },
   "history": {
     "title": "Jaksohistoria · Arkisto",

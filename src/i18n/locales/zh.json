@@ -50,7 +50,9 @@
     "deleteConfirm": "删除所有数据？",
     "yesDelete": "是，删除",
     "no": "否",
-    "updated": "课程已更新"
+    "updated": "课程已更新",
+    "colorSwatch": "颜色 {{hex}}",
+    "colorCustom": "选择任意颜色"
   },
   "history": {
     "title": "学段历史 · 归档",

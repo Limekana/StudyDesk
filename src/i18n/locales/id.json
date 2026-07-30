@@ -90,7 +90,9 @@
     "deleteConfirm": "Hapus semua data?",
     "yesDelete": "Ya, hapus",
     "no": "Tidak",
-    "updated": "Mata pelajaran diperbarui"
+    "updated": "Mata pelajaran diperbarui",
+    "colorSwatch": "Warna {{hex}}",
+    "colorCustom": "Pilih warna apa pun"
   },
   "history": {
     "title": "Riwayat periode · Arsip",

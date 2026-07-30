@@ -50,7 +50,9 @@
     "deleteConfirm": "Delete all data?",
     "yesDelete": "Yes, delete",
     "no": "No",
-    "updated": "Course updated"
+    "updated": "Course updated",
+    "colorSwatch": "Colour {{hex}}",
+    "colorCustom": "Pick any colour"
   },
   "history": {
     "title": "Period history · Archive",

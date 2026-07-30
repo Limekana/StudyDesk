@@ -18,6 +18,8 @@ import SessionsView from "./features/sessions/SessionsView.jsx";
 import SaveSessionSheet from "./features/sessions/SaveSessionSheet.jsx";
 import { avatarInitials } from "./lib/avatarInitials.js";
 import { isGradeMode, normalizeScale, DEFAULT_CUSTOM_SCALE } from "./lib/gradeScale.js";
+import CoursePicker from "./lib/CoursePicker.jsx";
+import { COURSE_COLORS } from "./lib/courseColors.js";
 import { GuestAvatar } from "./lib/avatar.jsx";
 import StatsView from "./features/stats/StatsView.jsx";
 import SettingsView from "./features/settings/SettingsView.jsx";
@@ -35,7 +37,6 @@ const ASSIGN_TYPES = ["Essay","Problem Set","Lab","Reading","Exam","Project","Qu
 /** Sentinel preset that reveals the free-text label field (v1.8). Never stored
  *  as an assignment's type — the user's own label is stored instead. */
 const OTHER_ASSIGN_TYPE = "Other";
-const COURSE_COLORS = ["#c0392b","#d4860a","#2e7d52","#1a5c9e","#6d3fa0","#b5470b","#1e7d7d","#8b4a62"];
 const DIFFICULTY_DAYS   = { easy:3, medium:7, hard:14, brutal:21 };
 const DIFFICULTY_LABELS = { easy:"Easy", medium:"Medium", hard:"Hard", brutal:"Brutal" };
 const DIFFICULTY_COLORS = { easy:"#2e7d52", medium:"#d4860a", hard:"#c0392b", brutal:"#6d3fa0" };
@@ -214,9 +215,6 @@ const cssOnboard = `
 @keyframes obPage{from{opacity:0;transform:translateX(8px);}to{opacity:1;transform:none;}}
 .ob-step-title{font-family:var(--font-display);font-size:23px;font-weight:600;line-height:1.18;margin-bottom:10px;}
 .ob-step-desc{font-size:13.5px;color:var(--muted);margin-bottom:22px;line-height:1.62;}
-.ob-colors{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:4px;}
-.ob-color{width:26px;height:26px;border-radius:50%;cursor:pointer;transition:transform 0.12s var(--ease-settle);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.08);}
-.ob-color:hover{transform:scale(1.16);}
 .ob-skip{font-family:var(--font-mono);font-size:10px;color:var(--muted2);cursor:pointer;text-align:center;margin-top:16px;letter-spacing:0.08em;text-transform:uppercase;}
 .ob-skip:hover{color:var(--text);text-decoration:underline;text-underline-offset:3px;}
 /* language step — paper chips */
@@ -981,7 +979,7 @@ export default function App() {
   const [showAddAsgn, setShowAddAsgn] = useState(false);
   const [showAddExam, setShowAddExam] = useState(false);
   const [newCourseName, setNewCourseName] = useState("");
-  const [colorIdx, setColorIdx] = useState(0);
+  const [newCourseColor, setNewCourseColor] = useState(COURSE_COLORS[0]);
   const showFlash = useCallback((msg) => { setFlash(msg); setTimeout(()=>setFlash(null),2200); }, []);
 
   // ── Auth session ─────────────────────────────────────────────────────────────
@@ -1158,9 +1156,15 @@ export default function App() {
     if(!newCourseName.trim()) return;
     const id = newSyncId();
     const name = newCourseName.trim();
-    const color = COURSE_COLORS[colorIdx%COURSE_COLORS.length];
+    const color = newCourseColor;
     dispatch({type:"ADD_COURSE", id, name, color});
-    setColorIdx(i=>i+1); setNewCourseName(""); setShowAddCourse(false); showFlash(t('av.flash.courseAdded'));
+    // Advance to the next preset so adding several courses in a row gives each
+    // a different colour — what the old index-based picker did with
+    // setColorIdx(i => i + 1). A custom colour is not in the list, so indexOf
+    // returns -1 and this lands on COURSE_COLORS[0]: a deliberate reset rather
+    // than carrying a one-off colour into the next course.
+    setNewCourseColor(COURSE_COLORS[(COURSE_COLORS.indexOf(color) + 1) % COURSE_COLORS.length]);
+    setNewCourseName(""); setShowAddCourse(false); showFlash(t('av.flash.courseAdded'));
     if (session) outbox.enqueue("upsert_subject", { id, name, color });
   };
 
@@ -1293,7 +1297,7 @@ export default function App() {
     {showAddCourse&&<div className="modal-overlay" role="dialog" aria-modal="true" aria-label={t('av.md.addCourse')} onClick={()=>setShowAddCourse(false)}><div className="modal" onClick={e=>e.stopPropagation()}>
       <div className="modal-title">{t('av.md.addCourse')}</div>
       <div className="input-group"><div className="input-label">{t('course.name')}</div><input type="text" placeholder={t('course.namePlaceholder')} value={newCourseName} onChange={e=>setNewCourseName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCourse()} autoFocus/></div>
-      <div style={{display:"flex",gap:8,marginBottom:16}}>{COURSE_COLORS.map((c,i)=><div key={c} onClick={()=>setColorIdx(i)} style={{width:20,height:20,borderRadius:"50%",background:c,cursor:"pointer",outline:colorIdx===i?"2px solid "+c:"none",outlineOffset:2}}/>)}</div>
+      <div style={{marginBottom:16}}><CoursePicker value={newCourseColor} onChange={setNewCourseColor}/></div>
       <div style={{display:"flex",gap:8}}><button className="btn" onClick={addCourse}>{t('av.chrome.addCourse')}</button><button className="btn-outline" onClick={()=>setShowAddCourse(false)}>{t('common.cancel')}</button></div>
     </div></div>}
     {showAddAsgn&&<AddAsgnModal courses={courses} activeCourse={state.activeCourse} onAdd={(data)=>{dispatch({type:"ADD_ASSIGNMENT",title:data.title,courseId:data.courseId,assignType:data.type,dueDate:data.dueDate,notes:data.notes});setShowAddAsgn(false);showFlash(t('av.flash.assignmentAdded'));}} onClose={()=>setShowAddAsgn(false)}/>}
@@ -1369,9 +1373,9 @@ function OnboardingView({ onComplete }) {
   const langRef = useScrollSelectedIntoView();
   const [step, setStep] = useState(0);
   const [courseName, setCourseName] = useState("");
-  const [colorIdx, setColorIdx] = useState(0);
+  const [courseColor, setCourseColor] = useState(COURSE_COLORS[0]);
 
-  const chosenColor = COURSE_COLORS[colorIdx % COURSE_COLORS.length];
+  const chosenColor = courseColor;
   const result = () => courseName.trim() ? { name: courseName.trim(), color: chosenColor } : null;
 
 
@@ -1416,13 +1420,7 @@ function OnboardingView({ onComplete }) {
       </div>
       <div className="input-group">
         <div className="input-label">{t('sdob.colorLabel')}</div>
-        <div className="ob-colors">
-          {COURSE_COLORS.map((c,i)=>(
-            <div key={c} className="ob-color"
-              style={{background:c, outline:colorIdx===i?"3px solid "+c:"2px solid transparent", outlineOffset:2}}
-              onClick={()=>setColorIdx(i)}/>
-          ))}
-        </div>
+        <CoursePicker value={courseColor} onChange={setCourseColor}/>
       </div>
       <button className="btn" style={{width:"100%",padding:"13px",marginTop:8}}
         onClick={()=>{ if(courseName.trim()) setStep(3); }}>
@@ -1936,7 +1934,7 @@ function EditCourseModal({ course, courses, onSave, onDelete, onClose }) {
     <div className="input-group"><div className="input-label">{t('course.schoolYear')}</div><input type="text" list="schoolyear-options" placeholder={t('course.yearPlaceholder')} value={schoolYear} onChange={e=>setSchoolYear(e.target.value)}/>
       <datalist id="schoolyear-options">{yearOptions.map(y=><option key={y} value={y}/>)}</datalist></div>
     <div className="input-group"><div className="input-label">{t('course.color')}</div>
-      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{COURSE_COLORS.map(c=><div key={c} onClick={()=>setColor(c)} style={{width:24,height:24,borderRadius:"50%",background:c,cursor:"pointer",outline:color===c?"3px solid "+c:"2px solid transparent",outlineOffset:2}}/>)}</div>
+      <CoursePicker value={color} onChange={setColor}/>
     </div>
     <div style={{display:"flex",gap:8,marginTop:8,alignItems:"center"}}>
       <button className="btn" onClick={doSave}>{t('common.save')}</button>

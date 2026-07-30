@@ -50,7 +50,9 @@
     "deleteConfirm": "Supprimer toutes les données ?",
     "yesDelete": "Oui, supprimer",
     "no": "Non",
-    "updated": "Cours mis à jour"
+    "updated": "Cours mis à jour",
+    "colorSwatch": "Couleur {{hex}}",
+    "colorCustom": "Choisir n'importe quelle couleur"
   },
   "history": {
     "title": "Historique des périodes · Archive",

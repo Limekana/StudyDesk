@@ -90,7 +90,9 @@
     "deleteConfirm": "حذف جميع البيانات؟",
     "yesDelete": "نعم، احذف",
     "no": "لا",
-    "updated": "تم تحديث المادة"
+    "updated": "تم تحديث المادة",
+    "colorSwatch": "اللون {{hex}}",
+    "colorCustom": "اختر أي لون"
   },
   "history": {
     "title": "سجل الفترات · الأرشيف",

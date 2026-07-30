@@ -90,7 +90,9 @@
     "deleteConfirm": "सारा डेटा मिटाएँ?",
     "yesDelete": "हाँ, मिटाएँ",
     "no": "नहीं",
-    "updated": "विषय अपडेट हुआ"
+    "updated": "विषय अपडेट हुआ",
+    "colorSwatch": "रंग {{hex}}",
+    "colorCustom": "कोई भी रंग चुनें"
   },
   "history": {
     "title": "अवधि इतिहास · संग्रह",

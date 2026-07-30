@@ -50,7 +50,9 @@
     "deleteConfirm": "Alle Daten löschen?",
     "yesDelete": "Ja, löschen",
     "no": "Nein",
-    "updated": "Kurs aktualisiert"
+    "updated": "Kurs aktualisiert",
+    "colorSwatch": "Farbe {{hex}}",
+    "colorCustom": "Beliebige Farbe wählen"
   },
   "history": {
     "title": "Periodenverlauf · Archiv",

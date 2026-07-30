@@ -90,7 +90,9 @@
     "deleteConfirm": "Excluir todos os dados?",
     "yesDelete": "Sim, excluir",
     "no": "Não",
-    "updated": "Disciplina atualizada"
+    "updated": "Disciplina atualizada",
+    "colorSwatch": "Cor {{hex}}",
+    "colorCustom": "Escolher qualquer cor"
   },
   "history": {
     "title": "Histórico de períodos · Arquivo",
