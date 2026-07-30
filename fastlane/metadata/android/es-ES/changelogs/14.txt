@@ -1,0 +1,5 @@
+Nuevos idiomas: hindi, portugués, indonesio y árabe, con soporte de diseño de derecha a izquierda. La pantalla de inicio de sesión también está traducida, así que ya no aparece en inglés antes que el resto de la aplicación.
+
+Escala de notas personalizada junto a IB y US. Colores de asignatura personalizados. Exportación de datos y eliminación de cuenta en Ajustes. El resumen de estudio con IA ahora es opcional y está desactivado por defecto.
+
+Correcciones: «Quizás más tarde» en el paso de notificaciones ahora rechaza de verdad, la opción de invitado es accesible en pantallas pequeñas, y el primer inicio ya no saluda a los nuevos usuarios con «Bienvenido de nuevo».

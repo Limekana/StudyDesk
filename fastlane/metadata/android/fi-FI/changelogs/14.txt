@@ -1,0 +1,5 @@
+Uudet kielet: hindi, portugali, indonesia ja arabia, mukaan lukien oikealta vasemmalle -asettelu. Myös kirjautumisnäkymä on nyt käännetty, joten se ei enää näy englanniksi muun sovelluksen edellä.
+
+Oma arvosana-asteikko IB:n ja US:n rinnalle. Omat kurssivärit. Tietojen vienti ja tilin poisto asetuksissa. Tekoälyn opiskeluyhteenveto on nyt valinnainen ja oletuksena pois päältä.
+
+Korjauksia: ”Ehkä myöhemmin” ilmoitusvaiheessa kieltää nyt oikeasti, vieraskäyttö löytyy myös pienemmiltä näytöiltä, eikä ensimmäinen käynnistys enää tervehdi uutta käyttäjää tekstillä ”Tervetuloa takaisin”.

@@ -25,6 +25,14 @@ Note: "${userText.slice(0, 400).replace(/"/g, "'")}"`;
 export async function analyseStudySession(userText) {
   const text = (userText || '').trim();
   if (!text) return null;
+  // The opt-in gate. `canDebrief` already hides the UI, but this is the one
+  // place the note actually leaves the device, so the check belongs here too —
+  // a future caller cannot route around the user's choice by forgetting it.
+  try {
+    if (localStorage.getItem('studydesk-ai-enabled') !== '1') return null;
+  } catch {
+    return null;
+  }
   // Gate on a live session — the Edge Function requires the user's JWT.
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;

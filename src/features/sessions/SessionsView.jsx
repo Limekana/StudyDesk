@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as outbox from '../../lib/outbox.js';
+import { fmtTime } from '../../lib/dates.js';
 
 const css = `
 .sv-wrap{padding:16px 24px 80px;max-width:780px;margin:0 auto;}
@@ -16,7 +17,7 @@ const css = `
 .sv-item-title{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .sv-item-meta{font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:0.04em;}
 .sv-item-dur{font-family:var(--font-mono);font-size:11px;color:var(--muted);white-space:nowrap;}
-.sv-focus{display:inline-flex;gap:3px;margin-left:8px;vertical-align:middle;}
+.sv-focus{display:inline-flex;gap:3px;margin-inline-start:8px;vertical-align:middle;}
 .sv-focus-pip{width:5px;height:5px;border-radius:50%;background:var(--border2);}
 .sv-focus-pip.on{background:var(--text);}
 .sv-focus-row{display:flex;gap:6px;}
@@ -37,11 +38,6 @@ function fmtDateHeader(iso, t, lang) {
   if (sameDay(d, today)) return t('sv.todayHead');
   if (sameDay(d, yesterday)) return t('sv.yesterdayHead');
   return d.toLocaleDateString(lang || 'en', { weekday: 'long', day: 'numeric', month: 'long', year: d.getFullYear() !== today.getFullYear() ? 'numeric' : undefined }).toUpperCase();
-}
-
-function fmtTime(iso) {
-  if (!iso) return '';
-  return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
 export default function SessionsView({ state, dispatch, showFlash, session }) {

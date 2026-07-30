@@ -1,0 +1,5 @@
+New languages: Hindi, Portuguese, Indonesian and Arabic, with right-to-left layout support. The sign-in screen is translated too, so it no longer appears in English ahead of the rest of the app.
+
+Custom grade scale alongside IB and US. Custom course colours. Data export and account deletion in Settings. The AI study debrief is now opt-in and off by default.
+
+Fixes: "Maybe later" on the notification step now actually declines, the guest option is reachable on smaller screens, and first run no longer greets new users with "Welcome back".

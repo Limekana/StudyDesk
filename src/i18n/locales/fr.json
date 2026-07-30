@@ -50,7 +50,9 @@
     "deleteConfirm": "Supprimer toutes les données ?",
     "yesDelete": "Oui, supprimer",
     "no": "Non",
-    "updated": "Cours mis à jour"
+    "updated": "Cours mis à jour",
+    "colorSwatch": "Couleur {{hex}}",
+    "colorCustom": "Choisir n'importe quelle couleur"
   },
   "history": {
     "title": "Historique des périodes · Archive",
@@ -62,7 +64,8 @@
     "course_other": "{{count}} cours",
     "gpaIb": "Moy. IB",
     "gpaUs": "Moyenne",
-    "noGrades": "Aucune note"
+    "noGrades": "Aucune note",
+    "course_many": "{{count}} cours"
   },
   "nextup": {
     "newPeriodTitle": "Nouvelle période ? Commence par ajouter tes cours",
@@ -71,6 +74,46 @@
     "goToPlan": "Aller au plan →",
     "addDeadlineTitle": "Ajoute une échéance pour débloquer ton plan d’étude",
     "addDeadlineSub": "À suivre fait remonter automatiquement tes tâches les plus urgentes. Ajoute un devoir ou un examen pour commencer."
+  },
+  "auth": {
+    "tagline": "FOCUS ACADÉMIQUE · SYNCHRONISATION OPTIONNELLE",
+    "titleSignup": "Créer un compte",
+    "titleSignin": "Bon retour",
+    "titleFirstRun": "Commencer à étudier",
+    "subSignup": "Vos données se synchronisent entre appareils.",
+    "subSignin": "Reprenez où vous en étiez.",
+    "subFirstRun": "Aucun compte requis — tout fonctionne hors ligne. Connectez-vous uniquement pour la synchronisation.",
+    "nexus": "Continuer avec Nexus",
+    "nexusNote": "CONNECTÉ À NEXUS COMMAND CENTER SUR CET APPAREIL",
+    "google": "Continuer avec Google",
+    "or": "OU",
+    "useEmail": "Se connecter par e-mail",
+    "useEmailSignup": "S'inscrire par e-mail",
+    "emailLabel": "E-mail",
+    "passwordLabel": "Mot de passe",
+    "submitSignup": "Créer un compte",
+    "submitSignin": "Se connecter",
+    "haveAccount": "Vous avez déjà un compte ?",
+    "newHere": "Nouveau ici ?",
+    "linkSignin": "Se connecter",
+    "linkSignup": "Créer un compte",
+    "guest": "Continuer en invité",
+    "guestNote": "LOCAL UNIQUEMENT · PAS DE SYNCHRONISATION · CONNEXION POSSIBLE PLUS TARD",
+    "infoConfirm": "Compte créé. Vérifiez votre e-mail pour confirmer.",
+    "errNexus": "Impossible d'hériter de la session Nexus.",
+    "errNexusFailed": "Échec de la connexion Nexus",
+    "errGoogleStart": "Impossible de démarrer la connexion Google",
+    "errGoogleFailed": "Échec de la connexion Google",
+    "errCallback": "Échec du rappel de connexion",
+    "errGeneric": "Échec de l'authentification",
+    "errInvalidCredentials": "E-mail ou mot de passe incorrect.",
+    "errAlreadyRegistered": "Un compte existe déjà pour cet e-mail. Essayez de vous connecter.",
+    "errWeakPassword": "Choisissez un mot de passe plus fort.",
+    "errEmailNotConfirmed": "Confirmez d'abord votre e-mail — le lien est dans votre boîte de réception.",
+    "errRateLimited": "Trop de tentatives. Patientez un instant, puis réessayez.",
+    "errNetwork": "Serveur injoignable. Vérifiez votre connexion et réessayez.",
+    "ageNote": "Vous devez avoir 16 ans ou plus pour créer un compte (13 ans si la loi locale le permet). En dessous, utilisez le mode invité — rien ne quitte votre appareil.",
+    "privacyLink": "Politique de confidentialité"
   },
   "settings": {
     "cloudSync": "Synchro cloud",
@@ -121,7 +164,39 @@
     "license": "Licence",
     "justNow": "à l’instant",
     "minAgo": "il y a {{n}} min",
-    "hAgo": "il y a {{n}} h"
+    "hAgo": "il y a {{n}} h",
+    "stillPending_many": "{{count}} éléments encore en attente",
+    "yourData": "Vos données",
+    "yourDataNote": "Téléchargez tout ce que StudyDesk conserve sur vous, ou supprimez-le définitivement. Sans nous le demander.",
+    "aiDebrief": "Bilan IA",
+    "aiOn": "Activé",
+    "aiOff": "Désactivé",
+    "aiDebriefOnNote": "Activé — après une session, vous pouvez écrire une note et laisser Google Gemini en extraire le sujet, votre niveau de compréhension et les points confus. C'est exactement la note que vous écrivez qui est envoyée.",
+    "aiDebriefOffNote": "Désactivé — rien n'est envoyé à Google. Tout le reste de StudyDesk fonctionne à l'identique.",
+    "aiTrainingNote": "Google l'exécute sur son offre gratuite : ce que vous envoyez peut servir à entraîner ses futurs modèles. Laissez désactivé si cela ne vous convient pas.",
+    "exportData": "Exporter mes données",
+    "exportDone": "Enregistré : {{name}}",
+    "exportFailed": "Échec de l’export : {{msg}}",
+    "privacyPolicy": "Politique de confidentialité",
+    "dangerZone": "Zone sensible",
+    "deleteAccount": "Supprimer mon compte",
+    "deletingAccount": "Suppression…",
+    "deleteAccountNote": "Efface définitivement votre compte, vos cours, vos notes et vos sessions. Irréversible, sans délai de récupération.",
+    "deleteAccountConfirm1": "Supprimer votre compte et toutes vos données ? Action irréversible.",
+    "deleteAccountConfirm2": "Dernière chance — tout sera effacé immédiatement. Continuer ?",
+    "deleteAccountDone": "Votre compte et vos données ont été supprimés.",
+    "deleteAccountFailed": "Suppression impossible : {{msg}}",
+    "remindersLbl": "Rappels",
+    "reminders": "Rappels de révision",
+    "remindersOnNote": "Activés — vous recevrez un résumé quotidien et des alertes avant les rendus et les examens.",
+    "remindersOffNote": "Désactivés — aucune notification, et StudyDesk ne demandera pas l'autorisation d'en envoyer.",
+    "scaleMin": "Minimum",
+    "scaleMax": "Maximum",
+    "scalePass": "Seuil d'admission",
+    "scaleDirection": "Quelle extrémité est la meilleure",
+    "scaleHighBest": "Haut",
+    "scaleLowBest": "Bas",
+    "gradeNoteCustom": "Votre propre échelle numérique — la moyenne est une moyenne pondérée, comme en IB. Enregistrée sur cet appareil uniquement, sans synchronisation. Le calcul officiel de votre établissement fait toujours foi."
   },
   "sdob": {
     "brand": "Arrête de choisir. Commence à réviser.",
@@ -182,7 +257,11 @@
     "fWeight": "Pondération",
     "phWeight": "p. ex. 0.3",
     "fDate": "Date",
-    "bAdd": "Ajouter une note"
+    "bAdd": "Ajouter une note",
+    "grades_many": "{{count}} notes",
+    "courses_many": "{{count}} cours",
+    "modeCustom": "Perso",
+    "scaleSummary": "{{min}}–{{max}} · admis {{pass}} · {{best}} = meilleur"
   },
   "sv": {
     "today": "Aujourd’hui",
@@ -335,7 +414,8 @@
       "edit": "Modifier",
       "examWord": "EXAMEN",
       "studyWord": "ÉTUDE",
-      "dueWord": "À RENDRE"
+      "dueWord": "À RENDRE",
+      "exam_many": "{{count}} examens"
     },
     "cal": {
       "sun": "Dim",
@@ -377,7 +457,8 @@
       "examDate": "Date de l’examen",
       "difficultyLabel": "Difficulté",
       "examNotesPh": "Sujets, format, points clés...",
-      "addCourse": "Ajouter un cours"
+      "addCourse": "Ajouter un cours",
+      "typeCustomPh": "Nommez le type (ex. Présentation)"
     },
     "act": {
       "addManually": "Ajouter manuellement",

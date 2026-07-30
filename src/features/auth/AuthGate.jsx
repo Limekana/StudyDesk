@@ -1,10 +1,24 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { App as CapApp } from '@capacitor/app';
 import { supabase, OAUTH_REDIRECT_URL } from '../../lib/supabase.js';
 import { inheritFromNexus } from '../../lib/suiteSso.js';
 import { setGuestMode } from '../../lib/guestMode.js';
+import { translateAuthError } from '../../lib/authErrors.js';
+
+// v1.8 / ACT-3 — has this device ever completed first run? `studydesk-onboarded`
+// is written at the end of onboarding, which lives *behind* this gate, so an
+// unset flag is a sound "never been here before" test at gate time. Same flag
+// App.jsx gates the onboarding wizard on — no new flag needed.
+function hasOnboarded() {
+  try {
+    return localStorage.getItem('studydesk-onboarded') === '1';
+  } catch {
+    return false;
+  }
+}
 
 const authCss = `
 .auth-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px 20px;background:var(--bg);}
@@ -29,6 +43,13 @@ const authCss = `
 .auth-nexus:disabled{opacity:0.5;cursor:not-allowed;}
 .auth-nexus-glyph{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;font-family:var(--font-display);font-weight:600;font-size:14px;line-height:1;}
 .auth-nexus-note{margin-top:-4px;margin-bottom:10px;font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;color:var(--muted2);text-align:center;}
+/* v1.8 — ACT-4. Email/password is collapsed behind this control so the guest
+   link clears the fold on <=640px viewports. Matches .auth-google's metrics
+   (min-height 44px, mono uppercase) but with no fill, marking it as the
+   tertiary path rather than a third sign-in provider. */
+.auth-email-toggle{width:100%;min-height:44px;background:none;color:var(--muted);border:1px solid var(--border);padding:14px 14px;border-radius:6px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;transition:all 0.1s;margin-top:10px;}
+.auth-email-toggle:hover{border-color:var(--text);color:var(--text);}
+.auth-email-toggle:disabled{opacity:0.5;cursor:not-allowed;}
 .auth-divider{display:flex;align-items:center;gap:10px;margin:22px 0;color:var(--muted2);font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;}
 .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border);}
 .auth-submit{width:100%;margin-top:8px;padding:11px 18px;font-size:12px;}
@@ -50,6 +71,18 @@ const authCss = `
 .auth-guest button:hover{color:var(--text);}
 .auth-guest button:disabled{opacity:0.5;cursor:not-allowed;}
 .auth-guest-note{font-family:var(--font-mono);font-size:10px;letter-spacing:0.06em;color:var(--muted2);text-align:center;margin:0 12px;line-height:1.4;}
+.auth-legal-note{font-size:10px;color:var(--muted2);text-align:center;margin:10px 12px 0;line-height:1.5;}
+.auth-legal-note a{color:var(--muted);text-decoration:underline;}
+/* v1.8 — ACT-4. Short viewports get tighter chrome so the guest link survives
+   the expanded email form too. Keyed on height, not width: the fold problem is
+   vertical, and 380x732 phones must keep the roomier editorial spacing. */
+@media (max-height:680px){
+  .auth-wrap{padding:16px 20px;}
+  .auth-card{padding:22px 24px;}
+  .auth-tagline{margin-bottom:18px;}
+  .auth-divider{margin:14px 0;}
+  .auth-guest{margin-top:12px;}
+}
 `;
 
 function GoogleIcon() {
@@ -64,7 +97,18 @@ function GoogleIcon() {
 }
 
 export default function AuthGate() {
-  const [mode, setMode] = useState('signin'); // 'signin' | 'signup'
+  const { t } = useTranslation();
+  // ACT-3 — read once on mount. The flag can't change while the gate is on
+  // screen, and re-reading would let the copy shift under the user mid-session.
+  const [firstRun] = useState(() => !hasOnboarded());
+  // ACT-3 — was a hardcoded 'signin', which rendered "Welcome back" / "Pick up
+  // where you left off." to someone who had never opened the app.
+  const [mode, setMode] = useState(() => (hasOnboarded() ? 'signin' : 'signup'));
+  // ACT-4 — email/password collapsed by default. Four parallel paths
+  // (Nexus · Google · email · guest) pushed "Continue as guest" below the fold
+  // on <=640px viewports; hiding the form until asked for reclaims ~180px and
+  // is the same pattern NCC has shipped since v1.1.
+  const [showEmail, setShowEmail] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [err, setErr] = useState('');
@@ -108,12 +152,12 @@ export default function AuthGate() {
     try {
       const result = await inheritFromNexus();
       if (!result.ok) {
-        setErr(result.reason || 'Could not inherit Nexus session.');
+        setErr(result.reason || t('auth.errNexus'));
       }
       // On success, supabase.auth.onAuthStateChange fires and App.jsx
       // takes over — no further action needed here.
     } catch (e) {
-      setErr(e?.message || 'Nexus sign-in failed');
+      setErr(translateAuthError(e, t, 'auth.errNexusFailed'));
     } finally {
       setLoading(false);
     }
@@ -139,16 +183,20 @@ export default function AuthGate() {
           setErr(errParam);
         } else if (code) {
           const { error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error) setErr(error.message);
+          if (error) setErr(translateAuthError(error, t));
         }
       } catch (e) {
-        setErr(e?.message || 'Sign-in callback failed');
+        setErr(translateAuthError(e, t, 'auth.errCallback'));
       } finally {
         try { await Browser.close(); } catch { /* not always open */ }
       }
     });
     return () => { subPromise.then((s) => s.remove()).catch(() => {}); };
-  }, []);
+    // `t` is a dependency because the callback translates OAuth failures. In
+    // practice it never changes while the gate is mounted (the language picker
+    // is onboarding step 0, which renders behind this gate), and re-running is
+    // a clean remove/add of the listener anyway.
+  }, [t]);
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -160,13 +208,13 @@ export default function AuthGate() {
         // Email confirmation is disabled in the Supabase project — session lands immediately.
         // If it's ever re-enabled, surface a friendly note.
         const { data } = await supabase.auth.getSession();
-        if (!data.session) setInfo('Account created. Check your email to confirm.');
+        if (!data.session) setInfo(t('auth.infoConfirm'));
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
     } catch (e) {
-      setErr(e?.message || 'Authentication failed');
+      setErr(translateAuthError(e, t));
     } finally {
       setLoading(false);
     }
@@ -182,14 +230,14 @@ export default function AuthGate() {
           skipBrowserRedirect: true,
         },
       });
-      if (error || !data?.url) throw error ?? new Error('Failed to start Google sign-in');
+      if (error || !data?.url) throw error ?? new Error(t('auth.errGoogleStart'));
       if (Capacitor.isNativePlatform()) {
         await Browser.open({ url: data.url, presentationStyle: 'fullscreen' });
       } else {
         window.location.href = data.url;
       }
     } catch (e) {
-      setErr(e?.message || 'Google sign-in failed');
+      setErr(translateAuthError(e, t, 'auth.errGoogleFailed'));
       setLoading(false);
     }
   }
@@ -203,11 +251,26 @@ export default function AuthGate() {
           {/* v1.1 — UI/UX review #21: was "SIGN IN TO SYNC WITH NEXUS", which
               now misleads guest-mode users (they explicitly opt out of sign-in).
               Neutral framing reads as a tagline rather than instruction. */}
-          <div className="auth-tagline">ACADEMIC FOCUS · OPTIONAL SYNC</div>
+          <div className="auth-tagline">{t('auth.tagline')}</div>
 
-          <div className="auth-title">{mode === 'signup' ? 'Create account' : 'Welcome back'}</div>
+          {/* ACT-3 — on first run, lead with the local-first promise instead of
+              an account pitch. This is the screen where "you don't need an
+              account" has to land; the guest control is the last thing on the
+              page. A first-run user who taps "Sign in" gets the returning
+              framing, which is then correct — they're asserting they have one. */}
+          <div className="auth-title">
+            {firstRun && mode === 'signup'
+              ? t('auth.titleFirstRun')
+              : mode === 'signup'
+                ? t('auth.titleSignup')
+                : t('auth.titleSignin')}
+          </div>
           <div className="auth-sub">
-            {mode === 'signup' ? 'Your data syncs across devices.' : 'Pick up where you left off.'}
+            {firstRun && mode === 'signup'
+              ? t('auth.subFirstRun')
+              : mode === 'signup'
+                ? t('auth.subSignup')
+                : t('auth.subSignin')}
           </div>
 
           {err && <div className="auth-error">{err}</div>}
@@ -217,22 +280,37 @@ export default function AuthGate() {
             <>
               <button type="button" className="auth-nexus" onClick={onNexus} disabled={loading}>
                 <span className="auth-nexus-glyph">◈</span>
-                Continue with Nexus
+                {t('auth.nexus')}
               </button>
-              <div className="auth-nexus-note">SIGNED IN TO NEXUS COMMAND CENTER ON THIS DEVICE</div>
+              <div className="auth-nexus-note">{t('auth.nexusNote')}</div>
             </>
           )}
 
           <button type="button" className="auth-google" onClick={onGoogle} disabled={loading}>
             <GoogleIcon />
-            Continue with Google
+            {t('auth.google')}
           </button>
 
-          <div className="auth-divider">OR</div>
+          {/* ACT-4 — collapsed by default; the form and the sign-in/sign-up
+              toggle only mount once the user asks for email. Keeping the toggle
+              inside this branch matters: with the form hidden it would be
+              switching a mode nothing on screen reflects. */}
+          {!showEmail ? (
+            <button
+              type="button"
+              className="auth-email-toggle"
+              onClick={() => setShowEmail(true)}
+              disabled={loading}
+            >
+              {mode === 'signup' ? t('auth.useEmailSignup') : t('auth.useEmail')}
+            </button>
+          ) : (
+          <>
+          <div className="auth-divider">{t('auth.or')}</div>
 
           <form onSubmit={onSubmit}>
             <div className="input-group">
-              <label className="input-label">Email</label>
+              <label className="input-label">{t('auth.emailLabel')}</label>
               <input
                 type="text"
                 inputMode="email"
@@ -244,7 +322,7 @@ export default function AuthGate() {
               />
             </div>
             <div className="input-group">
-              <label className="input-label">Password</label>
+              <label className="input-label">{t('auth.passwordLabel')}</label>
               <input
                 type="password"
                 value={password}
@@ -254,17 +332,19 @@ export default function AuthGate() {
               />
             </div>
             <button type="submit" className="btn auth-submit" disabled={loading}>
-              {loading ? '…' : (mode === 'signup' ? 'Create account' : 'Sign in')}
+              {loading ? '…' : (mode === 'signup' ? t('auth.submitSignup') : t('auth.submitSignin'))}
             </button>
           </form>
 
           <div className="auth-toggle">
             {mode === 'signup' ? (
-              <>Already have an account? <button onClick={() => { setMode('signin'); setErr(''); setInfo(''); }}>Sign in</button></>
+              <>{t('auth.haveAccount')} <button onClick={() => { setMode('signin'); setErr(''); setInfo(''); }}>{t('auth.linkSignin')}</button></>
             ) : (
-              <>New here? <button onClick={() => { setMode('signup'); setErr(''); setInfo(''); }}>Create account</button></>
+              <>{t('auth.newHere')} <button onClick={() => { setMode('signup'); setErr(''); setInfo(''); }}>{t('auth.linkSignup')}</button></>
             )}
           </div>
+          </>
+          )}
         </div>
 
         {/* v1.1 auth UX — Continue as guest. Lets users skip auth and run
@@ -280,10 +360,25 @@ export default function AuthGate() {
             }}
             disabled={loading}
           >
-            Continue as guest
+            {t('auth.guest')}
           </button>
           <div className="auth-guest-note">
-            LOCAL ONLY · NO CLOUD SYNC · YOU CAN SIGN IN LATER
+            {t('auth.guestNote')}
+          </div>
+          {/* GDPR Art. 8 — consent for an information society service is only
+              valid from 16 (13 in some member states). We cannot verify ages and
+              are not expected to, but a study app aimed at students should say
+              the limit rather than stay silent, and should point at the option
+              that needs no account. */}
+          <div className="auth-legal-note">
+            {t('auth.ageNote')}{' '}
+            <a
+              href="https://limekana.github.io/nexus-command-center/legal/privacy.html"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t('auth.privacyLink')}
+            </a>
           </div>
         </div>
       </div>
