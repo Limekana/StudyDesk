@@ -26,7 +26,7 @@ import ar from './locales/ar.json';
 
 export const SUPPORTED_LANGS = ['en', 'fi', 'fr', 'de', 'es', 'zh', 'hi', 'pt', 'id', 'ar'];
 
-export const LANG_STORAGE_KEY = 'limecore_lang';
+const LANG_STORAGE_KEY = 'limecore_lang';
 
 /** Native (endonym) display names for the in-app language switcher. */
 export const LANGUAGE_NAMES = {
@@ -46,7 +46,7 @@ function isSupported(code) {
   return SUPPORTED_LANGS.includes(code);
 }
 
-export function detectLanguage() {
+function detectLanguage() {
   // 1. explicit override
   try {
     const stored = localStorage.getItem(LANG_STORAGE_KEY);
@@ -78,9 +78,9 @@ export function setLanguage(lang) {
 
 
 /** Languages that render right-to-left. Arabic is the only one so far. */
-export const RTL_LANGS = ['ar'];
+const RTL_LANGS = ['ar'];
 
-export function isRtl(lang) {
+function isRtl(lang) {
   return RTL_LANGS.includes(lang.split('-')[0]);
 }
 
@@ -92,7 +92,7 @@ export function isRtl(lang) {
  * the whole tree. `lang` goes on at the same time — it drives hyphenation and
  * font fallback, which matters for Devanagari and Arabic script.
  */
-export function applyDirection(lang) {
+function applyDirection(lang) {
   if (typeof document === 'undefined') return;
   const el = document.documentElement;
   el.dir = isRtl(lang) ? 'rtl' : 'ltr';

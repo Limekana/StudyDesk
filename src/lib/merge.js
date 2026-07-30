@@ -28,7 +28,7 @@ function newer(remoteIso, localIso) {
  *
  * `notes` stays local-only (not a Nexus-known field).
  */
-export function mergeSubject(localCourse, remoteRow) {
+function mergeSubject(localCourse, remoteRow) {
   const remote = {
     id: remoteRow.id,
     name: remoteRow.name,
@@ -61,7 +61,7 @@ export function mergeSubject(localCourse, remoteRow) {
   return localCourse;
 }
 
-export function mergeGrade(localGrade, remoteRow) {
+function mergeGrade(localGrade, remoteRow) {
   const remote = {
     id: remoteRow.id,
     subjectId: remoteRow.subject_id,
@@ -76,7 +76,7 @@ export function mergeGrade(localGrade, remoteRow) {
   return localGrade;
 }
 
-export function mergeSession(localSession, remoteRow) {
+function mergeSession(localSession, remoteRow) {
   const remote = {
     id: remoteRow.id,
     subjectId: remoteRow.subject_id || null,

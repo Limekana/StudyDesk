@@ -15,7 +15,7 @@
 // German and Czech 1–5/1–6 have 1 as best. It costs one comparison, and leaving
 // it out means revisiting all of this the first time a German user asks.
 
-export const GRADE_MODES = ['ib', 'us', 'custom'];
+const GRADE_MODES = ['ib', 'us', 'custom'];
 
 /** Suggested when "Custom" is first picked: the Finnish scale that prompted
  *  the request, which also makes the feature self-explanatory. */
@@ -67,13 +67,14 @@ export function scaleFor(mode, custom) {
   return BUILTIN[mode] ?? BUILTIN.ib;
 }
 
-/** True when `grade` meets the pass mark, honouring which end of the scale is
- *  the good end. The only place `direction` changes an outcome. */
-export function isPass(grade, scale) {
-  const n = Number(grade);
-  if (!Number.isFinite(n)) return false;
-  return scale.direction === 'down' ? n <= scale.passMark : n >= scale.passMark;
-}
+// A pass/fail marker on each grade row is the obvious next use of `passMark`
+// and `direction`, and the one comparison it needs is
+// `direction === 'down' ? n <= passMark : n >= passMark`. Not written yet:
+// there is no pass/fail display anywhere in the app, and an unused helper is
+// exactly what the rest of this pass has been deleting. Both fields still earn
+// their place today — they are visible in the scale summary, and they are what
+// a German or Czech 1-6 user needs the app to have stored when that marker
+// does land.
 
 /** "4–10 · pass 5 · 10 best" — the one place min, max, passMark and direction
  *  are all visible, so no stored field is write-only. */

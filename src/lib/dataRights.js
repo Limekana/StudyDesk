@@ -24,7 +24,7 @@ const EXPORT_SCHEMA_VERSION = 1;
  * database, so omitting them would make the export a misleading account of what
  * we hold.
  */
-export function buildExport(state, session) {
+function buildExport(state, session) {
   const courses = Object.values(state.courses || {});
   return {
     schemaVersion: EXPORT_SCHEMA_VERSION,
