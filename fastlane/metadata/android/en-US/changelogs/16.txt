@@ -1,1 +1,1 @@
-Fixes the confirmation code screen. The Confirm button did nothing and gave no reason why. It now says when the code is incomplete, and the empty field no longer looks like it is already filled in.
+Fixes email confirmation. The code field only accepted six characters while the emailed code is longer, so a valid code could not be entered at all. The Confirm button also did nothing and gave no reason why — it now says when the code is incomplete. Also fixes the password box on the sign-in screen, which was smaller than the email box above it.

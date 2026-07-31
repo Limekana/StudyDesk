@@ -1,1 +1,1 @@
-Corrige la pantalla del código de confirmación. El botón Confirmar no hacía nada ni explicaba por qué. Ahora avisa si el código está incompleto y el campo vacío ya no parece relleno.
+Corrige la confirmación por correo. El campo del código solo admitía seis caracteres, pero el código enviado es más largo, así que no se podía introducir un código válido. El botón Confirmar tampoco hacía nada ni explicaba por qué; ahora avisa si el código está incompleto. Además, el campo de contraseña era más pequeño que el de correo situado encima.

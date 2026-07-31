@@ -1,1 +1,1 @@
-Behebt den Bildschirm für den Bestätigungscode. Die Schaltfläche tat nichts und nannte keinen Grund. Jetzt wird gemeldet, wenn der Code unvollständig ist, und das leere Feld sieht nicht mehr ausgefüllt aus.
+Behebt die E-Mail-Bestätigung. Das Codefeld nahm nur sechs Zeichen an, obwohl der zugesandte Code länger ist — ein gültiger Code ließ sich also gar nicht eingeben. Die Schaltfläche Bestätigen tat zudem nichts und nannte keinen Grund; jetzt wird gemeldet, wenn der Code unvollständig ist. Auch das Passwortfeld im Anmeldebildschirm war kleiner als das E-Mail-Feld darüber.
