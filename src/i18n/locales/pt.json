@@ -48,7 +48,8 @@
     "otpSent": "Novo código enviado.",
     "otpBack": "Usar outro e-mail",
     "errOtp": "Esse código não funcionou. Verifique e tente novamente.",
-    "errOtpResend": "Não foi possível enviar um novo código. Tente daqui a pouco."
+    "errOtpResend": "Não foi possível enviar um novo código. Tente daqui a pouco.",
+    "errOtpLength": "Introduza os 6 dígitos do código."
   },
   "app": {
     "name": "StudyDesk",

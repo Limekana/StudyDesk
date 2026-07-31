@@ -12,6 +12,12 @@ textarea{resize:vertical;min-height:80px;line-height:1.6;}select{cursor:pointer;
 .input-row{display:flex;gap:8px;align-items:flex-start;}
 .btn{background:#3d2e1e;color:#faf8f4;border:none;padding:9px 18px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:4px;transition:opacity 0.1s;white-space:nowrap;font-weight:500;}
 .btn:hover{opacity:0.8;}.btn-sm{padding:6px 12px;font-size:10px;}
+/* v1.6.2 — there was no :disabled rule at all, so a blocked .btn rendered as a
+   very slightly darker button that silently swallowed taps. That is exactly how
+   the v1.6.1 code-confirmation screen was reported as "the button darkens and
+   nothing happens". Make disabled look disabled everywhere, not just there. */
+.btn:disabled,.btn[disabled]{opacity:0.4;cursor:not-allowed;}
+.btn:disabled:hover,.btn[disabled]:hover{opacity:0.4;}
 .btn-outline{background:transparent;color:var(--muted);border:1px solid var(--border2);padding:7px 14px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:4px;transition:all 0.1s;}
 .btn-outline:hover{color:var(--text);border-color:var(--text);}
 .btn-danger-text{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:16px;padding:2px 6px;transition:color 0.1s;}

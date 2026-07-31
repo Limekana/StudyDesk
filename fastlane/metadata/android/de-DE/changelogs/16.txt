@@ -1,0 +1,1 @@
+Behebt den Bildschirm für den Bestätigungscode. Die Schaltfläche tat nichts und nannte keinen Grund. Jetzt wird gemeldet, wenn der Code unvollständig ist, und das leere Feld sieht nicht mehr ausgefüllt aus.

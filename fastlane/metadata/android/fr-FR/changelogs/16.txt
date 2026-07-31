@@ -1,0 +1,1 @@
+Corrige l'écran du code de confirmation. Le bouton Confirmer ne faisait rien, sans explication. Il indique désormais si le code est incomplet, et le champ vide ne semble plus déjà rempli.

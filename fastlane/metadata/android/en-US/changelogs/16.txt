@@ -1,0 +1,1 @@
+Fixes the confirmation code screen. The Confirm button did nothing and gave no reason why. It now says when the code is incomplete, and the empty field no longer looks like it is already filled in.

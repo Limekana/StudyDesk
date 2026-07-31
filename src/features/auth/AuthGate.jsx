@@ -260,11 +260,17 @@ export default function AuthGate() {
 
   async function onVerify(e) {
     e.preventDefault();
-    setErr(''); setInfo(''); setLoading(true);
+    setErr(''); setInfo('');
+    const token = otpCode.replace(/\D/g, '');
+    // Validate here rather than by disabling the button — see the submit button
+    // for why. A short code is the common case (mistyped, or the field looked
+    // full when it wasn't), and it deserves a sentence, not a dead control.
+    if (token.length !== 6) { setErr(t('auth.errOtpLength')); return; }
+    setLoading(true);
     try {
       const { error } = await supabase.auth.verifyOtp({
         email,
-        token: otpCode.replace(/\D/g, ''),
+        token,
         type: 'signup',
       });
       if (error) throw error;
@@ -367,7 +373,10 @@ export default function AuthGate() {
                     inputMode="numeric"
                     autoComplete="one-time-code"
                     autoFocus
-                    placeholder="••••••"
+                    /* Not "••••••". Six bullets read as an already-filled
+                       masked field, so an empty input looks complete and the
+                       disabled submit below looks broken instead of blocked. */
+                    placeholder="------"
                     maxLength={6}
                     value={otpCode}
                     /* Strip non-digits on the way in rather than validating on
@@ -376,11 +385,12 @@ export default function AuthGate() {
                     onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   />
                 </div>
-                <button
-                  type="submit"
-                  className="btn auth-submit"
-                  disabled={loading || otpCode.length !== 6}
-                >
+                {/* Deliberately NOT disabled on an incomplete code. `.btn` has
+                    no :disabled rule, so a blocked button renders as a slightly
+                    darker button that swallows taps with no explanation — which
+                    is exactly how this shipped and exactly how it was reported.
+                    Let the press land and say what is wrong instead. */}
+                <button type="submit" className="btn auth-submit" disabled={loading}>
                   {loading ? '…' : t('auth.otpSubmit')}
                 </button>
               </form>

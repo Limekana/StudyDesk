@@ -1,0 +1,1 @@
+Korjaa vahvistuskoodin näytön. Vahvista-painike ei tehnyt mitään eikä kertonut syytä. Nyt se kertoo, jos koodi on vajaa, eikä tyhjä kenttä enää näytä jo täytetyltä.

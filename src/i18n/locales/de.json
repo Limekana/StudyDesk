@@ -123,7 +123,8 @@
     "otpSent": "Neuer Code gesendet.",
     "otpBack": "Andere E-Mail-Adresse verwenden",
     "errOtp": "Dieser Code hat nicht funktioniert. Bitte prüfen und erneut versuchen.",
-    "errOtpResend": "Neuer Code konnte nicht gesendet werden. Bitte gleich noch einmal versuchen."
+    "errOtpResend": "Neuer Code konnte nicht gesendet werden. Bitte gleich noch einmal versuchen.",
+    "errOtpLength": "Bitte alle 6 Ziffern des Codes eingeben."
   },
   "settings": {
     "cloudSync": "Cloud-Sync",

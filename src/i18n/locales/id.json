@@ -48,7 +48,8 @@
     "otpSent": "Kode baru terkirim.",
     "otpBack": "Gunakan email lain",
     "errOtp": "Kode itu tidak berhasil. Periksa dan coba lagi.",
-    "errOtpResend": "Tidak dapat mengirim kode baru. Coba sebentar lagi."
+    "errOtpResend": "Tidak dapat mengirim kode baru. Coba sebentar lagi.",
+    "errOtpLength": "Masukkan keenam digit kode."
   },
   "app": {
     "name": "StudyDesk",

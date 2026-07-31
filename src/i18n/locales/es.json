@@ -124,7 +124,8 @@
     "otpSent": "Código nuevo enviado.",
     "otpBack": "Usar otro correo electrónico",
     "errOtp": "Ese código no funcionó. Revísalo e inténtalo de nuevo.",
-    "errOtpResend": "No se pudo enviar un código nuevo. Inténtalo en un momento."
+    "errOtpResend": "No se pudo enviar un código nuevo. Inténtalo en un momento.",
+    "errOtpLength": "Introduce los 6 dígitos del código."
   },
   "settings": {
     "cloudSync": "Sincronización en la nube",
