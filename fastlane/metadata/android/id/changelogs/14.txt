@@ -1,0 +1,1 @@
+Rilis besar: bahasa Indonesia, Arab, Hindi, dan Portugis ditambahkan. Layar masuk kini diterjemahkan sepenuhnya dan langsung menjelaskan bahwa akun tidak diperlukan. Ekspor data dan penghapusan akun ditambahkan.

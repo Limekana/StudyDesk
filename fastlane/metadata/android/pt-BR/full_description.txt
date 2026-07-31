@@ -1,0 +1,13 @@
+O StudyDesk é um aplicativo de execução de estudos para estudantes.
+
+Recursos:
+* Cadastre suas disciplinas e prazos; o motor Next Up ordena o que fazer agora
+* Organize disciplinas por ano letivo e período
+* Histórico de períodos somente leitura, com média por período
+* Notas nas escalas IB e GPA
+* Timer de foco Pomodoro integrado
+* Resumo de estudo com IA, opcional, ao fim de cada sessão
+
+Estética de papel quente. Local primeiro; a sincronização na nuvem é opcional e exige conta. Sem Google Play Services — o login com Google usa um fluxo OAuth web comum.
+
+Faz parte do conjunto Limecore Nexus. Disponível em inglês, finlandês, francês, alemão, espanhol, chinês, hindi, português, indonésio e árabe.

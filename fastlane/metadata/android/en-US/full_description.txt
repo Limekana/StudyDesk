@@ -10,4 +10,4 @@ Features:
 
 Warm paper aesthetic. Local-first; optional account-gated cloud sync. No Google Play Services — Google sign-in is a plain web OAuth flow.
 
-Part of the Limecore Nexus suite. Available in English, Finnish, French, German, Spanish and Chinese.
+Part of the Limecore Nexus suite. Available in English, Finnish, French, German, Spanish, Chinese, Hindi, Portuguese, Indonesian and Arabic.

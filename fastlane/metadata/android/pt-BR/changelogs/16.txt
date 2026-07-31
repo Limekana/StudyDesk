@@ -1,0 +1,1 @@
+Corrige a confirmação por e-mail. O campo do código aceitava apenas seis caracteres, mas o código enviado é mais longo, então não era possível inserir um código válido. O botão Confirmar também não fazia nada nem explicava o motivo; agora avisa se o código está incompleto. O campo de senha da tela de entrada também foi corrigido.

@@ -1,0 +1,1 @@
+Tarefas, provas e afazeres agora sincronizam entre dispositivos. Antes, apenas disciplinas e notas sincronizavam. O cadastro também pode ser confirmado com um código dentro do app, e não só pelo link do e-mail.
