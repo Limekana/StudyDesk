@@ -4,14 +4,24 @@
    commit changes where the CSS lives and nothing about what it does. */
 
 /* ── Shared components ── */
-input[type=text],input[type=date],select,textarea{background:var(--surface);border:1px solid var(--border2);color:var(--text);padding:9px 12px;font-family:var(--font-sans);font-size:13px;border-radius:4px;outline:none;transition:border-color 0.15s;width:100%;}
-input[type=text]:focus,input[type=date]:focus,select:focus,textarea:focus{border-color:#aaa;}
+/* v1.6.2 — input[type=password] was missing from this list, so the password
+   field on the auth screen got none of the shared sizing (no width:100%, no
+   padding, no border) and rendered visibly smaller than the email field next
+   to it. Added here rather than in AuthGate so every password input matches. */
+input[type=text],input[type=password],input[type=date],select,textarea{background:var(--surface);border:1px solid var(--border2);color:var(--text);padding:9px 12px;font-family:var(--font-sans);font-size:13px;border-radius:4px;outline:none;transition:border-color 0.15s;width:100%;}
+input[type=text]:focus,input[type=password]:focus,input[type=date]:focus,select:focus,textarea:focus{border-color:#aaa;}
 textarea{resize:vertical;min-height:80px;line-height:1.6;}select{cursor:pointer;}
 .input-group{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
 .input-label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;}
 .input-row{display:flex;gap:8px;align-items:flex-start;}
 .btn{background:#3d2e1e;color:#faf8f4;border:none;padding:9px 18px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:4px;transition:opacity 0.1s;white-space:nowrap;font-weight:500;}
 .btn:hover{opacity:0.8;}.btn-sm{padding:6px 12px;font-size:10px;}
+/* v1.6.2 — there was no :disabled rule at all, so a blocked .btn rendered as a
+   very slightly darker button that silently swallowed taps. That is exactly how
+   the v1.6.1 code-confirmation screen was reported as "the button darkens and
+   nothing happens". Make disabled look disabled everywhere, not just there. */
+.btn:disabled,.btn[disabled]{opacity:0.4;cursor:not-allowed;}
+.btn:disabled:hover,.btn[disabled]:hover{opacity:0.4;}
 .btn-outline{background:transparent;color:var(--muted);border:1px solid var(--border2);padding:7px 14px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:4px;transition:all 0.1s;}
 .btn-outline:hover{color:var(--text);border-color:var(--text);}
 .btn-danger-text{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:16px;padding:2px 6px;transition:color 0.1s;}

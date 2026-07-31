@@ -1,0 +1,1 @@
+Korjaa sähköpostivahvistuksen. Koodikenttään mahtui vain kuusi merkkiä, vaikka sähköpostin koodi on pidempi, joten kelvollista koodia ei voinut syöttää lainkaan. Myös Vahvista-painike ei tehnyt mitään eikä kertonut syytä — nyt se kertoo, jos koodi on vajaa. Lisäksi kirjautumisnäytön salasanakenttä oli pienempi kuin sähköpostikenttä sen yläpuolella.

@@ -115,7 +115,7 @@
     "ageNote": "Debes tener 16 años o más para crear una cuenta (13 donde la ley local lo permita). Si eres menor, usa el modo invitado: nada sale de tu dispositivo.",
     "privacyLink": "Política de privacidad",
     "otpTitle": "Introduce tu código",
-    "otpSub": "Enviamos un código de 6 dígitos a",
+    "otpSub": "Enviamos un código a",
     "otpLabel": "Código de verificación",
     "otpSubmit": "Confirmar cuenta",
     "otpHint": "El código es válido durante 60 minutos.",
@@ -124,7 +124,8 @@
     "otpSent": "Código nuevo enviado.",
     "otpBack": "Usar otro correo electrónico",
     "errOtp": "Ese código no funcionó. Revísalo e inténtalo de nuevo.",
-    "errOtpResend": "No se pudo enviar un código nuevo. Inténtalo en un momento."
+    "errOtpResend": "No se pudo enviar un código nuevo. Inténtalo en un momento.",
+    "errOtpLength": "Ese código parece incompleto. Copia el código completo del correo."
   },
   "settings": {
     "cloudSync": "Sincronización en la nube",

@@ -114,7 +114,7 @@
     "ageNote": "You must be 16+ to create an account (13+ where local law allows). Under that age, use guest mode — nothing leaves your device.",
     "privacyLink": "Privacy policy",
     "otpTitle": "Enter your code",
-    "otpSub": "We sent a 6-digit code to",
+    "otpSub": "We sent a code to",
     "otpLabel": "Verification code",
     "otpSubmit": "Confirm account",
     "otpHint": "The code is valid for 60 minutes.",
@@ -123,7 +123,8 @@
     "otpSent": "New code sent.",
     "otpBack": "Use a different email",
     "errOtp": "That code didn't work. Check it and try again.",
-    "errOtpResend": "Couldn't send a new code. Try again shortly."
+    "errOtpResend": "Couldn't send a new code. Try again shortly.",
+    "errOtpLength": "That code looks incomplete. Copy the whole code from the email."
   },
   "settings": {
     "cloudSync": "Cloud sync",

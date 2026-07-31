@@ -1,0 +1,1 @@
+Corrige la confirmation par e-mail. Le champ du code n'acceptait que six caractères alors que le code envoyé est plus long : un code valide ne pouvait donc pas être saisi. Le bouton Confirmer ne faisait rien non plus, sans explication ; il indique désormais si le code est incomplet. Le champ mot de passe de l'écran de connexion était aussi plus petit que le champ e-mail.
