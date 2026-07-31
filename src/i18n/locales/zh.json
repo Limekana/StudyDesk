@@ -114,7 +114,7 @@
     "ageNote": "创建账户需年满 16 岁（当地法律允许时为 13 岁）。未达年龄请使用访客模式 —— 数据不会离开你的设备。",
     "privacyLink": "隐私政策",
     "otpTitle": "输入验证码",
-    "otpSub": "我们已将 6 位验证码发送至",
+    "otpSub": "我们已将验证码发送至",
     "otpLabel": "验证码",
     "otpSubmit": "确认账户",
     "otpHint": "验证码 60 分钟内有效。",
@@ -124,7 +124,7 @@
     "otpBack": "使用其他邮箱",
     "errOtp": "验证码无效，请检查后重试。",
     "errOtpResend": "无法发送新验证码，请稍后再试。",
-    "errOtpLength": "请输入完整的 6 位验证码。"
+    "errOtpLength": "验证码似乎不完整。请从邮件中复制完整的验证码。"
   },
   "settings": {
     "cloudSync": "云同步",

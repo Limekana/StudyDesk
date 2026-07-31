@@ -39,7 +39,7 @@
     "ageNote": "Você precisa ter 16 anos ou mais para criar uma conta (13 onde a lei local permitir). Abaixo dessa idade, use o modo convidado — nada sai do seu aparelho.",
     "privacyLink": "Política de privacidade",
     "otpTitle": "Insira o seu código",
-    "otpSub": "Enviámos um código de 6 dígitos para",
+    "otpSub": "Enviámos um código para",
     "otpLabel": "Código de verificação",
     "otpSubmit": "Confirmar conta",
     "otpHint": "O código é válido durante 60 minutos.",
@@ -49,7 +49,7 @@
     "otpBack": "Usar outro e-mail",
     "errOtp": "Esse código não funcionou. Verifique e tente novamente.",
     "errOtpResend": "Não foi possível enviar um novo código. Tente daqui a pouco.",
-    "errOtpLength": "Introduza os 6 dígitos do código."
+    "errOtpLength": "Esse código parece incompleto. Copie o código completo do e-mail."
   },
   "app": {
     "name": "StudyDesk",

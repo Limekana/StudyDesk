@@ -110,6 +110,14 @@ function GoogleIcon() {
   );
 }
 
+// Confirmation-code bounds. Supabase's Mailer OTP Length is a project setting
+// with a documented range of 6-10; this project emits 8. The screen accepts the
+// whole range on purpose — the first version assumed 6, which made the input
+// physically unable to hold a valid code, and pinning it to 8 would only defer
+// the same failure to the next settings change.
+const OTP_MAX = 10;
+const OTP_MIN = 6;
+
 export default function AuthGate() {
   const { t } = useTranslation();
   // ACT-3 — read once on mount. The flag can't change while the gate is on
@@ -262,10 +270,13 @@ export default function AuthGate() {
     e.preventDefault();
     setErr(''); setInfo('');
     const token = otpCode.replace(/\D/g, '');
-    // Validate here rather than by disabling the button — see the submit button
-    // for why. A short code is the common case (mistyped, or the field looked
-    // full when it wasn't), and it deserves a sentence, not a dead control.
-    if (token.length !== 6) { setErr(t('auth.errOtpLength')); return; }
+    // Deliberately NOT an exact-length check. Code length is a Supabase project
+    // setting (Auth > Mailer OTP Length, 6-10) and this project emits 8, not
+    // the 6 this screen was written against — which left the field physically
+    // unable to hold a valid code. Hardcoding 8 would just move the same bug to
+    // the next time that setting changes, so accept any plausible length and
+    // let the server be the authority on what is actually correct.
+    if (token.length < OTP_MIN) { setErr(t('auth.errOtpLength')); return; }
     setLoading(true);
     try {
       const { error } = await supabase.auth.verifyOtp({
@@ -373,16 +384,15 @@ export default function AuthGate() {
                     inputMode="numeric"
                     autoComplete="one-time-code"
                     autoFocus
-                    /* Not "••••••". Six bullets read as an already-filled
-                       masked field, so an empty input looks complete and the
-                       disabled submit below looks broken instead of blocked. */
-                    placeholder="------"
-                    maxLength={6}
+                    /* Not bullets. A run of "•" reads as an already-filled
+                       masked field, so an empty input looks complete. */
+                    placeholder={'-'.repeat(OTP_MAX)}
+                    maxLength={OTP_MAX}
                     value={otpCode}
                     /* Strip non-digits on the way in rather than validating on
                        submit — pasting from a mail client often brings spaces
                        or a stray newline along with the code. */
-                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, OTP_MAX))}
                   />
                 </div>
                 {/* Deliberately NOT disabled on an incomplete code. `.btn` has

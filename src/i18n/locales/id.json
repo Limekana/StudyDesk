@@ -39,7 +39,7 @@
     "ageNote": "Kamu harus berusia 16+ untuk membuat akun (13+ jika hukum setempat mengizinkan). Di bawah itu, gunakan mode tamu — tidak ada data yang keluar dari perangkatmu.",
     "privacyLink": "Kebijakan privasi",
     "otpTitle": "Masukkan kode Anda",
-    "otpSub": "Kami mengirim kode 6 digit ke",
+    "otpSub": "Kami mengirim kode ke",
     "otpLabel": "Kode verifikasi",
     "otpSubmit": "Konfirmasi akun",
     "otpHint": "Kode berlaku selama 60 menit.",
@@ -49,7 +49,7 @@
     "otpBack": "Gunakan email lain",
     "errOtp": "Kode itu tidak berhasil. Periksa dan coba lagi.",
     "errOtpResend": "Tidak dapat mengirim kode baru. Coba sebentar lagi.",
-    "errOtpLength": "Masukkan keenam digit kode."
+    "errOtpLength": "Kode itu tampak belum lengkap. Salin kode lengkap dari email."
   },
   "app": {
     "name": "StudyDesk",

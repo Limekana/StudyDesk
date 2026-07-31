@@ -114,7 +114,7 @@
     "ageNote": "Für ein Konto musst du mindestens 16 sein (13, wo das lokale Recht es erlaubt). Jünger? Nutze den Gastmodus — nichts verlässt dein Gerät.",
     "privacyLink": "Datenschutzerklärung",
     "otpTitle": "Code eingeben",
-    "otpSub": "Wir haben einen 6-stelligen Code gesendet an",
+    "otpSub": "Wir haben einen Code gesendet an",
     "otpLabel": "Bestätigungscode",
     "otpSubmit": "Konto bestätigen",
     "otpHint": "Der Code ist 60 Minuten gültig.",
@@ -124,7 +124,7 @@
     "otpBack": "Andere E-Mail-Adresse verwenden",
     "errOtp": "Dieser Code hat nicht funktioniert. Bitte prüfen und erneut versuchen.",
     "errOtpResend": "Neuer Code konnte nicht gesendet werden. Bitte gleich noch einmal versuchen.",
-    "errOtpLength": "Bitte alle 6 Ziffern des Codes eingeben."
+    "errOtpLength": "Der Code sieht unvollständig aus. Kopiere den vollständigen Code aus der E-Mail."
   },
   "settings": {
     "cloudSync": "Cloud-Sync",
