@@ -243,9 +243,12 @@ methods. ([Ko-fi: Connect your Stripe account](https://help.ko-fi.com/hc/en-us/a
 
 **Scope, smallest useful version:** a "Support the project" link/button to
 the Ko-fi page on `limecore-site` (footer or about page) — no app code, no
-API integration, just a link. Given `P4`, also worth a link from within
-StudyDesk itself (e.g. a settings-page "Support development" row linking out)
-since that's the app with the userbase this is most relevant to.
+API integration, just a link. **Confirmed 2026-08-01: all three apps get it,
+not StudyDesk alone** — a settings-page "Support development" row linking
+out, same pattern in NCC, LimeLog, and StudyDesk. It's a one-row, no-schema,
+no-API addition in each app, so there's no real reason to exclude NCC/LimeLog
+even though `P4` still means StudyDesk's copy of this ships first if
+sequencing ever forces a choice.
 
 **Deliberately not scoped here:** Ko-fi's webhook API (for anything more
 automated than a link, e.g. supporter-only perks) — nothing in the ask
