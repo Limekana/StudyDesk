@@ -504,5 +504,9 @@
       "syncedLegacy": "{{n}} éléments hérités synchronisés",
       "syncedFailed": "{{pushed}} synchronisés, {{failed}} échoués — nouvel essai"
     }
+  },
+  "widget": {
+    "today": "Aujourd’hui",
+    "tomorrow": "Demain"
   }
 }

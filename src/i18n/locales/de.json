@@ -499,5 +499,9 @@
       "syncedLegacy": "{{n}} Altdaten synchronisiert",
       "syncedFailed": "{{pushed}} synchronisiert, {{failed}} fehlgeschlagen — wird wiederholt"
     }
+  },
+  "widget": {
+    "today": "Heute",
+    "tomorrow": "Morgen"
   }
 }

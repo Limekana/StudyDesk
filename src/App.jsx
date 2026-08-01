@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useReducer, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { setLanguage, SUPPORTED_LANGS, LANGUAGE_NAMES } from "./i18n/index.js";
 import { useScrollSelectedIntoView } from "./lib/useScrollSelectedIntoView.js";
-import { parseLocalDate, toLocalISO, addDays, fmtDate, fmtDateFull, fmtToday } from "./lib/dates.js";
+import { parseLocalDate, toLocalISO, addDays, fmtDate, fmtDateFull, fmtToday, formatLocale } from "./lib/dates.js";
+import { pushWidgetSnapshot } from "./lib/widgetBridge.js";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { App as CapApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
@@ -556,6 +557,23 @@ export default function App() {
     // renaming a course left stale text scheduled until an exam or assignment
     // happened to change.
   }, [onboarded, state.notifEnabled, state.exams, state.assignments, state.courses]);
+
+  // v1.9 (Item 8) — keep the home-screen widgets in step with the same data,
+  // on the same triggers as the notifications above. Both answer "what's next"
+  // from outside the app, so they should never be able to disagree.
+  //
+  // Not gated on notifEnabled: a widget the user chose to place on their home
+  // screen is not a notification, and declining reminders is not declining it.
+  // The push itself no-ops off Android and when no widget is placed.
+  useEffect(() => {
+    void pushWidgetSnapshot({
+      assignments: state.assignments,
+      exams: state.exams,
+      courses: state.courses,
+      t,
+      locale: formatLocale(),
+    });
+  }, [state.assignments, state.exams, state.courses, t]);
 
   // v1.3 — outbox drain triggers. The outbox holds pending Supabase writes
   // when the device is offline or a sync call failed; this effect re-runs

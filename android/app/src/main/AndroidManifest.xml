@@ -53,6 +53,34 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+
+        <!-- v1.9 (Item 8) — home-screen widgets.
+             exported="true" is required: the launcher is a different process
+             and must be able to deliver APPWIDGET_UPDATE. These receivers carry
+             no data of their own — they read a snapshot the app wrote to its
+             own private SharedPreferences — so the exported surface is a redraw
+             trigger, not an information leak. -->
+        <receiver
+            android:name=".NextUpWidget"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_next_up_info" />
+        </receiver>
+
+        <receiver
+            android:name=".UpcomingWidget"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_upcoming_info" />
+        </receiver>
     </application>
 
     <!-- Permissions -->

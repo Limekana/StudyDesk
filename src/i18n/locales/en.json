@@ -499,5 +499,9 @@
       "syncedLegacy": "Synced {{n}} legacy items",
       "syncedFailed": "{{pushed}} synced, {{failed}} failed — will retry"
     }
+  },
+  "widget": {
+    "today": "Today",
+    "tomorrow": "Tomorrow"
   }
 }

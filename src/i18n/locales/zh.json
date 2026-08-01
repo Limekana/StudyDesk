@@ -499,5 +499,9 @@
       "syncedLegacy": "已同步 {{n}} 项旧数据",
       "syncedFailed": "{{pushed}} 已同步，{{failed}} 失败 — 将重试"
     }
+  },
+  "widget": {
+    "today": "今天",
+    "tomorrow": "明天"
   }
 }

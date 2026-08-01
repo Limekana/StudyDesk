@@ -494,5 +494,9 @@
       "syncedLegacy": "{{n}} item lama tersinkron",
       "syncedFailed": "{{pushed}} tersinkron, {{failed}} gagal — akan dicoba lagi"
     }
+  },
+  "widget": {
+    "today": "Hari ini",
+    "tomorrow": "Besok"
   }
 }
