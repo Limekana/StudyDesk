@@ -204,7 +204,10 @@
     "scaleDirection": "Ujung mana yang terbaik",
     "scaleHighBest": "Tinggi",
     "scaleLowBest": "Rendah",
-    "gradeNoteCustom": "Skala angka Anda sendiri — rata-ratanya adalah rata-rata terbobot, sama seperti IB. Disimpan hanya di perangkat ini dan tidak disinkronkan. Perhitungan resmi sekolah Anda tetap yang berlaku."
+    "gradeNoteCustom": "Skala angka Anda sendiri — rata-ratanya adalah rata-rata terbobot, sama seperti IB. Disimpan hanya di perangkat ini dan tidak disinkronkan. Perhitungan resmi sekolah Anda tetap yang berlaku.",
+    "support": "Dukungan",
+    "supportDev": "Dukung pengembangan",
+    "supportDevSub": "Tautan ke Ko-fi. Tidak ada fitur yang dikunci karenanya."
   },
   "sdob": {
     "brand": "Berhenti menimbang. Mulai belajar.",

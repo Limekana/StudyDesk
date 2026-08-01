@@ -492,6 +492,25 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
           </div>
         </div>
 
+        {/* ── Support ──
+            A link out, nothing more. No entitlements, no supporter-only
+            features, no webhook — nothing here gates the app or changes
+            behaviour for someone who never clicks it. */}
+        <div className="sv2-section">
+          <div className="sv2-section-title">{t('settings.support')}</div>
+          <div className="sv2-note">{t('settings.supportDevSub')}</div>
+          <div className="sv2-action">
+            <a
+              className="btn-outline"
+              href="https://ko-fi.com/limecorestudio"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t('settings.supportDev')}
+            </a>
+          </div>
+        </div>
+
         {/* ── About ── */}
         <div className="sv2-section">
           <div className="sv2-section-title">{t('settings.about')}</div>

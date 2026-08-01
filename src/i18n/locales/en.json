@@ -206,7 +206,10 @@
     "scaleDirection": "Which end is best",
     "scaleHighBest": "High",
     "scaleLowBest": "Low",
-    "gradeNoteCustom": "Your own numeric scale — the average is a straight weighted mean, as with IB. Stored on this device only; it does not sync. Your school's official calculation is always the one that counts."
+    "gradeNoteCustom": "Your own numeric scale — the average is a straight weighted mean, as with IB. Stored on this device only; it does not sync. Your school's official calculation is always the one that counts.",
+    "support": "Support",
+    "supportDev": "Support development",
+    "supportDevSub": "A link to Ko-fi. Nothing in the app is locked behind it."
   },
   "sdob": {
     "brand": "Stop deciding. Start studying.",

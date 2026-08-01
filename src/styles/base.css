@@ -72,12 +72,17 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
     border-top:1px solid var(--border);
     padding-bottom:env(safe-area-inset-bottom);
   }
-  /* SD-F2 — the glyph row is gone; the label is the whole tab now.
-     min-height keeps the tap target at 52px, which removing an 18px icon plus
-     its 4px gap would otherwise have cut to ~36px. 11px monospace fits the
+  /* v1.9 Item 6 — an icon sits above the label again, so the tab is a column.
+     SD-F2 dropped the old glyph row in v1.6.0 because those glyphs were an
+     inconsistent mix; these are lucide line icons at LimeLog's size and stroke.
+     The label is unchanged and still does the work: 11px monospace fits the
      worst label the app ships, Spanish "Temporizador" at 12 characters, in
-     roughly 65px of the ~90px each of the four tabs gets on a 360px screen. */
-  .mobile-tab{flex:1;display:flex;align-items:center;justify-content:center;min-height:52px;padding:8px 4px;cursor:pointer;color:var(--muted);font-size:11px;font-family:var(--font-mono);letter-spacing:0.03em;text-align:center;line-height:1.25;border-top:2px solid transparent;transition:all 0.1s;-webkit-tap-highlight-color:transparent;}
+     roughly 65px of the ~90px each of the four tabs gets on a 360px screen.
+     Height budget against the 52px tap target: 20px icon + 3px gap + ~14px
+     label + 12px padding = 49px, so min-height still governs and the target
+     does not shrink. */
+  .mobile-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:52px;padding:6px 4px;cursor:pointer;color:var(--muted);font-size:11px;font-family:var(--font-mono);letter-spacing:0.03em;text-align:center;line-height:1.25;border-top:2px solid transparent;transition:all 0.1s;-webkit-tap-highlight-color:transparent;}
+  .mobile-tab-label{display:block;}
   .mobile-tab:active{background:var(--surface2);}
   .mobile-tab.active{color:var(--text);border-top-color:var(--text);}
   /* Course strip — fixed just above the tab bar */
