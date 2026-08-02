@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- updatePeriodMillis is 0 on purpose. Android clamps periodic widget updates
+     to 30 minutes minimum and wakes the device to run them; this widget's data
+     only changes when the user edits something in the app, and the bridge
+     pushes an update the moment that happens. Polling would cost battery to
+     redraw identical pixels. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="180dp"
+    android:minHeight="70dp"
+    android:targetCellWidth="3"
+    android:targetCellHeight="1"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:description="@string/widget_next_up_description"
+    android:previewLayout="@layout/widget_next_up"
+    android:initialLayout="@layout/widget_next_up"
+    android:updatePeriodMillis="0" />

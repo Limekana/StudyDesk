@@ -519,5 +519,9 @@
       "syncedLegacy": "تمت مزامنة {{n}} عنصرًا قديمًا",
       "syncedFailed": "{{pushed}} متزامنة، {{failed}} فاشلة — ستُعاد المحاولة"
     }
+  },
+  "widget": {
+    "today": "اليوم",
+    "tomorrow": "غدًا"
   }
 }

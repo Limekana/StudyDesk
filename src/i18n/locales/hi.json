@@ -499,5 +499,9 @@
       "syncedLegacy": "{{n}} पुराने आइटम सिंक हुए",
       "syncedFailed": "{{pushed}} सिंक हुए, {{failed}} विफल — फिर कोशिश होगी"
     }
+  },
+  "widget": {
+    "today": "आज",
+    "tomorrow": "कल"
   }
 }

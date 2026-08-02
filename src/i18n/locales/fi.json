@@ -499,5 +499,9 @@
       "syncedLegacy": "Synkronoitu {{n}} vanhaa kohdetta",
       "syncedFailed": "{{pushed}} synkronoitu, {{failed}} epäonnistui — yritetään uudelleen"
     }
+  },
+  "widget": {
+    "today": "Tänään",
+    "tomorrow": "Huomenna"
   }
 }
