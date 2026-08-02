@@ -206,7 +206,10 @@
     "scaleDirection": "Kumpi pää on paras",
     "scaleHighBest": "Korkea",
     "scaleLowBest": "Matala",
-    "gradeNoteCustom": "Oma numeroasteikkosi — keskiarvo on painotettu keskiarvo kuten IB:ssä. Tallennetaan vain tälle laitteelle eikä synkronoidu. Oppilaitoksesi virallinen laskenta on aina se, joka ratkaisee."
+    "gradeNoteCustom": "Oma numeroasteikkosi — keskiarvo on painotettu keskiarvo kuten IB:ssä. Tallennetaan vain tälle laitteelle eikä synkronoidu. Oppilaitoksesi virallinen laskenta on aina se, joka ratkaisee.",
+    "support": "Tuki",
+    "supportDev": "Tue kehitystä",
+    "supportDevSub": "Linkki Ko-fiin. Mikään sovelluksessa ei ole sen takana."
   },
   "sdob": {
     "brand": "Lopeta miettiminen. Aloita opiskelu.",
