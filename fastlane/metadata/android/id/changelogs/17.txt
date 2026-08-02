@@ -1,0 +1,1 @@
+Dua widget layar beranda. “Berikutnya” menampilkan satu hal yang perlu dikerjakan sekarang; “Mendatang” menampilkan beberapa tenggat berikutnya. Keduanya diperbarui setiap kali kamu mengubah sesuatu di aplikasi, dan membuka StudyDesk saat disentuh. Tab bawah kini memakai ikon sungguhan, dan Pengaturan punya tautan jika kamu ingin mendukung pengembangan.

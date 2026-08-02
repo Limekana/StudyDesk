@@ -1,0 +1,1 @@
+Grande atualização: português, árabe, hindi e indonésio adicionados. A tela de entrada agora está totalmente traduzida e deixa claro logo de início que nenhuma conta é necessária. Exportação de dados e exclusão de conta adicionadas.

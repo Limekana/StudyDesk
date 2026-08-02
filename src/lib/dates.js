@@ -16,7 +16,10 @@ import i18n from '../i18n';
 // device's regional tag so a UK user keeps "26 July" and a US user gets
 // "July 26" — both reading the same English strings. When the user has picked a
 // language that differs from the device, the region no longer applies.
-function formatLocale() {
+// Exported since v1.9 (Item 8): the home-screen widget renders outside the
+// WebView, so its date strings must be formatted here and handed over already
+// done. Same rule, one definition.
+export function formatLocale() {
   const lang = (i18n.language || 'en').split('-')[0];
   const nav = (typeof navigator !== 'undefined'
     && (navigator.languages?.[0] || navigator.language)) || '';

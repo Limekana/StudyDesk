@@ -208,7 +208,10 @@
     "scaleDirection": "Quelle extrémité est la meilleure",
     "scaleHighBest": "Haut",
     "scaleLowBest": "Bas",
-    "gradeNoteCustom": "Votre propre échelle numérique — la moyenne est une moyenne pondérée, comme en IB. Enregistrée sur cet appareil uniquement, sans synchronisation. Le calcul officiel de votre établissement fait toujours foi."
+    "gradeNoteCustom": "Votre propre échelle numérique — la moyenne est une moyenne pondérée, comme en IB. Enregistrée sur cet appareil uniquement, sans synchronisation. Le calcul officiel de votre établissement fait toujours foi.",
+    "support": "Soutien",
+    "supportDev": "Soutenir le développement",
+    "supportDevSub": "Un lien vers Ko-fi. Rien dans l’app n’en dépend."
   },
   "sdob": {
     "brand": "Arrête de choisir. Commence à réviser.",
@@ -501,5 +504,9 @@
       "syncedLegacy": "{{n}} éléments hérités synchronisés",
       "syncedFailed": "{{pushed}} synchronisés, {{failed}} échoués — nouvel essai"
     }
+  },
+  "widget": {
+    "today": "Aujourd’hui",
+    "tomorrow": "Demain"
   }
 }

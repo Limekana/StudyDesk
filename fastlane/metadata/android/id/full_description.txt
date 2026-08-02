@@ -1,0 +1,13 @@
+StudyDesk adalah aplikasi eksekusi belajar untuk pelajar dan mahasiswa.
+
+Fitur:
+* Masukkan mata kuliah dan tenggat; mesin Next Up menentukan apa yang harus dikerjakan sekarang
+* Atur mata kuliah berdasarkan tahun ajaran dan periode
+* Riwayat periode hanya-baca dengan IPK per periode
+* Penilaian dengan skala IB dan GPA
+* Pengatur waktu fokus Pomodoro bawaan
+* Ringkasan belajar AI opsional setelah sesi
+
+Estetika kertas yang hangat. Mengutamakan penyimpanan lokal; sinkronisasi awan bersifat opsional dan memerlukan akun. Tanpa Google Play Services — masuk dengan Google memakai alur OAuth web biasa.
+
+Bagian dari rangkaian Limecore Nexus. Tersedia dalam bahasa Inggris, Finlandia, Prancis, Jerman, Spanyol, Mandarin, Hindi, Portugis, Indonesia, dan Arab.

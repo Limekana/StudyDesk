@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useReducer, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { setLanguage, SUPPORTED_LANGS, LANGUAGE_NAMES } from "./i18n/index.js";
 import { useScrollSelectedIntoView } from "./lib/useScrollSelectedIntoView.js";
-import { parseLocalDate, toLocalISO, addDays, fmtDate, fmtDateFull, fmtToday } from "./lib/dates.js";
+import { parseLocalDate, toLocalISO, addDays, fmtDate, fmtDateFull, fmtToday, formatLocale } from "./lib/dates.js";
+import { pushWidgetSnapshot } from "./lib/widgetBridge.js";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { App as CapApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
@@ -30,6 +31,7 @@ import './styles/forms.css';
 import './styles/cards.css';
 import './styles/onboarding.css';
 import { COURSE_COLORS } from "./lib/courseColors.js";
+import { NotebookPen, CalendarDays, Award, Timer } from "lucide-react";
 import { GuestAvatar } from "./lib/avatar.jsx";
 import StatsView from "./features/stats/StatsView.jsx";
 import SettingsView from "./features/settings/SettingsView.jsx";
@@ -556,6 +558,23 @@ export default function App() {
     // happened to change.
   }, [onboarded, state.notifEnabled, state.exams, state.assignments, state.courses]);
 
+  // v1.9 (Item 8) — keep the home-screen widgets in step with the same data,
+  // on the same triggers as the notifications above. Both answer "what's next"
+  // from outside the app, so they should never be able to disagree.
+  //
+  // Not gated on notifEnabled: a widget the user chose to place on their home
+  // screen is not a notification, and declining reminders is not declining it.
+  // The push itself no-ops off Android and when no widget is placed.
+  useEffect(() => {
+    void pushWidgetSnapshot({
+      assignments: state.assignments,
+      exams: state.exams,
+      courses: state.courses,
+      t,
+      locale: formatLocale(),
+    });
+  }, [state.assignments, state.exams, state.courses, t]);
+
   // v1.3 — outbox drain triggers. The outbox holds pending Supabase writes
   // when the device is offline or a sync call failed; this effect re-runs
   // drain on three signals:
@@ -960,13 +979,20 @@ export default function App() {
     if (session) outbox.enqueue("upsert_subject", { id, name, color });
   };
 
+  // v1.9 (Item 6) — icons are back, but not the ones that were dropped.
+  // SD-F2 removed a set of emoji/text glyphs in v1.6.0 because they were
+  // inconsistent and crowded the label. These are lucide line icons at the
+  // size and stroke weight LimeLog uses, which is the treatment the suite is
+  // converging on. The labels stay: they carry the nav, the icon supports it.
   const views = [
-    {id:"actions",  label:t('nav.study')},
-    {id:"plan",     label:t('nav.plan')},
-    {id:"grades",   label:t('nav.grades')},
+    {id:"actions",  label:t('nav.study'),  Icon:NotebookPen},
+    {id:"plan",     label:t('nav.plan'),   Icon:CalendarDays},
+    // Award rather than a chart: Grades is where a result lands, and the
+    // chart reading already belongs to the Stats sub-tab under Timer.
+    {id:"grades",   label:t('nav.grades'), Icon:Award},
     // v1.3 — Timer now hosts Log + Stats as sub-tabs (see TimerView), so they
     // no longer take their own bottom-bar slots — keeps the nav uncrowded.
-    {id:"timer",    label:t('nav.timer')},
+    {id:"timer",    label:t('nav.timer'),  Icon:Timer},
     // v1.3.1 — Settings is no longer a nav tab; it opens from the top-right
     // profile avatar (matches NCC/LimeLog). Still a valid `state.view`.
   ];
@@ -1002,10 +1028,11 @@ export default function App() {
         </div>
         <nav className="sidebar-nav">
           {views.map(v=><div key={v.id} role="button" tabIndex={0} className={"nav-item"+(state.view===v.id?" active":"")} onClick={()=>dispatch({type:"SET_VIEW",view:v.id})} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&dispatch({type:"SET_VIEW",view:v.id})}>
-            {/* The desktop sidebar rendered the same glyphs as the mobile tab
-                bar, so it loses them for the same reason, and it has room for
-                the label on its own. Dropping `icon` from `views` without this
-                would have left four empty 16px spans here. */}
+            {/* The sidebar tracks the mobile bar: it dropped glyphs with it in
+                v1.6.0 and takes the lucide icons back with it now. `.nav-item`
+                is already a horizontal flex row with a 10px gap, so the icon
+                sits inline before the label rather than above it. */}
+            <v.Icon size={16} strokeWidth={1.75} aria-hidden="true"/>
             {v.label}
           </div>)}
         </nav>
@@ -1083,7 +1110,8 @@ export default function App() {
         {views.map(v=><div key={v.id} role="button" tabIndex={0} className={"mobile-tab"+(state.view===v.id?" active":"")}
           onClick={()=>dispatch({type:"SET_VIEW",view:v.id})}
           onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&dispatch({type:"SET_VIEW",view:v.id})}>
-          {v.label}
+          <v.Icon size={20} strokeWidth={1.75} aria-hidden="true"/>
+          <span className="mobile-tab-label">{v.label}</span>
         </div>)}
       </nav>
       </div>

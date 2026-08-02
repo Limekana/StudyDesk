@@ -10,4 +10,4 @@ Funktionen:
 
 Warme Papier-Ästhetik. Lokal zuerst; optionale kontogebundene Cloud-Synchronisierung. Keine Google Play Services — die Google-Anmeldung ist ein einfacher Web-OAuth-Ablauf.
 
-Teil der Limecore Nexus-Suite. Verfügbar in Englisch, Finnisch, Französisch, Deutsch, Spanisch und Chinesisch.
+Teil der Limecore-Nexus-Suite. Verfügbar auf Englisch, Finnisch, Französisch, Deutsch, Spanisch, Chinesisch, Hindi, Portugiesisch, Indonesisch und Arabisch.

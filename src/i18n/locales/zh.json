@@ -206,7 +206,10 @@
     "scaleDirection": "哪一端更好",
     "scaleHighBest": "高",
     "scaleLowBest": "低",
-    "gradeNoteCustom": "你自定义的分数区间 —— 平均分按加权平均计算，与 IB 相同。仅保存在本设备，不会同步。以学校的官方计算方式为准。"
+    "gradeNoteCustom": "你自定义的分数区间 —— 平均分按加权平均计算，与 IB 相同。仅保存在本设备，不会同步。以学校的官方计算方式为准。",
+    "support": "支持",
+    "supportDev": "支持开发",
+    "supportDevSub": "一个 Ko-fi 链接。应用中没有任何功能因此被锁定。"
   },
   "sdob": {
     "brand": "别再纠结，开始学习。",
@@ -496,5 +499,9 @@
       "syncedLegacy": "已同步 {{n}} 项旧数据",
       "syncedFailed": "{{pushed}} 已同步，{{failed}} 失败 — 将重试"
     }
+  },
+  "widget": {
+    "today": "今天",
+    "tomorrow": "明天"
   }
 }

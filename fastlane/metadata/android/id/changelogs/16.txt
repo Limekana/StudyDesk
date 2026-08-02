@@ -1,0 +1,1 @@
+Memperbaiki konfirmasi email. Kolom kode hanya menerima enam karakter padahal kode yang dikirim lebih panjang, sehingga kode yang valid tidak bisa dimasukkan sama sekali. Tombol Konfirmasi juga tidak melakukan apa pun tanpa penjelasan — sekarang memberi tahu jika kode belum lengkap. Kolom kata sandi di layar masuk juga diperbaiki ukurannya.

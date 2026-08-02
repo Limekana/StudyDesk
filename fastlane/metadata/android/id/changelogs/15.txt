@@ -1,0 +1,1 @@
+Tugas, ujian, dan to-do kini tersinkron antar perangkat. Sebelumnya hanya mata kuliah dan nilai yang tersinkron. Pendaftaran juga bisa dikonfirmasi dengan kode di dalam aplikasi, bukan hanya lewat tautan email.

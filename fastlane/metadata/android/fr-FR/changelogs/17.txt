@@ -1,0 +1,1 @@
+Deux widgets d'écran d'accueil. « À suivre » affiche la seule chose à faire maintenant ; « À venir » liste les prochaines échéances. Les deux se mettent à jour dès que vous modifiez quelque chose dans l'appli et ouvrent StudyDesk d'une pression. Les onglets du bas ont de vraies icônes, et les Réglages contiennent un lien si vous souhaitez soutenir le développement.

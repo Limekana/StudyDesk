@@ -10,4 +10,4 @@ Fonctionnalités :
 
 Esthétique papier chaleureuse. Local d'abord ; synchronisation cloud optionnelle liée au compte. Pas de Google Play Services — la connexion Google est un simple flux web OAuth.
 
-Fait partie de la suite Limecore Nexus. Disponible en anglais, finnois, français, allemand, espagnol et chinois.
+Fait partie de la suite Limecore Nexus. Disponible en anglais, finnois, français, allemand, espagnol, chinois, hindi, portugais, indonésien et arabe.

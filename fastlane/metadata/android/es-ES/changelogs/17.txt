@@ -1,0 +1,1 @@
+Dos widgets para la pantalla de inicio. «Lo siguiente» muestra la única cosa que toca hacer ahora; «Próximos» lista las siguientes fechas límite. Ambos se actualizan al cambiar algo en la app y abren StudyDesk al tocarlos. Las pestañas inferiores ya tienen iconos propios, y en Ajustes hay un enlace por si quieres apoyar el desarrollo.

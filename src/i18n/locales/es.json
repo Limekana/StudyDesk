@@ -208,7 +208,10 @@
     "scaleDirection": "Qué extremo es mejor",
     "scaleHighBest": "Alto",
     "scaleLowBest": "Bajo",
-    "gradeNoteCustom": "Tu propia escala numérica: la media es una media ponderada, igual que en IB. Se guarda solo en este dispositivo y no se sincroniza. El cálculo oficial de tu centro es siempre el que vale."
+    "gradeNoteCustom": "Tu propia escala numérica: la media es una media ponderada, igual que en IB. Se guarda solo en este dispositivo y no se sincroniza. El cálculo oficial de tu centro es siempre el que vale.",
+    "support": "Apoyo",
+    "supportDev": "Apoya el desarrollo",
+    "supportDevSub": "Un enlace a Ko-fi. Nada en la app depende de ello."
   },
   "sdob": {
     "brand": "Deja de decidir. Empieza a estudiar.",
@@ -501,5 +504,9 @@
       "syncedLegacy": "{{n}} elementos antiguos sincronizados",
       "syncedFailed": "{{pushed}} sincronizados, {{failed}} fallidos — se reintentará"
     }
+  },
+  "widget": {
+    "today": "Hoy",
+    "tomorrow": "Mañana"
   }
 }

@@ -10,4 +10,4 @@ Ominaisuudet:
 
 Lämmin paperiestetiikka. Paikallinen ensin; valinnainen tiliin sidottu pilvisynkronointi. Ei Google Play -palveluita — Google-kirjautuminen on tavallinen web-OAuth.
 
-Osa Limecore Nexus -pakettia. Saatavilla englanniksi, suomeksi, ranskaksi, saksaksi, espanjaksi ja kiinaksi.
+Osa Limecore Nexus -pakettia. Saatavilla englanniksi, suomeksi, ranskaksi, saksaksi, espanjaksi, kiinaksi, hindiksi, portugaliksi, indonesiaksi ja arabiaksi.

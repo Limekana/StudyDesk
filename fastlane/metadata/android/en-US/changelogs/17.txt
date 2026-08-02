@@ -1,0 +1,1 @@
+Two home-screen widgets. Next Up shows the single thing to do now; Upcoming lists the next few deadlines. Both update whenever you change something in the app and open StudyDesk when tapped. The bottom tabs have proper icons instead of symbols, and Settings has a link if you want to support development.

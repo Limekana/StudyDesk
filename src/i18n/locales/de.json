@@ -206,7 +206,10 @@
     "scaleDirection": "Welches Ende ist am besten",
     "scaleHighBest": "Hoch",
     "scaleLowBest": "Niedrig",
-    "gradeNoteCustom": "Deine eigene Notenskala — der Schnitt ist ein gewichtetes Mittel wie bei IB. Nur auf diesem Gerät gespeichert, wird nicht synchronisiert. Maßgeblich bleibt immer die offizielle Berechnung deiner Schule."
+    "gradeNoteCustom": "Deine eigene Notenskala — der Schnitt ist ein gewichtetes Mittel wie bei IB. Nur auf diesem Gerät gespeichert, wird nicht synchronisiert. Maßgeblich bleibt immer die offizielle Berechnung deiner Schule.",
+    "support": "Unterstützen",
+    "supportDev": "Entwicklung unterstützen",
+    "supportDevSub": "Ein Link zu Ko-fi. Nichts in der App ist davon abhängig."
   },
   "sdob": {
     "brand": "Schluss mit Grübeln. Fang an zu lernen.",
@@ -496,5 +499,9 @@
       "syncedLegacy": "{{n}} Altdaten synchronisiert",
       "syncedFailed": "{{pushed}} synchronisiert, {{failed}} fehlgeschlagen — wird wiederholt"
     }
+  },
+  "widget": {
+    "today": "Heute",
+    "tomorrow": "Morgen"
   }
 }

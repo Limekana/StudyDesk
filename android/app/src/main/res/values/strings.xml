@@ -4,4 +4,14 @@
     <string name="title_activity_main">StudyDesk</string>
     <string name="package_name">com.StudyDesk.app</string>
     <string name="custom_url_scheme">com.StudyDesk.app</string>
+    <!-- v1.9 (Item 8) — home-screen widgets. These sit in the launcher's
+         widget picker and on the widget itself, outside the WebView, so they
+         cannot come from the app's i18n bundle. Android resolves the device
+         locale against values-<lang>/ instead; English here is the fallback,
+         and translating them is a follow-up that needs no code change. -->
+    <string name="widget_next_up_label">Next up</string>
+    <string name="widget_upcoming_label">Upcoming</string>
+    <string name="widget_nothing_due">Nothing due. Enjoy it.</string>
+    <string name="widget_next_up_description">The one thing to study next.</string>
+    <string name="widget_upcoming_description">Assignments and exams, in order.</string>
 </resources>
