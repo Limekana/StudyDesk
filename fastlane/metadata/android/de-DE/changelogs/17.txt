@@ -1,0 +1,1 @@
+Zwei Startbildschirm-Widgets. „Als Nächstes“ zeigt die eine Sache, die jetzt ansteht; „Demnächst“ listet die nächsten Fristen. Beide aktualisieren sich, sobald du etwas in der App änderst, und öffnen StudyDesk beim Antippen. Die unteren Tabs haben jetzt richtige Symbole, und in den Einstellungen gibt es einen Link, falls du die Entwicklung unterstützen möchtest.

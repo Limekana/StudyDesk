@@ -1,0 +1,1 @@
+Kaksi aloitusnäytön widgettiä. Seuraavaksi näyttää yhden asian, joka kannattaa tehdä nyt; Tulossa listaa seuraavat määräajat. Molemmat päivittyvät, kun muutat jotain sovelluksessa, ja avaavat StudyDeskin napautuksesta. Alapalkissa on nyt kunnon kuvakkeet symbolien sijaan, ja asetuksissa on linkki, jos haluat tukea kehitystä.

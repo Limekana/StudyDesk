@@ -1,0 +1,1 @@
+Dois widgets para a tela inicial. “A seguir” mostra a única coisa a fazer agora; “Próximos” lista os próximos prazos. Ambos são atualizados sempre que você muda algo no app e abrem o StudyDesk ao serem tocados. As abas inferiores agora têm ícones de verdade, e as Configurações têm um link caso queira apoiar o desenvolvimento.
