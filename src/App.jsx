@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { setLanguage, SUPPORTED_LANGS, LANGUAGE_NAMES } from "./i18n/index.js";
 import { useScrollSelectedIntoView } from "./lib/useScrollSelectedIntoView.js";
 import { parseLocalDate, toLocalISO, addDays, fmtDate, fmtDateFull, fmtToday, formatLocale } from "./lib/dates.js";
-import { pushWidgetSnapshot } from "./lib/widgetBridge.js";
+import { pushWidgetSnapshot, consumeWidgetLaunchView, onWidgetNavigate } from "./lib/widgetBridge.js";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { App as CapApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
@@ -574,6 +574,35 @@ export default function App() {
       locale: formatLocale(),
     });
   }, [state.assignments, state.exams, state.courses, t]);
+
+  // v1.10 — widget taps land where the widget was about.
+  //
+  // Shipped 1.7.0 gave both widgets the same bare "open MainActivity" intent,
+  // so a tap dropped the user on whatever screen they last left the app on —
+  // reported as "doesnt take me to the right place both just open the app".
+  // Next Up now opens the Next Up view, Upcoming opens the plan view.
+  //
+  // Two paths because Android delivers the two cases differently: a cold start
+  // is queued natively and collected here on mount, a tap while the app is
+  // already running arrives as an event. See WidgetBridgePlugin.
+  useEffect(() => {
+    let cancelled = false;
+
+    void consumeWidgetLaunchView().then((view) => {
+      if (!cancelled && view) dispatch({ type: "SET_VIEW", view });
+    });
+
+    // Await the handle before removing it — the same StrictMode ordering trap
+    // that double-registered the notification listener in v1.7.
+    const handlePromise = onWidgetNavigate((view) => {
+      dispatch({ type: "SET_VIEW", view });
+    });
+
+    return () => {
+      cancelled = true;
+      void handlePromise?.then((h) => h.remove()).catch(() => {});
+    };
+  }, []);
 
   // v1.3 — outbox drain triggers. The outbox holds pending Supabase writes
   // when the device is offline or a sync call failed; this effect re-runs

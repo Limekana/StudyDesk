@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Taller default than Next Up: this one is a list, and at one cell high it
-     would show a heading and nothing else. -->
+     would show a heading and nothing else.
+
+     v1.10 — three cells high left the bottom half of the page blank: five rows
+     plus the heading come to roughly 200dp, well short of a three-cell column.
+     Two cells fits the content, and resizeMode still lets anyone who wants a
+     roomier page drag it taller. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:minWidth="180dp"
-    android:minHeight="180dp"
+    android:minHeight="150dp"
     android:targetCellWidth="3"
-    android:targetCellHeight="3"
+    android:targetCellHeight="2"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
     android:description="@string/widget_upcoming_description"

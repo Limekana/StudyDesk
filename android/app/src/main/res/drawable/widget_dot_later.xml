@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v1.10 — further out than three days. The app's LATER green. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <solid android:color="#6E8F5F" />
+    <size android:width="7dp" android:height="7dp" />
+</shape>

@@ -32,23 +32,43 @@ final class WidgetSnapshot {
     static final class Item {
         final String title;
         final String when;
-        /** "assignment" | "exam" — drives the accent dot only. */
+        /** "assignment" | "exam". Carried but not currently drawn. */
         final String kind;
+        /** "urgent" | "soon" | "later" — v1.10, picks the dot. */
+        final String urgency;
 
-        Item(String title, String when, String kind) {
+        Item(String title, String when, String kind, String urgency) {
             this.title = title;
             this.when = when;
             this.kind = kind;
+            this.urgency = urgency;
         }
+    }
+
+    /**
+     * Dot for an urgency string.
+     *
+     * Anything unrecognised falls back to the calm one. A snapshot written by
+     * an older app version has no urgency field at all — that happens on every
+     * install that updates the APK without reopening the app, and it should
+     * look understated rather than alarm the user in red.
+     */
+    static int dotFor(String urgency) {
+        if ("urgent".equals(urgency)) return R.drawable.widget_dot_urgent;
+        if ("soon".equals(urgency)) return R.drawable.widget_dot_soon;
+        return R.drawable.widget_dot_later;
     }
 
     final String nextUpTitle;
     final String nextUpSubtitle;
+    final String nextUpUrgency;
     final Item[] upcoming;
 
-    private WidgetSnapshot(String nextUpTitle, String nextUpSubtitle, Item[] upcoming) {
+    private WidgetSnapshot(String nextUpTitle, String nextUpSubtitle, String nextUpUrgency,
+                           Item[] upcoming) {
         this.nextUpTitle = nextUpTitle;
         this.nextUpSubtitle = nextUpSubtitle;
+        this.nextUpUrgency = nextUpUrgency;
         this.upcoming = upcoming;
     }
 
@@ -69,6 +89,7 @@ final class WidgetSnapshot {
             JSONObject next = root.optJSONObject("nextUp");
             String title = next == null ? "" : next.optString("title", "");
             String subtitle = next == null ? "" : next.optString("subtitle", "");
+            String urgency = next == null ? "later" : next.optString("urgency", "later");
 
             JSONArray arr = root.optJSONArray("upcoming");
             int n = arr == null ? 0 : arr.length();
@@ -78,10 +99,11 @@ final class WidgetSnapshot {
                 items[i] = new Item(
                     o == null ? "" : o.optString("title", ""),
                     o == null ? "" : o.optString("when", ""),
-                    o == null ? "assignment" : o.optString("kind", "assignment")
+                    o == null ? "assignment" : o.optString("kind", "assignment"),
+                    o == null ? "later" : o.optString("urgency", "later")
                 );
             }
-            return new WidgetSnapshot(title, subtitle, items);
+            return new WidgetSnapshot(title, subtitle, urgency, items);
         } catch (Exception e) {
             // Corrupt or half-written JSON. Draw the empty state rather than
             // letting the launcher show a crashed-widget placeholder.
@@ -90,7 +112,7 @@ final class WidgetSnapshot {
     }
 
     static WidgetSnapshot empty() {
-        return new WidgetSnapshot("", "", new Item[0]);
+        return new WidgetSnapshot("", "", "later", new Item[0]);
     }
 
     boolean hasNextUp() {

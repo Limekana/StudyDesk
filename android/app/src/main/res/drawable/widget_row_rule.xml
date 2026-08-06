@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v1.10 — a single hairline under a row, so the Upcoming list reads as ruled
+     paper rather than as a stack of list items.
+
+     Drawn as a full stroked rectangle pushed off-canvas on three sides: the
+     negative insets move the top, left and right edges outside the bounds, and
+     only the bottom stroke survives. Cheaper than a dedicated 1dp spacer view,
+     and RemoteViews cannot inflate a plain View anyway. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:top="-1dp"
+        android:left="-1dp"
+        android:right="-1dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent" />
+            <stroke android:width="1dp" android:color="#EDE6DA" />
+        </shape>
+    </item>
+</layer-list>

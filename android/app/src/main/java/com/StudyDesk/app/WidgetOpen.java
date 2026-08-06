@@ -16,18 +16,39 @@ final class WidgetOpen {
 
     private WidgetOpen() {}
 
-    static PendingIntent intent(Context context) {
+    /** Distinct per target — see the requestCode note in {@link #intent}. */
+    static final int REQUEST_NEXT_UP = 1;
+    static final int REQUEST_UPCOMING = 2;
+
+    /**
+     * Build the tap target for a widget.
+     *
+     * @param view        the web layer's view id to land on ("actions", "plan")
+     * @param requestCode must differ per target — this is load-bearing, not a
+     *                    formality. PendingIntent identity is decided by
+     *                    Intent.filterEquals(), which compares action, data,
+     *                    type, package, component and categories — and
+     *                    deliberately ignores extras. Two widgets pointing at
+     *                    the same component therefore look identical to the
+     *                    system, so a shared requestCode would hand both the
+     *                    same PendingIntent, and FLAG_UPDATE_CURRENT would
+     *                    quietly overwrite the first one's extras with the
+     *                    second's. Both widgets would then open whichever view
+     *                    was drawn last.
+     */
+    static PendingIntent intent(Context context, String view, int requestCode) {
         Intent launch = new Intent(context, MainActivity.class);
         // Reuse the existing task rather than stacking a second copy of the app
         // when the user taps the widget while StudyDesk is already open.
         launch.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        launch.putExtra(WidgetBridgePlugin.EXTRA_VIEW, view);
 
         int flags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            // IMMUTABLE because nothing needs to fill anything in — the widget
-            // always opens the same screen. Required from API 31; safe from 23.
+            // IMMUTABLE because nothing downstream fills anything in — the view
+            // is baked in here. Required from API 31; safe from 23.
             flags |= PendingIntent.FLAG_IMMUTABLE;
         }
-        return PendingIntent.getActivity(context, 0, launch, flags);
+        return PendingIntent.getActivity(context, requestCode, launch, flags);
     }
 }
