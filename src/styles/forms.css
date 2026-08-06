@@ -28,6 +28,23 @@ textarea{resize:vertical;min-height:80px;line-height:1.6;}select{cursor:pointer;
 .btn-danger-text:hover{color:#c0392b;}
 .btn-red{background:#c0392b;color:#fff;border:none;padding:8px 16px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:4px;transition:opacity 0.1s;}
 .btn-red:hover{opacity:0.85;}
+
+/* v1.10 — destructive confirmation, used by the course-delete step.
+   Its own block rather than another item in the footer row: the question needs
+   a full line to sit on, and squeezing it in beside Save/Cancel is what made it
+   "not quite fit". Tinted panel so the state is obvious without a modal-on-modal. */
+.confirm-delete{margin-top:12px;padding:14px;border:1px solid #e8c6c0;background:#fdf6f5;border-radius:5px;}
+.confirm-delete-q{font-family:var(--font-mono);font-size:11px;letter-spacing:0.06em;line-height:1.5;color:#c0392b;text-transform:uppercase;text-align:center;margin-bottom:12px;}
+.confirm-delete-actions{display:flex;gap:8px;}
+/* Both answers to the same geometry — the size difference was two classes
+   disagreeing, not a decision. Colour carries the weight instead. Wrapping is
+   left on: the longest translation of "Yes, delete" is not English. */
+/* The transparent border is not decoration: .btn-outline carries a 1px border
+   and .btn-red carries none, which left the two 2px apart even under flex:1.
+   Matching the box makes them identical rather than nearly so. */
+.confirm-delete-actions>.btn-red,
+.confirm-delete-actions>.btn-outline{flex:1;padding:9px 12px;font-size:10px;text-align:center;white-space:normal;box-sizing:border-box;}
+.confirm-delete-actions>.btn-red{border:1px solid transparent;}
 .section-label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:10px;}
 .section-label::after{content:'';flex:1;height:1px;background:var(--border);}
 .asgn-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:5px;margin-bottom:8px;box-shadow:var(--shadow);}
