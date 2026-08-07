@@ -1,50 +1,85 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- v1.10 — Next Up, redesigned.
+
+     1.7.0 was three stacked TextViews on a bordered rectangle; the report was
+     that it "looks very simple". The page treatment now carries the app's
+     identity (see widget_paper), the type pairs serif against monospace the way
+     the app does, and the dot says how urgent this is without a word of text —
+     which matters on a surface that ships in ten languages.
+
+     paddingStart 38dp clears the margin rule at 26dp with a 12dp gutter, so the
+     text starts where writing would start on the page. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/next_up_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@drawable/widget_bg"
-    android:padding="14dp">
+    android:background="@drawable/widget_paper"
+    android:paddingStart="38dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="14dp"
+    android:paddingBottom="14dp">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/widget_next_up_label"
-        android:textSize="10sp"
-        android:textStyle="bold"
-        android:letterSpacing="0.12"
-        android:textAllCaps="true"
-        android:textColor="#7A7570" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
 
+        <ImageView
+            android:id="@+id/next_up_dot"
+            android:layout_width="7dp"
+            android:layout_height="7dp"
+            android:layout_marginEnd="7dp"
+            android:src="@drawable/widget_dot_later"
+            android:contentDescription="@null" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_next_up_label"
+            android:fontFamily="monospace"
+            android:textSize="9sp"
+            android:letterSpacing="0.2"
+            android:textAllCaps="true"
+            android:textColor="#A8A096" />
+    </LinearLayout>
+
+    <!-- The answer. Serif, because this is the one line the widget exists to
+         show, and the app sets its page titles in serif too. -->
     <TextView
         android:id="@+id/next_up_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="7dp"
         android:maxLines="2"
         android:ellipsize="end"
-        android:textSize="16sp"
+        android:fontFamily="serif"
+        android:textSize="18sp"
         android:textStyle="bold"
+        android:lineSpacingExtra="1dp"
         android:textColor="#1A1814" />
 
+    <!-- Course and due date. Monospace, matching how the app sets dates. -->
     <TextView
         android:id="@+id/next_up_subtitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
+        android:layout_marginTop="4dp"
         android:maxLines="1"
         android:ellipsize="end"
-        android:textSize="12sp"
-        android:textColor="#6B6560" />
+        android:fontFamily="monospace"
+        android:textSize="11sp"
+        android:textColor="#8A8279" />
 
     <TextView
         android:id="@+id/next_up_empty"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="7dp"
         android:text="@string/widget_nothing_due"
-        android:textSize="13sp"
-        android:textColor="#6B6560"
+        android:fontFamily="serif"
+        android:textSize="15sp"
+        android:textColor="#8A8279"
         android:visibility="gone" />
 </LinearLayout>

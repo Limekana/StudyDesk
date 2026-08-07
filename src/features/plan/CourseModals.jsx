@@ -103,18 +103,31 @@ export function EditCourseModal({ course, courses, onSave, onDelete, onClose }) 
     <div className="input-group"><div className="input-label">{t('course.color')}</div>
       <CoursePicker value={color} onChange={setColor}/>
     </div>
-    <div style={{display:"flex",gap:8,marginTop:8,alignItems:"center"}}>
-      <button className="btn" onClick={doSave}>{t('common.save')}</button>
-      <button className="btn-outline" onClick={onClose}>{t('common.cancel')}</button>
-      <span style={{flex:1}}/>
-      {!confirmDelete
-        ?<button className="btn-outline" style={{color:"#c0392b",borderColor:"#c0392b"}} onClick={()=>setConfirmDelete(true)}>{t('course.delete')}</button>
-        :<div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <span style={{fontFamily:"var(--font-mono)",fontSize:11,color:"#c0392b"}}>{t('course.deleteConfirm')}</span>
+    {/* v1.10 — the confirmation replaces the footer rather than joining it.
+        Previously the question and both answers were pushed into the same flex
+        row as Save and Cancel, which is why the text "doesnt quite fit in":
+        five items competing for one modal width, with the question the only
+        one that could shrink. Asking someone to confirm a destructive action
+        while still offering Save is also a muddle — one question at a time. */}
+    {confirmDelete
+      ?<div className="confirm-delete">
+        <div className="confirm-delete-q">{t('course.deleteConfirm')}</div>
+        {/* Equal width, distinguished by colour rather than size. Weighting the
+            destructive button larger is a defensible pattern, but here it was
+            an accident of two different classes — .btn-red is 11px/8x16 and
+            .btn-outline 10px/7x14 — compounded by "Yes, delete" being five
+            times the length of "No". */}
+        <div className="confirm-delete-actions">
           <button className="btn-red" onClick={onDelete}>{t('course.yesDelete')}</button>
           <button className="btn-outline" onClick={()=>setConfirmDelete(false)}>{t('course.no')}</button>
-        </div>}
-    </div>
+        </div>
+      </div>
+      :<div style={{display:"flex",gap:8,marginTop:8,alignItems:"center"}}>
+        <button className="btn" onClick={doSave}>{t('common.save')}</button>
+        <button className="btn-outline" onClick={onClose}>{t('common.cancel')}</button>
+        <span style={{flex:1}}/>
+        <button className="btn-outline" style={{color:"#c0392b",borderColor:"#c0392b"}} onClick={()=>setConfirmDelete(true)}>{t('course.delete')}</button>
+      </div>}
   </div></div>;
 }
 

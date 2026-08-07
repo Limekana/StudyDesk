@@ -1,0 +1,1 @@
+Corrigido os widgets da tela inicial que não abriam a página correta ao tocar, e o layout foi aprimorado. A caixa de confirmação para excluir um curso não está mais apertada. As iniciais do avatar agora refletem o nome de exibição da sua conta.

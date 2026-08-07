@@ -46,18 +46,27 @@ public class NextUpWidget extends AppWidgetProvider {
         if (snap.hasNextUp()) {
             views.setViewVisibility(R.id.next_up_title, View.VISIBLE);
             views.setViewVisibility(R.id.next_up_subtitle, View.VISIBLE);
+            views.setViewVisibility(R.id.next_up_dot, View.VISIBLE);
             views.setViewVisibility(R.id.next_up_empty, View.GONE);
             views.setTextViewText(R.id.next_up_title, snap.nextUpTitle);
             views.setTextViewText(R.id.next_up_subtitle, snap.nextUpSubtitle);
+            views.setImageViewResource(R.id.next_up_dot, WidgetSnapshot.dotFor(snap.nextUpUrgency));
         } else {
             // Empty is a real state, not an error: nothing due is good news, and
             // it is also what a fresh install shows before the app has run once.
             views.setViewVisibility(R.id.next_up_title, View.GONE);
             views.setViewVisibility(R.id.next_up_subtitle, View.GONE);
+            // No item means nothing to be urgent about — the dot would be
+            // asserting a state that does not exist.
+            views.setViewVisibility(R.id.next_up_dot, View.GONE);
             views.setViewVisibility(R.id.next_up_empty, View.VISIBLE);
         }
 
-        views.setOnClickPendingIntent(R.id.next_up_root, WidgetOpen.intent(context));
+        // "actions" is the Next Up view — the same question this widget answers,
+        // so the tap continues the thought rather than dropping the user on
+        // whatever screen they happened to leave the app on.
+        views.setOnClickPendingIntent(R.id.next_up_root,
+            WidgetOpen.intent(context, "actions", WidgetOpen.REQUEST_NEXT_UP));
         return views;
     }
 }

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v1.10 — due within three days. The app's THIS WEEK amber. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <solid android:color="#D08C3A" />
+    <size android:width="7dp" android:height="7dp" />
+</shape>

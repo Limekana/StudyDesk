@@ -1,0 +1,1 @@
+Fixed home-screen widgets not opening the right page when tapped, and improved their layout. The delete-course confirmation dialog is no longer cramped. Avatar initials now reflect your account's display name.

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v1.10 — due today, or already overdue. Same red the app's TODAY group uses. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <solid android:color="#C4553F" />
+    <size android:width="7dp" android:height="7dp" />
+</shape>

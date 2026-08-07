@@ -1,0 +1,1 @@
+Correction des widgets d'écran d'accueil qui n'ouvraient pas la bonne page au toucher, et amélioration de leur mise en page. La boîte de dialogue de confirmation de suppression d'un cours n'est plus à l'étroit. Les initiales de l'avatar reflètent maintenant le nom d'affichage de votre compte.

@@ -1,0 +1,1 @@
+Korjattu ongelma, jossa aloitusnäytön widgetit eivät avanneet oikeaa sivua napautettaessa, ja parannettu niiden ulkoasua. Kurssin poiston vahvistusikkuna ei ole enää ahdas. Avatarin nimikirjaimet näyttävät nyt tilisi näyttönimen.

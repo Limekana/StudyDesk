@@ -11,6 +11,7 @@ package com.StudyDesk.app;
 // Modelled on SuiteSsoPlugin, the repo's existing local Capacitor plugin.
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 
 import com.getcapacitor.JSObject;
@@ -21,6 +22,72 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 
 @CapacitorPlugin(name = "WidgetBridge")
 public class WidgetBridgePlugin extends Plugin {
+
+    /** Intent extra carrying the web layer's view id for a widget tap. */
+    static final String EXTRA_VIEW = "sd_widget_view";
+
+    /** Live plugin instance, or null before the bridge has built one. */
+    private static WidgetBridgePlugin instance;
+
+    /** A tap that arrived with no JS listening yet. Collected on mount. */
+    private static String pendingView;
+
+    @Override
+    public void load() {
+        instance = this;
+    }
+
+    /**
+     * Take the target view off a launch intent, if it carries one.
+     *
+     * Two arrival paths, and they need different handling:
+     *
+     * - Cold start. MainActivity calls this *before* super.onCreate(), so the
+     *   bridge does not exist and neither does any JS listener. The view is
+     *   queued in pendingView for consumeLaunchView() to collect once the web
+     *   layer mounts. Emitting an event here would fire into an empty room.
+     * - Warm start. The activity is singleTask, so a tap on a widget while
+     *   StudyDesk is already running arrives at onNewIntent with JS live and
+     *   listening. Deliver it as an event; nothing will call consume() again.
+     *
+     * Exactly one of the two paths handles any given tap, which is why the
+     * event path clears pendingView rather than also queueing: a queued value
+     * nobody collects would resurface on the next mount and navigate the user
+     * somewhere they did not ask to go.
+     */
+    static void stashLaunchView(Intent intent) {
+        if (intent == null) return;
+        String view = intent.getStringExtra(EXTRA_VIEW);
+        if (view == null) return;
+
+        // Consume it off the intent. getIntent() keeps returning the launch
+        // intent for the life of the activity, so leaving the extra in place
+        // would re-navigate on every configuration change.
+        intent.removeExtra(EXTRA_VIEW);
+
+        if (instance != null) {
+            pendingView = null;
+            JSObject payload = new JSObject();
+            payload.put("view", view);
+            instance.notifyListeners("widgetNavigate", payload);
+        } else {
+            pendingView = view;
+        }
+    }
+
+    /**
+     * Collect a queued cold-start tap, if there was one.
+     *
+     * Returns {view: null} on a normal launch — the common case by far, since
+     * most launches are from the app icon.
+     */
+    @PluginMethod
+    public void consumeLaunchView(PluginCall call) {
+        JSObject result = new JSObject();
+        result.put("view", pendingView);
+        pendingView = null;
+        call.resolve(result);
+    }
 
     /**
      * Store a snapshot and redraw any placed widgets.
