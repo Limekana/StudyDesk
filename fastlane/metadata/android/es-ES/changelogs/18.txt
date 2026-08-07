@@ -1,0 +1,1 @@
+Se corrigió que los widgets de pantalla de inicio no abrieran la pantalla correcta al tocarlos, y se mejoró su diseño. El diálogo de confirmación para eliminar un curso ya no se ve apretado. Las iniciales del avatar ahora reflejan el nombre de tu cuenta.

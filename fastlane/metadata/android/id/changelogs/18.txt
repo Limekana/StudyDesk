@@ -1,0 +1,1 @@
+Memperbaiki widget layar utama yang tidak membuka halaman yang tepat saat diketuk, dan memperbaiki tampilannya. Dialog konfirmasi hapus kursus tidak lagi terasa sempit. Inisial avatar sekarang mencerminkan nama tampilan akun Anda.

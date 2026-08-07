@@ -1,0 +1,1 @@
+Die Startbildschirm-Widgets öffneten beim Antippen nicht die richtige Seite – das ist behoben, und das Layout wurde verbessert. Der Bestätigungsdialog zum Löschen eines Kurses ist nicht mehr beengt. Die Avatar-Initialen zeigen jetzt den Anzeigenamen deines Kontos.
