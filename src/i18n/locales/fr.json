@@ -490,6 +490,8 @@
       "settings": "Paramètres",
       "settingsWith": "Paramètres · {{email}}",
       "openSettings": "Ouvrir les paramètres",
+      "collapseSidebar": "Réduire la barre latérale",
+      "expandSidebar": "Développer la barre latérale",
       "urgent": "URGENT",
       "examPrefix": "EXAMEN : {{title}}",
       "loading": "CHARGEMENT…"

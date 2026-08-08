@@ -6,6 +6,19 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 h1,h2,h3,h4,h5,h6{font-weight:inherit;font-size:inherit;}
 :root{--bg:#f5f2ed;--surface:#faf8f4;--surface2:#f0ece4;--border:#e0d9cf;--border2:#cfc8bc;--text:#1a1814;--muted:#6b6560;--muted2:#7a7570;--danger:#c0392b;--danger-bg:#fee;--danger-border:#fcc;--danger-on:#fff;--warning:#b5470b;--warning-bg:#fff4e6;--warning-border:#f0d4a0;--font-display:'Playfair Display',serif;--font-mono:'DM Mono',monospace;--font-sans:'DM Sans',sans-serif;--shadow:0 1px 3px rgba(0,0,0,0.08);--shadow-md:0 4px 12px rgba(0,0,0,0.08);--ease-paper:cubic-bezier(0.4,0,0.2,1);--ease-page-turn:cubic-bezier(0.3,0,0.2,1);--ease-settle:cubic-bezier(0.16,1,0.3,1);}
+/* ── Shell tokens (v1.9 Item 14, Phase 1) ──────────────────────────────────
+   The three-tier desktop shell is driven entirely by these three values, so a
+   later desktop surface sizes itself against the same rhythm instead of
+   hardcoding its own numbers. Tier overrides live at the bottom of this file;
+   the tier itself is resolved in JS by `src/lib/useShell.js`, which explains
+   why in more detail. Defaults here are the tablet tier — the values the app
+   already shipped — so anything that misses a tier override behaves as before. */
+:root{
+  --rail-w:240px;        /* full sidebar */
+  --rail-w-min:64px;     /* icon-only rail */
+  --content-max:900px;   /* reading measure for single-column views */
+  --shell-gutter:32px;
+}
 html,body,#root{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-sans);overscroll-behavior:none;}
 /* Paper grain texture overlay */
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:0.035;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");background-repeat:repeat;background-size:128px 128px;}
@@ -15,7 +28,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 
 /* ── Desktop layout ── */
 .app{display:flex;height:100vh;overflow:hidden;}
-.sidebar{width:240px;min-width:240px;background:var(--surface);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;transition:none;}
+.sidebar{width:var(--rail-w);min-width:var(--rail-w);background:var(--surface);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;transition:none;}
 .sidebar-header{padding:24px 20px 16px;border-bottom:1px solid var(--border);}
 .sidebar-logo-wrap{display:flex;align-items:center;gap:12px;}
 .sidebar-logo{width:40px;height:40px;border-radius:10px;flex-shrink:0;}
@@ -39,13 +52,24 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 .add-course-btn{display:flex;align-items:center;gap:8px;padding:8px 20px;color:var(--muted);font-size:12px;cursor:pointer;transition:color 0.1s;}
 .add-course-btn:hover{color:var(--text);}
 .main{flex:1;overflow-y:auto;display:flex;flex-direction:column;background:var(--bg);}
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 32px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:10;}
+/* Horizontal padding lives on `.topbar-inner`, not here, so the inner box can
+   share `.content`'s max-width and centring. With the padding on the outer
+   element instead, the two centre against different available widths and the
+   page title drifts left of the column it labels — visible from about 1300px
+   up, which is exactly the range this milestone adds. */
+.topbar{display:flex;align-items:center;padding:18px 0;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:10;}
+.topbar-inner{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;max-width:var(--content-max);margin:0 auto;padding:0 var(--shell-gutter);}
 .topbar-title{font-family:var(--font-display);font-size:22px;font-weight:500;}
 .topbar-avatar{width:36px;height:36px;min-width:36px;border-radius:50%;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-family:var(--font-display);font-size:14px;font-weight:600;letter-spacing:0.02em;cursor:pointer;display:flex;align-items:center;justify-content:center;text-transform:uppercase;transition:all 0.12s var(--ease-paper,ease);-webkit-tap-highlight-color:transparent;}
 .topbar-avatar:hover{border-color:var(--text);}
 .topbar-avatar.active{background:var(--text);color:var(--bg);border-color:var(--text);}
 .topbar-date{font-family:var(--font-mono);font-size:11px;color:var(--muted);}
-.content{padding:32px;flex:1;max-width:900px;width:100%;margin:0 auto;}
+.content{padding:var(--shell-gutter);flex:1;max-width:var(--content-max);width:100%;margin:0 auto;}
+/* Opt-out for surfaces that genuinely want the full shell width rather than a
+   reading measure — the calendar grid and the multi-pane course layout in
+   Phase 2. Provided here so those views widen by declaring intent, instead of
+   each one overriding `max-width` against the cap on its own. */
+.content.content-wide{max-width:none;}
 @media(max-width:768px){
   .content{padding:16px 14px;max-width:100%;margin:0;}
 }
@@ -57,7 +81,10 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
   .sidebar{display:none;}
   /* Main scrolls within remaining space above the fixed tab bar */
   .main{height:100dvh;overflow-y:auto;padding-bottom:calc(64px + env(safe-area-inset-bottom));}
-  .topbar{padding:14px 16px 12px;position:sticky;top:0;z-index:10;}
+  /* Same pixels as before the topbar was split into outer/inner — 14px top,
+     16px sides, 12px bottom. The phone tier is deliberately unchanged. */
+  .topbar{padding:14px 0 12px;position:sticky;top:0;z-index:10;}
+  .topbar-inner{max-width:100%;padding:0 16px;}
   .topbar-title{font-size:18px;}
   .content{padding:16px 14px;max-width:100%;}
   /* Fixed bottom tab bar — always at the bottom, never overlaps status bar */
@@ -108,4 +135,52 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 }
 @media(min-width:769px){
   .mobile-tabbar,.mobile-courses-bar{display:none!important;}
+}
+
+/* ── Tier overrides (v1.9 Item 14, Phase 1) ────────────────────────────────
+   The tablet tier (769–1200px) intentionally has no block here: it keeps the
+   900px measure and 32px gutter already declared in `:root`, which is the
+   right density at that width and is what the app has always shipped. What it
+   gains is the icon rail below, which buys back 176px of content width.
+   Only the genuinely wide tiers change the measure. The upper stop exists so
+   a 2560px monitor doesn't produce 200-character lines — the shell keeps
+   growing, the reading column does not. */
+@media(min-width:1201px){
+  :root{--content-max:1180px;--shell-gutter:40px;}
+  .topbar-title{font-size:26px;}
+}
+@media(min-width:1600px){
+  :root{--content-max:1360px;--shell-gutter:48px;}
+}
+
+/* ── Icon rail ─────────────────────────────────────────────────────────────
+   `.is-rail` comes from `useSidebarRail` (src/lib/useShell.js) — on by default
+   at the tablet tier, off at desktop, overridable either way by the toggle and
+   persisted. Only the width token actually changes; everything below simply
+   removes what no longer fits in 64px. Labels go to `display:none` rather than
+   fading, so nothing overflows mid-transition while the width animates. */
+.app.is-rail{--rail-w:var(--rail-w-min);}
+.app.is-rail .rail-hide{display:none;}
+.app.is-rail .sidebar-header{padding:20px 8px 16px;}
+.app.is-rail .sidebar-logo-wrap{justify-content:center;gap:0;}
+.app.is-rail .courses-label{padding-inline:0;text-align:center;}
+.app.is-rail .nav-item,
+.app.is-rail .course-item,
+.app.is-rail .add-course-btn,
+.app.is-rail .rail-toggle{padding-inline:0;justify-content:center;gap:5px;}
+
+/* Collapse control. Sits in a footer rather than the header because the header
+   is only 64px wide when railed and the logo already owns it. */
+.sidebar-foot{border-top:1px solid var(--border);padding:6px 0;}
+.rail-toggle{display:flex;align-items:center;gap:10px;width:100%;padding:9px 20px;background:none;border:0;color:var(--muted2);font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;transition:color 0.1s,background 0.1s;}
+.rail-toggle:hover{color:var(--text);background:var(--surface2);}
+
+@media(min-width:769px){
+  /* Width only, and only where the sidebar is actually on screen — below
+     769px it is display:none and the tab bar takes over, so there is nothing
+     to animate across that boundary. */
+  .sidebar{transition:width 0.22s var(--ease-paper),min-width 0.22s var(--ease-paper);}
+}
+@media(prefers-reduced-motion:reduce){
+  .sidebar{transition:none;}
 }

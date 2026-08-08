@@ -485,6 +485,8 @@
       "settings": "Asetukset",
       "settingsWith": "Asetukset · {{email}}",
       "openSettings": "Avaa asetukset",
+      "collapseSidebar": "Kutista sivupalkki",
+      "expandSidebar": "Laajenna sivupalkki",
       "urgent": "KIIREELLINEN",
       "examPrefix": "KOE: {{title}}",
       "loading": "LADATAAN…"

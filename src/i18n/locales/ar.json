@@ -505,6 +505,8 @@
       "settings": "الإعدادات",
       "settingsWith": "الإعدادات · {{email}}",
       "openSettings": "فتح الإعدادات",
+      "collapseSidebar": "طي الشريط الجانبي",
+      "expandSidebar": "توسيع الشريط الجانبي",
       "urgent": "عاجل",
       "examPrefix": "اختبار: {{title}}",
       "loading": "جارٍ التحميل…"

@@ -485,6 +485,8 @@
       "settings": "Settings",
       "settingsWith": "Settings · {{email}}",
       "openSettings": "Open settings",
+      "collapseSidebar": "Collapse sidebar",
+      "expandSidebar": "Expand sidebar",
       "urgent": "URGENT",
       "examPrefix": "EXAM: {{title}}",
       "loading": "LOADING…"

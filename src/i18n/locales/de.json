@@ -485,6 +485,8 @@
       "settings": "Einstellungen",
       "settingsWith": "Einstellungen · {{email}}",
       "openSettings": "Einstellungen öffnen",
+      "collapseSidebar": "Seitenleiste einklappen",
+      "expandSidebar": "Seitenleiste ausklappen",
       "urgent": "DRINGEND",
       "examPrefix": "PRÜFUNG: {{title}}",
       "loading": "LÄDT…"

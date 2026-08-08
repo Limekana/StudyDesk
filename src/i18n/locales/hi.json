@@ -485,6 +485,8 @@
       "settings": "सेटिंग्स",
       "settingsWith": "सेटिंग्स · {{email}}",
       "openSettings": "सेटिंग्स खोलें",
+      "collapseSidebar": "साइडबार छोटा करें",
+      "expandSidebar": "साइडबार बड़ा करें",
       "urgent": "ज़रूरी",
       "examPrefix": "परीक्षा: {{title}}",
       "loading": "लोड हो रहा है…"

@@ -485,6 +485,8 @@
       "settings": "设置",
       "settingsWith": "设置 · {{email}}",
       "openSettings": "打开设置",
+      "collapseSidebar": "折叠侧边栏",
+      "expandSidebar": "展开侧边栏",
       "urgent": "紧急",
       "examPrefix": "考试：{{title}}",
       "loading": "加载中…"

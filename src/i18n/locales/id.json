@@ -480,6 +480,8 @@
       "settings": "Pengaturan",
       "settingsWith": "Pengaturan · {{email}}",
       "openSettings": "Buka pengaturan",
+      "collapseSidebar": "Ciutkan bilah sisi",
+      "expandSidebar": "Perluas bilah sisi",
       "urgent": "MENDESAK",
       "examPrefix": "UJIAN: {{title}}",
       "loading": "MEMUAT…"

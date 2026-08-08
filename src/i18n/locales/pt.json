@@ -490,6 +490,8 @@
       "settings": "Configurações",
       "settingsWith": "Configurações · {{email}}",
       "openSettings": "Abrir configurações",
+      "collapseSidebar": "Recolher barra lateral",
+      "expandSidebar": "Expandir barra lateral",
       "urgent": "URGENTE",
       "examPrefix": "PROVA: {{title}}",
       "loading": "CARREGANDO…"

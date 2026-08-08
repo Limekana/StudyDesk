@@ -31,8 +31,9 @@ import './styles/forms.css';
 import './styles/cards.css';
 import './styles/onboarding.css';
 import { COURSE_COLORS } from "./lib/courseColors.js";
-import { NotebookPen, CalendarDays, Award, Timer } from "lucide-react";
+import { NotebookPen, CalendarDays, Award, Timer, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { GuestAvatar } from "./lib/avatar.jsx";
+import { useShellTier, useSidebarRail } from "./lib/useShell.js";
 import StatsView from "./features/stats/StatsView.jsx";
 import SettingsView from "./features/settings/SettingsView.jsx";
 
@@ -1008,6 +1009,13 @@ export default function App() {
     if (session) outbox.enqueue("upsert_subject", { id, name, color });
   };
 
+  // v1.9 (Item 14, Phase 1) — desktop shell. `tier` is phone/tablet/desktop;
+  // `rail` is whether the sidebar is the 64px icon rail. Declared here rather
+  // than lower down because the early returns below (auth gate, loading) must
+  // not sit between a hook and its call site.
+  const shellTier = useShellTier();
+  const [rail, toggleRail] = useSidebarRail(shellTier);
+
   // v1.9 (Item 6) — icons are back, but not the ones that were dropped.
   // SD-F2 removed a set of emoji/text glyphs in v1.6.0 because they were
   // inconsistent and crowded the label. These are lucide line icons at the
@@ -1043,46 +1051,69 @@ export default function App() {
     
     {!onboarded && <OnboardingView onComplete={handleOnboardingComplete}/>}
     {onboarded && (
-      <div className="app">
-      {/* ── Desktop sidebar ── */}
+      <div className={"app"+(rail?" is-rail":"")} data-tier={shellTier}>
+      {/* ── Desktop sidebar ──
+          v1.9 Item 14: `.rail-hide` marks everything that has no room in the
+          64px icon rail. `aria-label` is unconditional — when railed the label
+          text is display:none and would otherwise take the accessible name
+          with it — while `title` is added only when railed, since a tooltip
+          repeating a label you can already read is just noise. */}
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="sidebar-logo-wrap">
             <img src="/logo.png" alt="StudyDesk" className="sidebar-logo" />
-            <div>
+            <div className="rail-hide">
               <div className="sidebar-wordmark">Studydesk</div>
               <div className="sidebar-sub">{t('av.chrome.subtitle')}</div>
             </div>
           </div>
         </div>
         <nav className="sidebar-nav">
-          {views.map(v=><div key={v.id} role="button" tabIndex={0} className={"nav-item"+(state.view===v.id?" active":"")} onClick={()=>dispatch({type:"SET_VIEW",view:v.id})} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&dispatch({type:"SET_VIEW",view:v.id})}>
+          {views.map(v=><div key={v.id} role="button" tabIndex={0} aria-label={v.label} title={rail?v.label:undefined} className={"nav-item"+(state.view===v.id?" active":"")} onClick={()=>dispatch({type:"SET_VIEW",view:v.id})} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&dispatch({type:"SET_VIEW",view:v.id})}>
             {/* The sidebar tracks the mobile bar: it dropped glyphs with it in
                 v1.6.0 and takes the lucide icons back with it now. `.nav-item`
                 is already a horizontal flex row with a 10px gap, so the icon
                 sits inline before the label rather than above it. */}
             <v.Icon size={16} strokeWidth={1.75} aria-hidden="true"/>
-            {v.label}
+            <span className="rail-hide">{v.label}</span>
           </div>)}
         </nav>
         <div className="sidebar-courses">
-          {courses.length>0&&<div className="courses-label">{t('av.chrome.coursesLabel')}</div>}
+          {courses.length>0&&<div className="courses-label rail-hide">{t('av.chrome.coursesLabel')}</div>}
           {courses.map(c=>{
             const open=state.assignments.filter(a=>a.courseId===c.id&&!a.done).length;
             const exams=state.exams.filter(e=>e.courseId===c.id&&!e.done).length;
-            return <div key={c.id} role="button" tabIndex={0} className={"course-item"+(state.activeCourse===c.id?" active":"")} onClick={()=>dispatch({type:"SET_VIEW",view:"status",course:c.id})} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&dispatch({type:"SET_VIEW",view:"status",course:c.id})}>
-              <div className="course-pip" style={{background:c.color}}/><span className="course-name">{c.name}</span>
+            return <div key={c.id} role="button" tabIndex={0} aria-label={c.name} title={rail?c.name:undefined} className={"course-item"+(state.activeCourse===c.id?" active":"")} onClick={()=>dispatch({type:"SET_VIEW",view:"status",course:c.id})} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&dispatch({type:"SET_VIEW",view:"status",course:c.id})}>
+              {/* The count survives into the rail — an unread-style badge is
+                  the one thing on this row that still reads at 64px. The name
+                  and the edit affordance do not, so they go. */}
+              <div className="course-pip" style={{background:c.color}}/><span className="course-name rail-hide">{c.name}</span>
               {(open+exams)>0&&<span className="course-count">{open+exams}</span>}
-              <span className="course-edit-btn" onClick={e=>{e.stopPropagation();setEditingCourse({id:c.id,name:c.name,color:c.color});}} title={t('av.pl.edit')}>✎</span>
+              <span className="course-edit-btn rail-hide" onClick={e=>{e.stopPropagation();setEditingCourse({id:c.id,name:c.name,color:c.color});}} title={t('av.pl.edit')}>✎</span>
             </div>;
           })}
-          <div className="add-course-btn" onClick={()=>setShowAddCourse(true)}><span style={{fontSize:16}}>+</span> {t('av.chrome.addCourse')}</div>
+          <div className="add-course-btn" role="button" tabIndex={0} aria-label={t('av.chrome.addCourse')} title={rail?t('av.chrome.addCourse'):undefined} onClick={()=>setShowAddCourse(true)} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&setShowAddCourse(true)}><span style={{fontSize:16}}>+</span> <span className="rail-hide">{t('av.chrome.addCourse')}</span></div>
+        </div>
+        <div className="sidebar-foot">
+          <button type="button" className="rail-toggle" onClick={toggleRail}
+            aria-expanded={!rail}
+            aria-label={rail?t('av.chrome.expandSidebar'):t('av.chrome.collapseSidebar')}
+            title={rail?t('av.chrome.expandSidebar'):t('av.chrome.collapseSidebar')}>
+            {rail
+              ? <PanelLeftOpen size={16} strokeWidth={1.75} aria-hidden="true"/>
+              : <PanelLeftClose size={16} strokeWidth={1.75} aria-hidden="true"/>}
+            <span className="rail-hide">{t('av.chrome.collapseSidebar')}</span>
+          </button>
         </div>
       </aside>
 
       {/* ── Main content ── */}
       <main className="main">
         <div className="topbar">
+          {/* v1.9 Item 14 — the inner wrapper carries the gutter and shares
+              `.content`'s max-width, so the title stays aligned with the column
+              it labels instead of drifting to the window edge on wide screens. */}
+          <div className="topbar-inner">
           <h1 className="topbar-title">{state.view==="actions"?t('topbar.nextUp'):activeView?.label}</h1>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             <div className="topbar-date">{todayStr}</div>
@@ -1095,6 +1126,7 @@ export default function App() {
               aria-label={t('av.chrome.openSettings')}>
               {avatarInitials(session) ?? <GuestAvatar/>}
             </button>
+          </div>
           </div>
         </div>
         <div className="content">
