@@ -20,6 +20,19 @@
  * overrides — deliberate, not decorative.
  */
 
+/* ── The shell cap ─────────────────────────────────────────────────────── */
+/* THE ONE THAT ACTUALLY MATTERED. Lifting each view's own inner max-width was
+   necessary but not sufficient: `.content` still capped everything at
+   1180/1360px, so on anything wider than about 1600 every screen was still a
+   centred column with dead space either side no matter what its contents did.
+   That is why the first pass measured correctly at 1600 and still looked
+   unfitted on a real display.
+   Only the desktop tier. The tablet tier keeps its 900px reading measure,
+   which is the right density at that width and is what it has always shipped. */
+.app[data-tier="desktop"] .content {
+  max-width: none;
+}
+
 /* ── Settings ──────────────────────────────────────────────────────────── */
 /* CSS columns rather than grid: the panels are independent, self-contained
    and wildly different heights, which is exactly the case multi-column
@@ -50,9 +63,50 @@
   grid-column: 1 / -1;
 }
 
-/* ── Study stats ───────────────────────────────────────────────────────── */
+/* ── Study stats (Timer > Stats) ───────────────────────────────────────── */
+/* Was capped at 820px. The cards are independent readings of different
+   heights, so the same multi-column treatment as Settings applies. The hero
+   card leads and stays full width — it is the headline figure. */
 .app[data-tier="desktop"] .st-wrap {
   max-width: none;
+  padding-inline: 0;
+}
+.app[data-tier="desktop"] .st-wrap {
+  columns: 2;
+  column-gap: 18px;
+}
+.app[data-tier="desktop"] .st-card {
+  break-inside: avoid;
+  display: inline-block;
+  width: 100%;
+  margin-top: 0;
+  margin-bottom: 18px;
+}
+
+/* ── Session log (Timer > Log) ─────────────────────────────────────────── */
+/* Was capped at 780px and had been missed entirely on the first pass. The
+   stat row spans; the day groups tile, since a day's sessions are a
+   self-contained block and the list is the thing that gets long. */
+.app[data-tier="desktop"] .sv-wrap {
+  max-width: none;
+  padding-inline: 0;
+  columns: 2;
+  column-gap: 18px;
+}
+/* The four totals are a header for the whole screen, not one column's worth,
+   so they break out of the column flow. `.sv-stats` is already an auto-fit
+   grid and needs no help beyond that. */
+.app[data-tier="desktop"] .sv-stats {
+  column-span: all;
+}
+/* One day of sessions is a self-contained block and must not be split across
+   a column boundary — a date heading at the bottom of the left column with
+   its sessions at the top of the right one is unreadable. */
+.app[data-tier="desktop"] .sv-day {
+  break-inside: avoid;
+  display: inline-block;
+  width: 100%;
+  margin-bottom: 14px;
 }
 
 /* ── Next Up / Plan list ───────────────────────────────────────────────── */
@@ -112,6 +166,11 @@
   transform: scale(1.25);
   transform-origin: center top;
 }
-.app[data-tier="desktop"] .pomo-session-log {
-  max-width: none;
+/* Widened, NOT uncapped. The first pass set `max-width: none` here, which was
+   wrong: this is the short "today's sessions" list sitting under a centred
+   dial, and stretching it to the full shell would leave a 1600px-wide list of
+   three rows beneath a 400px timer. It grows with the dial and stops. */
+.app[data-tier="desktop"] .pomo-session-log,
+.app[data-tier="desktop"] .pomo-task-row {
+  max-width: 560px;
 }
