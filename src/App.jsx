@@ -30,11 +30,16 @@ import './styles/base.css';
 import './styles/forms.css';
 import './styles/cards.css';
 import './styles/onboarding.css';
+// v1.9 Item 14a — imported at the shell so the print rules apply to every
+// screen, not only the ones that offer a print button.
+import './styles/print.css';
 import { COURSE_COLORS } from "./lib/courseColors.js";
 import { NotebookPen, CalendarDays, Award, Timer, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { GuestAvatar } from "./lib/avatar.jsx";
 import { useShellTier, useSidebarRail } from "./lib/useShell.js";
 import StatsView from "./features/stats/StatsView.jsx";
+import CalendarView from "./features/calendar/CalendarView.jsx";
+import AnalyticsView from "./features/analytics/AnalyticsView.jsx";
 import SettingsView from "./features/settings/SettingsView.jsx";
 
 // v1.3.1 — initials for the top-right profile avatar (opens Settings, like NCC).
@@ -802,6 +807,29 @@ export default function App() {
   // v1.3 — sub-tab within the Timer view (Timer / Log / Stats), so Log + Stats
   // don't need their own bottom-bar slots.
   const [timerSub, setTimerSub] = useState("timer");
+  // v1.9 Item 14a — sub-tab within Plan (List / Calendar), same shape as the
+  // Timer hub above rather than a fifth bottom tab: the four-tab bar was sized
+  // and tuned in v1.9 Item 6 against the longest label the app ships, and a
+  // fifth slot would undo that on a 360px screen.
+  //
+  // `null` means "follow the tier" — the calendar is the point of a wide
+  // screen, and the list is the better read on a phone. Once the user picks
+  // one, their choice wins at every width. Same 'auto until you touch it'
+  // semantics as the sidebar rail, so the two preferences behave alike.
+  const [planSubPref, setPlanSubPref] = useState(() => {
+    try {
+      const v = localStorage.getItem("studydesk-plan-sub");
+      return v === "list" || v === "calendar" ? v : null;
+    } catch { return null; }
+  });
+  // v1.9 Item 14a — Grades / Trends. Not tier-defaulted like the Plan sub-tab:
+  // the grade list is the answer to "what did I get", which is what this screen
+  // is opened for at every width; Trends is the follow-up question.
+  const [gradesSub, setGradesSub] = useState("grades");
+  const choosePlanSub = useCallback((v) => {
+    try { localStorage.setItem("studydesk-plan-sub", v); } catch { /* private mode */ }
+    setPlanSubPref(v);
+  }, []);
   // Stale persisted nav: pre-v1.3 builds could have state.view === "log"/"stats"
   // (now removed as top-level views). Re-home them into the Timer hub so the
   // routed area never renders blank after upgrading.
@@ -1015,6 +1043,10 @@ export default function App() {
   // not sit between a hook and its call site.
   const shellTier = useShellTier();
   const [rail, toggleRail] = useSidebarRail(shellTier);
+  // Resolved here rather than stored, so a user who has never chosen follows
+  // the tier as it changes (resizing a window, rotating a tablet) instead of
+  // being pinned to whatever tier they first loaded at.
+  const planSub = planSubPref ?? (shellTier === "desktop" ? "calendar" : "list");
 
   // v1.9 (Item 6) — icons are back, but not the ones that were dropped.
   // SD-F2 removed a set of emoji/text glyphs in v1.6.0 because they were
@@ -1114,7 +1146,15 @@ export default function App() {
               `.content`'s max-width, so the title stays aligned with the column
               it labels instead of drifting to the window edge on wide screens. */}
           <div className="topbar-inner">
-          <h1 className="topbar-title">{state.view==="actions"?t('topbar.nextUp'):activeView?.label}</h1>
+          {/* `status` has no entry in `views` (it is reached by picking a course,
+              not from the nav), so it fell through to `undefined` here — the
+              visible half of the dead-route bug fixed below. It names the
+              course, which is what the pane is showing. */}
+          <h1 className="topbar-title">{
+            state.view==="actions" ? t('topbar.nextUp')
+            : state.view==="status" ? (state.courses[state.activeCourse]?.name || t('nav.plan'))
+            : activeView?.label
+          }</h1>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             <div className="topbar-date">{todayStr}</div>
             {/* v1.3.1 — profile avatar opens Settings (matches NCC/LimeLog).
@@ -1129,7 +1169,11 @@ export default function App() {
           </div>
           </div>
         </div>
-        <div className="content">
+        {/* v1.9 Item 14a — `.content-wide` (added in Phase 1 as the documented
+            opt-out) is claimed by the two surfaces that genuinely want the
+            shell width rather than a reading measure: the calendar sheet and
+            the multi-pane course detail. Everything else keeps the measure. */}
+        <div className={"content"+(((state.view==="plan"&&planSub==="calendar")||state.view==="status")?" content-wide":"")}>
           {(urgent.length>0||urgentExams.length>0)&&state.view==="plan"&&(
             <div className="urgent-banner"><span>⚠️</span><div>
               <strong>{t('av.chrome.urgent')}</strong> —{" "}
@@ -1142,9 +1186,50 @@ export default function App() {
               The urgent banner above stays sticky (lives outside the wrapper), so
               only the routed view animates. */}
           <div className="page-turn" key={state.view}>
-          {state.view==="plan"   &&<PlanView    state={state} dispatch={dispatch} showFlash={showFlash} onAddAsgn={()=>setShowAddAsgn(true)} onAddExam={()=>setShowAddExam(true)} onAddCourse={()=>setShowAddCourse(true)} onEditCourse={(c)=>setEditingCourse(c)}/>}
+          {state.view==="plan"   &&(
+            <>
+              <div className="timer-subtabs" role="tablist" aria-label={t('cal.viewMode')}>
+                {[["list","cal.planList"],["calendar","cal.planCalendar"]].map(([id,key])=>(
+                  <button key={id} type="button" role="tab" aria-selected={planSub===id}
+                    className={"timer-subtab"+(planSub===id?" active":"")}
+                    onClick={()=>choosePlanSub(id)}>{t(key)}</button>
+                ))}
+              </div>
+              <div className="page-turn" key={planSub}>
+                {planSub==="calendar"
+                  ? <CalendarView state={state} dispatch={dispatch} session={session} showFlash={showFlash} tier={shellTier} onAddAsgn={()=>setShowAddAsgn(true)} onAddExam={()=>setShowAddExam(true)}/>
+                  : <PlanView    state={state} dispatch={dispatch} showFlash={showFlash} onAddAsgn={()=>setShowAddAsgn(true)} onAddExam={()=>setShowAddExam(true)} onAddCourse={()=>setShowAddCourse(true)} onEditCourse={(c)=>setEditingCourse(c)}/>}
+              </div>
+            </>
+          )}
+          {/* v1.9 Item 14a — `status` was a DEAD ROUTE: clicking a course in the
+              desktop sidebar has always dispatched view:"status", and nothing
+              rendered it, so the content area went blank and the topbar title
+              read `undefined`. StatusView existed but was never mounted. It is
+              the course-detail pane of the three-pane layout, so it lands here
+              rather than being patched out of the sidebar. */}
+          {state.view==="status" &&<CourseDetailView state={state} dispatch={dispatch} session={session} showFlash={showFlash} tier={shellTier} onAddAsgn={()=>setShowAddAsgn(true)} onAddExam={()=>setShowAddExam(true)} onEditCourse={(c)=>setEditingCourse(c)}/>}
           {state.view==="actions" &&<ActionsView state={state} dispatch={dispatch} showFlash={showFlash} onAddCourse={()=>setShowAddCourse(true)}/>}
-          {state.view==="grades"  &&<GradesView  state={state} dispatch={dispatch} showFlash={showFlash} session={session}/>}
+          {/* v1.9 Item 14a — Grades gains a Trends sub-tab. The analytics read
+              grades AND study sessions together, and "how am I doing" is the
+              question this screen already answers, so it belongs here rather
+              than as a sixth destination in a four-tab bar. */}
+          {state.view==="grades"  &&(
+            <>
+              <div className="timer-subtabs" role="tablist" aria-label={t('nav.grades')}>
+                {[["grades","nav.grades"],["trends","an.trends"]].map(([id,key])=>(
+                  <button key={id} type="button" role="tab" aria-selected={gradesSub===id}
+                    className={"timer-subtab"+(gradesSub===id?" active":"")}
+                    onClick={()=>setGradesSub(id)}>{t(key)}</button>
+                ))}
+              </div>
+              <div className="page-turn" key={gradesSub}>
+                {gradesSub==="trends"
+                  ? <AnalyticsView state={state}/>
+                  : <GradesView state={state} dispatch={dispatch} showFlash={showFlash} session={session}/>}
+              </div>
+            </>
+          )}
           {state.view==="timer"   &&(
             <>
               <div className="timer-subtabs" role="tablist" aria-label="Timer sections">
@@ -1338,18 +1423,131 @@ function OnboardingView({ onComplete }) {
   return null;
 }
 
-function StatusView({ state, dispatch, onAddAsgn }) {
+// ── CourseDetailView — the middle pane of the desktop three-pane layout ──────
+//
+// v1.9 Item 14a. Replaces `StatusView`, which was written for the `status`
+// route and then never mounted — clicking a course in the sidebar dispatched
+// `view:"status"` and rendered nothing at all. Rather than restore a component
+// that only listed assignments, this is the course-detail pane the build plan
+// asks for: the sidebar is the list, this is the detail, and on the desktop
+// tier a third column carries what is coming up and what has been put in.
+function CourseDetailView({ state, dispatch, tier, onAddAsgn, onAddExam, onEditCourse }) {
   const { t } = useTranslation();
-  const courses=Object.values(state.courses); const ac=state.activeCourse;
-  const assignments=ac?state.assignments.filter(a=>a.courseId===ac):state.assignments;
-  const open=assignments.filter(a=>!a.done); const done=assignments.filter(a=>a.done);
-  return <div>
-    <div className="section-label">{t('av.pl.assignments')}{ac&&" · "+(state.courses[ac]?.name||"")}</div>
-    {open.length===0&&courses.length>0&&<div className="empty">{t('av.pl.noOpenAsgn')}</div>}
-    {open.slice().sort((a,b)=>new Date(a.dueDate||"9999-12-31")-new Date(b.dueDate||"9999-12-31")).map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch}/>)}
-    <div style={{marginTop:12,marginBottom:24}}><button className="btn-outline" onClick={onAddAsgn}>{t('av.md.addAssignment')}</button></div>
-    {done.length>0&&<><div className="divider"/><div className="section-label">{t('av.pl.completed',{count:done.length})}</div>{done.slice().sort((a,b)=>new Date(b.dueDate||"1970-01-01")-new Date(a.dueDate||"1970-01-01")).map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch}/>)}</>}
-  </div>;
+  const ac = state.activeCourse;
+  const course = ac ? state.courses[ac] : null;
+
+  if (!course || course.deletedAt) {
+    return <div className="empty">{t('cal.courseGone')}</div>;
+  }
+
+  const assignments = state.assignments.filter(a => a.courseId === ac);
+  const open = assignments.filter(a => !a.done)
+    .sort((a, b) => new Date(a.dueDate || "9999-12-31") - new Date(b.dueDate || "9999-12-31"));
+  const done = assignments.filter(a => a.done)
+    .sort((a, b) => new Date(b.dueDate || "1970-01-01") - new Date(a.dueDate || "1970-01-01"));
+  const exams = state.exams.filter(e => e.courseId === ac);
+  const openExams = exams.filter(e => !e.done).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+
+  const sessions = (state.studySessions || []).filter(s => !s.deletedAt && s.subjectId === ac);
+  const totalMin = sessions.reduce((n, s) => n + (s.durationMinutes || 0), 0);
+
+  // Weighted mean of this course's own grades. No scale conversion: every
+  // grade within one course shares the same scale, so the raw weighted mean is
+  // the honest number here — converting would need the GPA machinery and would
+  // say something different from what the Grades screen already shows.
+  const grades = (state.grades || []).filter(g => !g.deletedAt && g.subjectId === ac);
+  const wSum = grades.reduce((n, g) => n + (Number(g.weight) || 0), 0);
+  const mean = wSum > 0
+    ? grades.reduce((n, g) => n + Number(g.grade) * (Number(g.weight) || 0), 0) / wSum
+    : null;
+
+  const stats = [
+    { label: t('cal.statOpen'), value: open.length },
+    { label: t('cal.statExams'), value: openExams.length },
+    { label: t('cal.statStudied'), value: totalMin >= 60 ? `${Math.round(totalMin / 60)}h` : `${totalMin}m` },
+    { label: t('cal.statAverage'), value: mean === null ? '—' : mean.toFixed(2) },
+  ];
+
+  const body = (
+    <div>
+      <div className="cdv-head" style={{ borderInlineStartColor: course.color }}>
+        <div className="cdv-head-main">
+          <div className="cdv-name">{course.name}</div>
+          <div className="cdv-sub">
+            {course.semester && <span>{course.semester}</span>}
+            {course.schoolYear && <span>· {course.schoolYear}</span>}
+            {course.credits != null && <span>· {t('cal.credits', { n: course.credits })}</span>}
+            {course.archivedAt && <span>· {t('cal.archived')}</span>}
+          </div>
+        </div>
+        <button className="btn-outline btn-sm" onClick={() => onEditCourse({ id: course.id, name: course.name, color: course.color })}>
+          {t('av.pl.edit')}
+        </button>
+      </div>
+
+      <div className="cdv-stats">
+        {stats.map(s => (
+          <div key={s.label} className="cdv-stat">
+            <div className="cdv-stat-value">{s.value}</div>
+            <div className="cdv-stat-label">{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="section-label">
+        {t('av.pl.assignments')}
+        <button className="btn btn-sm" style={{ marginLeft: "auto" }} onClick={onAddAsgn}>{t('av.pl.add')}</button>
+      </div>
+      {open.length === 0 && <div className="empty">{t('av.pl.noOpenAsgn')}</div>}
+      {open.map(a => <AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch} />)}
+      {done.length > 0 && (
+        <details style={{ marginBottom: 16 }}>
+          <summary style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--muted)", cursor: "pointer", padding: "8px 0" }}>
+            {t('av.pl.completed', { count: done.length })}
+          </summary>
+          {done.map(a => <AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch} />)}
+        </details>
+      )}
+
+      <div className="divider" />
+      <div className="section-label">
+        {t('av.pl.examsCalendar')}
+        <button className="btn btn-sm" style={{ marginLeft: "auto" }} onClick={onAddExam}>{t('av.pl.add')}</button>
+      </div>
+      {openExams.length === 0 && <div className="empty">{t('av.pl.noExams')}</div>}
+      {openExams.map(e => <ExamCard key={e.id} exam={e} courses={state.courses} dispatch={dispatch} />)}
+    </div>
+  );
+
+  if (tier !== 'desktop') return body;
+
+  // Third pane. Recent sessions only — the full history has its own screen,
+  // and a course pane that grows without bound stops being a summary.
+  const recent = sessions
+    .slice()
+    .sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt))
+    .slice(0, 8);
+
+  return (
+    <div className="cdv-split">
+      {body}
+      <aside className="cdv-aside">
+        <div className="cdv-aside-label">{t('cal.recentSessions')}</div>
+        {recent.length === 0 && <div className="cdv-aside-empty">{t('cal.noSessionsYet')}</div>}
+        {recent.map(s => (
+          <div key={s.id} className="cdv-session">
+            <div className="cdv-session-when">{fmtDateFull(toLocalISO(new Date(s.startedAt)))}</div>
+            <div className="cdv-session-len">
+              {s.durationMinutes >= 60
+                ? `${Math.floor(s.durationMinutes / 60)}h ${s.durationMinutes % 60 || ''}${s.durationMinutes % 60 ? 'm' : ''}`.trim()
+                : `${s.durationMinutes}m`}
+              {s.focusRating != null && <span className="cdv-session-focus"> · {t('cal.focus', { n: s.focusRating })}</span>}
+            </div>
+          </div>
+        ))}
+      </aside>
+    </div>
+  );
 }
 
 function AsgnItem({ asgn, courses, dispatch }) {

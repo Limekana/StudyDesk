@@ -1,0 +1,103 @@
+/* v1.9 Item 14a — print / export-to-PDF.
+ *
+ * No PDF library: the browser already has an excellent PDF writer behind
+ * Ctrl-P, and every OS exposes it. What was missing is a stylesheet that makes
+ * the output worth keeping — printing the app as-is produces a page of
+ * navigation chrome, a grey wash of paper texture, and a calendar squeezed
+ * into whatever column the screen happened to give it.
+ *
+ * Rules of thumb applied throughout: ink is expensive, chrome is worthless on
+ * paper, and a week must not be split across two sheets. */
+
+@media print {
+  /* Colour-accurate backgrounds are opt-in in print; the heatmap and the exam
+     chips are meaningless without them. */
+  *, *::before, *::after {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  html, body, #root {
+    height: auto;
+    background: #fff;
+    overflow: visible;
+  }
+  /* The paper-grain overlay is a fixed full-viewport layer at 3.5% opacity. On
+     screen it is texture; through a printer it is a flat grey cast over every
+     page, and on the second page onwards it does not even scroll with the
+     content. */
+  body::before { display: none !important; }
+
+  /* Chrome that has no meaning on paper. */
+  .sidebar,
+  .mobile-tabbar,
+  .mobile-courses-bar,
+  .topbar,
+  .timer-subtabs,
+  .cal-modes,
+  .cal-nav,
+  .cal-agenda-close,
+  .urgent-banner,
+  .flash,
+  .modal-overlay,
+  .btn, .btn-sm, .btn-outline, .btn-danger-text,
+  .an-legend,
+  .rail-toggle {
+    display: none !important;
+  }
+
+  .app { display: block !important; height: auto !important; overflow: visible !important; }
+  .main { display: block !important; height: auto !important; overflow: visible !important; }
+  .content,
+  .content.content-wide {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* A printed sheet is landscape-ish and paginated; drop the shadows and the
+     sticky positioning, which becomes a floating artefact on paper. */
+  .cal-sheet, .an-card, .cal-agenda-pane, .cdv-aside, .cdv-head {
+    box-shadow: none !important;
+    position: static !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border-color: #999 !important;
+  }
+
+  /* Side-by-side panes become stacked sections: a 336px agenda column next to
+     a calendar wastes a third of the sheet width. */
+  .cal-split, .cdv-split, .an {
+    display: block !important;
+  }
+  .cal-agenda-pane, .cdv-aside { margin-top: 12px; }
+  .an-card { margin-bottom: 14px; }
+
+  /* Keep a week intact across a page break — a month grid cut through the
+     middle of a row is the single thing that makes a printed calendar
+     unusable. */
+  .cal-week, .cal-row, .an-card, .cdv-head, .exam-card, .asgn-item {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .cal-dow { break-after: avoid; page-break-after: avoid; }
+
+  /* The month sheet gets more vertical room on paper than on screen, since
+     there is no scrolling and nothing else competing for the page. */
+  .cal { --cal-cell-min: 96px; }
+  .cal-cell:hover { background: transparent !important; }
+  .cal-chip { border: 1px solid #bbb !important; }
+
+  /* Hour grid: print the whole day rather than a scrolling window. */
+  .cal-weekwrap { overflow: visible !important; }
+  .cal-weekwrap .cal-weekhead,
+  .cal-weekwrap .cal-allday,
+  .cal-weekwrap .cal-hours { min-width: 0 !important; }
+
+  /* Links print as their text; a bare "(http://localhost:5173/…)" after every
+     one is noise in a study planner. */
+  a[href]::after { content: none !important; }
+
+  @page { margin: 12mm; }
+}

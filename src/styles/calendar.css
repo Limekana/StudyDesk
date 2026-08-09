@@ -1,0 +1,485 @@
+/* v1.9 Item 14a — the calendar sheet: month grid, week grid, day agenda.
+ *
+ * Design direction, held to deliberately: this is a RULED PLANNER PAGE, not a
+ * grid of cards. The app's existing mini-calendar draws seven columns of
+ * rounded, bordered, 4px-separated boxes — the shape every web calendar has,
+ * and the one thing on the Plan screen that does not read as paper. A printed
+ * academic planner has no gutters and no boxes: it has hairline rules, and the
+ * page shows through. So cells share single-pixel rules, corners stay square,
+ * and the only rounded things on the sheet are the event chips.
+ *
+ * Hierarchy is carried by weight, not by colour volume — cream is the field,
+ * and course colour is spent on the few things that need identifying:
+ *   exam       solid course-colour chip, white text   the immovable date
+ *   assignment cream chip, 2px course-colour edge     a due date
+ *   study band 10% course-colour wash under the row   a stretch spoken for
+ *   session    mono time + a 6px pip                  a record, not a demand
+ * Filling all four would produce a sheet of confetti with no reading order.
+ */
+
+.cal {
+  --cal-rule: var(--border);
+  --cal-daynum-h: 26px;
+  --cal-lane-h: 18px;
+  --cal-cell-min: 108px;
+  --cal-hour-h: 44px;
+  --cal-gutter-w: 52px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Toolbar ───────────────────────────────────────────────────────────── */
+.cal-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.cal-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  min-width: 0;
+}
+/* The year sits back from the month: within a view you are almost always in
+   the month you asked for, and the year is the part you check rather than
+   read. Same trick the app already uses on `.topbar-date`. */
+.cal-title-year { color: var(--muted2); font-weight: 400; }
+.cal-bar-spacer { flex: 1; }
+
+.cal-nav { display: inline-flex; align-items: center; border: 1px solid var(--border2); border-radius: 4px; overflow: hidden; }
+.cal-nav button {
+  background: var(--surface);
+  border: 0;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 6px 11px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  line-height: 1.4;
+}
+.cal-nav button + button { border-inline-start: 1px solid var(--border); }
+.cal-nav button:hover { background: var(--surface2); color: var(--text); }
+
+.cal-modes { display: inline-flex; border: 1px solid var(--border2); border-radius: 4px; overflow: hidden; }
+.cal-modes button {
+  background: var(--surface);
+  border: 0;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 7px 13px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.cal-modes button + button { border-inline-start: 1px solid var(--border); }
+.cal-modes button:hover { background: var(--surface2); color: var(--text); }
+.cal-modes button.active { background: var(--text); color: var(--bg); }
+
+/* ── The sheet ─────────────────────────────────────────────────────────── */
+/* One outer rule; every interior rule is drawn once, by the cell that owns it,
+   so shared edges stay hairline instead of doubling to 2px. */
+.cal-sheet {
+  border: 1px solid var(--cal-rule);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.cal-dow {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-bottom: 1px solid var(--cal-rule);
+  background: var(--surface2);
+}
+.cal-dow div {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted2);
+  text-align: center;
+  padding: 7px 2px;
+}
+.cal-dow div + div { border-inline-start: 1px solid var(--cal-rule); }
+
+.cal-week {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+.cal-week + .cal-week { border-top: 1px solid var(--cal-rule); }
+
+.cal-cell {
+  min-height: var(--cal-cell-min);
+  padding: 0 5px 5px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.cal-cell + .cal-cell { border-inline-start: 1px solid var(--cal-rule); }
+.cal-cell:hover { background: var(--surface2); }
+/* Weekends carry a faint wash rather than a different border or a colour —
+   a planner shades them, and shading survives being printed in greyscale. */
+.cal-cell.weekend { background: rgba(0, 0, 0, 0.012); }
+.cal-cell.weekend:hover { background: var(--surface2); }
+/* Days outside the month are still real days you can click into, so they are
+   dimmed rather than blanked — blanking them is what makes month boundaries
+   feel like walls. */
+.cal-cell.outside .cal-daynum { color: var(--border2); }
+.cal-cell.outside .cal-chip { opacity: 0.45; }
+.cal-cell.selected { background: var(--surface2); box-shadow: inset 0 0 0 2px var(--text); }
+
+.cal-daynum {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--muted);
+  height: var(--cal-daynum-h);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+/* Today is an inked numeral, not a boxed cell. A border around the whole cell
+   competes with the sheet's own rules and reads as a selection state; the ink
+   blot is unmistakable and leaves the grid alone. */
+.cal-cell.today .cal-daynum {
+  color: var(--bg);
+}
+.cal-cell.today .cal-daynum span {
+  background: var(--text);
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+/* Spacer that reserves exactly the height the band layer occupies in this row.
+   `--cal-lanes` is set inline per row from layoutBands()'s lane count, so a
+   week with no revision windows loses no vertical space to them. */
+.cal-bandspace { height: calc(var(--cal-lanes, 0) * var(--cal-lane-h)); flex-shrink: 0; }
+
+.cal-bands {
+  position: absolute;
+  top: var(--cal-daynum-h);
+  inset-inline: 0;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-auto-rows: var(--cal-lane-h);
+  pointer-events: none;
+  padding: 0 5px;
+}
+.cal-band {
+  pointer-events: auto;
+  margin: 1px 0;
+  height: 15px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 7px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-radius: 3px;
+  cursor: pointer;
+  /* Diagonal hatching, not a flat fill: this is a stretch of intent rather
+     than a booked commitment, and the texture says "provisional" without
+     needing a legend. */
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--band-tint) 0 5px,
+    transparent 5px 10px
+  );
+  background-color: var(--band-wash);
+  border: 1px solid var(--band-edge);
+  color: var(--band-ink);
+}
+/* A clipped band loses its rounding on the clipped side, so the eye reads
+   "this continues" instead of "this ends here". */
+.cal-band.cont-start { border-start-start-radius: 0; border-end-start-radius: 0; border-inline-start-style: dashed; }
+.cal-band.cont-end { border-start-end-radius: 0; border-end-end-radius: 0; border-inline-end-style: dashed; }
+
+.cal-items { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+.cal-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  border: 1px solid transparent;
+  text-align: start;
+  background: none;
+  font-family: inherit;
+  color: var(--text);
+  width: 100%;
+}
+.cal-chip-label { overflow: hidden; text-overflow: ellipsis; }
+.cal-chip:hover { filter: brightness(0.96); }
+
+/* Exam — the only solid fill on the sheet. */
+.cal-chip.is-exam {
+  background: var(--chip-color, var(--text));
+  color: #fff;
+  font-weight: 500;
+  border-color: rgba(0, 0, 0, 0.12);
+}
+/* Assignment — cream with a course-coloured leading edge, like a tab on a
+   file divider. */
+.cal-chip.is-assignment {
+  background: var(--surface2);
+  border-color: var(--border);
+  border-inline-start: 2px solid var(--chip-color, var(--border2));
+  padding-inline-start: 5px;
+}
+/* Session — quietest. A logged fact, so it reads as a marginal note. */
+.cal-chip.is-session {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding-inline-start: 0;
+}
+.cal-pip { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: var(--chip-color, var(--border2)); }
+.cal-chip.done .cal-chip-label { text-decoration: line-through; opacity: 0.55; }
+.cal-chip.is-exam.done { background: var(--muted2); }
+
+.cal-more {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted2);
+  padding: 1px 6px;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  text-align: start;
+}
+.cal-more:hover { color: var(--text); }
+
+/* ── Week view ─────────────────────────────────────────────────────────── */
+.cal-weekhead {
+  display: grid;
+  grid-template-columns: var(--cal-gutter-w) repeat(7, minmax(0, 1fr));
+  border-bottom: 1px solid var(--cal-rule);
+  background: var(--surface2);
+}
+.cal-weekhead > div + div { border-inline-start: 1px solid var(--cal-rule); }
+.cal-weekhead-day { padding: 6px 8px; text-align: center; }
+.cal-weekhead-dow {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted2);
+}
+.cal-weekhead-num { font-family: var(--font-display); font-size: 17px; color: var(--muted); }
+.cal-weekhead-day.today .cal-weekhead-num { color: var(--text); font-weight: 600; }
+.cal-weekhead-day.today .cal-weekhead-dow { color: var(--text); }
+
+/* All-day strip: exams and due dates have no clock time, so they cannot live
+   in the hour grid. Pinning them above it is what stops a deadline being
+   silently drawn at midnight. */
+.cal-allday {
+  display: grid;
+  grid-template-columns: var(--cal-gutter-w) repeat(7, minmax(0, 1fr));
+  border-bottom: 1px solid var(--cal-rule);
+  background: var(--surface);
+}
+.cal-allday > div + div { border-inline-start: 1px solid var(--cal-rule); }
+.cal-allday-gutter {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted2);
+  padding: 6px 6px 0;
+  text-align: end;
+}
+.cal-allday-col { padding: 4px; display: flex; flex-direction: column; gap: 2px; min-height: 30px; min-width: 0; }
+
+.cal-hours {
+  display: grid;
+  grid-template-columns: var(--cal-gutter-w) repeat(7, minmax(0, 1fr));
+  position: relative;
+  /* Columns take their declared height instead of stretching to the tallest
+     one — see the height rule below for why that matters. */
+  align-items: start;
+}
+.cal-hours > div + div { border-inline-start: 1px solid var(--cal-rule); }
+/* The grid's height is stated once, from the hour count, rather than left to
+   emerge from the content. Measured before this rule: the column stretched to
+   857px while its 16 hour rules summed to 832, so a session block positioned
+   as a percentage of the column sat ~14px above its own hour line at 13:00 and
+   drifted further down the day. Both the rules and the blocks now divide the
+   same number, so they cannot disagree. `--cal-hour-count` is set inline from
+   the rendered hour range. */
+.cal-gutter,
+.cal-daycol {
+  height: calc(var(--cal-hour-count, 16) * var(--cal-hour-h));
+}
+.cal-gutter { position: relative; }
+.cal-gutter-hour {
+  height: var(--cal-hour-h);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted2);
+  text-align: end;
+  padding-inline-end: 6px;
+  /* Nudged up so the label sits ON its rule rather than inside the hour it
+     opens — the same convention a printed timetable uses. */
+  transform: translateY(-5px);
+}
+.cal-daycol { position: relative; min-width: 0; }
+.cal-daycol.weekend { background: rgba(0, 0, 0, 0.012); }
+.cal-hourline { height: var(--cal-hour-h); border-top: 1px solid var(--cal-rule); position: relative; }
+.cal-hourline:first-child { border-top: 0; }
+/* Half-hour tick: a dotted rule so the grid supports 30-minute reading without
+   doubling the visual density of the hour rules.
+   ABSOLUTE, not a margin. As a margin it collapsed straight out through the
+   first row — which has `border-top: 0` and so nothing to stop it — displacing
+   every hour rule 25px down while the session blocks, positioned as a
+   percentage, stayed put. Measured: the 13:00 rule sat at 389px and its block
+   at 364px. Absolute positioning has no margin to collapse. */
+.cal-hourline::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  border-top: 1px dotted var(--border);
+  opacity: 0.55;
+}
+
+.cal-now {
+  position: absolute;
+  inset-inline: 0;
+  height: 0;
+  border-top: 1px solid var(--danger);
+  z-index: 3;
+  pointer-events: none;
+}
+.cal-now::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: -3px;
+  top: -3px;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--danger);
+}
+
+.cal-block {
+  position: absolute;
+  border-radius: 4px;
+  padding: 3px 6px;
+  overflow: hidden;
+  font-size: 11px;
+  line-height: 1.3;
+  cursor: grab;
+  background: var(--block-wash, var(--surface2));
+  border: 1px solid var(--block-edge, var(--border2));
+  border-inline-start: 3px solid var(--block-color, var(--border2));
+  z-index: 2;
+  touch-action: none;
+  user-select: none;
+}
+.cal-block:hover { box-shadow: var(--shadow-md); }
+.cal-block.dragging { cursor: grabbing; opacity: 0.85; box-shadow: var(--shadow-md); z-index: 5; }
+.cal-block-time { font-family: var(--font-mono); font-size: 9px; color: var(--muted); letter-spacing: 0.03em; }
+.cal-block-title { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Below roughly 40 minutes the two lines cannot both fit, so the block drops
+   to one line rather than clipping the title mid-glyph. */
+.cal-block.compact { padding: 1px 6px; display: flex; align-items: center; gap: 6px; }
+.cal-block.compact .cal-block-title { font-size: 10px; }
+
+/* ── Day agenda ────────────────────────────────────────────────────────── */
+.cal-agenda-pane {
+  background: var(--surface);
+  border: 1px solid var(--cal-rule);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.cal-agenda-head { display: flex; align-items: baseline; gap: 10px; }
+.cal-agenda-title { font-family: var(--font-display); font-size: 19px; }
+.cal-agenda-rel { font-family: var(--font-mono); font-size: 10px; color: var(--muted2); letter-spacing: 0.06em; text-transform: uppercase; }
+.cal-agenda-close { margin-inline-start: auto; background: none; border: 0; color: var(--muted2); cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 4px; }
+.cal-agenda-close:hover { color: var(--text); }
+.cal-agenda-group { display: flex; flex-direction: column; gap: 6px; }
+.cal-agenda-empty { font-size: 12px; color: var(--muted2); font-style: italic; }
+
+.cal-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+  min-width: 0;
+}
+.cal-row:first-child { border-top: 0; }
+.cal-row-mark { width: 3px; align-self: stretch; border-radius: 2px; background: var(--row-color, var(--border2)); flex-shrink: 0; }
+.cal-row-body { flex: 1; min-width: 0; }
+.cal-row-title { font-size: 13px; line-height: 1.35; }
+.cal-row-title.done { text-decoration: line-through; color: var(--muted2); }
+.cal-row-meta { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-top: 3px; font-family: var(--font-mono); font-size: 10px; color: var(--muted2); }
+
+/* ── Tiers ─────────────────────────────────────────────────────────────── */
+@media (min-width: 1201px) {
+  .cal { --cal-cell-min: 128px; }
+}
+/* The day agenda moves BESIDE the sheet at 1440, not at the 1201 tier
+   boundary. Measured at 1220: a 240px sidebar plus a 336px side pane left the
+   month sheet 541px wide — 77px columns, narrower than the phone-tier cells
+   and far too narrow to read a chip in. Three panes need room for three panes;
+   below that the agenda stacks under the grid and the sheet gets the full 895.
+   The pane is proportional rather than fixed so it cannot re-create the same
+   squeeze at the low end of the range. */
+@media (min-width: 1440px) {
+  .cal-split { display: grid; grid-template-columns: minmax(0, 1fr) clamp(300px, 26%, 400px); gap: 18px; align-items: start; }
+  .cal-agenda-pane { position: sticky; top: 18px; max-height: calc(100vh - 140px); overflow-y: auto; }
+}
+@media (min-width: 1600px) {
+  .cal { --cal-cell-min: 148px; --cal-hour-h: 52px; }
+}
+
+/* Phone: the month sheet cannot hold seven readable columns at 360px, so the
+   grid becomes a compact dot-per-event month and the agenda carries the
+   detail. Deliberately NOT hidden — the month is how you find a week, and the
+   phone build has never had that. */
+@media (max-width: 768px) {
+  .cal { --cal-cell-min: 58px; --cal-daynum-h: 20px; --cal-lane-h: 6px; }
+  .cal-title { font-size: 19px; }
+  .cal-cell { padding: 0 2px 3px; }
+  .cal-daynum { font-size: 12px; justify-content: center; }
+  .cal-cell.today .cal-daynum span { width: 18px; height: 18px; font-size: 10px; }
+  .cal-items { flex-direction: row; flex-wrap: wrap; gap: 2px; justify-content: center; }
+  .cal-chip {
+    width: 6px; height: 6px; padding: 0; border-radius: 50%;
+    background: var(--chip-color, var(--muted2)); border: 0;
+  }
+  .cal-chip.is-assignment { background: transparent; border: 1.5px solid var(--chip-color, var(--muted2)); }
+  .cal-chip.is-session { background: var(--border2); }
+  .cal-chip-label, .cal-pip, .cal-more { display: none; }
+  .cal-band { font-size: 0; height: 4px; padding: 0; }
+  .cal-bands { padding: 0 2px; }
+  /* The week grid's hour columns do not survive this width at all. */
+  .cal-weekwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .cal-weekwrap .cal-weekhead,
+  .cal-weekwrap .cal-allday,
+  .cal-weekwrap .cal-hours { min-width: 620px; }
+}
