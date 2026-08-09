@@ -318,18 +318,263 @@ export async function deleteAction(id) {
   if (error) throw error;
 }
 
+// ── planned sessions ─────────────────────────────────────────────────────────
+//
+// v1.10. A SEPARATE TABLE FROM `study_sessions`, and it must stay that way.
+// NCC derives its study signals and Life Score from `study_sessions`; a
+// `planned` boolean on that table would count blocks the user merely *intended*
+// as study they actually did, and every NCC version already in the wild on
+// F-Droid would keep doing so forever — old versions cannot be taught to
+// filter a column that did not exist when they shipped (`P1`).
+
+export async function upsertPlannedSession({ id, subjectId, startsAt, durationMinutes, title, notes, fulfilledBy, dismissedAt }) {
+  const userId = await currentUserId();
+  const row = {
+    id,
+    user_id: userId,
+    subject_id: subjectId || null,
+    starts_at: startsAt,
+    duration_minutes: Math.max(1, Math.min(1440, Math.round(durationMinutes))),
+    title: title || null,
+    notes: notes || null,
+    updated_at: nowISO(),
+  };
+  // The DB forbids a row being both fulfilled and dismissed. Sending only the
+  // key that is set would leave a stale opposite value in place and trip that
+  // constraint on the next write, so both are always written — the caller's
+  // pair is the whole truth about this block's outcome.
+  row.fulfilled_by = fulfilledBy || null;
+  row.dismissed_at = dismissedAt || null;
+  if (row.fulfilled_by && row.dismissed_at) row.dismissed_at = null;
+  const { error } = await supabase.from('planned_sessions').upsert(row);
+  if (error) throw error;
+  return id;
+}
+
+export async function deletePlannedSession(id) {
+  const stamp = nowISO();
+  const { error } = await supabase
+    .from('planned_sessions')
+    .update({ deleted_at: stamp, updated_at: stamp })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+// ── academic terms · timetable ───────────────────────────────────────────────
+
+export async function upsertTerm({ id, parentId, level, name, startsOn, endsOn, position }) {
+  const userId = await currentUserId();
+  const { error } = await supabase.from('academic_terms').upsert({
+    id,
+    user_id: userId,
+    // A 'year' must have no parent and anything else must have one — the DB
+    // enforces both, so a UI bug surfaces as a failed push rather than as a
+    // term tree that renders in an impossible shape.
+    parent_id: level === 'year' ? null : (parentId || null),
+    level,
+    name,
+    // Empty string is what the date inputs produce when cleared; `date`
+    // columns reject it and accept null.
+    starts_on: startsOn || null,
+    ends_on: endsOn || null,
+    position: Number.isFinite(Number(position)) ? Number(position) : 0,
+    updated_at: nowISO(),
+  });
+  if (error) throw error;
+  return id;
+}
+
+/**
+ * Soft-delete a term, its descendant terms, and every timetable entry hanging
+ * off any of them.
+ *
+ * The table's foreign keys cascade on a HARD delete, which is not what happens
+ * here — nothing in this app ever issues a DELETE. Without walking the tree,
+ * removing a school year would leave its semesters and their lessons live on
+ * every other device, orphaned from a parent that no longer resolves, and
+ * `resolveTermRange` would then fall back past the missing ancestor and start
+ * drawing those lessons across the wrong dates.
+ */
+export async function deleteTerm({ id, descendantIds = [] }) {
+  const stamp = nowISO();
+  const ids = [id, ...descendantIds];
+  const { error: teErr } = await supabase
+    .from('timetable_entries')
+    .update({ deleted_at: stamp, updated_at: stamp })
+    .in('term_id', ids);
+  if (teErr) throw teErr;
+  const { error } = await supabase
+    .from('academic_terms')
+    .update({ deleted_at: stamp, updated_at: stamp })
+    .in('id', ids);
+  if (error) throw error;
+}
+
+export async function upsertTimetableEntry({ id, termId, subjectId, title, weekday, startsAt, endsAt, room, color }) {
+  if (!termId) throw new Error('termId is required (a lesson must belong to a term)');
+  const userId = await currentUserId();
+  const { error } = await supabase.from('timetable_entries').upsert({
+    id,
+    user_id: userId,
+    term_id: termId,
+    subject_id: subjectId || null,
+    // The DB requires a subject or a non-blank title. Trimmed here so a title
+    // of spaces fails locally in the form rather than as a constraint error
+    // three retries deep in the outbox.
+    title: (title || '').trim() || null,
+    weekday: Math.max(0, Math.min(6, Math.round(Number(weekday)))),
+    starts_at: startsAt,
+    ends_at: endsAt,
+    room: (room || '').trim() || null,
+    color: color || null,
+    updated_at: nowISO(),
+  });
+  if (error) throw error;
+  return id;
+}
+
+export async function deleteTimetableEntry(id) {
+  const stamp = nowISO();
+  const { error } = await supabase
+    .from('timetable_entries')
+    .update({ deleted_at: stamp, updated_at: stamp })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+// ── assignment attachments ───────────────────────────────────────────────────
+//
+// Storage paths are `<user_id>/<assignment_id>/<file>`. The first segment is
+// LOAD-BEARING, not cosmetic: the storage policy reads path segment 1 and
+// compares it to `auth.uid()`, and the table carries a CHECK that
+// `storage_path` starts with the row's own `user_id`. Build the path any other
+// way and the upload is refused.
+
+export const ATTACHMENT_BUCKET = 'assignment-attachments';
+export const ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024;
+
+/** Strip anything that would change the meaning of a storage path, and keep
+ *  the result short enough that a long name plus two UUID segments stays well
+ *  inside the key length Storage accepts. The original name is preserved on
+ *  the row and is what the user sees — this only sanitises the KEY. */
+export function safeFileName(name) {
+  const cleaned = String(name || 'file')
+    .normalize('NFKD')
+    // Path separators and `..` are the reason this function exists; the rest is
+    // to keep keys predictable across the S3-backed store.
+    .replace(/[^\w.-]+/g, '-')
+    .replace(/^[.-]+/, '')
+    .replace(/-{2,}/g, '-');
+  const trimmed = cleaned.slice(0, 80);
+  return trimmed || 'file';
+}
+
+/**
+ * Upload one file and register it against an assignment.
+ *
+ * NOT routed through the outbox, deliberately. The outbox persists its queue as
+ * JSON in localStorage, and a `File` does not survive `JSON.stringify` — it
+ * would serialise to `{}` and the retry would upload an empty object under a
+ * real filename. An upload therefore requires connectivity, and the caller
+ * surfaces the failure rather than pretending it was queued.
+ */
+export async function uploadAttachment({ assignmentId, file }) {
+  if (!assignmentId) throw new Error('assignmentId is required');
+  if (!file) throw new Error('file is required');
+  if (file.size > ATTACHMENT_MAX_BYTES) {
+    const e = new Error('too-large');
+    e.code = 'too-large';
+    throw e;
+  }
+  const userId = await currentUserId();
+  const id = crypto.randomUUID();
+  const path = `${userId}/${assignmentId}/${id}-${safeFileName(file.name)}`;
+  const { error: upErr } = await supabase.storage
+    .from(ATTACHMENT_BUCKET)
+    .upload(path, file, {
+      contentType: file.type || 'application/octet-stream',
+      // Never overwrite: the id in the key makes every path unique, so an
+      // upsert here could only ever mask a collision that should not happen.
+      upsert: false,
+    });
+  if (upErr) throw upErr;
+
+  const row = {
+    id,
+    user_id: userId,
+    assignment_id: assignmentId,
+    storage_path: path,
+    file_name: String(file.name || 'file').slice(0, 200),
+    mime_type: file.type || null,
+    size_bytes: file.size ?? null,
+    updated_at: nowISO(),
+  };
+  const { error } = await supabase.from('assignment_attachments').insert(row);
+  if (error) {
+    // The object is already in the bucket. Leaving it there would be a file
+    // the user is billed for, can never see and can never delete, so the
+    // upload is rolled back before the error is surfaced.
+    try { await supabase.storage.from(ATTACHMENT_BUCKET).remove([path]); } catch { /* best effort */ }
+    throw error;
+  }
+  return {
+    id,
+    assignmentId,
+    storagePath: path,
+    fileName: row.file_name,
+    mimeType: row.mime_type,
+    sizeBytes: row.size_bytes,
+    updatedAt: row.updated_at,
+    deletedAt: null,
+  };
+}
+
+/** Short-lived signed URL for viewing/downloading one attachment. The bucket
+ *  is private, so there is no public URL to fall back on. */
+export async function signedAttachmentUrl(storagePath, expiresIn = 60) {
+  const { data, error } = await supabase.storage
+    .from(ATTACHMENT_BUCKET)
+    .createSignedUrl(storagePath, expiresIn);
+  if (error) throw error;
+  return data?.signedUrl || null;
+}
+
+export async function deleteAttachment({ id, storagePath }) {
+  const stamp = nowISO();
+  // Row first. If the object removal fails, the user sees the attachment gone
+  // (which is what they asked for) and the orphan is a storage-cleanup
+  // problem; doing it the other way round can leave a row pointing at nothing,
+  // which renders as a file that errors every time it is opened.
+  const { error } = await supabase
+    .from('assignment_attachments')
+    .update({ deleted_at: stamp, updated_at: stamp })
+    .eq('id', id);
+  if (error) throw error;
+  if (storagePath) {
+    const { error: rmErr } = await supabase.storage.from(ATTACHMENT_BUCKET).remove([storagePath]);
+    if (rmErr) throw rmErr;
+  }
+}
+
 // ── pull (full sync) ─────────────────────────────────────────────────────────
 
 export async function pullAllStudyData() {
   // Pull EVERYTHING including soft-deleted rows so the local LWW merge
   // can correctly tombstone things the user deleted on another device.
-  const [subjectsRes, gradesRes, sessionsRes, assignmentsRes, examsRes, actionsRes] = await Promise.all([
+  const [
+    subjectsRes, gradesRes, sessionsRes, assignmentsRes, examsRes, actionsRes,
+    plannedRes, termsRes, timetableRes, attachmentsRes,
+  ] = await Promise.all([
     supabase.from('subjects').select('*'),
     supabase.from('grades').select('*'),
     supabase.from('study_sessions').select('*'),
     supabase.from('assignments').select('*'),
     supabase.from('exams').select('*'),
     supabase.from('study_actions').select('*'),
+    supabase.from('planned_sessions').select('*'),
+    supabase.from('academic_terms').select('*'),
+    supabase.from('timetable_entries').select('*'),
+    supabase.from('assignment_attachments').select('*'),
   ]);
   if (subjectsRes.error) throw subjectsRes.error;
   if (gradesRes.error) throw gradesRes.error;
@@ -337,6 +582,10 @@ export async function pullAllStudyData() {
   if (assignmentsRes.error) throw assignmentsRes.error;
   if (examsRes.error) throw examsRes.error;
   if (actionsRes.error) throw actionsRes.error;
+  if (plannedRes.error) throw plannedRes.error;
+  if (termsRes.error) throw termsRes.error;
+  if (timetableRes.error) throw timetableRes.error;
+  if (attachmentsRes.error) throw attachmentsRes.error;
   return {
     subjects: subjectsRes.data || [],
     grades: gradesRes.data || [],
@@ -344,6 +593,10 @@ export async function pullAllStudyData() {
     assignments: assignmentsRes.data || [],
     exams: examsRes.data || [],
     actions: actionsRes.data || [],
+    plannedSessions: plannedRes.data || [],
+    academicTerms: termsRes.data || [],
+    timetableEntries: timetableRes.data || [],
+    attachments: attachmentsRes.data || [],
   };
 }
 
@@ -373,7 +626,12 @@ export function startRealtime(onChange) {
   // v1.7 — assignments/exams/study_actions joined the set (StudyDesk#6). All
   // six coalesce into the same debounced pull, so adding three tables costs one
   // extra subscription each, not three extra round-trips.
-  for (const table of ['subjects', 'grades', 'study_sessions', 'assignments', 'exams', 'study_actions']) {
+  // v1.10 — planned sessions, terms, timetable and attachments join the same
+  // debounced pull. Ten subscriptions, still one round-trip per burst.
+  for (const table of [
+    'subjects', 'grades', 'study_sessions', 'assignments', 'exams', 'study_actions',
+    'planned_sessions', 'academic_terms', 'timetable_entries', 'assignment_attachments',
+  ]) {
     c.on(
       'postgres_changes',
       { event: '*', schema: 'public', table },

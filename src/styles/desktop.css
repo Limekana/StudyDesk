@@ -164,6 +164,25 @@
   .app[data-tier="desktop"] .sd-list-tile { grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); }
 }
 
+/* ── Timetable (v1.10) ─────────────────────────────────────────────────── */
+/* Two panes on a wide screen: the term outline stays visible while the week
+   grid is edited, because picking a jakso and laying out its lessons is one
+   task and paging between them would make it two. The tree is a fixed measure
+   rather than a fraction — it holds short names and dates, and a 600px-wide
+   outline column is dead space wearing a border. */
+.app[data-tier="desktop"] .tt-panes,
+.app[data-tier="tablet"] .tt-panes {
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 26px;
+  align-items: start;
+}
+.app[data-tier="desktop"] .tt { --tt-hour-h: 48px; }
+/* The grid gets the width, so the hour gutter can afford to be legible. */
+.app[data-tier="desktop"] .tt-grid-head,
+.app[data-tier="desktop"] .tt-grid-body {
+  grid-template-columns: 54px repeat(7, minmax(0, 1fr));
+}
+
 /* ── Timer ─────────────────────────────────────────────────────────────── */
 /* The dial stays CENTRED rather than stretching — a timer spread across
    1600px would be worse, not better, the same call the NCC lock screen came

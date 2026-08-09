@@ -410,6 +410,85 @@
 .cal-block.compact { padding: 1px 6px; display: flex; align-items: center; gap: 6px; }
 .cal-block.compact .cal-block-title { font-size: 10px; }
 
+/* ── Lessons, planned blocks (v1.10) ───────────────────────────────────── */
+/* A lesson is the RULING of the week, not an item on it. It sits behind every
+   block (z-index 1 against the block's 2), takes no pointer events, and is
+   drawn as a wash with a hairline edge rather than as a card — the visual
+   weight has to say "this is the shape of your week" without competing with
+   the two things the user can actually act on. */
+.cal-lesson {
+  position: absolute;
+  inset-inline: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+  padding: 2px 7px;
+  background: var(--lesson-wash, rgba(26, 24, 20, 0.035));
+  border-top: 1px solid var(--lesson-color, var(--border2));
+  border-bottom: 1px dotted var(--lesson-color, var(--border2));
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.cal-lesson-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cal-lesson-room { font-family: var(--font-mono); font-size: 9px; color: var(--muted2); flex-shrink: 0; }
+
+/* A PLAN is an intention, so it is drawn as an outline rather than as a solid:
+   the paper convention for "pencilled in". A logged session keeps the filled
+   treatment it has always had, which is what makes the two readable at a
+   glance in the same column. */
+.cal-block.is-planned {
+  background: transparent;
+  border-style: dashed;
+  border-inline-start-style: solid;
+}
+.cal-block.is-planned .cal-block-title { font-weight: 500; }
+/* Kept: the plan was honoured, and the session beside it is the record. Muted
+   rather than removed, because deleting it would erase the fact that the
+   session was planned at all. */
+.cal-block.is-planned.st-kept { opacity: 0.5; border-style: solid; }
+.cal-block.is-planned.st-dismissed { opacity: 0.4; }
+.cal-block.is-planned.st-dismissed .cal-block-title { text-decoration: line-through; }
+/* Missed is DERIVED from the clock, never stored — see buildEvents. */
+.cal-block.is-planned.st-missed { border-color: var(--danger); }
+.cal-block.is-planned.st-missed .cal-block-time { color: var(--danger); }
+.cal-block.is-planned.creating { pointer-events: none; opacity: 0.75; z-index: 6; }
+
+.cal-row.is-planned .cal-row-mark { opacity: 0.55; }
+.cal-row.is-lesson .cal-row-mark { opacity: 0.35; }
+.cal-row.is-planned.st-missed .cal-row-meta { color: var(--danger); }
+
+/* ── Plan editor ───────────────────────────────────────────────────────── */
+.plan-row { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 8px; }
+.plan-actions { display: flex; gap: 8px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+.plan-delete { margin-inline-start: auto; display: inline-flex; align-items: center; gap: 5px; }
+.plan-status {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 6px 9px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  background: var(--surface2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+.plan-status.st-missed { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
+
+@media (max-width: 520px) {
+  .plan-row { grid-template-columns: 1fr; }
+}
+
 /* ── Day agenda ────────────────────────────────────────────────────────── */
 .cal-agenda-pane {
   background: var(--surface);

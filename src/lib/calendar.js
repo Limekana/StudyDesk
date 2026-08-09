@@ -112,7 +112,18 @@ export function weekGrid(anchorIso, weekStart) {
 // a marker on that single start day, which reads as "one thing happens here"
 // when what it means is "this whole stretch is spoken for". It is a band.
 
-export const EVENT_KINDS = ['exam', 'assignment', 'study', 'session'];
+// `planned` joined in v1.10: a block the user intends to study, stored in its
+// own `planned_sessions` table. It is deliberately NOT a flag on
+// `study_sessions` — NCC derives study signals and its Life Score from that
+// table, and a flag there would count intentions as work done in an app that
+// has already shipped and can never be taught to filter it.
+//
+// Lessons are NOT in this list, and that is not an oversight: they are a
+// recurring skeleton generated per date from `timetable_entries` (see
+// `lib/timetable.js`), not stored events. The week grid and the day agenda
+// draw them as a background layer; the month sheet does not, because five
+// lessons a day would bury the exams and deadlines the month exists to show.
+export const EVENT_KINDS = ['exam', 'assignment', 'study', 'session', 'planned'];
 
 function courseOf(state, id) {
   const c = state.courses?.[id];
@@ -212,6 +223,36 @@ export function buildEvents(state, opts = {}) {
     });
   }
 
+  for (const p of state.plannedSessions || []) {
+    if (p.deletedAt) continue;
+    if (!p.startsAt) continue;
+    const when = new Date(p.startsAt);
+    if (Number.isNaN(when.getTime())) continue;
+    const iso = toLocalISO(when);
+    const course = courseOf(state, p.subjectId);
+    // Three outcomes, and the block says which: kept (a session got linked to
+    // it), dropped (explicitly dismissed), or still owed. `missed` is derived
+    // rather than stored, because storing it would need a job to run at
+    // midnight — the passage of time is not an edit anyone makes.
+    const status = p.fulfilledBy ? 'kept' : p.dismissedAt ? 'dismissed' : (when.getTime() < Date.now() ? 'missed' : 'planned');
+    push(iso, {
+      kind: 'planned',
+      id: p.id,
+      title: p.title || course?.name || null,
+      iso,
+      courseId: p.subjectId,
+      courseName: course?.name || null,
+      color: course?.color || null,
+      startedAt: p.startsAt,
+      startMin: minutesIntoDay(p.startsAt),
+      durationMinutes: p.durationMinutes,
+      status,
+      done: status === 'kept' || status === 'dismissed',
+      notes: p.notes || '',
+      source: p,
+    });
+  }
+
   const bands = [];
   for (const e of state.exams || []) {
     if (e.done || !e.dueDate) continue;
@@ -241,7 +282,11 @@ export function buildEvents(state, opts = {}) {
 /** Order within a day cell. Exams first because they are the immovable thing
  *  on that date; sessions last and by clock time, since they are a record of
  *  the day rather than a demand on it. */
-const KIND_RANK = { exam: 0, assignment: 1, study: 2, session: 3 };
+const KIND_RANK = { exam: 0, assignment: 1, study: 2, planned: 3, session: 4 };
+
+/** Kinds that own a clock time and therefore belong in the hour grid rather
+ *  than the all-day strip above it. */
+export const TIMED_KINDS = new Set(['session', 'planned']);
 
 export function sortDayItems(items) {
   return items.slice().sort((a, b) => {
@@ -311,9 +356,19 @@ export function sessionsOn(byDay, iso) {
     .sort((a, b) => a.startMin - b.startMin);
 }
 
-/** Non-session items on `iso` — the all-day strip above the week's hour grid. */
+/** Everything with a clock time on `iso` — logged sessions AND planned blocks,
+ *  which share the hour grid because they occupy the same hours. Ordered by
+ *  start, then planned before logged at an identical minute so a block and the
+ *  session that fulfilled it read in the order they happened. */
+export function timedOn(byDay, iso) {
+  return (byDay.get(iso) || [])
+    .filter((it) => TIMED_KINDS.has(it.kind))
+    .sort((a, b) => (a.startMin - b.startMin) || (KIND_RANK[a.kind] - KIND_RANK[b.kind]));
+}
+
+/** Untimed items on `iso` — the all-day strip above the week's hour grid. */
 export function allDayOn(byDay, iso) {
-  return sortDayItems((byDay.get(iso) || []).filter((it) => it.kind !== 'session'));
+  return sortDayItems((byDay.get(iso) || []).filter((it) => !TIMED_KINDS.has(it.kind)));
 }
 
 /** Side-by-side placement for overlapping sessions in one day column.

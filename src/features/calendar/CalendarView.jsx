@@ -11,21 +11,31 @@
 // a dependency would arrive with its own date library, its own theme system
 // and its own opinions about a design language this app has already settled.
 //
-// What is deliberately NOT here: creating a *planned* study block. StudyDesk
-// has no planned-session model — every study session is logged after the fact
-// (`startedAt` + `durationMinutes`, written by the timer). Dragging a block
-// therefore corrects when a session actually happened, which is a real need
-// the log view already supports through a form. Inventing a planned-block
-// model would mean a new Supabase table under `P1`/`P2`, which is an owner
-// call and not something to smuggle in under a UI item.
+// v1.10 completes the planning half. The week grid now carries three kinds of
+// thing that occupy an hour, and the distinction between them is the whole
+// point of the screen:
+//
+//   LESSON   — a recurring class from the timetable. Background layer, not
+//              interactive, and NEVER written to `study_sessions`: attending a
+//              lesson is not self-directed study, and merging the two would
+//              inflate every study statistic in this app and in NCC.
+//   PLANNED  — a block the user intends to study. Its own table, deliberately
+//              not a flag on `study_sessions`, because NCC computes its Life
+//              Score from that table and shipped versions in the wild could
+//              never learn to filter an intention out of it.
+//   SESSION  — what actually happened, written by the timer.
+//
+// Dragging a PLANNED block reschedules the plan; dragging a SESSION still
+// corrects when it happened. Dragging on empty grid creates a plan.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronLeft, ChevronRight, Download, Printer } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Printer, Trash2 } from 'lucide-react';
 import {
   resolveWeekStart, weekdayLabels, monthGrid, weekGrid, startOfWeek,
-  buildEvents, sortDayItems, layoutBands, layoutDayColumn, sessionsOn, allDayOn,
+  buildEvents, sortDayItems, layoutBands, layoutDayColumn, timedOn, allDayOn,
 } from '../../lib/calendar.js';
+import { lessonsOn, localTimestamp } from '../../lib/timetable.js';
 import { parseLocalDate, toLocalISO, addDays, fmtTime, formatLocale } from '../../lib/dates.js';
 import { downloadIcs } from '../../lib/ics.js';
 import * as outbox from '../../lib/outbox.js';
@@ -35,15 +45,19 @@ const MAX_CHIPS = 3;
 // Drag snapping. 15 minutes matches the granularity a study block is actually
 // remembered at; finer just makes the block jitter under the cursor.
 const SNAP_MIN = 15;
+// A click that never really moved should still produce a usable block rather
+// than a 15-minute sliver nobody meant.
+const DEFAULT_PLAN_MIN = 60;
 
 function todayIso() { return toLocalISO(new Date()); }
 
 /** Hour range the week grid draws. Always covers a normal day, and widens to
- *  contain anything logged outside it — a 06:00 session must not be clipped
- *  off the top of the sheet just because the default window starts at 07. */
-function hourRange(sessions) {
+ *  contain anything outside it — a 06:00 session must not be clipped off the
+ *  top of the sheet just because the default window starts at 07, and an
+ *  08:00 first lesson must not sit above the visible grid either. */
+function hourRange(blocks) {
   let from = 7, to = 22;
-  for (const s of sessions) {
+  for (const s of blocks) {
     const startH = Math.floor(s.startMin / 60);
     const endH = Math.ceil((s.startMin + (s.durationMinutes || 0)) / 60);
     if (startH < from) from = startH;
@@ -64,6 +78,14 @@ function relativeDayLabel(iso, t) {
 function minutesLabel(mins) {
   const h = Math.floor(mins / 60), m = mins % 60;
   return h > 0 ? `${h}h${m ? ` ${m}m` : ''}` : `${m}m`;
+}
+
+/** 495 → "08:15". A wall-clock position on the grid, not a duration.
+ *  Deliberately not locale-formatted: this labels a row of a 24-hour grid
+ *  whose gutter is already numeric, and a 12-hour "8:15 AM" beside an "08"
+ *  gutter reads as two different clocks. */
+function minutesClock(mins) {
+  return `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
 }
 
 // ── Chips ──────────────────────────────────────────────────────────────────
@@ -170,7 +192,7 @@ function MonthSheet({ rows, bands, byDay, weekStart, locale, selected, onSelect,
 
 // ── Week ───────────────────────────────────────────────────────────────────
 
-function WeekSheet({ days, byDay, weekStart, locale, onOpen, onMoveSession, t }) {
+function WeekSheet({ days, byDay, lessonsByDay, weekStart, locale, onOpen, onMoveBlock, onCreatePlan, t }) {
   const gridRef = useRef(null);
   const [drag, setDrag] = useState(null);
   const [nowMin, setNowMin] = useState(() => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); });
@@ -180,11 +202,13 @@ function WeekSheet({ days, byDay, weekStart, locale, onOpen, onMoveSession, t })
     return () => clearInterval(id);
   }, []);
 
-  const allSessions = useMemo(
-    () => days.flatMap((d) => sessionsOn(byDay, d.iso)),
-    [days, byDay],
+  // Lessons widen the window as well as blocks: a timetable starting at 08:00
+  // in a week with nothing logged would otherwise be drawn above the grid.
+  const allBlocks = useMemo(
+    () => days.flatMap((d) => [...timedOn(byDay, d.iso), ...(lessonsByDay.get(d.iso) || [])]),
+    [days, byDay, lessonsByDay],
   );
-  const { from, to } = useMemo(() => hourRange(allSessions), [allSessions]);
+  const { from, to } = useMemo(() => hourRange(allBlocks), [allBlocks]);
   const hours = useMemo(
     () => Array.from({ length: to - from }, (_, i) => from + i),
     [from, to],
@@ -211,6 +235,32 @@ function WeekSheet({ days, byDay, weekStart, locale, onOpen, onMoveSession, t })
     return { rect, gw, colW, hourH, rtl };
   }, [hours.length]);
 
+  // Pointer-down on empty grid starts a CREATE drag. Bound on the day column
+  // rather than the grid so the day is known without hit-testing, and guarded
+  // on the target being the column background — a block sitting on top of it
+  // handles its own gesture and must not also start a new plan underneath.
+  const onColumnPointerDown = (e, iso) => {
+    if (e.button !== undefined && e.button !== 0) return;
+    if (e.target !== e.currentTarget && !e.target.classList?.contains('cal-hourline')) return;
+    const g = measure();
+    if (!g) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const raw = ((e.clientY - rect.top) / rect.height) * (hours.length * 60) + from * 60;
+    const startMin = Math.max(0, Math.min(24 * 60 - SNAP_MIN, Math.floor(raw / SNAP_MIN) * SNAP_MIN));
+    try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch { /* grid listener still tracks */ }
+    setDrag({
+      mode: 'create',
+      iso,
+      originY: e.clientY,
+      anchorMin: startMin,
+      targetMin: startMin,
+      // Until the pointer actually moves this is a click, and a click means
+      // "plan an hour here" rather than a 15-minute sliver.
+      durationMin: DEFAULT_PLAN_MIN,
+      moved: false,
+    });
+  };
+
   const onPointerDown = (e, item) => {
     if (e.button !== undefined && e.button !== 0) return;
     const g = measure();
@@ -221,6 +271,7 @@ function WeekSheet({ days, byDay, weekStart, locale, onOpen, onMoveSession, t })
     // drag that ends early — it must not take the handler down with it.
     try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch { /* drag still tracks via the grid listener */ }
     setDrag({
+      mode: 'move',
       id: item.id,
       item,
       originX: e.clientX,
@@ -238,6 +289,24 @@ function WeekSheet({ days, byDay, weekStart, locale, onOpen, onMoveSession, t })
     if (!drag) return;
     const g = measure();
     if (!g) return;
+    if (drag.mode === 'create') {
+      const dy = e.clientY - drag.originY;
+      const deltaMin = Math.round((dy / g.hourH) * 60 / SNAP_MIN) * SNAP_MIN;
+      const edge = Math.max(0, Math.min(24 * 60, drag.anchorMin + deltaMin));
+      // Dragging UPWARD from the anchor is a legitimate way to select a range;
+      // normalising here means the block never renders with a negative height
+      // and the created plan starts where the user's selection visibly starts.
+      const startMin = Math.min(drag.anchorMin, edge);
+      const endMin = Math.max(drag.anchorMin, edge);
+      const moved = drag.moved || Math.abs(dy) > 3;
+      setDrag((d) => (d ? {
+        ...d,
+        targetMin: startMin,
+        durationMin: moved ? Math.max(SNAP_MIN, endMin - startMin) : DEFAULT_PLAN_MIN,
+        moved,
+      } : d));
+      return;
+    }
     const dy = e.clientY - drag.originY;
     const dx = e.clientX - drag.originX;
     const moved = drag.moved || Math.abs(dy) > 3 || Math.abs(dx) > 3;
@@ -260,8 +329,16 @@ function WeekSheet({ days, byDay, weekStart, locale, onOpen, onMoveSession, t })
 
   const endDrag = () => {
     if (!drag) return;
+    if (drag.mode === 'create') {
+      // Clamped so a block dragged to the bottom of the sheet cannot run past
+      // midnight and land its tail on the following day.
+      const dur = Math.max(SNAP_MIN, Math.min(24 * 60 - drag.targetMin, drag.durationMin));
+      onCreatePlan(drag.iso, drag.targetMin, dur);
+      setDrag(null);
+      return;
+    }
     const changed = drag.moved && (drag.targetMin !== drag.startMin || drag.targetIso !== drag.iso);
-    if (changed) onMoveSession(drag.item, drag.targetIso, drag.targetMin);
+    if (changed) onMoveBlock(drag.item, drag.targetIso, drag.targetMin);
     else if (!drag.moved) onOpen(drag.item);
     setDrag(null);
   };
@@ -306,12 +383,58 @@ function WeekSheet({ days, byDay, weekStart, locale, onOpen, onMoveSession, t })
           ))}
         </div>
         {days.map((d, ci) => {
-          const laid = layoutDayColumn(sessionsOn(byDay, d.iso));
+          const laid = layoutDayColumn(timedOn(byDay, d.iso));
+          const lessons = lessonsByDay.get(d.iso) || [];
+          const creating = drag?.mode === 'create' && drag.iso === d.iso;
           return (
-            <div key={d.iso} className={`cal-daycol${isWeekendCol(ci) ? ' weekend' : ''}`}>
+            <div
+              key={d.iso}
+              className={`cal-daycol${isWeekendCol(ci) ? ' weekend' : ''}`}
+              onPointerDown={(e) => onColumnPointerDown(e, d.iso)}
+            >
               {hours.map((h) => <div key={h} className="cal-hourline" />)}
+              {/* Lessons are a BACKGROUND LAYER, behind the blocks and not
+                  interactive. They are the shape of the week the user does not
+                  choose — the thing study has to fit around — so they read as
+                  the ruling of the page rather than as items on it. Editing
+                  happens in the timetable editor, where the change applies to
+                  every week the term covers rather than to this one Tuesday. */}
+              {lessons.map((l) => (
+                <div
+                  key={l.id}
+                  className="cal-lesson"
+                  style={{
+                    top: `${top(l.startMin)}%`,
+                    height: `${height(l.durationMinutes)}%`,
+                    '--lesson-color': l.color || 'var(--border2)',
+                    '--lesson-wash': l.color ? `${l.color}12` : 'rgba(26,24,20,0.035)',
+                  }}
+                  title={`${l.title || t('tt.lesson')}${l.room ? ` · ${l.room}` : ''} · ${l.termName}`}
+                  aria-hidden="true"
+                >
+                  <span className="cal-lesson-label">{l.title || t('tt.lesson')}</span>
+                  {l.room && <span className="cal-lesson-room">{l.room}</span>}
+                </div>
+              ))}
               {d.iso === today && nowMin >= from * 60 && nowMin <= to * 60 && (
                 <div className="cal-now" style={{ top: `${top(nowMin)}%` }} aria-hidden="true" />
+              )}
+              {creating && (
+                <div
+                  className="cal-block is-planned creating"
+                  style={{
+                    top: `${top(drag.targetMin)}%`,
+                    height: `${height(drag.durationMin)}%`,
+                    insetInlineStart: '3px',
+                    width: 'calc(100% - 6px)',
+                  }}
+                  aria-hidden="true"
+                >
+                  <div className="cal-block-time">
+                    {String(Math.floor(drag.targetMin / 60)).padStart(2, '0')}:{String(drag.targetMin % 60).padStart(2, '0')} · {minutesLabel(drag.durationMin)}
+                  </div>
+                  <div className="cal-block-title">{t('cal.planNew')}</div>
+                </div>
               )}
               {laid.map(({ item, col, of }) => {
                 const isDragging = drag?.id === item.id;
@@ -336,7 +459,10 @@ function WeekSheet({ days, byDay, weekStart, locale, onOpen, onMoveSession, t })
                     key={item.id}
                     role="button"
                     tabIndex={0}
-                    className={`cal-block${isDragging ? ' dragging' : ''}${height(dur) < 5 ? ' compact' : ''}`}
+                    className={`cal-block is-${item.kind}`
+                      + (item.kind === 'planned' ? ` st-${item.status}` : '')
+                      + (isDragging ? ' dragging' : '')
+                      + (height(dur) < 5 ? ' compact' : '')}
                     style={{
                       top: `${top(min)}%`,
                       height: `${height(dur)}%`,
@@ -354,7 +480,11 @@ function WeekSheet({ days, byDay, weekStart, locale, onOpen, onMoveSession, t })
                     <div className="cal-block-time">
                       {String(Math.floor(min / 60)).padStart(2, '0')}:{String(min % 60).padStart(2, '0')} · {minutesLabel(dur)}
                     </div>
-                    <div className="cal-block-title">{item.courseName || t('cal.study')}</div>
+                    <div className="cal-block-title">
+                      {item.kind === 'planned'
+                        ? (item.title || item.courseName || t('cal.planned'))
+                        : (item.courseName || t('cal.study'))}
+                    </div>
                   </div>
                 );
               })}
@@ -371,11 +501,18 @@ function WeekSheet({ days, byDay, weekStart, locale, onOpen, onMoveSession, t })
 
 // ── Day agenda ─────────────────────────────────────────────────────────────
 
-function DayAgenda({ iso, byDay, locale, onOpen, onClose, t }) {
+function DayAgenda({ iso, byDay, lessons, locale, onOpen, onClose, t }) {
   const items = sortDayItems(byDay.get(iso) || []);
   const timed = items.filter((i) => i.kind === 'session');
-  const dated = items.filter((i) => i.kind !== 'session');
+  const planned = items.filter((i) => i.kind === 'planned').sort((a, b) => a.startMin - b.startMin);
+  const dated = items.filter((i) => i.kind !== 'session' && i.kind !== 'planned');
+  // Logged minutes only. Planned minutes are counted separately and never
+  // added in: a total that mixes what happened with what was merely intended
+  // is the exact lie this whole split-table design exists to avoid.
   const totalMin = timed.reduce((n, s) => n + (s.durationMinutes || 0), 0);
+  const plannedMin = planned
+    .filter((p) => p.status === 'planned' || p.status === 'missed')
+    .reduce((n, p) => n + (p.durationMinutes || 0), 0);
 
   return (
     <div className="cal-agenda-pane">
@@ -389,7 +526,55 @@ function DayAgenda({ iso, byDay, locale, onOpen, onClose, t }) {
         <button type="button" className="cal-agenda-close" onClick={onClose} aria-label={t('common.close')}>×</button>
       </div>
 
-      {items.length === 0 && <div className="cal-agenda-empty">{t('cal.dayEmpty')}</div>}
+      {items.length === 0 && lessons.length === 0 && <div className="cal-agenda-empty">{t('cal.dayEmpty')}</div>}
+
+      {lessons.length > 0 && (
+        <div className="cal-agenda-group">
+          <div className="cal-agenda-rel">{t('tt.lessonsToday', { n: lessons.length })}</div>
+          {lessons.map((l) => (
+            <div key={l.id} className="cal-row is-lesson" style={{ '--row-color': l.color || 'var(--border2)' }}>
+              <div className="cal-row-mark" aria-hidden="true" />
+              <div className="cal-row-body">
+                <div className="cal-row-title">{l.title || t('tt.lesson')}</div>
+                <div className="cal-row-meta">
+                  <span>{minutesClock(l.startMin)}–{minutesClock(l.endMin)}</span>
+                  {l.room && <span>· {l.room}</span>}
+                  <span>· {l.termName}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {planned.length > 0 && (
+        <div className="cal-agenda-group">
+          <div className="cal-agenda-rel">
+            {plannedMin > 0 ? t('cal.plannedTotal', { total: minutesLabel(plannedMin) }) : t('cal.plannedHeading')}
+          </div>
+          {planned.map((p) => (
+            <div
+              key={p.id}
+              className={`cal-row is-planned st-${p.status}`}
+              role="button"
+              tabIndex={0}
+              style={{ '--row-color': p.color || 'var(--border2)' }}
+              onClick={() => onOpen(p)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(p); } }}
+            >
+              <div className="cal-row-mark" aria-hidden="true" />
+              <div className="cal-row-body">
+                <div className={`cal-row-title${p.done ? ' done' : ''}`}>{p.title || p.courseName || t('cal.planned')}</div>
+                <div className="cal-row-meta">
+                  <span>{minutesClock(p.startMin)}</span>
+                  <span>· {minutesLabel(p.durationMinutes || 0)}</span>
+                  <span>· {t(`cal.status.${p.status}`)}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {dated.length > 0 && (
         <div className="cal-agenda-group">
@@ -435,6 +620,114 @@ function DayAgenda({ iso, byDay, locale, onOpen, onClose, t }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Planned-block editor ───────────────────────────────────────────────────
+//
+// A drag on empty grid opens this with a draft rather than creating the row
+// straight away. Creating on pointer-up and opening an editor afterwards is
+// the calendar convention, but it leaves a stray block behind every time
+// someone drags by accident and hits Escape — and an accidental drag is the
+// most likely gesture on a surface where dragging is also how you move things.
+
+function PlanEditor({ draft, courses, onSave, onDelete, onLog, onDismiss, onClose, t }) {
+  const isNew = !draft.id;
+  const [subjectId, setSubjectId] = useState(draft.subjectId || '');
+  const [title, setTitle] = useState(draft.title || '');
+  const [date, setDate] = useState(draft.iso);
+  const [start, setStart] = useState(minutesClock(draft.startMin));
+  const [duration, setDuration] = useState(String(draft.durationMinutes));
+  const [notes, setNotes] = useState(draft.notes || '');
+
+  const submit = () => {
+    const dur = parseInt(duration, 10);
+    if (!Number.isFinite(dur) || dur < 1) return;
+    const m = /^(\d{1,2}):(\d{2})$/.exec(start.trim());
+    if (!m) return;
+    const startMin = Math.min(24 * 60 - 1, Number(m[1]) * 60 + Number(m[2]));
+    onSave({
+      id: draft.id,
+      subjectId: subjectId || null,
+      title: title.trim(),
+      notes: notes.trim(),
+      iso: date,
+      startMin,
+      durationMinutes: Math.min(1440, dur),
+    });
+  };
+
+  return (
+    <div className="modal-overlay" role="dialog" aria-modal="true" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-title">{isNew ? t('cal.planNewTitle') : t('cal.planEditTitle')}</div>
+
+        {!isNew && draft.status && draft.status !== 'planned' && (
+          <div className={`plan-status st-${draft.status}`}>{t(`cal.statusLong.${draft.status}`)}</div>
+        )}
+
+        <div className="input-group">
+          <div className="input-label">{t('sv.fCourse')}</div>
+          <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
+            <option value="">{t('cal.planNoCourse')}</option>
+            {courses.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </div>
+        <div className="input-group">
+          <div className="input-label">{t('cal.planTitle')}</div>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder={t('cal.planTitlePlaceholder')}
+          />
+        </div>
+        <div className="plan-row">
+          <div className="input-group">
+            <div className="input-label">{t('cal.planDate')}</div>
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          </div>
+          <div className="input-group">
+            <div className="input-label">{t('cal.planStart')}</div>
+            <input type="time" step="900" value={start} onChange={(e) => setStart(e.target.value)} />
+          </div>
+          <div className="input-group">
+            <div className="input-label">{t('cal.planDuration')}</div>
+            <input type="number" min="1" max="1440" value={duration} onChange={(e) => setDuration(e.target.value)} />
+          </div>
+        </div>
+        <div className="input-group">
+          <div className="input-label">{t('sv.fNotes')}</div>
+          <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} />
+        </div>
+
+        <div className="plan-actions">
+          <button className="btn" onClick={submit}>{isNew ? t('cal.planCreate') : t('common.save')}</button>
+          <button className="btn-outline" onClick={onClose}>{t('common.cancel')}</button>
+        </div>
+
+        {!isNew && (
+          <>
+            <div className="divider" />
+            {/* "Log it" writes a REAL study session and links this block to it.
+                That link is the only thing that turns an intention into a fact
+                anywhere in the suite — the plan row itself is never counted as
+                study, here or in NCC. */}
+            <div className="plan-actions">
+              {draft.status !== 'kept' && (
+                <button className="btn-outline btn-sm" onClick={onLog}>{t('cal.planLogIt')}</button>
+              )}
+              {draft.status !== 'dismissed' && draft.status !== 'kept' && (
+                <button className="btn-outline btn-sm" onClick={onDismiss}>{t('cal.planDismiss')}</button>
+              )}
+              <button className="btn-danger-text plan-delete" onClick={onDelete} title={t('common.delete')}>
+                <Trash2 size={13} strokeWidth={1.75} /> {t('common.delete')}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -496,10 +789,44 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
 
   const year = parseLocalDate(anchor).getFullYear();
 
-  const onMoveSession = useCallback((item, targetIso, targetMin) => {
-    const d = parseLocalDate(targetIso);
-    d.setHours(Math.floor(targetMin / 60), targetMin % 60, 0, 0);
-    const startedAt = d.toISOString();
+  // Lessons for every day the screen can currently show: the seven of the week
+  // sheet plus whatever day the agenda has open. Computed once per render of
+  // the view rather than per column, because `lessonsOn` walks the whole term
+  // tree for each date and the week sheet would otherwise walk it seven times.
+  const lessonsByDay = useMemo(() => {
+    const map = new Map();
+    const isos = new Set(days.map((d) => d.iso));
+    if (selected) isos.add(selected);
+    for (const iso of isos) {
+      const list = lessonsOn(state, iso);
+      if (list.length) map.set(iso, list);
+    }
+    return map;
+  }, [state, days, selected]);
+
+  const onMoveBlock = useCallback((item, targetIso, targetMin) => {
+    const startedAt = localTimestamp(targetIso, targetMin).toISOString();
+    if (item.kind === 'planned') {
+      // Moving a PLAN is rescheduling something that has not happened yet —
+      // the ordinary case now that plans exist, and the one the build plan
+      // actually asked for.
+      dispatch({ type: 'EDIT_PLANNED', id: item.id, startsAt: startedAt });
+      if (session) {
+        const p = item.source;
+        outbox.enqueue('upsert_planned', {
+          id: item.id,
+          subjectId: p.subjectId,
+          startsAt: startedAt,
+          durationMinutes: p.durationMinutes,
+          title: p.title,
+          notes: p.notes,
+          fulfilledBy: p.fulfilledBy,
+          dismissedAt: p.dismissedAt,
+        });
+      }
+      showFlash?.(t('cal.planMoved'));
+      return;
+    }
     dispatch({ type: 'EDIT_SESSION', id: item.id, startedAt });
     // Partial patch: `updateStudySession` only writes the fields present, so
     // this moves started_at without touching notes, focus or the AI debrief.
@@ -507,8 +834,104 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
     showFlash?.(t('cal.sessionMoved'));
   }, [dispatch, session, showFlash, t]);
 
+  // ── Planning ─────────────────────────────────────────────────────────────
+  const [plan, setPlan] = useState(null);
+
+  const openNewPlan = useCallback((iso, startMin, durationMinutes) => {
+    setSelected(iso);
+    setPlan({ iso, startMin, durationMinutes, subjectId: '', title: '', notes: '' });
+  }, []);
+
+  const pushPlan = useCallback((row) => {
+    if (!session) return;
+    outbox.enqueue('upsert_planned', {
+      id: row.id,
+      subjectId: row.subjectId,
+      startsAt: row.startsAt,
+      durationMinutes: row.durationMinutes,
+      title: row.title,
+      notes: row.notes,
+      fulfilledBy: row.fulfilledBy ?? null,
+      dismissedAt: row.dismissedAt ?? null,
+    });
+  }, [session]);
+
+  const savePlan = useCallback((form) => {
+    const startsAt = localTimestamp(form.iso, form.startMin).toISOString();
+    if (form.id) {
+      dispatch({ type: 'EDIT_PLANNED', id: form.id, subjectId: form.subjectId, startsAt, durationMinutes: form.durationMinutes, title: form.title, notes: form.notes });
+      const prev = (state.plannedSessions || []).find((p) => p.id === form.id);
+      pushPlan({ ...form, startsAt, fulfilledBy: prev?.fulfilledBy ?? null, dismissedAt: prev?.dismissedAt ?? null });
+      showFlash?.(t('cal.planSaved'));
+    } else {
+      // The id is minted here rather than left to the reducer, because the
+      // outbox push needs the same one and reading it back out of the next
+      // state would be a race against the dispatch.
+      const id = crypto.randomUUID();
+      dispatch({ type: 'ADD_PLANNED', id, subjectId: form.subjectId, startsAt, durationMinutes: form.durationMinutes, title: form.title, notes: form.notes });
+      pushPlan({ ...form, id, startsAt });
+      showFlash?.(t('cal.planCreated'));
+    }
+    setPlan(null);
+  }, [dispatch, pushPlan, showFlash, state.plannedSessions, t]);
+
+  const deletePlan = useCallback(() => {
+    if (!plan?.id) return;
+    dispatch({ type: 'DELETE_PLANNED', id: plan.id });
+    if (session) outbox.enqueue('delete_planned', { id: plan.id });
+    setPlan(null);
+    showFlash?.(t('cal.planDeleted'));
+  }, [plan, dispatch, session, showFlash, t]);
+
+  /** Turn a plan into a real study session. This is the ONLY path by which a
+   *  planned block contributes to any study statistic — the session row is
+   *  what counts, and `fulfilled_by` merely records which intention it
+   *  answered. */
+  const logPlan = useCallback(() => {
+    if (!plan?.id) return;
+    const sessionId = crypto.randomUUID();
+    const startedAt = localTimestamp(plan.iso, plan.startMin).toISOString();
+    dispatch({ type: 'ADD_SESSION', id: sessionId, subjectId: plan.subjectId || null, startedAt, durationMinutes: plan.durationMinutes, notes: plan.notes || null });
+    dispatch({ type: 'RESOLVE_PLANNED', id: plan.id, fulfilledBy: sessionId });
+    if (session) {
+      outbox.enqueue('log_session', { id: sessionId, subjectId: plan.subjectId || null, startedAt, durationMinutes: plan.durationMinutes, notes: plan.notes || null });
+      // Queued AFTER the session, because `fulfilled_by` is a foreign key onto
+      // `study_sessions` — the drain is oldest-first, so the row it points at
+      // is written before the pointer is.
+      pushPlan({ ...plan, startsAt: startedAt, fulfilledBy: sessionId, dismissedAt: null });
+    }
+    setPlan(null);
+    showFlash?.(t('cal.planLogged'));
+  }, [plan, dispatch, session, pushPlan, showFlash, t]);
+
+  const dismissPlan = useCallback(() => {
+    if (!plan?.id) return;
+    const dismissedAt = new Date().toISOString();
+    dispatch({ type: 'RESOLVE_PLANNED', id: plan.id, dismissedAt });
+    pushPlan({ ...plan, startsAt: localTimestamp(plan.iso, plan.startMin).toISOString(), fulfilledBy: null, dismissedAt });
+    setPlan(null);
+    showFlash?.(t('cal.planDismissed'));
+  }, [plan, dispatch, pushPlan, showFlash, t]);
+
   const openItem = useCallback((item) => {
     setSelected(item.iso);
+    if (item.kind === 'planned') {
+      // A plan opens its own editor rather than the course/assignment route
+      // the other kinds take — it is the one item on this screen that lives
+      // nowhere else in the app.
+      const p = item.source;
+      setPlan({
+        id: item.id,
+        iso: item.iso,
+        startMin: item.startMin,
+        durationMinutes: p.durationMinutes,
+        subjectId: p.subjectId || '',
+        title: p.title || '',
+        notes: p.notes || '',
+        status: item.status,
+      });
+      return;
+    }
     onOpenItem?.(item);
   }, [onOpenItem]);
 
@@ -538,6 +961,21 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
   const onKeyDown = (e) => {
     if (e.target.closest('input, textarea, select, [contenteditable]')) return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
+    // While the editor is open the calendar underneath must not page, switch
+    // mode or open a second dialog. Escape still closes, so nothing traps.
+    if (plan) {
+      if (e.key === 'Escape') { e.preventDefault(); setPlan(null); }
+      return;
+    }
+    if (e.key === 'p' || e.key === 'P') {
+      e.preventDefault();
+      // Next whole hour on the selected day — the same "round it to something
+      // a person would actually pick" rule the drag uses for a bare click.
+      const now = new Date();
+      const startMin = Math.min(23 * 60, (now.getHours() + 1) * 60);
+      openNewPlan(selected || todayIso(), startMin, DEFAULT_PLAN_MIN);
+      return;
+    }
     if (e.key === 'ArrowRight') { e.preventDefault(); step(1); }
     else if (e.key === 'ArrowLeft') { e.preventDefault(); step(-1); }
     else if (e.key === 'ArrowDown') { e.preventDefault(); setSelected((s) => addDays(s || anchor, 7)); }
@@ -559,8 +997,8 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
     )
     : (
       <WeekSheet
-        days={days} byDay={byDay} weekStart={weekStart} locale={locale}
-        onOpen={openItem} onMoveSession={onMoveSession} t={t}
+        days={days} byDay={byDay} lessonsByDay={lessonsByDay} weekStart={weekStart} locale={locale}
+        onOpen={openItem} onMoveBlock={onMoveBlock} onCreatePlan={openNewPlan} t={t}
       />
     );
 
@@ -599,9 +1037,30 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
       <div className={selected ? 'cal-split' : undefined}>
         {sheet}
         {selected && (
-          <DayAgenda iso={selected} byDay={byDay} locale={locale} onOpen={openItem} onClose={() => setSelected(null)} t={t} />
+          <DayAgenda
+            iso={selected}
+            byDay={byDay}
+            lessons={lessonsByDay.get(selected) || []}
+            locale={locale}
+            onOpen={openItem}
+            onClose={() => setSelected(null)}
+            t={t}
+          />
         )}
       </div>
+
+      {plan && (
+        <PlanEditor
+          draft={plan}
+          courses={Object.values(state.courses || {}).filter((c) => !c.deletedAt && !c.archivedAt)}
+          onSave={savePlan}
+          onDelete={deletePlan}
+          onLog={logPlan}
+          onDismiss={dismissPlan}
+          onClose={() => setPlan(null)}
+          t={t}
+        />
+      )}
     </div>
   );
 }

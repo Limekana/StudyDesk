@@ -35,12 +35,15 @@ import './styles/onboarding.css';
 import './styles/print.css';
 import './styles/desktop.css';
 import { COURSE_COLORS } from "./lib/courseColors.js";
-import { NotebookPen, CalendarDays, Award, Timer, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { NotebookPen, CalendarDays, Award, Timer, PanelLeftClose, PanelLeftOpen, Paperclip } from "lucide-react";
 import { GuestAvatar } from "./lib/avatar.jsx";
 import { useShellTier, useSidebarRail } from "./lib/useShell.js";
 import StatsView from "./features/stats/StatsView.jsx";
 import CalendarView from "./features/calendar/CalendarView.jsx";
 import AnalyticsView from "./features/analytics/AnalyticsView.jsx";
+import TimetableView from "./features/timetable/TimetableView.jsx";
+import AttachmentList from "./features/plan/Attachments.jsx";
+import { useAttachmentDrop } from "./features/plan/useAttachmentDrop.js";
 import SettingsView from "./features/settings/SettingsView.jsx";
 
 // v1.3.1 — initials for the top-right profile avatar (opens Settings, like NCC).
@@ -191,6 +194,12 @@ async function scheduleNotifications(exams, assignments, courses) {
 const INITIAL = {
   courses:{}, assignments:[], actions:[], exams:[],
   grades:[], studySessions:[],
+  // v1.10 — planned study blocks, the School Year > Semester > Jakso tree, the
+  // weekly lessons hanging off it, and assignment file attachments.
+  // `plannedSessions` is separate from `studySessions` on purpose and must
+  // stay that way: NCC reads study_sessions for its Life Score, so an intended
+  // block living there would be counted as study that actually happened.
+  plannedSessions:[], academicTerms:[], timetableEntries:[], attachments:[],
   gradeMode:"ib",                  // 'ib' | 'us' | 'custom' — persisted locally
   customScale:DEFAULT_CUSTOM_SCALE, // bounds for gradeMode 'custom' (SD-F4)
   aiEnabled:false,                 // AI debrief opt-in — device-level, persisted locally
@@ -293,6 +302,124 @@ function reducer(state, action) {
     case "ADD_SESSION":    { const s={id:action.id||newSyncId(),subjectId:action.subjectId||null,startedAt:action.startedAt,durationMinutes:Math.max(1,Math.min(1440,Math.round(action.durationMinutes))),notes:action.notes||null,focusRating:action.focusRating!=null?Math.max(1,Math.min(5,Math.round(action.focusRating))):null,aiDebriefRaw:action.aiDebriefRaw??null,aiSubjectCovered:action.aiSubjectCovered??null,aiComprehension:action.aiComprehension!=null?Math.max(1,Math.min(5,Math.round(action.aiComprehension))):null,aiConfusionFlags:Array.isArray(action.aiConfusionFlags)?action.aiConfusionFlags:null,aiSessionSummary:action.aiSessionSummary??null,updatedAt:action.updatedAt||new Date().toISOString(),deletedAt:null}; return {...state,studySessions:[...(state.studySessions||[]),s]}; }
     case "EDIT_SESSION":   return {...state,studySessions:(state.studySessions||[]).map(s=>s.id===action.id?{...s,subjectId:action.subjectId!==undefined?(action.subjectId||null):s.subjectId,startedAt:action.startedAt??s.startedAt,durationMinutes:action.durationMinutes!==undefined?Math.max(1,Math.min(1440,Math.round(action.durationMinutes))):s.durationMinutes,notes:action.notes!==undefined?(action.notes||null):s.notes,focusRating:action.focusRating!==undefined?(action.focusRating!=null?Math.max(1,Math.min(5,Math.round(action.focusRating))):null):s.focusRating,aiDebriefRaw:action.aiDebriefRaw!==undefined?action.aiDebriefRaw:s.aiDebriefRaw,aiSubjectCovered:action.aiSubjectCovered!==undefined?action.aiSubjectCovered:s.aiSubjectCovered,aiComprehension:action.aiComprehension!==undefined?(action.aiComprehension!=null?Math.max(1,Math.min(5,Math.round(action.aiComprehension))):null):s.aiComprehension,aiConfusionFlags:action.aiConfusionFlags!==undefined?(Array.isArray(action.aiConfusionFlags)?action.aiConfusionFlags:null):s.aiConfusionFlags,aiSessionSummary:action.aiSessionSummary!==undefined?action.aiSessionSummary:s.aiSessionSummary,updatedAt:new Date().toISOString()}:s)};
     case "DELETE_SESSION": { const stamp=new Date().toISOString(); return {...state,studySessions:(state.studySessions||[]).map(s=>s.id===action.id?{...s,deletedAt:stamp,updatedAt:stamp}:s)}; }
+
+    // ── Planned study blocks (v1.10) ──
+    // A block the user INTENDS to study. Never written to studySessions — see
+    // the note on INITIAL. Deletes are hard removals locally, matching
+    // assignments/exams: applyRemotePull drops remotely-deleted rows the same
+    // way, so no render path needs a tombstone guard.
+    case "ADD_PLANNED": {
+      const p = {
+        id: action.id || newSyncId(),
+        subjectId: action.subjectId || null,
+        startsAt: action.startsAt,
+        durationMinutes: Math.max(1, Math.min(1440, Math.round(action.durationMinutes))),
+        title: action.title || "",
+        notes: action.notes || "",
+        fulfilledBy: null,
+        dismissedAt: null,
+        updatedAt: action.updatedAt || new Date().toISOString(),
+      };
+      return { ...state, plannedSessions: [...(state.plannedSessions || []), p] };
+    }
+    case "EDIT_PLANNED":
+      return { ...state, plannedSessions: (state.plannedSessions || []).map(p => p.id !== action.id ? p : {
+        ...p,
+        subjectId: action.subjectId !== undefined ? (action.subjectId || null) : p.subjectId,
+        startsAt: action.startsAt ?? p.startsAt,
+        durationMinutes: action.durationMinutes !== undefined
+          ? Math.max(1, Math.min(1440, Math.round(action.durationMinutes)))
+          : p.durationMinutes,
+        title: action.title !== undefined ? (action.title || "") : p.title,
+        notes: action.notes !== undefined ? (action.notes || "") : p.notes,
+        updatedAt: new Date().toISOString(),
+      })};
+    // The two outcomes are mutually exclusive, and the DB enforces that. Each
+    // clears the other rather than only setting its own, so a block dismissed
+    // and later fulfilled cannot end up claiming both.
+    case "RESOLVE_PLANNED":
+      return { ...state, plannedSessions: (state.plannedSessions || []).map(p => p.id !== action.id ? p : {
+        ...p,
+        fulfilledBy: action.fulfilledBy || null,
+        dismissedAt: action.fulfilledBy ? null : (action.dismissedAt || null),
+        updatedAt: new Date().toISOString(),
+      })};
+    case "DELETE_PLANNED":
+      return { ...state, plannedSessions: (state.plannedSessions || []).filter(p => p.id !== action.id) };
+
+    // ── Academic terms + timetable (v1.10) ──
+    case "ADD_TERM": {
+      const term = {
+        id: action.id || newSyncId(),
+        parentId: action.level === "year" ? null : (action.parentId || null),
+        level: action.level,
+        name: action.name,
+        startsOn: action.startsOn || "",
+        endsOn: action.endsOn || "",
+        position: Number.isFinite(Number(action.position)) ? Number(action.position) : 0,
+        updatedAt: action.updatedAt || new Date().toISOString(),
+      };
+      return { ...state, academicTerms: [...(state.academicTerms || []), term] };
+    }
+    case "EDIT_TERM":
+      return { ...state, academicTerms: (state.academicTerms || []).map(x => x.id !== action.id ? x : {
+        ...x,
+        name: action.name ?? x.name,
+        startsOn: action.startsOn !== undefined ? (action.startsOn || "") : x.startsOn,
+        endsOn: action.endsOn !== undefined ? (action.endsOn || "") : x.endsOn,
+        position: action.position !== undefined ? Number(action.position) || 0 : x.position,
+        updatedAt: new Date().toISOString(),
+      })};
+    case "DELETE_TERM": {
+      // Takes the whole subtree and every lesson attached to any of it.
+      // Leaving descendants behind would orphan them from a parent that no
+      // longer resolves, and resolveTermRange would then inherit dates from
+      // further up the tree and draw those lessons across the wrong months.
+      const doomed = new Set([action.id, ...(action.descendantIds || [])]);
+      return {
+        ...state,
+        academicTerms: (state.academicTerms || []).filter(x => !doomed.has(x.id)),
+        timetableEntries: (state.timetableEntries || []).filter(e => !doomed.has(e.termId)),
+      };
+    }
+    case "ADD_TT_ENTRY": {
+      const e = {
+        id: action.id || newSyncId(),
+        termId: action.termId,
+        subjectId: action.subjectId || null,
+        title: action.title || "",
+        weekday: Math.max(0, Math.min(6, Math.round(Number(action.weekday)))),
+        startsAt: action.startsAt,
+        endsAt: action.endsAt,
+        room: action.room || "",
+        color: action.color || null,
+        updatedAt: action.updatedAt || new Date().toISOString(),
+      };
+      return { ...state, timetableEntries: [...(state.timetableEntries || []), e] };
+    }
+    case "EDIT_TT_ENTRY":
+      return { ...state, timetableEntries: (state.timetableEntries || []).map(e => e.id !== action.id ? e : {
+        ...e,
+        subjectId: action.subjectId !== undefined ? (action.subjectId || null) : e.subjectId,
+        title: action.title !== undefined ? (action.title || "") : e.title,
+        weekday: action.weekday !== undefined ? Math.max(0, Math.min(6, Math.round(Number(action.weekday)))) : e.weekday,
+        startsAt: action.startsAt ?? e.startsAt,
+        endsAt: action.endsAt ?? e.endsAt,
+        room: action.room !== undefined ? (action.room || "") : e.room,
+        color: action.color !== undefined ? (action.color || null) : e.color,
+        updatedAt: new Date().toISOString(),
+      })};
+    case "DELETE_TT_ENTRY":
+      return { ...state, timetableEntries: (state.timetableEntries || []).filter(e => e.id !== action.id) };
+
+    // ── Assignment attachments (v1.10) ──
+    // ADD carries a row the upload already created server-side, so there is no
+    // client-generated id here — the storage key and the row id are the same
+    // uuid, minted inside uploadAttachment where the object is written.
+    case "ADD_ATTACHMENT":
+      return { ...state, attachments: [...(state.attachments || []).filter(a => a.id !== action.attachment.id), action.attachment] };
+    case "DELETE_ATTACHMENT":
+      return { ...state, attachments: (state.attachments || []).filter(a => a.id !== action.id) };
 
     // ── Settings ──
     // The old form was `action.mode==="us"?"us":"ib"`, which silently coerced
@@ -507,6 +634,14 @@ export default function App() {
         actions: migratedActions,
         grades: migratedGrades,
         studySessions: migratedSessions,
+        // v1.10. No UUID migration pass for these four: they were born after
+        // v1.0.4, so every id they have ever held came from crypto.randomUUID.
+        // Shape-guarded individually for the same reason as the lists above —
+        // one malformed array must not blank the others.
+        plannedSessions: Array.isArray(saved.plannedSessions) ? saved.plannedSessions : [],
+        academicTerms: Array.isArray(saved.academicTerms) ? saved.academicTerms : [],
+        timetableEntries: Array.isArray(saved.timetableEntries) ? saved.timetableEntries : [],
+        attachments: Array.isArray(saved.attachments) ? saved.attachments : [],
         activeCourse: migratedActiveCourse,
         gradeMode,
         customScale,
@@ -528,8 +663,12 @@ export default function App() {
       exams:state.exams,
       grades:state.grades,
       studySessions:state.studySessions,
+      plannedSessions:state.plannedSessions,
+      academicTerms:state.academicTerms,
+      timetableEntries:state.timetableEntries,
+      attachments:state.attachments,
     })); } catch {}
-  }, [state.courses,state.assignments,state.actions,state.exams,state.grades,state.studySessions]);
+  }, [state.courses,state.assignments,state.actions,state.exams,state.grades,state.studySessions,state.plannedSessions,state.academicTerms,state.timetableEntries,state.attachments]);
   // gradeMode is UI-only — persist separately so it doesn't trigger a v1 rewrite on every toggle.
   useEffect(() => {
     try { localStorage.setItem("studydesk-grade-mode", state.gradeMode); } catch {}
@@ -820,7 +959,10 @@ export default function App() {
   const [planSubPref, setPlanSubPref] = useState(() => {
     try {
       const v = localStorage.getItem("studydesk-plan-sub");
-      return v === "list" || v === "calendar" ? v : null;
+      // v1.10 adds "timetable". An unrecognised value falls back to null (=
+      // follow the tier) rather than being written through, so a downgrade
+      // leaves a working screen instead of an empty sub-tab.
+      return v === "list" || v === "calendar" || v === "timetable" ? v : null;
     } catch { return null; }
   });
   // v1.9 Item 14a — Grades / Trends. Not tier-defaulted like the Plan sub-tab:
@@ -1174,7 +1316,7 @@ export default function App() {
             opt-out) is claimed by the two surfaces that genuinely want the
             shell width rather than a reading measure: the calendar sheet and
             the multi-pane course detail. Everything else keeps the measure. */}
-        <div className={"content"+(((state.view==="plan"&&planSub==="calendar")||state.view==="status")?" content-wide":"")}>
+        <div className={"content"+(((state.view==="plan"&&(planSub==="calendar"||planSub==="timetable"))||state.view==="status")?" content-wide":"")}>
           {(urgent.length>0||urgentExams.length>0)&&state.view==="plan"&&(
             <div className="urgent-banner"><span>⚠️</span><div>
               <strong>{t('av.chrome.urgent')}</strong> —{" "}
@@ -1190,16 +1332,23 @@ export default function App() {
           {state.view==="plan"   &&(
             <>
               <div className="timer-subtabs" role="tablist" aria-label={t('cal.viewMode')}>
-                {[["list","cal.planList"],["calendar","cal.planCalendar"]].map(([id,key])=>(
+                {/* Timetable is a third sub-tab rather than a fifth bottom tab,
+                    for the reason the calendar was: Item 6 sized that bar
+                    against the longest label the app ships, and the recurring
+                    skeleton of the week belongs beside the plan it shapes. */}
+                {[["list","cal.planList"],["calendar","cal.planCalendar"],["timetable","tt.tab"]].map(([id,key])=>(
                   <button key={id} type="button" role="tab" aria-selected={planSub===id}
                     className={"timer-subtab"+(planSub===id?" active":"")}
                     onClick={()=>choosePlanSub(id)}>{t(key)}</button>
                 ))}
               </div>
               <div className="page-turn" key={planSub}>
-                {planSub==="calendar"
-                  ? <CalendarView state={state} dispatch={dispatch} session={session} showFlash={showFlash} tier={shellTier} onAddAsgn={()=>setShowAddAsgn(true)} onAddExam={()=>setShowAddExam(true)}/>
-                  : <PlanView    state={state} dispatch={dispatch} showFlash={showFlash} onAddAsgn={()=>setShowAddAsgn(true)} onAddExam={()=>setShowAddExam(true)} onAddCourse={()=>setShowAddCourse(true)} onEditCourse={(c)=>setEditingCourse(c)}/>}
+                {planSub==="calendar" &&
+                  <CalendarView state={state} dispatch={dispatch} session={session} showFlash={showFlash} tier={shellTier} onAddAsgn={()=>setShowAddAsgn(true)} onAddExam={()=>setShowAddExam(true)}/>}
+                {planSub==="timetable" &&
+                  <TimetableView state={state} dispatch={dispatch} session={session} showFlash={showFlash}/>}
+                {planSub==="list" &&
+                  <PlanView state={state} dispatch={dispatch} session={session} showFlash={showFlash} onAddAsgn={()=>setShowAddAsgn(true)} onAddExam={()=>setShowAddExam(true)} onAddCourse={()=>setShowAddCourse(true)} onEditCourse={(c)=>setEditingCourse(c)}/>}
               </div>
             </>
           )}
@@ -1432,7 +1581,7 @@ function OnboardingView({ onComplete }) {
 // that only listed assignments, this is the course-detail pane the build plan
 // asks for: the sidebar is the list, this is the detail, and on the desktop
 // tier a third column carries what is coming up and what has been put in.
-function CourseDetailView({ state, dispatch, tier, onAddAsgn, onAddExam, onEditCourse }) {
+function CourseDetailView({ state, dispatch, session, showFlash, tier, onAddAsgn, onAddExam, onEditCourse }) {
   const { t } = useTranslation();
   const ac = state.activeCourse;
   const course = ac ? state.courses[ac] : null;
@@ -1500,13 +1649,13 @@ function CourseDetailView({ state, dispatch, tier, onAddAsgn, onAddExam, onEditC
         <button className="btn btn-sm" style={{ marginLeft: "auto" }} onClick={onAddAsgn}>{t('av.pl.add')}</button>
       </div>
       {open.length === 0 && <div className="empty">{t('av.pl.noOpenAsgn')}</div>}
-      {open.map(a => <AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch} />)}
+      {open.map(a => <AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch} attachments={state.attachments} session={session} showFlash={showFlash} />)}
       {done.length > 0 && (
         <details style={{ marginBottom: 16 }}>
           <summary style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--muted)", cursor: "pointer", padding: "8px 0" }}>
             {t('av.pl.completed', { count: done.length })}
           </summary>
-          {done.map(a => <AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch} />)}
+          {done.map(a => <AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch} attachments={state.attachments} session={session} showFlash={showFlash} />)}
         </details>
       )}
 
@@ -1551,10 +1700,15 @@ function CourseDetailView({ state, dispatch, tier, onAddAsgn, onAddExam, onEditC
   );
 }
 
-function AsgnItem({ asgn, courses, dispatch }) {
+function AsgnItem({ asgn, courses, dispatch, attachments = [], session, showFlash }) {
   const { t } = useTranslation();
   const course=courses[asgn.courseId]; const days=daysUntil(asgn.dueDate);
   const [editing,setEditing]=useState(false);
+  // v1.10 — the row itself is the drop target, which is what "drag-drop file
+  // attachment on assignments" actually means: drag the essay onto the essay.
+  const [showAt,setShowAt]=useState(false);
+  const drop=useAttachmentDrop({assignmentId:asgn.id,dispatch,session,showFlash});
+  const mine=attachments.filter(a=>a.assignmentId===asgn.id&&!a.deletedAt);
   const [editTitle,setEditTitle]=useState(asgn.title);
   const [editDate,setEditDate]=useState(asgn.dueDate||"");
   const [editNotes,setEditNotes]=useState(asgn.notes||"");
@@ -1565,7 +1719,11 @@ function AsgnItem({ asgn, courses, dispatch }) {
     <textarea value={editNotes} onChange={e=>setEditNotes(e.target.value)} placeholder={t('sv.fNotes')+"…"} style={{minHeight:48,fontSize:12}}/>
     <div style={{display:"flex",gap:8}}><button className="btn btn-sm" onClick={save}>{t('common.save')}</button><button className="btn-outline btn-sm" onClick={()=>setEditing(false)}>{t('common.cancel')}</button></div>
   </div>;
-  return <div className={"asgn-item"+(asgn.done?" done":"")}>
+  return <div
+    className={"asgn-item"+(asgn.done?" done":"")+(drop.isOver?" drop-over":"")+(showAt?" has-panel":"")}
+    {...drop.dropProps}
+    onDrop={(e)=>{ drop.dropProps.onDrop(e); setShowAt(true); }}
+  >
     <div className={"asgn-check"+(asgn.done?" checked":"")} onClick={()=>dispatch({type:"TOGGLE_ASSIGNMENT",id:asgn.id})}/>
     <div className="asgn-body">
       <div className={"asgn-title"+(asgn.done?" done":"")}>{asgn.title}</div>
@@ -1576,12 +1734,29 @@ function AsgnItem({ asgn, courses, dispatch }) {
       </div>
       {asgn.notes&&<div className="asgn-notes">{asgn.notes}</div>}
     </div>
+    <button
+      className={"asgn-clip"+(mine.length?" has":"")}
+      onClick={()=>setShowAt(v=>!v)}
+      aria-expanded={showAt}
+      title={mine.length?t('at.countTitle',{n:mine.length}):t('at.title')}
+    >
+      <Paperclip size={13} strokeWidth={1.75}/>
+      {mine.length>0&&<span className="asgn-clip-n">{mine.length}</span>}
+    </button>
     <button className="btn-danger-text" style={{fontSize:13,color:"var(--muted2)"}} onClick={()=>setEditing(true)} title={t('av.pl.edit')}>✎</button>
     <button className="btn-danger-text" onClick={()=>dispatch({type:"DELETE_ASSIGNMENT",id:asgn.id})}>×</button>
+    {showAt&&<AttachmentList
+      attachments={mine}
+      dispatch={dispatch}
+      session={session}
+      showFlash={showFlash}
+      uploadFiles={drop.uploadFiles}
+      busy={drop.busy}
+    />}
   </div>;
 }
 
-function PlanView({ state, dispatch, onAddAsgn, onAddExam, onAddCourse, onEditCourse }) {
+function PlanView({ state, dispatch, session, showFlash, onAddAsgn, onAddExam, onAddCourse, onEditCourse }) {
   const { t, i18n } = useTranslation();
   const lang = (i18n.language || "en").split("-")[0];
   const courses = Object.values(state.courses).filter(c => !c.deletedAt);
@@ -1616,8 +1791,8 @@ function PlanView({ state, dispatch, onAddAsgn, onAddExam, onAddCourse, onEditCo
   return <div className="sd-page-plan">
     <div className="section-label">{t('av.pl.assignments')}<button className="btn btn-sm" style={{marginLeft:"auto"}} onClick={onAddAsgn}>{t('av.pl.add')}</button></div>
     {openAsgns.length===0&&<div className="empty">{t('av.pl.noOpenAsgn')}</div>}
-    <div className="sd-list-tile">{openAsgns.map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch}/>)}</div>
-    {state.assignments.filter(a=>a.done).length>0&&<details style={{marginBottom:16}}><summary style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",cursor:"pointer",padding:"8px 0"}}>{t('av.pl.completed',{count:state.assignments.filter(a=>a.done).length})}</summary>{state.assignments.filter(a=>a.done).sort((a,b)=>new Date(b.dueDate||"1970-01-01")-new Date(a.dueDate||"1970-01-01")).map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch}/>)}</details>}
+    <div className="sd-list-tile">{openAsgns.map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch} attachments={state.attachments} session={session} showFlash={showFlash}/>)}</div>
+    {state.assignments.filter(a=>a.done).length>0&&<details style={{marginBottom:16}}><summary style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",cursor:"pointer",padding:"8px 0"}}>{t('av.pl.completed',{count:state.assignments.filter(a=>a.done).length})}</summary>{state.assignments.filter(a=>a.done).sort((a,b)=>new Date(b.dueDate||"1970-01-01")-new Date(a.dueDate||"1970-01-01")).map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch} attachments={state.attachments} session={session} showFlash={showFlash}/>)}</details>}
     <div className="divider"/>
     <div className="section-label">{t('av.pl.examsCalendar')}<button className="btn btn-sm" style={{marginLeft:"auto"}} onClick={onAddExam}>{t('av.pl.add')}</button></div>
     <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>

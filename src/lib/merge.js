@@ -164,6 +164,89 @@ function mergeAction(localA, remoteRow) {
   return localA;
 }
 
+// v1.10 — planned sessions, academic terms, the weekly timetable, and
+// assignment attachments. All four follow the assignments/exams/actions
+// pattern rather than the courses/grades/sessions one: remote deletes drop the
+// row locally instead of leaving a tombstone. Same reasoning — every render
+// path for these is new and expects a live list, and a tombstone that one call
+// site forgets to filter puts a deleted lesson back on someone's timetable.
+
+function mergePlannedSession(localP, remoteRow) {
+  const remote = {
+    id: remoteRow.id,
+    subjectId: remoteRow.subject_id || null,
+    startsAt: remoteRow.starts_at,
+    durationMinutes: remoteRow.duration_minutes,
+    title: remoteRow.title || '',
+    notes: remoteRow.notes || '',
+    // The link to the study session that actually happened. Null is the normal
+    // state — most planned blocks are still owed.
+    fulfilledBy: remoteRow.fulfilled_by || null,
+    dismissedAt: remoteRow.dismissed_at || null,
+    updatedAt: remoteRow.updated_at || null,
+    deletedAt: remoteRow.deleted_at || null,
+  };
+  if (!localP) return remote;
+  if (newer(remote.updatedAt, localP.updatedAt)) return remote;
+  return localP;
+}
+
+function mergeTerm(localT, remoteRow) {
+  const remote = {
+    id: remoteRow.id,
+    parentId: remoteRow.parent_id || null,
+    level: remoteRow.level,
+    name: remoteRow.name,
+    // Bound to date inputs, which cannot hold null without React flipping the
+    // field to uncontrolled — same empty-string shape the reducer creates.
+    startsOn: remoteRow.starts_on || '',
+    endsOn: remoteRow.ends_on || '',
+    position: Number(remoteRow.position) || 0,
+    updatedAt: remoteRow.updated_at || null,
+    deletedAt: remoteRow.deleted_at || null,
+  };
+  if (!localT) return remote;
+  if (newer(remote.updatedAt, localT.updatedAt)) return remote;
+  return localT;
+}
+
+function mergeTimetableEntry(localE, remoteRow) {
+  const remote = {
+    id: remoteRow.id,
+    termId: remoteRow.term_id,
+    subjectId: remoteRow.subject_id || null,
+    title: remoteRow.title || '',
+    // smallint over the wire; the weekday comparison in `lessonsOn` is `===`
+    // against `Date.getDay()`, so a string "1" would silently match nothing.
+    weekday: Number(remoteRow.weekday),
+    startsAt: remoteRow.starts_at,
+    endsAt: remoteRow.ends_at,
+    room: remoteRow.room || '',
+    color: remoteRow.color || null,
+    updatedAt: remoteRow.updated_at || null,
+    deletedAt: remoteRow.deleted_at || null,
+  };
+  if (!localE) return remote;
+  if (newer(remote.updatedAt, localE.updatedAt)) return remote;
+  return localE;
+}
+
+function mergeAttachment(localA, remoteRow) {
+  const remote = {
+    id: remoteRow.id,
+    assignmentId: remoteRow.assignment_id,
+    storagePath: remoteRow.storage_path,
+    fileName: remoteRow.file_name,
+    mimeType: remoteRow.mime_type || null,
+    sizeBytes: remoteRow.size_bytes != null ? Number(remoteRow.size_bytes) : null,
+    updatedAt: remoteRow.updated_at || null,
+    deletedAt: remoteRow.deleted_at || null,
+  };
+  if (!localA) return remote;
+  if (newer(remote.updatedAt, localA.updatedAt)) return remote;
+  return localA;
+}
+
 /**
  * Apply a full remote pull to the reducer state. Returns a new state object.
  *
@@ -227,5 +310,18 @@ export function applyRemotePull(state, remote) {
   // so there is nothing extra to filter out here.
   const actions = mergeList(state.actions, remote.actions, mergeAction);
 
-  return { ...state, courses, grades, studySessions, assignments, exams, actions };
+  // v1.10. `remote.*` defaulted for the same reason as above: a client that
+  // pulled before these tables existed, or a partial response where one of the
+  // ten selects failed, must leave the local list untouched rather than blank
+  // a term tree the user just built.
+  const plannedSessions = mergeList(state.plannedSessions, remote.plannedSessions, mergePlannedSession);
+  const academicTerms = mergeList(state.academicTerms, remote.academicTerms, mergeTerm);
+  const timetableEntries = mergeList(state.timetableEntries, remote.timetableEntries, mergeTimetableEntry);
+  const attachments = mergeList(state.attachments, remote.attachments, mergeAttachment);
+
+  return {
+    ...state,
+    courses, grades, studySessions, assignments, exams, actions,
+    plannedSessions, academicTerms, timetableEntries, attachments,
+  };
 }
