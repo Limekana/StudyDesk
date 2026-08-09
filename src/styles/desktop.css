@@ -93,11 +93,19 @@
   columns: 2;
   column-gap: 18px;
 }
-/* The four totals are a header for the whole screen, not one column's worth,
-   so they break out of the column flow. `.sv-stats` is already an auto-fit
-   grid and needs no help beyond that. */
-.app[data-tier="desktop"] .sv-stats {
+/* EVERYTHING that is not a day group breaks out of the column flow.
+ *
+ * Written as a negation rather than a list on purpose. Owner's screenshot
+ * showed the empty-state box rendered as two half-boxes, each missing the
+ * border on the side where it split — that is CSS multi-column FRAGMENTING a
+ * bordered element across the column break, and it happens to any child I
+ * failed to anticipate. Listing the children I happened to know about is the
+ * same guess that left `.pomo-ring` matching nothing; this covers the ones I
+ * have not seen too.
+ */
+.app[data-tier="desktop"] .sv-wrap > :not(.sv-day) {
   column-span: all;
+  break-inside: avoid;
 }
 /* One day of sessions is a self-contained block and must not be split across
    a column boundary — a date heading at the bottom of the left column with
@@ -161,11 +169,19 @@
    1600px would be worse, not better, the same call the NCC lock screen came
    to. What it gets instead is presence: it is the only thing on the screen,
    so it can afford to be large. */
-.app[data-tier="desktop"] .pomo-ring,
-.app[data-tier="desktop"] .pomo-dial {
-  transform: scale(1.25);
-  transform-origin: center top;
+/* The real class is `.pomo-ring-wrap` (220x220 in timer.css), NOT `.pomo-ring`
+   or `.pomo-dial` — those were written from memory and matched nothing, which
+   is why this page was still visibly untouched after two passes. Sized
+   explicitly rather than `transform: scale()`: a transform does not reserve
+   layout space, so the segments and controls beneath would have been overlapped
+   by a dial that only *looked* bigger. */
+.app[data-tier="desktop"] .pomo-ring-wrap {
+  width: 340px;
+  height: 340px;
+  margin-bottom: 34px;
 }
+.app[data-tier="desktop"] .pomo-time { font-size: 68px; }
+.app[data-tier="desktop"] .pomo-phase { font-size: 13px; letter-spacing: 0.14em; }
 /* Widened, NOT uncapped. The first pass set `max-width: none` here, which was
    wrong: this is the short "today's sessions" list sitting under a centred
    dial, and stretching it to the full shell would leave a 1600px-wide list of
