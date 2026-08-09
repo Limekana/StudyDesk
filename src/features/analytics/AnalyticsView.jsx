@@ -13,6 +13,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { gradeSeries, studyHeatmap, studyVsGrades, describeCorrelation } from '../../lib/analytics.js';
 import { parseLocalDate, formatLocale } from '../../lib/dates.js';
+import { resolveWeekStart } from '../../lib/calendar.js';
 import '../../styles/analytics.css';
 
 const H = 200;      // plot height
@@ -161,13 +162,13 @@ function Heatmap({ data, locale, t }) {
     const cols = [];
     let col = [];
     for (const cell of data.cells) {
-      if (col.length === 0 && cols.length === 0) {
-        // Pad the first column so weekday rows line up from day one.
-        for (let i = 0; i < cell.weekday; i += 1) col.push(null);
-      }
       col.push(cell);
       if (col.length === 7) { cols.push(col); col = []; }
     }
+    // Only the LAST column is ever short, and it is short because the current
+    // week has not finished yet — days that have not happened. The first
+    // column needs no padding at all now that the window snaps to a week
+    // boundary, which is what removed the stray lone square.
     if (col.length) { while (col.length < 7) col.push(null); cols.push(col); }
     return cols;
   }, [data.cells]);
@@ -242,8 +243,11 @@ function Correlation({ data, t }) {
 export default function AnalyticsView({ state }) {
   const { t } = useTranslation();
   const locale = formatLocale();
+  // Same week-start resolution the calendar uses, so the heatmap's rows and
+  // the calendar's columns cannot disagree about which day a week begins on.
+  const weekStart = useMemo(() => resolveWeekStart(locale), [locale]);
   const series = useMemo(() => gradeSeries(state), [state]);
-  const heat = useMemo(() => studyHeatmap(state), [state]);
+  const heat = useMemo(() => studyHeatmap(state, 182, undefined, weekStart), [state, weekStart]);
   const corr = useMemo(() => studyVsGrades(state), [state]);
 
   return (

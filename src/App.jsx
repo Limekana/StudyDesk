@@ -33,6 +33,7 @@ import './styles/onboarding.css';
 // v1.9 Item 14a — imported at the shell so the print rules apply to every
 // screen, not only the ones that offer a print button.
 import './styles/print.css';
+import './styles/desktop.css';
 import { COURSE_COLORS } from "./lib/courseColors.js";
 import { NotebookPen, CalendarDays, Award, Timer, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { GuestAvatar } from "./lib/avatar.jsx";
@@ -1609,10 +1610,13 @@ function PlanView({ state, dispatch, onAddAsgn, onAddExam, onAddCourse, onEditCo
   for(let i=0;i<60;i++){const d=new Date(_agendaBase);d.setDate(_agendaBase.getDate()+i);const ev=eventsOnDay(d);if(ev.length>0)agendaEvents.push({date:d,events:ev});}
   const openAsgns=state.assignments.filter(a=>!a.done).sort((a,b)=>new Date(a.dueDate||"9999-12-31")-new Date(b.dueDate||"9999-12-31"));
   const openExams=state.exams.filter(e=>!e.done).sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));
-  return <div>
+  // The root is NOT a tiling grid: this view also holds the month grid, the
+  // agenda and the course cards, and tiling those would break each of them.
+  // Only the flat lists tile, which is where the vertical length comes from.
+  return <div className="sd-page-plan">
     <div className="section-label">{t('av.pl.assignments')}<button className="btn btn-sm" style={{marginLeft:"auto"}} onClick={onAddAsgn}>{t('av.pl.add')}</button></div>
     {openAsgns.length===0&&<div className="empty">{t('av.pl.noOpenAsgn')}</div>}
-    {openAsgns.map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch}/>)}
+    <div className="sd-list-tile">{openAsgns.map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch}/>)}</div>
     {state.assignments.filter(a=>a.done).length>0&&<details style={{marginBottom:16}}><summary style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",cursor:"pointer",padding:"8px 0"}}>{t('av.pl.completed',{count:state.assignments.filter(a=>a.done).length})}</summary>{state.assignments.filter(a=>a.done).sort((a,b)=>new Date(b.dueDate||"1970-01-01")-new Date(a.dueDate||"1970-01-01")).map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch}/>)}</details>}
     <div className="divider"/>
     <div className="section-label">{t('av.pl.examsCalendar')}<button className="btn btn-sm" style={{marginLeft:"auto"}} onClick={onAddExam}>{t('av.pl.add')}</button></div>
@@ -1797,7 +1801,10 @@ function ActionsView({ state, dispatch, showFlash, onAddCourse }) {
       </div>
     </div>
   </div>;
-  return <div>
+  // Three buckets side by side on a wide screen rather than stacked: Today /
+  // This week / Later are a natural three-column read, and stacking them is
+  // what made this screen a long thin ribbon in a 1600px window.
+  return <div className="sd-page-actions sd-bucket-tile">
     {BUCKETS.map(bucket=>{
       const items=allActions.filter(a=>a.bucket===bucket);
       if(items.length===0) return null;

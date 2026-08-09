@@ -317,6 +317,11 @@
   /* Columns take their declared height instead of stretching to the tallest
      one — see the height rule below for why that matters. */
   align-items: start;
+  /* Room for the first hour label, which is raised 5px to sit on its own rule
+     and was therefore colliding with the ALL-DAY strip's bottom border above
+     it. Padding on the grid moves the gutter and the day columns together, so
+     the rules and the session blocks stay in step. */
+  padding-top: 7px;
 }
 .cal-hours > div + div { border-inline-start: 1px solid var(--cal-rule); }
 /* The grid's height is stated once, from the hour count, rather than left to
@@ -339,7 +344,8 @@
   text-align: end;
   padding-inline-end: 6px;
   /* Nudged up so the label sits ON its rule rather than inside the hour it
-     opens — the same convention a printed timetable uses. */
+     opens — the same convention a printed timetable uses. The grid's
+     `padding-top` below buys the room this steals from the first label. */
   transform: translateY(-5px);
 }
 .cal-daycol { position: relative; min-width: 0; }

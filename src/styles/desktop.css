@@ -1,0 +1,117 @@
+/* v1.9 Item 14a follow-up — desktop fitting for the screens that were still
+ * mobile stacks in a wide frame.
+ *
+ * Owner review: "Timer, Grades and Study/Next up page look small … they were
+ * just taken from the mobile version and not fitted properly". Correct, and
+ * the cause is the same one NCC hit twice: A MAX-WIDTH ON THE CONTENT COLUMN
+ * IS THE DEAD SPACE. Settings capped itself at 680px, and the rest inherited
+ * `.content`'s reading measure — perfectly reasonable for a column of prose,
+ * and wrong for a screen made of independent panels.
+ *
+ * The fix is width AND columns, not one or the other: lift the cap so the
+ * screen can use the shell, then tile the panels so the extra width buys MORE
+ * PANELS SIDE BY SIDE rather than wider ones. A 1600px-wide settings row is
+ * not an improvement over a 680px one.
+ *
+ * Specificity note: these views inject their own CSS from a `<style>` block
+ * inside the component, which lands in the DOM after any imported stylesheet
+ * and therefore wins on a tie. Everything here is scoped to
+ * `.app[data-tier="desktop"]`, which outranks the bare class selectors it
+ * overrides — deliberate, not decorative.
+ */
+
+/* ── Settings ──────────────────────────────────────────────────────────── */
+/* CSS columns rather than grid: the panels are independent, self-contained
+   and wildly different heights, which is exactly the case multi-column
+   handles better than a row-aligned grid (no ragged bottoms to chase). */
+.app[data-tier="desktop"] .sv2-wrap {
+  max-width: none;
+  padding-inline: 0;
+  columns: 2;
+  column-gap: 18px;
+}
+.app[data-tier="desktop"] .sv2-section {
+  break-inside: avoid;
+  /* `columns` needs this: a margin-top on the first block in a column is
+     dropped in some engines and kept in others, which staggers the tops. */
+  margin-top: 0;
+  margin-bottom: 18px;
+  display: inline-block;
+  width: 100%;
+}
+
+/* ── Grades ────────────────────────────────────────────────────────────── */
+.app[data-tier="desktop"] .gv-wrap {
+  max-width: none;
+}
+/* The hero (GPA / average) stays full width — it is the headline number, and
+   a headline in a side column stops being one. Everything after it tiles. */
+.app[data-tier="desktop"] .gv-wrap > .gv-hero {
+  grid-column: 1 / -1;
+}
+
+/* ── Study stats ───────────────────────────────────────────────────────── */
+.app[data-tier="desktop"] .st-wrap {
+  max-width: none;
+}
+
+/* ── Next Up / Plan list ───────────────────────────────────────────────── */
+/* Both are a stack of `.section-label` + list pairs. Tiling the whole stack
+   would break the label→list pairing, so instead the LISTS tile internally:
+   assignment and exam rows are fixed-height items that read fine two or three
+   abreast, and that is where the vertical length actually comes from. */
+.app[data-tier="desktop"] .sd-page-actions,
+.app[data-tier="desktop"] .sd-page-plan {
+  max-width: none;
+}
+.app[data-tier="desktop"] .sd-list-tile {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 8px;
+  align-items: start;
+}
+/* Next Up's three buckets — Today / This week / Later — read as columns.
+   `auto-fit` with a floor rather than a fixed `3`: below ~1100px of content
+   two columns is the better fit, and a hard three would squeeze each to
+   ~300px on the narrow end of the desktop tier. */
+.app[data-tier="desktop"] .sd-bucket-tile {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+/* Anything that is a control for the whole screen, rather than one bucket,
+   spans instead of taking a column. */
+.app[data-tier="desktop"] .sd-bucket-tile > .quick-add-box,
+.app[data-tier="desktop"] .sd-bucket-tile > .nextup-unlock,
+.app[data-tier="desktop"] .sd-bucket-tile > .suggest-banner,
+.app[data-tier="desktop"] .sd-bucket-tile > .divider,
+.app[data-tier="desktop"] .sd-bucket-tile > .empty {
+  grid-column: 1 / -1;
+}
+/* A section label introduces the list under it, so it spans rather than
+   sitting in the first column with rows beside it. */
+.app[data-tier="desktop"] .sd-list-tile > .section-label,
+.app[data-tier="desktop"] .sd-list-tile > .divider,
+.app[data-tier="desktop"] .sd-list-tile > .empty,
+.app[data-tier="desktop"] .sd-list-tile > details {
+  grid-column: 1 / -1;
+}
+@media (min-width: 1600px) {
+  .app[data-tier="desktop"] .sv2-wrap { columns: 3; }
+  .app[data-tier="desktop"] .sd-list-tile { grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); }
+}
+
+/* ── Timer ─────────────────────────────────────────────────────────────── */
+/* The dial stays CENTRED rather than stretching — a timer spread across
+   1600px would be worse, not better, the same call the NCC lock screen came
+   to. What it gets instead is presence: it is the only thing on the screen,
+   so it can afford to be large. */
+.app[data-tier="desktop"] .pomo-ring,
+.app[data-tier="desktop"] .pomo-dial {
+  transform: scale(1.25);
+  transform-origin: center top;
+}
+.app[data-tier="desktop"] .pomo-session-log {
+  max-width: none;
+}

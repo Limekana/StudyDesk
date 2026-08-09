@@ -12,6 +12,7 @@
 // grades" off five points is not a feature, it is a lie with a chart on it.
 
 import { parseLocalDate, toLocalISO, addDays } from './dates.js';
+import { startOfWeek } from './calendar.js';
 
 /** Weighted mean of `grades`, or null when there is nothing to average. */
 export function weightedMean(grades) {
@@ -64,25 +65,41 @@ export function gradeSeries(state) {
   return out.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/** Daily study minutes for the `days` days ending today (inclusive).
+/** Daily study minutes for roughly the last `days` days, ending today.
+ *
+ *  The window is SNAPPED BACK to a week boundary, so the first column of the
+ *  heatmap is always a full week. Starting it on whatever weekday fell 182
+ *  days ago left a ragged first column — a lone square sitting by itself with
+ *  an empty cell above it, which reads as a rendering fault rather than as
+ *  "this window began mid-week". Snapping costs at most six extra days.
+ *
+ *  Rows are ordered from `weekStart` for the same reason the calendar grid is:
+ *  a Monday-start reader should not get Sunday-first rows.
+ *
  *  Returns a dense array — every day present, zeros included — because a
  *  heatmap with missing days silently compresses the calendar and the gaps
  *  ARE the information. */
-export function studyHeatmap(state, days = 182, today = toLocalISO(new Date())) {
+export function studyHeatmap(state, days = 182, today = toLocalISO(new Date()), weekStart = 1) {
   const byDay = new Map();
   for (const s of state.studySessions || []) {
     if (s.deletedAt || !s.startedAt) continue;
     const iso = toLocalISO(new Date(s.startedAt));
     byDay.set(iso, (byDay.get(iso) || 0) + (Number(s.durationMinutes) || 0));
   }
-  const start = addDays(today, -(days - 1));
+  const start = startOfWeek(addDays(today, -(days - 1)), weekStart);
   const cells = [];
   let max = 0;
-  for (let i = 0; i < days; i += 1) {
-    const iso = addDays(start, i);
+  // Run to today inclusive rather than for a fixed count: the snap moved the
+  // start, and a fixed count would then overshoot into future days.
+  for (let iso = start; iso <= today; iso = addDays(iso, 1)) {
     const minutes = byDay.get(iso) || 0;
     if (minutes > max) max = minutes;
-    cells.push({ iso, minutes, weekday: parseLocalDate(iso).getDay() });
+    cells.push({
+      iso,
+      minutes,
+      // Row index within the column, already rotated for the week start.
+      weekday: (parseLocalDate(iso).getDay() - weekStart + 7) % 7,
+    });
   }
   // Five levels, keyed off the busiest day in the window rather than an
   // absolute scale: an hour a day is a lot for one student and little for
