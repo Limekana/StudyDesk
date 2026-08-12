@@ -675,5 +675,28 @@
     "openFailedMsg": "Tiedostoa ei voitu avata — {{msg}}",
     "deleted": "Liite poistettu",
     "countTitle": "{{n}} liitettä"
+  },
+  "cm": {
+    "newTitle": "Uusi meno",
+    "editTitle": "Muokkaa menoa",
+    "fTitle": "Mikä se on",
+    "titlePlaceholder": "esim. Jalkapalloharjoitukset",
+    "fRepeat": "Toisto",
+    "once": "Kerran",
+    "weekly": "Joka viikko",
+    "weeklyShort": "viikoittain",
+    "fFrom": "Ensimmäinen",
+    "fUntil": "Asti",
+    "untilHint": "Jätä tyhjäksi, jos päättymispäivää ei vielä ole.",
+    "fColour": "Väri",
+    "noColour": "Ei väriä",
+    "create": "Lisää kalenteriin",
+    "saved": "Meno päivitetty",
+    "created": "Meno lisätty",
+    "deleted": "Meno poistettu",
+    "deleteSeries": "Poista sarja",
+    "errTitle": "Anna menolle nimi.",
+    "errDate": "Valitse päivä.",
+    "committedTotal": "{{total}} varattu"
   }
 }

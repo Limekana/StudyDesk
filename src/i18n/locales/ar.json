@@ -695,5 +695,28 @@
     "openFailedMsg": "تعذّر فتح الملف — {{msg}}",
     "deleted": "تم حذف المرفق",
     "countTitle": "{{n}} مرفقات"
+  },
+  "cm": {
+    "newTitle": "التزام جديد",
+    "editTitle": "تعديل الالتزام",
+    "fTitle": "ما هو",
+    "titlePlaceholder": "مثال: تدريب كرة القدم",
+    "fRepeat": "التكرار",
+    "once": "مرة واحدة",
+    "weekly": "كل أسبوع",
+    "weeklyShort": "أسبوعي",
+    "fFrom": "أول مرة",
+    "fUntil": "حتى",
+    "untilHint": "اتركه فارغًا إن لم يكن له تاريخ انتهاء بعد.",
+    "fColour": "اللون",
+    "noColour": "بدون لون",
+    "create": "أضف إلى التقويم",
+    "saved": "تم تحديث الالتزام",
+    "created": "تمت إضافة الالتزام",
+    "deleted": "تم حذف الالتزام",
+    "deleteSeries": "حذف السلسلة",
+    "errTitle": "أعطِ هذا الالتزام اسمًا.",
+    "errDate": "اختر تاريخًا.",
+    "committedTotal": "{{total}} محجوزة"
   }
 }

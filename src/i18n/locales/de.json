@@ -675,5 +675,28 @@
     "openFailedMsg": "Datei konnte nicht geöffnet werden — {{msg}}",
     "deleted": "Anhang entfernt",
     "countTitle": "{{n}} Anhänge"
+  },
+  "cm": {
+    "newTitle": "Neuer Termin",
+    "editTitle": "Termin bearbeiten",
+    "fTitle": "Worum geht es",
+    "titlePlaceholder": "z. B. Fußballtraining",
+    "fRepeat": "Wiederholung",
+    "once": "Einmalig",
+    "weekly": "Jede Woche",
+    "weeklyShort": "wöchentlich",
+    "fFrom": "Erstmals am",
+    "fUntil": "Bis",
+    "untilHint": "Leer lassen, wenn es noch kein Enddatum gibt.",
+    "fColour": "Farbe",
+    "noColour": "Keine Farbe",
+    "create": "Zum Kalender hinzufügen",
+    "saved": "Termin aktualisiert",
+    "created": "Termin hinzugefügt",
+    "deleted": "Termin entfernt",
+    "deleteSeries": "Serie löschen",
+    "errTitle": "Gib dem Termin einen Namen.",
+    "errDate": "Wähle ein Datum.",
+    "committedTotal": "{{total}} verplant"
   }
 }

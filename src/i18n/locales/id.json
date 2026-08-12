@@ -670,5 +670,28 @@
     "openFailedMsg": "Tidak bisa membuka berkas itu — {{msg}}",
     "deleted": "Lampiran dihapus",
     "countTitle": "{{n}} lampiran"
+  },
+  "cm": {
+    "newTitle": "Agenda baru",
+    "editTitle": "Ubah agenda",
+    "fTitle": "Apa ini",
+    "titlePlaceholder": "mis. Latihan sepak bola",
+    "fRepeat": "Pengulangan",
+    "once": "Sekali",
+    "weekly": "Tiap minggu",
+    "weeklyShort": "mingguan",
+    "fFrom": "Pertama pada",
+    "fUntil": "Sampai",
+    "untilHint": "Kosongkan jika belum ada tanggal berakhir.",
+    "fColour": "Warna",
+    "noColour": "Tanpa warna",
+    "create": "Tambahkan ke kalender",
+    "saved": "Agenda diperbarui",
+    "created": "Agenda ditambahkan",
+    "deleted": "Agenda dihapus",
+    "deleteSeries": "Hapus seri",
+    "errTitle": "Beri nama agenda ini.",
+    "errDate": "Pilih tanggal.",
+    "committedTotal": "{{total}} terpakai"
   }
 }

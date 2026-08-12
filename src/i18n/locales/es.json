@@ -680,5 +680,28 @@
     "openFailedMsg": "No se pudo abrir el archivo: {{msg}}",
     "deleted": "Adjunto eliminado",
     "countTitle": "{{n}} adjuntos"
+  },
+  "cm": {
+    "newTitle": "Nuevo compromiso",
+    "editTitle": "Editar compromiso",
+    "fTitle": "Qué es",
+    "titlePlaceholder": "p. ej. Entrenamiento de fútbol",
+    "fRepeat": "Repetición",
+    "once": "Una vez",
+    "weekly": "Cada semana",
+    "weeklyShort": "semanal",
+    "fFrom": "Primera vez",
+    "fUntil": "Hasta",
+    "untilHint": "Déjalo en blanco si aún no tiene fecha de fin.",
+    "fColour": "Color",
+    "noColour": "Sin color",
+    "create": "Añadir al calendario",
+    "saved": "Compromiso actualizado",
+    "created": "Compromiso añadido",
+    "deleted": "Compromiso eliminado",
+    "deleteSeries": "Eliminar serie",
+    "errTitle": "Ponle un nombre al compromiso.",
+    "errDate": "Elige una fecha.",
+    "committedTotal": "{{total}} comprometido"
   }
 }

@@ -35,7 +35,9 @@ import {
   resolveWeekStart, weekdayLabels, monthGrid, weekGrid, startOfWeek,
   buildEvents, sortDayItems, layoutBands, layoutDayColumn, timedOn, allDayOn,
 } from '../../lib/calendar.js';
-import { lessonsOn, localTimestamp } from '../../lib/timetable.js';
+import { lessonsOn, localTimestamp, minutesToSqlTime, timeToMinutes } from '../../lib/timetable.js';
+import { commitmentsOn } from '../../lib/commitments.js';
+import { COURSE_COLORS } from '../../lib/courseColors.js';
 import { parseLocalDate, toLocalISO, addDays, fmtTime, formatLocale } from '../../lib/dates.js';
 import { downloadIcs } from '../../lib/ics.js';
 import * as outbox from '../../lib/outbox.js';
@@ -93,7 +95,9 @@ function minutesClock(mins) {
 function Chip({ item, onOpen, t }) {
   const label = item.kind === 'session'
     ? `${fmtTime(item.startedAt)} · ${item.courseName || t('cal.study')}`
-    : item.title;
+    : item.kind === 'commitment'
+      ? `${String(Math.floor(item.startMin / 60)).padStart(2, '0')}:${String(item.startMin % 60).padStart(2, '0')} · ${item.title}`
+      : item.title;
   return (
     <button
       type="button"
@@ -110,7 +114,7 @@ function Chip({ item, onOpen, t }) {
 
 // ── Month ──────────────────────────────────────────────────────────────────
 
-function MonthSheet({ rows, bands, byDay, weekStart, locale, selected, onSelect, onOpen, t }) {
+function MonthSheet({ rows, bands, byDay, commitmentsByDay, weekStart, locale, selected, onSelect, onOpen, t }) {
   const dow = useMemo(() => weekdayLabels(weekStart, locale), [weekStart, locale]);
   const today = todayIso();
   // Weekend columns depend on where the week starts, so they are derived, not
@@ -125,7 +129,12 @@ function MonthSheet({ rows, bands, byDay, weekStart, locale, selected, onSelect,
         return (
           <div className="cal-week" key={ri} style={{ '--cal-lanes': laid.lanes }}>
             {row.map((cell, ci) => {
-              const items = sortDayItems(byDay.get(cell.iso) || []);
+              // Commitments are generated per date, so they join the stored
+              // items here rather than in `buildEvents`.
+              const items = sortDayItems([
+                ...(byDay.get(cell.iso) || []),
+                ...(commitmentsByDay.get(cell.iso) || []),
+              ]);
               const shown = items.slice(0, MAX_CHIPS);
               const hidden = items.length - shown.length;
               return (
@@ -145,7 +154,7 @@ function MonthSheet({ rows, bands, byDay, weekStart, locale, selected, onSelect,
                   <div className="cal-daynum"><span>{cell.day}</span></div>
                   <div className="cal-bandspace" aria-hidden="true" />
                   <div className="cal-items">
-                    {shown.map((it) => <Chip key={`${it.kind}-${it.id}`} item={it} onOpen={onOpen} t={t} />)}
+                    {shown.map((it) => <Chip key={it.occurrenceId || `${it.kind}-${it.id}`} item={it} onOpen={onOpen} t={t} />)}
                     {hidden > 0 && (
                       <button type="button" className="cal-more" onClick={(e) => { e.stopPropagation(); onSelect(cell.iso); }}>
                         {t('cal.more', { n: hidden })}
@@ -192,7 +201,17 @@ function MonthSheet({ rows, bands, byDay, weekStart, locale, selected, onSelect,
 
 // ── Week ───────────────────────────────────────────────────────────────────
 
-function WeekSheet({ days, byDay, lessonsByDay, weekStart, locale, onOpen, onMoveBlock, onCreatePlan, t }) {
+/** Everything that occupies an hour on `iso`, in start order.
+ *  Commitments are generated per date rather than stored, so they join the
+ *  stored blocks here rather than inside `buildEvents` — but they must share
+ *  the same overlap layout, or a training would draw straight over the study
+ *  block that clashes with it and hide the clash the screen exists to show. */
+function blocksOn(byDay, commitmentsByDay, iso) {
+  return [...timedOn(byDay, iso), ...(commitmentsByDay.get(iso) || [])]
+    .sort((a, b) => a.startMin - b.startMin);
+}
+
+function WeekSheet({ days, byDay, lessonsByDay, commitmentsByDay, weekStart, locale, onOpen, onMoveBlock, onCreatePlan, t }) {
   const gridRef = useRef(null);
   const [drag, setDrag] = useState(null);
   const [nowMin, setNowMin] = useState(() => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); });
@@ -205,8 +224,8 @@ function WeekSheet({ days, byDay, lessonsByDay, weekStart, locale, onOpen, onMov
   // Lessons widen the window as well as blocks: a timetable starting at 08:00
   // in a week with nothing logged would otherwise be drawn above the grid.
   const allBlocks = useMemo(
-    () => days.flatMap((d) => [...timedOn(byDay, d.iso), ...(lessonsByDay.get(d.iso) || [])]),
-    [days, byDay, lessonsByDay],
+    () => days.flatMap((d) => [...blocksOn(byDay, commitmentsByDay, d.iso), ...(lessonsByDay.get(d.iso) || [])]),
+    [days, byDay, lessonsByDay, commitmentsByDay],
   );
   const { from, to } = useMemo(() => hourRange(allBlocks), [allBlocks]);
   const hours = useMemo(
@@ -383,7 +402,7 @@ function WeekSheet({ days, byDay, lessonsByDay, weekStart, locale, onOpen, onMov
           ))}
         </div>
         {days.map((d, ci) => {
-          const laid = layoutDayColumn(timedOn(byDay, d.iso));
+          const laid = layoutDayColumn(blocksOn(byDay, commitmentsByDay, d.iso));
           const lessons = lessonsByDay.get(d.iso) || [];
           const creating = drag?.mode === 'create' && drag.iso === d.iso;
           return (
@@ -437,7 +456,13 @@ function WeekSheet({ days, byDay, lessonsByDay, weekStart, locale, onOpen, onMov
                 </div>
               )}
               {laid.map(({ item, col, of }) => {
-                const isDragging = drag?.id === item.id;
+                // A commitment is not draggable. Dragging one occurrence of a
+                // weekly rule is ambiguous — move this Tuesday, or every
+                // Tuesday? — and guessing either way would silently rewrite a
+                // recurring commitment the user only meant to nudge. It opens
+                // its editor instead, where the question is answerable.
+                const fixed = item.kind === 'commitment';
+                const isDragging = !fixed && drag?.id === item.id;
                 const min = isDragging ? drag.targetMin : item.startMin;
                 const dur = Math.max(SNAP_MIN, item.durationMinutes || SNAP_MIN);
                 const c = item.color;
@@ -456,11 +481,12 @@ function WeekSheet({ days, byDay, lessonsByDay, weekStart, locale, onOpen, onMov
                 const span = isDragging ? 100 : (1 / of) * 100;
                 return (
                   <div
-                    key={item.id}
+                    key={item.occurrenceId || item.id}
                     role="button"
                     tabIndex={0}
                     className={`cal-block is-${item.kind}`
                       + (item.kind === 'planned' ? ` st-${item.status}` : '')
+                      + (item.weekly ? ' weekly' : '')
                       + (isDragging ? ' dragging' : '')
                       + (height(dur) < 5 ? ' compact' : '')}
                     style={{
@@ -469,21 +495,26 @@ function WeekSheet({ days, byDay, lessonsByDay, weekStart, locale, onOpen, onMov
                       insetInlineStart: `calc(${lead}% + 3px)`,
                       width: `calc(${span}% - 6px)`,
                       transform: shiftX ? `translateX(${shiftX}px)` : undefined,
-                      '--block-color': c || 'var(--border2)',
+                      '--block-color': c || (item.kind === 'commitment' ? 'var(--muted)' : 'var(--border2)'),
                       '--block-wash': c ? `${c}14` : 'var(--surface2)',
                       '--block-edge': c ? `${c}3a` : 'var(--border2)',
                     }}
-                    onPointerDown={(e) => onPointerDown(e, item)}
+                    onPointerDown={fixed ? undefined : (e) => onPointerDown(e, item)}
+                    onClick={fixed ? () => onOpen(item) : undefined}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(item); } }}
-                    title={`${fmtTime(item.startedAt)} · ${minutesLabel(dur)}${item.courseName ? ` · ${item.courseName}` : ''}`}
+                    title={item.kind === 'commitment'
+                      ? `${item.title} · ${minutesClock(item.startMin)}–${minutesClock(item.endMin)}${item.weekly ? ` · ${t('cm.weeklyShort')}` : ''}`
+                      : `${fmtTime(item.startedAt)} · ${minutesLabel(dur)}${item.courseName ? ` · ${item.courseName}` : ''}`}
                   >
                     <div className="cal-block-time">
                       {String(Math.floor(min / 60)).padStart(2, '0')}:{String(min % 60).padStart(2, '0')} · {minutesLabel(dur)}
                     </div>
                     <div className="cal-block-title">
-                      {item.kind === 'planned'
-                        ? (item.title || item.courseName || t('cal.planned'))
-                        : (item.courseName || t('cal.study'))}
+                      {item.kind === 'commitment'
+                        ? item.title
+                        : item.kind === 'planned'
+                          ? (item.title || item.courseName || t('cal.planned'))
+                          : (item.courseName || t('cal.study'))}
                     </div>
                   </div>
                 );
@@ -501,7 +532,7 @@ function WeekSheet({ days, byDay, lessonsByDay, weekStart, locale, onOpen, onMov
 
 // ── Day agenda ─────────────────────────────────────────────────────────────
 
-function DayAgenda({ iso, byDay, lessons, locale, onOpen, onClose, t }) {
+function DayAgenda({ iso, byDay, lessons, commitments, locale, onOpen, onClose, t }) {
   const items = sortDayItems(byDay.get(iso) || []);
   const timed = items.filter((i) => i.kind === 'session');
   const planned = items.filter((i) => i.kind === 'planned').sort((a, b) => a.startMin - b.startMin);
@@ -513,6 +544,8 @@ function DayAgenda({ iso, byDay, lessons, locale, onOpen, onClose, t }) {
   const plannedMin = planned
     .filter((p) => p.status === 'planned' || p.status === 'missed')
     .reduce((n, p) => n + (p.durationMinutes || 0), 0);
+  // Time the day has already spent before any studying is planned into it.
+  const committedMin = commitments.reduce((n, c) => n + c.durationMinutes, 0);
 
   return (
     <div className="cal-agenda-pane">
@@ -526,7 +559,36 @@ function DayAgenda({ iso, byDay, lessons, locale, onOpen, onClose, t }) {
         <button type="button" className="cal-agenda-close" onClick={onClose} aria-label={t('common.close')}>×</button>
       </div>
 
-      {items.length === 0 && lessons.length === 0 && <div className="cal-agenda-empty">{t('cal.dayEmpty')}</div>}
+      {items.length === 0 && lessons.length === 0 && commitments.length === 0 && (
+        <div className="cal-agenda-empty">{t('cal.dayEmpty')}</div>
+      )}
+
+      {commitments.length > 0 && (
+        <div className="cal-agenda-group">
+          <div className="cal-agenda-rel">{t('cm.committedTotal', { total: minutesLabel(committedMin) })}</div>
+          {commitments.map((c) => (
+            <div
+              key={c.occurrenceId}
+              className="cal-row is-commitment"
+              role="button"
+              tabIndex={0}
+              style={{ '--row-color': c.color || 'var(--muted)' }}
+              onClick={() => onOpen(c)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(c); } }}
+            >
+              <div className="cal-row-mark" aria-hidden="true" />
+              <div className="cal-row-body">
+                <div className="cal-row-title">{c.title}</div>
+                <div className="cal-row-meta">
+                  <span>{minutesClock(c.startMin)}–{minutesClock(c.endMin)}</span>
+                  <span>· {minutesLabel(c.durationMinutes)}</span>
+                  {c.weekly && <span>· {t('cm.weeklyShort')}</span>}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {lessons.length > 0 && (
         <div className="cal-agenda-group">
@@ -732,6 +794,162 @@ function PlanEditor({ draft, courses, onSave, onDelete, onLog, onDismiss, onClos
   );
 }
 
+// ── Commitment editor ──────────────────────────────────────────────────────
+//
+// A "blocker": training, a club, a shift. The one field that changes the shape
+// of the row is REPEAT — one-off writes a single date, weekly writes a rule —
+// so it leads the form rather than hiding at the bottom as an option.
+
+function CommitmentEditor({ draft, onSave, onDelete, onClose, t }) {
+  const isNew = !draft.id;
+  const locale = formatLocale();
+  const weekStart = resolveWeekStart(locale);
+  const labels = weekdayLabels(weekStart, locale);
+  const [title, setTitle] = useState(draft.title || '');
+  const [weekly, setWeekly] = useState(draft.weekday !== null && draft.weekday !== undefined);
+  const [weekday, setWeekday] = useState(
+    draft.weekday !== null && draft.weekday !== undefined ? String(draft.weekday) : String(parseLocalDate(draft.startsOn).getDay()),
+  );
+  const [startsOn, setStartsOn] = useState(draft.startsOn);
+  const [endsOn, setEndsOn] = useState(draft.endsOn || '');
+  const [start, setStart] = useState(minutesClock(draft.startMin));
+  const [end, setEnd] = useState(minutesClock(draft.endMin));
+  const [color, setColor] = useState(draft.color || '');
+  const [notes, setNotes] = useState(draft.notes || '');
+  const [err, setErr] = useState('');
+
+  const submit = () => {
+    const trimmed = title.trim();
+    if (!trimmed) { setErr(t('cm.errTitle')); return; }
+    const s = timeToMinutes(start), e = timeToMinutes(end);
+    if (s === null || e === null) { setErr(t('tt.errTime')); return; }
+    if (e <= s) { setErr(t('tt.errOrder')); return; }
+    if (!startsOn) { setErr(t('cm.errDate')); return; }
+    if (weekly && endsOn && endsOn < startsOn) { setErr(t('tt.errDates')); return; }
+    onSave({
+      id: draft.id,
+      title: trimmed,
+      color: color || null,
+      // null is the one-off/weekly switch all the way down to the column.
+      weekday: weekly ? Number(weekday) : null,
+      startsOn,
+      endsOn: weekly ? endsOn : '',
+      startTime: minutesToSqlTime(s),
+      endTime: minutesToSqlTime(e),
+      notes: notes.trim(),
+    });
+  };
+
+  return (
+    <div className="modal-overlay" role="dialog" aria-modal="true" onClick={onClose}>
+      <div className="modal" onClick={(ev) => ev.stopPropagation()}>
+        <div className="modal-title">{isNew ? t('cm.newTitle') : t('cm.editTitle')}</div>
+
+        <div className="input-group">
+          <div className="input-label">{t('cm.fTitle')}</div>
+          <input
+            type="text" value={title} autoFocus
+            onChange={(ev) => { setTitle(ev.target.value); setErr(''); }}
+            placeholder={t('cm.titlePlaceholder')}
+            onKeyDown={(ev) => ev.key === 'Enter' && submit()}
+          />
+        </div>
+
+        <div className="input-group">
+          <div className="input-label">{t('cm.fRepeat')}</div>
+          <div className="cm-repeat" role="radiogroup" aria-label={t('cm.fRepeat')}>
+            <button type="button" role="radio" aria-checked={!weekly} className={!weekly ? 'on' : ''} onClick={() => { setWeekly(false); setErr(''); }}>
+              {t('cm.once')}
+            </button>
+            <button type="button" role="radio" aria-checked={weekly} className={weekly ? 'on' : ''} onClick={() => { setWeekly(true); setErr(''); }}>
+              {t('cm.weekly')}
+            </button>
+          </div>
+        </div>
+
+        {weekly && (
+          <div className="input-group">
+            <div className="input-label">{t('tt.fDay')}</div>
+            <select value={weekday} onChange={(ev) => setWeekday(ev.target.value)}>
+              {labels.map((label, i) => {
+                const dayValue = (weekStart + i) % 7;
+                return <option key={dayValue} value={dayValue}>{label}</option>;
+              })}
+            </select>
+          </div>
+        )}
+
+        <div className="plan-row">
+          <div className="input-group">
+            <div className="input-label">{weekly ? t('cm.fFrom') : t('cal.planDate')}</div>
+            <input type="date" value={startsOn} onChange={(ev) => { setStartsOn(ev.target.value); setErr(''); }} />
+          </div>
+          <div className="input-group">
+            <div className="input-label">{t('tt.fStart')}</div>
+            <input type="time" step="300" value={start} onChange={(ev) => { setStart(ev.target.value); setErr(''); }} />
+          </div>
+          <div className="input-group">
+            <div className="input-label">{t('tt.fEnd')}</div>
+            <input type="time" step="300" value={end} onChange={(ev) => { setEnd(ev.target.value); setErr(''); }} />
+          </div>
+        </div>
+
+        {weekly && (
+          <div className="input-group">
+            <div className="input-label">{t('cm.fUntil')}</div>
+            <input type="date" value={endsOn} onChange={(ev) => { setEndsOn(ev.target.value); setErr(''); }} />
+            {/* An empty end date is the normal state for a club you have not
+                decided the last week of, so it is described rather than
+                treated as an omission. */}
+            <div className="tt-hint">{t('cm.untilHint')}</div>
+          </div>
+        )}
+
+        <div className="input-group">
+          <div className="input-label">{t('cm.fColour')}</div>
+          <div className="cm-swatches">
+            <button
+              type="button"
+              className={'cm-swatch none' + (color ? '' : ' on')}
+              onClick={() => setColor('')}
+              title={t('cm.noColour')}
+              aria-pressed={!color}
+            />
+            {COURSE_COLORS.map((hex) => (
+              <button
+                key={hex}
+                type="button"
+                className={'cm-swatch' + (color === hex ? ' on' : '')}
+                style={{ '--sw': hex }}
+                onClick={() => setColor(hex)}
+                aria-pressed={color === hex}
+                aria-label={hex}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="input-group">
+          <div className="input-label">{t('sv.fNotes')}</div>
+          <input type="text" value={notes} onChange={(ev) => setNotes(ev.target.value)} />
+        </div>
+
+        {err && <div className="tt-error">{err}</div>}
+
+        <div className="plan-actions">
+          <button className="btn" onClick={submit}>{isNew ? t('cm.create') : t('common.save')}</button>
+          <button className="btn-outline" onClick={onClose}>{t('common.cancel')}</button>
+          {!isNew && (
+            <button className="btn-danger-text plan-delete" onClick={onDelete}>
+              <Trash2 size={13} strokeWidth={1.75} /> {draft.weekly ? t('cm.deleteSeries') : t('common.delete')}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── View ───────────────────────────────────────────────────────────────────
 
 export default function CalendarView({ state, dispatch, session, showFlash, tier, onOpenItem, onAddAsgn, onAddExam }) {
@@ -804,8 +1022,45 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
     return map;
   }, [state, days, selected]);
 
+  // Commitments are expanded per date for the same reason lessons are — a
+  // weekly rule is not a stored event — but over a WIDER set of dates: unlike
+  // lessons they also show in the month sheet, because a training is a thing
+  // that happens on a day, whereas a lesson is the routine those days are made
+  // of. Five lessons a day would bury the month grid; one or two trainings a
+  // week are exactly what someone scanning a month wants to see.
+  const commitmentsByDay = useMemo(() => {
+    const map = new Map();
+    const isos = new Set(days.map((d) => d.iso));
+    for (const row of rows) for (const cell of row) isos.add(cell.iso);
+    if (selected) isos.add(selected);
+    for (const iso of isos) {
+      const list = commitmentsOn(state, iso);
+      if (list.length) map.set(iso, list);
+    }
+    return map;
+  }, [state, days, rows, selected]);
+
   const onMoveBlock = useCallback((item, targetIso, targetMin) => {
     const startedAt = localTimestamp(targetIso, targetMin).toISOString();
+    if (item.kind === 'commitment') {
+      // The editor edits the ROW, not the occurrence: changing "every Tuesday
+      // 18:00" is the only edit that makes sense for a recurring commitment,
+      // and the delete button says "series" so that is not a surprise.
+      const c = item.source;
+      setCommitment({
+        id: c.id,
+        title: c.title,
+        color: c.color || '',
+        weekday: c.weekday,
+        weekly: item.weekly,
+        startsOn: c.startsOn,
+        endsOn: c.endsOn || '',
+        startMin: item.startMin,
+        endMin: item.endMin,
+        notes: c.notes || '',
+      });
+      return;
+    }
     if (item.kind === 'planned') {
       // Moving a PLAN is rescheduling something that has not happened yet —
       // the ordinary case now that plans exist, and the one the build plan
@@ -904,6 +1159,39 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
     showFlash?.(t('cal.planLogged'));
   }, [plan, dispatch, session, pushPlan, showFlash, t]);
 
+  // ── Commitments ──────────────────────────────────────────────────────────
+  const [commitment, setCommitment] = useState(null);
+
+  const openNewCommitment = useCallback((iso, startMin) => {
+    setSelected(iso);
+    setCommitment({
+      startsOn: iso,
+      endsOn: '',
+      weekday: null,
+      startMin,
+      endMin: Math.min(24 * 60, startMin + DEFAULT_PLAN_MIN),
+      title: '',
+      color: '',
+      notes: '',
+    });
+  }, []);
+
+  const saveCommitment = useCallback((form) => {
+    const id = form.id || crypto.randomUUID();
+    dispatch({ type: form.id ? 'EDIT_COMMITMENT' : 'ADD_COMMITMENT', id, ...form });
+    if (session) outbox.enqueue('upsert_commitment', { ...form, id });
+    setCommitment(null);
+    showFlash?.(form.id ? t('cm.saved') : t('cm.created'));
+  }, [dispatch, session, showFlash, t]);
+
+  const deleteCommitment = useCallback(() => {
+    if (!commitment?.id) return;
+    dispatch({ type: 'DELETE_COMMITMENT', id: commitment.id });
+    if (session) outbox.enqueue('delete_commitment', { id: commitment.id });
+    setCommitment(null);
+    showFlash?.(t('cm.deleted'));
+  }, [commitment, dispatch, session, showFlash, t]);
+
   const dismissPlan = useCallback(() => {
     if (!plan?.id) return;
     const dismissedAt = new Date().toISOString();
@@ -915,6 +1203,25 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
 
   const openItem = useCallback((item) => {
     setSelected(item.iso);
+    if (item.kind === 'commitment') {
+      // The editor edits the ROW, not the occurrence: changing "every Tuesday
+      // 18:00" is the only edit that makes sense for a recurring commitment,
+      // and the delete button says "series" so that is not a surprise.
+      const c = item.source;
+      setCommitment({
+        id: c.id,
+        title: c.title,
+        color: c.color || '',
+        weekday: c.weekday,
+        weekly: item.weekly,
+        startsOn: c.startsOn,
+        endsOn: c.endsOn || '',
+        startMin: item.startMin,
+        endMin: item.endMin,
+        notes: c.notes || '',
+      });
+      return;
+    }
     if (item.kind === 'planned') {
       // A plan opens its own editor rather than the course/assignment route
       // the other kinds take — it is the one item on this screen that lives
@@ -963,8 +1270,14 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     // While the editor is open the calendar underneath must not page, switch
     // mode or open a second dialog. Escape still closes, so nothing traps.
-    if (plan) {
-      if (e.key === 'Escape') { e.preventDefault(); setPlan(null); }
+    if (plan || commitment) {
+      if (e.key === 'Escape') { e.preventDefault(); setPlan(null); setCommitment(null); }
+      return;
+    }
+    if (e.key === 'c' || e.key === 'C') {
+      e.preventDefault();
+      const now = new Date();
+      openNewCommitment(selected || todayIso(), Math.min(23 * 60, (now.getHours() + 1) * 60));
       return;
     }
     if (e.key === 'p' || e.key === 'P') {
@@ -991,13 +1304,13 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
   const sheet = mode === 'month'
     ? (
       <MonthSheet
-        rows={rows} bands={bands} byDay={byDay} weekStart={weekStart} locale={locale}
+        rows={rows} bands={bands} byDay={byDay} commitmentsByDay={commitmentsByDay} weekStart={weekStart} locale={locale}
         selected={selected} onSelect={setSelected} onOpen={openItem} t={t}
       />
     )
     : (
       <WeekSheet
-        days={days} byDay={byDay} lessonsByDay={lessonsByDay} weekStart={weekStart} locale={locale}
+        days={days} byDay={byDay} lessonsByDay={lessonsByDay} commitmentsByDay={commitmentsByDay} weekStart={weekStart} locale={locale}
         onOpen={openItem} onMoveBlock={onMoveBlock} onCreatePlan={openNewPlan} t={t}
       />
     );
@@ -1041,6 +1354,7 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
             iso={selected}
             byDay={byDay}
             lessons={lessonsByDay.get(selected) || []}
+            commitments={commitmentsByDay.get(selected) || []}
             locale={locale}
             onOpen={openItem}
             onClose={() => setSelected(null)}
@@ -1048,6 +1362,16 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
           />
         )}
       </div>
+
+      {commitment && (
+        <CommitmentEditor
+          draft={commitment}
+          onSave={saveCommitment}
+          onDelete={deleteCommitment}
+          onClose={() => setCommitment(null)}
+          t={t}
+        />
+      )}
 
       {plan && (
         <PlanEditor

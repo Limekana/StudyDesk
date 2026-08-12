@@ -247,6 +247,27 @@ function mergeAttachment(localA, remoteRow) {
   return localA;
 }
 
+function mergeCommitment(localC, remoteRow) {
+  const remote = {
+    id: remoteRow.id,
+    title: remoteRow.title,
+    color: remoteRow.color || null,
+    // Null is meaningful here — it is the one-off/weekly switch — so it must
+    // survive as null rather than being coerced to 0, which is Sunday.
+    weekday: remoteRow.weekday === null || remoteRow.weekday === undefined ? null : Number(remoteRow.weekday),
+    startsOn: remoteRow.starts_on || '',
+    endsOn: remoteRow.ends_on || '',
+    startTime: remoteRow.start_time,
+    endTime: remoteRow.end_time,
+    notes: remoteRow.notes || '',
+    updatedAt: remoteRow.updated_at || null,
+    deletedAt: remoteRow.deleted_at || null,
+  };
+  if (!localC) return remote;
+  if (newer(remote.updatedAt, localC.updatedAt)) return remote;
+  return localC;
+}
+
 /**
  * Apply a full remote pull to the reducer state. Returns a new state object.
  *
@@ -318,10 +339,11 @@ export function applyRemotePull(state, remote) {
   const academicTerms = mergeList(state.academicTerms, remote.academicTerms, mergeTerm);
   const timetableEntries = mergeList(state.timetableEntries, remote.timetableEntries, mergeTimetableEntry);
   const attachments = mergeList(state.attachments, remote.attachments, mergeAttachment);
+  const commitments = mergeList(state.commitments, remote.commitments, mergeCommitment);
 
   return {
     ...state,
     courses, grades, studySessions, assignments, exams, actions,
-    plannedSessions, academicTerms, timetableEntries, attachments,
+    plannedSessions, academicTerms, timetableEntries, attachments, commitments,
   };
 }

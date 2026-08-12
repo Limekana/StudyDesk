@@ -675,5 +675,28 @@
     "openFailedMsg": "无法打开该文件——{{msg}}",
     "deleted": "附件已删除",
     "countTitle": "{{n}} 个附件"
+  },
+  "cm": {
+    "newTitle": "新建安排",
+    "editTitle": "编辑安排",
+    "fTitle": "这是什么",
+    "titlePlaceholder": "例如：足球训练",
+    "fRepeat": "重复",
+    "once": "仅一次",
+    "weekly": "每周",
+    "weeklyShort": "每周",
+    "fFrom": "首次",
+    "fUntil": "截止",
+    "untilHint": "若尚无结束日期，请留空。",
+    "fColour": "颜色",
+    "noColour": "无颜色",
+    "create": "加入日历",
+    "saved": "安排已更新",
+    "created": "安排已添加",
+    "deleted": "安排已删除",
+    "deleteSeries": "删除系列",
+    "errTitle": "请为该安排命名。",
+    "errDate": "请选择日期。",
+    "committedTotal": "已占用 {{total}}"
   }
 }

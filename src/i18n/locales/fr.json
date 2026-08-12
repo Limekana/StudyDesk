@@ -680,5 +680,28 @@
     "openFailedMsg": "Impossible d'ouvrir ce fichier — {{msg}}",
     "deleted": "Pièce jointe supprimée",
     "countTitle": "{{n}} pièces jointes"
+  },
+  "cm": {
+    "newTitle": "Nouvel engagement",
+    "editTitle": "Modifier l'engagement",
+    "fTitle": "De quoi s'agit-il",
+    "titlePlaceholder": "ex. Entraînement de football",
+    "fRepeat": "Répétition",
+    "once": "Une fois",
+    "weekly": "Chaque semaine",
+    "weeklyShort": "hebdo",
+    "fFrom": "Première fois",
+    "fUntil": "Jusqu'au",
+    "untilHint": "Laissez vide s'il n'y a pas encore de date de fin.",
+    "fColour": "Couleur",
+    "noColour": "Aucune couleur",
+    "create": "Ajouter au calendrier",
+    "saved": "Engagement mis à jour",
+    "created": "Engagement ajouté",
+    "deleted": "Engagement supprimé",
+    "deleteSeries": "Supprimer la série",
+    "errTitle": "Donnez un nom à cet engagement.",
+    "errDate": "Choisissez une date.",
+    "committedTotal": "{{total}} pris"
   }
 }

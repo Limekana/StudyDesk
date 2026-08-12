@@ -467,6 +467,68 @@
 .cal-row.is-lesson .cal-row-mark { opacity: 0.35; }
 .cal-row.is-planned.st-missed .cal-row-meta { color: var(--danger); }
 
+/* ── Commitments (v1.10) ───────────────────────────────────────────────── */
+/* A commitment is SOLID, because unlike a plan it is not negotiable — the
+   training happens whether or not you revise. That gives the week three
+   readings at a glance: washed background = the shape of your week (lessons),
+   dashed = pencilled in (plans), solid = spoken for (commitments and logged
+   sessions). Colour is the user's own, defaulting to ink rather than to a
+   course palette entry, because a commitment belongs to no course. */
+.cal-block.is-commitment {
+  cursor: pointer;
+  background: var(--block-wash, var(--surface2));
+  border-style: solid;
+}
+.cal-block.is-commitment .cal-block-title { font-weight: 600; }
+/* A weekly commitment is marked, not spelled out: the block is too small for
+   "every Tuesday" and the repeat is visible from the grid anyway. */
+.cal-block.is-commitment.weekly .cal-block-time::after {
+  content: ' ↻';
+  font-size: 10px;
+  opacity: 0.7;
+}
+.cal-chip.is-commitment {
+  border-inline-start-width: 3px;
+  font-weight: 500;
+}
+.cal-row.is-commitment .cal-row-mark { opacity: 0.9; }
+
+/* Repeat toggle — a two-state segmented control, not a checkbox, because the
+   two states produce genuinely different rows and the form changes shape
+   between them. */
+.cm-repeat { display: flex; gap: 6px; }
+.cm-repeat button {
+  flex: 1;
+  padding: 9px 0;
+  font-family: var(--font-display);
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 8px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--muted);
+  transition: all 120ms var(--ease-page-turn, ease);
+}
+.cm-repeat button.on { border-color: var(--text); background: var(--text); color: var(--bg); }
+
+.cm-swatches { display: flex; flex-wrap: wrap; gap: 7px; }
+.cm-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 1px solid var(--border2);
+  background: var(--sw, transparent);
+  padding: 0;
+}
+.cm-swatch.on { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px var(--text); }
+/* "No colour" reads as an empty slot rather than as white, which on cream
+   would look like a colour someone picked. */
+.cm-swatch.none {
+  background:
+    linear-gradient(45deg, transparent 45%, var(--border2) 45%, var(--border2) 55%, transparent 55%);
+}
+
 /* ── Plan editor ───────────────────────────────────────────────────────── */
 .plan-row { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 8px; }
 .plan-actions { display: flex; gap: 8px; align-items: center; margin-top: 6px; flex-wrap: wrap; }

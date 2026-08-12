@@ -200,6 +200,9 @@ const INITIAL = {
   // stay that way: NCC reads study_sessions for its Life Score, so an intended
   // block living there would be counted as study that actually happened.
   plannedSessions:[], academicTerms:[], timetableEntries:[], attachments:[],
+  // Non-study blockers — training, clubs, shifts. Time that is NOT available
+  // for study, and never counted as study anywhere.
+  commitments:[],
   gradeMode:"ib",                  // 'ib' | 'us' | 'custom' — persisted locally
   customScale:DEFAULT_CUSTOM_SCALE, // bounds for gradeMode 'custom' (SD-F4)
   aiEnabled:false,                 // AI debrief opt-in — device-level, persisted locally
@@ -420,6 +423,55 @@ function reducer(state, action) {
       return { ...state, attachments: [...(state.attachments || []).filter(a => a.id !== action.attachment.id), action.attachment] };
     case "DELETE_ATTACHMENT":
       return { ...state, attachments: (state.attachments || []).filter(a => a.id !== action.id) };
+
+    // ── Commitments (v1.10) ──
+    // A blocker: training, a club, a shift. Weekly when `weekday` is a number,
+    // one-off when it is null — that null is the switch, so it is preserved
+    // rather than defaulted (Number(null) is 0, which is Sunday).
+    case "ADD_COMMITMENT": {
+      const c = {
+        id: action.id || newSyncId(),
+        title: (action.title || "").trim(),
+        color: action.color || null,
+        weekday: action.weekday === null || action.weekday === undefined || action.weekday === ""
+          ? null
+          : Math.max(0, Math.min(6, Math.round(Number(action.weekday)))),
+        startsOn: action.startsOn || "",
+        endsOn: action.endsOn || "",
+        startTime: action.startTime,
+        endTime: action.endTime,
+        notes: action.notes || "",
+        updatedAt: action.updatedAt || new Date().toISOString(),
+      };
+      // An end date on a one-off is meaningless and the DB rejects it.
+      if (c.weekday === null) c.endsOn = "";
+      return { ...state, commitments: [...(state.commitments || []), c] };
+    }
+    case "EDIT_COMMITMENT":
+      return { ...state, commitments: (state.commitments || []).map(c => {
+        if (c.id !== action.id) return c;
+        const weekday = action.weekday !== undefined
+          ? (action.weekday === null || action.weekday === ""
+            ? null
+            : Math.max(0, Math.min(6, Math.round(Number(action.weekday)))))
+          : c.weekday;
+        const next = {
+          ...c,
+          title: action.title !== undefined ? (action.title || "").trim() : c.title,
+          color: action.color !== undefined ? (action.color || null) : c.color,
+          weekday,
+          startsOn: action.startsOn !== undefined ? (action.startsOn || "") : c.startsOn,
+          endsOn: action.endsOn !== undefined ? (action.endsOn || "") : c.endsOn,
+          startTime: action.startTime ?? c.startTime,
+          endTime: action.endTime ?? c.endTime,
+          notes: action.notes !== undefined ? (action.notes || "") : c.notes,
+          updatedAt: new Date().toISOString(),
+        };
+        if (next.weekday === null) next.endsOn = "";
+        return next;
+      })};
+    case "DELETE_COMMITMENT":
+      return { ...state, commitments: (state.commitments || []).filter(c => c.id !== action.id) };
 
     // ── Settings ──
     // The old form was `action.mode==="us"?"us":"ib"`, which silently coerced
@@ -642,6 +694,7 @@ export default function App() {
         academicTerms: Array.isArray(saved.academicTerms) ? saved.academicTerms : [],
         timetableEntries: Array.isArray(saved.timetableEntries) ? saved.timetableEntries : [],
         attachments: Array.isArray(saved.attachments) ? saved.attachments : [],
+        commitments: Array.isArray(saved.commitments) ? saved.commitments : [],
         activeCourse: migratedActiveCourse,
         gradeMode,
         customScale,
@@ -667,8 +720,9 @@ export default function App() {
       academicTerms:state.academicTerms,
       timetableEntries:state.timetableEntries,
       attachments:state.attachments,
+      commitments:state.commitments,
     })); } catch {}
-  }, [state.courses,state.assignments,state.actions,state.exams,state.grades,state.studySessions,state.plannedSessions,state.academicTerms,state.timetableEntries,state.attachments]);
+  }, [state.courses,state.assignments,state.actions,state.exams,state.grades,state.studySessions,state.plannedSessions,state.academicTerms,state.timetableEntries,state.attachments,state.commitments]);
   // gradeMode is UI-only — persist separately so it doesn't trigger a v1 rewrite on every toggle.
   useEffect(() => {
     try { localStorage.setItem("studydesk-grade-mode", state.gradeMode); } catch {}

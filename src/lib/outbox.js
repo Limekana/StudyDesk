@@ -292,4 +292,7 @@ const KIND_DISPATCH = {
   // user's filename. Uploads therefore require connectivity and report their
   // own failure. See `uploadAttachment` in sync.js.
   delete_attachment: (p) => sync.deleteAttachment(p),
+  // Non-study blockers — training, clubs, shifts.
+  upsert_commitment: (p) => sync.upsertCommitment(p),
+  delete_commitment: (p) => sync.deleteCommitment(p.id),
 };

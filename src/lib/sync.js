@@ -442,6 +442,49 @@ export async function deleteTimetableEntry(id) {
   if (error) throw error;
 }
 
+// ── commitments (non-study blockers) ─────────────────────────────────────────
+//
+// v1.10. Training, clubs, shifts — time that is NOT available for study.
+// StudyDesk-only; NCC does not read this table and must not, because nothing
+// here is study and counting it as such would be the same mistake the separate
+// `planned_sessions` table exists to prevent.
+
+export async function upsertCommitment({ id, title, color, weekday, startsOn, endsOn, startTime, endTime, notes }) {
+  const userId = await currentUserId();
+  // `weekday` null is the one-off/weekly switch, so it is normalised
+  // deliberately rather than defaulted — `Number(null)` is 0, which is Sunday,
+  // and would silently turn every one-off into a weekly Sunday commitment.
+  const wd = weekday === null || weekday === undefined || weekday === ''
+    ? null
+    : Math.max(0, Math.min(6, Math.round(Number(weekday))));
+  const { error } = await supabase.from('commitments').upsert({
+    id,
+    user_id: userId,
+    title: String(title || '').trim(),
+    color: color || null,
+    weekday: wd,
+    starts_on: startsOn || null,
+    // The DB forbids an end date on a one-off; sending one would trip the
+    // constraint on a row the user thinks they just saved.
+    ends_on: wd === null ? null : (endsOn || null),
+    start_time: startTime,
+    end_time: endTime,
+    notes: (notes || '').trim() || null,
+    updated_at: nowISO(),
+  });
+  if (error) throw error;
+  return id;
+}
+
+export async function deleteCommitment(id) {
+  const stamp = nowISO();
+  const { error } = await supabase
+    .from('commitments')
+    .update({ deleted_at: stamp, updated_at: stamp })
+    .eq('id', id);
+  if (error) throw error;
+}
+
 // ── assignment attachments ───────────────────────────────────────────────────
 //
 // Storage paths are `<user_id>/<assignment_id>/<file>`. The first segment is
@@ -563,7 +606,7 @@ export async function pullAllStudyData() {
   // can correctly tombstone things the user deleted on another device.
   const [
     subjectsRes, gradesRes, sessionsRes, assignmentsRes, examsRes, actionsRes,
-    plannedRes, termsRes, timetableRes, attachmentsRes,
+    plannedRes, termsRes, timetableRes, attachmentsRes, commitmentsRes,
   ] = await Promise.all([
     supabase.from('subjects').select('*'),
     supabase.from('grades').select('*'),
@@ -575,6 +618,7 @@ export async function pullAllStudyData() {
     supabase.from('academic_terms').select('*'),
     supabase.from('timetable_entries').select('*'),
     supabase.from('assignment_attachments').select('*'),
+    supabase.from('commitments').select('*'),
   ]);
   if (subjectsRes.error) throw subjectsRes.error;
   if (gradesRes.error) throw gradesRes.error;
@@ -586,6 +630,7 @@ export async function pullAllStudyData() {
   if (termsRes.error) throw termsRes.error;
   if (timetableRes.error) throw timetableRes.error;
   if (attachmentsRes.error) throw attachmentsRes.error;
+  if (commitmentsRes.error) throw commitmentsRes.error;
   return {
     subjects: subjectsRes.data || [],
     grades: gradesRes.data || [],
@@ -597,6 +642,7 @@ export async function pullAllStudyData() {
     academicTerms: termsRes.data || [],
     timetableEntries: timetableRes.data || [],
     attachments: attachmentsRes.data || [],
+    commitments: commitmentsRes.data || [],
   };
 }
 
@@ -631,6 +677,7 @@ export function startRealtime(onChange) {
   for (const table of [
     'subjects', 'grades', 'study_sessions', 'assignments', 'exams', 'study_actions',
     'planned_sessions', 'academic_terms', 'timetable_entries', 'assignment_attachments',
+    'commitments',
   ]) {
     c.on(
       'postgres_changes',

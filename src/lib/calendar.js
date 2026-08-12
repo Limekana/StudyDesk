@@ -282,11 +282,16 @@ export function buildEvents(state, opts = {}) {
 /** Order within a day cell. Exams first because they are the immovable thing
  *  on that date; sessions last and by clock time, since they are a record of
  *  the day rather than a demand on it. */
-const KIND_RANK = { exam: 0, assignment: 1, study: 2, planned: 3, session: 4 };
+// `commitment` is ranked even though it is generated per date rather than
+// stored (see lib/commitments.js) — the month sheet mixes it into the same
+// sorted cell list, and a kind missing from this table yields NaN from the
+// subtraction below, which makes the comparator return NaN and the sort
+// order implementation-defined.
+const KIND_RANK = { exam: 0, assignment: 1, study: 2, commitment: 3, planned: 4, session: 5 };
 
 /** Kinds that own a clock time and therefore belong in the hour grid rather
  *  than the all-day strip above it. */
-export const TIMED_KINDS = new Set(['session', 'planned']);
+export const TIMED_KINDS = new Set(['session', 'planned', 'commitment']);
 
 export function sortDayItems(items) {
   return items.slice().sort((a, b) => {

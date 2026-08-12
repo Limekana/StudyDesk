@@ -680,5 +680,28 @@
     "openFailedMsg": "Não foi possível abrir o ficheiro — {{msg}}",
     "deleted": "Anexo removido",
     "countTitle": "{{n}} anexos"
+  },
+  "cm": {
+    "newTitle": "Novo compromisso",
+    "editTitle": "Editar compromisso",
+    "fTitle": "O que é",
+    "titlePlaceholder": "ex. Treino de futebol",
+    "fRepeat": "Repetição",
+    "once": "Uma vez",
+    "weekly": "Todas as semanas",
+    "weeklyShort": "semanal",
+    "fFrom": "Primeira vez",
+    "fUntil": "Até",
+    "untilHint": "Deixa em branco se ainda não tiver data de fim.",
+    "fColour": "Cor",
+    "noColour": "Sem cor",
+    "create": "Adicionar ao calendário",
+    "saved": "Compromisso atualizado",
+    "created": "Compromisso adicionado",
+    "deleted": "Compromisso removido",
+    "deleteSeries": "Eliminar série",
+    "errTitle": "Dá um nome a este compromisso.",
+    "errDate": "Escolhe uma data.",
+    "committedTotal": "{{total}} comprometido"
   }
 }

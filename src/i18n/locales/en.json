@@ -675,5 +675,28 @@
     "openFailedMsg": "Couldn't open that file — {{msg}}",
     "deleted": "Attachment removed",
     "countTitle": "{{n}} attached"
+  },
+  "cm": {
+    "newTitle": "New commitment",
+    "editTitle": "Edit commitment",
+    "fTitle": "What is it",
+    "titlePlaceholder": "e.g. Football training",
+    "fRepeat": "Repeat",
+    "once": "Once",
+    "weekly": "Every week",
+    "weeklyShort": "weekly",
+    "fFrom": "First on",
+    "fUntil": "Until",
+    "untilHint": "Leave blank if it has no end date yet.",
+    "fColour": "Colour",
+    "noColour": "No colour",
+    "create": "Add to calendar",
+    "saved": "Commitment updated",
+    "created": "Commitment added",
+    "deleted": "Commitment removed",
+    "deleteSeries": "Delete series",
+    "errTitle": "Give this commitment a name.",
+    "errDate": "Pick a date.",
+    "committedTotal": "{{total}} committed"
   }
 }

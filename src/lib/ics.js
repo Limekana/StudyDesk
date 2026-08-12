@@ -147,6 +147,41 @@ export function buildIcs(state, opts = {}) {
     });
   }
 
+  // ── Commitments (v1.10) ────────────────────────────────────────────────
+  // The only TIMED events StudyDesk exports, and the only OPAQUE ones: a
+  // training genuinely occupies 18:00–19:30 and should mark the user busy,
+  // whereas a due date is a deadline and must not blank out someone's day in
+  // a shared calendar.
+  //
+  // DTSTART is written as a FLOATING local time — no `Z`, no `TZID`. That is
+  // not a shortcut around timezone handling, it is the correct encoding of
+  // what the column stores: `start_time` is a wall-clock time, so "18:00"
+  // means 18:00 wherever the user is, which is exactly what floating time
+  // means in RFC 5545. Stamping it UTC would move every training by the
+  // offset, and a TZID would need a timezone database this app does not ship.
+  const BYDAY = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+  const hhmmss = (t) => String(t || '').slice(0, 8).replace(/:/g, '') || '000000';
+  for (const c of state.commitments || []) {
+    if (c.deletedAt || !c.startsOn || !c.startTime || !c.endTime) continue;
+    const weekly = c.weekday !== null && c.weekday !== undefined && Number.isFinite(Number(c.weekday));
+    lines.push('BEGIN:VEVENT');
+    lines.push(`UID:${uid('commitment', c.id)}`);
+    lines.push(`DTSTAMP:${dtstamp}`);
+    lines.push(`DTSTART:${dateValue(c.startsOn)}T${hhmmss(c.startTime)}`);
+    lines.push(`DTEND:${dateValue(c.startsOn)}T${hhmmss(c.endTime)}`);
+    if (weekly) {
+      // UNTIL must share DTSTART's value type, so it stays floating too.
+      const until = c.endsOn ? `;UNTIL=${dateValue(c.endsOn)}T235959` : '';
+      lines.push(`RRULE:FREQ=WEEKLY;BYDAY=${BYDAY[Number(c.weekday)]}${until}`);
+    }
+    lines.push(`SUMMARY:${esc(c.title)}`);
+    if (c.notes) lines.push(`DESCRIPTION:${esc(c.notes)}`);
+    lines.push('CATEGORIES:StudyDesk,Commitment');
+    lines.push('TRANSP:OPAQUE');
+    lines.push('END:VEVENT');
+    count += 1;
+  }
+
   lines.push('END:VCALENDAR');
 
   // Logged study sessions are deliberately NOT exported. They are a record of
