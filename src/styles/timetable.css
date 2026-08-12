@@ -60,7 +60,15 @@
   flex-shrink: 0;
   min-width: 52px;
 }
+/* `min-width: 0` is the load-bearing declaration here, not the ellipsis.
+   A flex item defaults to `min-width: auto`, which refuses to shrink below its
+   own content — so a long term name kept its full width and shoved the date
+   range out over the top of it instead of truncating. The ellipsis rules were
+   already present and did nothing, because the box was never made narrow
+   enough to trigger them. */
 .tt-term-name {
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: 14px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -70,8 +78,13 @@
   font-family: var(--font-mono);
   font-size: 10px;
   color: var(--muted);
-  margin-inline-start: auto;
-  flex-shrink: 0;
+  /* A real gap rather than `margin-inline-start: auto`. The auto margin was
+     pointless once the name flexes (the name eats the free space), and it left
+     the dates butting straight against the truncated name with no breathing
+     room to read them as a separate field. */
+  margin-inline-start: 12px;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 /* Inherited dates are stated more quietly than a term's own. "This jakso runs
    Aug–Dec" means something different when the jakso says so and when it is
@@ -148,6 +161,14 @@
   grid-template-columns: 44px repeat(7, minmax(0, 1fr));
 }
 .tt-grid-head { border-bottom: 1px solid var(--border); }
+
+/* The first hour label is raised onto its own rule (see `.tt-grid-hour`), which
+   put "08" straight through the header's bottom border — the same collision the
+   calendar's ALL DAY strip had. The padding goes on the GRID, so the gutter and
+   the seven day columns move together and the rules stay in step with the
+   lesson blocks; padding the gutter alone would slide the labels out of
+   alignment with the lines they name. */
+.tt-grid-body { padding-top: 7px; }
 .tt-grid-dow {
   font-family: var(--font-mono);
   font-size: 10px;

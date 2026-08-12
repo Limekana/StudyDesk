@@ -21,15 +21,44 @@ import {
   descendantTermIds, timeToMinutes, minutesToTime, minutesToSqlTime,
 } from '../../lib/timetable.js';
 import { resolveWeekStart, weekdayLabels } from '../../lib/calendar.js';
-import { formatLocale } from '../../lib/dates.js';
+import { formatLocale, parseLocalDate } from '../../lib/dates.js';
 import * as outbox from '../../lib/outbox.js';
 import '../../styles/timetable.css';
 
 const DEFAULT_LESSON_MIN = 75;
+// Default hour window for the week grid. Referenced by name from desktop.css,
+// which pairs it with a taller row height — the two together are what stop the
+// page reading as a short strip beside List and Calendar.
+const WEEK_FROM = 8;
+const WEEK_TO = 17;
 
 // One formatter, shared with the parser it round-trips against, so a change to
 // either cannot leave the grid labelling times it can no longer read back.
 const clock = minutesToTime;
+
+/** Compact, locale-correct term range for the outline: "1 Aug – 31 May".
+ *
+ *  The raw ISO pair ("2026-08-01 → 2027-05-31") ran to roughly 140px of mono
+ *  text in a 300px column, which left almost nothing for the term name — the
+ *  owner reported the range sitting on top of the name, and truncating the name
+ *  to fit would only have made that a tidier failure. The date is the thing
+ *  that was too long, so the date is what got shorter.
+ *
+ *  `formatRange` rather than two formatted dates joined by a dash, for the same
+ *  reason the calendar's week title uses it: which side the month falls on is a
+ *  property of the locale, not something to hardcode. */
+function formatTermRange(from, to, locale) {
+  if (!from && !to) return null;
+  const fmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' });
+  const a = from ? parseLocalDate(from) : null;
+  const b = to ? parseLocalDate(to) : null;
+  if (a && b) {
+    try { return fmt.formatRange(a, b); } catch { return `${fmt.format(a)} – ${fmt.format(b)}`; }
+  }
+  // One-sided ranges still say something useful; an open end is the normal
+  // state for a term the user has not decided the end of yet.
+  return a ? `${fmt.format(a)} –` : `– ${fmt.format(b)}`;
+}
 
 // ── Term tree ──────────────────────────────────────────────────────────────
 
@@ -38,6 +67,7 @@ function TermNode({ term, terms, depth, selectedId, onSelect, onAdd, onEdit, onD
   const next = childLevel(term.level);
   const byId = useMemo(() => termIndex(terms), [terms]);
   const { from, to } = resolveTermRange(term, byId);
+  const range = formatTermRange(from, to, formatLocale());
   // Inherited dates are shown in a lighter weight, because "this jakso runs
   // Aug–Dec" is a very different statement when the jakso says so itself and
   // when it is merely sitting inside a semester that does.
@@ -49,9 +79,11 @@ function TermNode({ term, terms, depth, selectedId, onSelect, onAdd, onEdit, onD
         <button type="button" className="tt-term-main" onClick={() => onSelect(term.id)}>
           <span className="tt-term-level">{t(`tt.level.${term.level}`)}</span>
           <span className="tt-term-name">{term.name}</span>
-          {(from || to) && (
-            <span className={`tt-term-dates${ownDates ? '' : ' inherited'}`}>
-              {from || '…'} → {to || '…'}
+          {range && (
+            // `title` keeps the exact ISO dates one hover away — the compact
+            // form is for scanning, not for checking a boundary.
+            <span className={`tt-term-dates${ownDates ? '' : ' inherited'}`} title={`${from || '…'} → ${to || '…'}`}>
+              {range}
             </span>
           )}
         </button>
@@ -239,9 +271,14 @@ function WeekGrid({ entries, courses, weekStart, locale, onAdd, onEdit, t }) {
     .filter((x) => x.from !== null && x.to !== null && x.to > x.from);
 
   // The window fits the timetable rather than assuming a school day. A single
-  // 07:15 lesson widens the grid; an empty term gets a plain 08–16 so the
-  // columns are clickable rather than collapsed to nothing.
-  let from = 8, to = 16;
+  // 07:15 lesson widens the grid; an empty term still gets the full default
+  // window so the columns are clickable rather than collapsed to nothing.
+  //
+  // 08–17 rather than 08–16: the extra hour is where the after-school slot and
+  // most club/training-shaped commitments land, and a grid that stops at 16:00
+  // cannot be clicked to create one. Paired with the taller desktop row height
+  // in desktop.css — together they fix the page reading as a short strip.
+  let from = WEEK_FROM, to = WEEK_TO;
   for (const x of parsed) {
     from = Math.min(from, Math.floor(x.from / 60));
     to = Math.max(to, Math.ceil(x.to / 60));

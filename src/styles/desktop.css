@@ -20,6 +20,21 @@
  * overrides — deliberate, not decorative.
  */
 
+/* ── The topbar cap ────────────────────────────────────────────────────── */
+/* THE SAME BUG AS `.content`, AND I FIXED ONLY ONE OF THEM.
+   `.topbar-inner` was given `max-width: var(--content-max)` in Phase 1 so the
+   page title would sit above the column it labels — correct while `.content`
+   was also capped. Lifting the cap on `.content` (below) and not here left the
+   topbar centred at 1360px inside a 2320px shell: measured at 2560, the title
+   and the avatar each sat 528px in from their own edge, which is exactly the
+   "dead space between them and the sides" the owner reported.
+   The rule is one fact, not two: the topbar shares whatever measure the
+   content column has. Tablet keeps its 900px reading measure and so does the
+   topbar there, which is why this is scoped to the desktop tier. */
+.app[data-tier="desktop"] .topbar-inner {
+  max-width: none;
+}
+
 /* ── The shell cap ─────────────────────────────────────────────────────── */
 /* THE ONE THAT ACTUALLY MATTERED. Lifting each view's own inner max-width was
    necessary but not sufficient: `.content` still capped everything at
@@ -170,13 +185,31 @@
    task and paging between them would make it two. The tree is a fixed measure
    rather than a fraction — it holds short names and dates, and a 600px-wide
    outline column is dead space wearing a border. */
+/* 380px, not 300. At 300 the row had to fit an indent, a level chip, the name,
+   a date range and three action buttons — measured, that left roughly 50px for
+   the name, so even "Autumn" truncated. Shortening the date range (see
+   `formatTermRange`) bought some of it back; the rest is just column width the
+   outline needed and the grid did not miss. */
 .app[data-tier="desktop"] .tt-panes,
 .app[data-tier="tablet"] .tt-panes {
-  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-columns: 380px minmax(0, 1fr);
   gap: 26px;
   align-items: start;
 }
-.app[data-tier="desktop"] .tt { --tt-hour-h: 48px; }
+/* The tablet tier has far less to give away, so it keeps the tighter column. */
+.app[data-tier="tablet"] .tt-panes { grid-template-columns: 300px minmax(0, 1fr); }
+/* Row height, raised deliberately rather than nudged. Measured at 2560×1200:
+   the timetable page came to 567px against the calendar's 968px and the
+   list's 895px, because an 8-hour window at 48px rows is a 384px band sitting
+   at the top of a 1200px screen — the owner read that, correctly, as the page
+   being smaller than its two siblings.
+   A timetable does NOT fix that by widening its window the way the calendar
+   does: a day planner shows 07–22 because evenings are plannable, whereas a
+   school timetable padded out to 22:00 is mostly empty rows, which is worse
+   than short. What it needs is TALLER ROWS, so a 75-minute lesson reads as a
+   block rather than a bar, and a school-day window that reaches the
+   after-school slot (see WEEK_FROM/WEEK_TO in TimetableView). */
+.app[data-tier="desktop"] .tt { --tt-hour-h: 68px; }
 /* The grid gets the width, so the hour gutter can afford to be legible. */
 .app[data-tier="desktop"] .tt-grid-head,
 .app[data-tier="desktop"] .tt-grid-body {
