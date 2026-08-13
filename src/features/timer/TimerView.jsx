@@ -225,6 +225,35 @@ export default function TimerView({ state, onTimerComplete }) {
     return () => document.body.classList.remove('locked-in');
   }, [lockedIn]);
 
+  // v1.9 Item 14a follow-up — Lock In takes the whole screen, not just the
+  // app's own chrome. On desktop the browser's tab strip and address bar are
+  // exactly the distraction this mode exists to remove.
+  //
+  // Failures are swallowed on purpose and are NOT edge cases: requestFullscreen
+  // is gated on a user gesture, and browsers reject it outright when the page
+  // is not focused or the user has denied it. Lock In must still work as a
+  // focus mode when the request is refused — losing fullscreen is a smaller
+  // loss than the timer not starting. Android's WebView has no fullscreen
+  // concept here either, so the same path covers it.
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    const el = document.documentElement;
+    if (lockedIn) {
+      if (!document.fullscreenElement && el.requestFullscreen) {
+        Promise.resolve(el.requestFullscreen()).catch(() => { /* denied — carry on */ });
+      }
+    } else if (document.fullscreenElement && document.exitFullscreen) {
+      Promise.resolve(document.exitFullscreen()).catch(() => {});
+    }
+    // Leaving fullscreen by pressing Escape must not strand the app in a
+    // locked-in state whose exit affordance the user just bypassed.
+    const onFsChange = () => {
+      if (!document.fullscreenElement && lockedIn) setLockedIn(false);
+    };
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, [lockedIn]);
+
   // ── Lock In takeover view ───────────────────────────────────────────────
   if (lockedIn) {
     return <div className="lockin-wrap">

@@ -1,0 +1,95 @@
+/* v1.10 — assignment attachments.
+ *
+ * The panel lives INSIDE `.asgn-item`, which is a flex row. It takes the full
+ * width by wrapping rather than by being lifted out into a sibling, so the
+ * attachment list stays visually part of the assignment it belongs to instead
+ * of becoming a second card underneath it.
+ */
+
+.asgn-item.has-panel { flex-wrap: wrap; }
+.at-panel { flex-basis: 100%; margin-top: 10px; }
+
+/* The whole row is the drop target — "drag the essay onto the essay". The
+   highlight is an inset ring rather than an outline so the row does not
+   change size when a file passes over it, which would shove every row below
+   it down mid-drag. */
+.asgn-item.drop-over {
+  box-shadow: inset 0 0 0 2px var(--text);
+  background: var(--surface2);
+}
+
+.at-panel {
+  border-top: 1px dashed var(--border2);
+  padding-top: 9px;
+}
+
+.at-head { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+.at-head-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.at-head .btn-outline { margin-inline-start: auto; }
+.at-input { display: none; }
+
+.at-note, .at-empty {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted2);
+  padding: 4px 0;
+}
+
+.at-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-top: 1px solid var(--cal-rule, var(--border));
+  font-size: 12px;
+}
+.at-row:first-of-type { border-top: 0; }
+.at-row-icon { color: var(--muted2); flex-shrink: 0; }
+.at-row-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.at-row-size { font-family: var(--font-mono); font-size: 10px; color: var(--muted2); flex-shrink: 0; }
+.at-row-btn {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--muted2);
+  padding: 4px;
+  line-height: 0;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.at-row-btn:hover { color: var(--text); background: var(--surface2); }
+.at-row-btn.danger:hover { color: var(--danger); }
+.at-row-btn:disabled { opacity: 0.5; cursor: default; }
+
+.at-busy .at-row-name { color: var(--muted); }
+.at-spin { animation: at-spin 900ms linear infinite; }
+@keyframes at-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .at-spin { animation: none; } }
+
+/* Paperclip affordance on the assignment row itself. Only shows a count when
+   there is one — an empty badge reads as a bug. */
+.asgn-clip {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--muted2);
+  padding: 3px 5px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  line-height: 0;
+  flex-shrink: 0;
+}
+.asgn-clip:hover { color: var(--text); background: var(--surface2); }
+.asgn-clip.has { color: var(--text); }
+.asgn-clip-n { font-family: var(--font-mono); font-size: 10px; line-height: 1; }

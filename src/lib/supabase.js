@@ -48,7 +48,12 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     storageKey: 'studydesk-supabase-session',
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false,
+    // Native handles the OAuth callback manually via the `appUrlOpen` deep-link
+    // listener in AuthGate.jsx, so supabase-js must not race it. On WEB there is
+    // no deep-link listener — nothing else will ever consume the `?code=` — so
+    // leaving this false there dropped the session even when the redirect was
+    // correct. The second half of the same bug as OAUTH_REDIRECT_URL below.
+    detectSessionInUrl: !isNative,
     flowType: 'pkce',
   },
 });
@@ -60,4 +65,19 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
 // so the AndroidManifest intent filter and this constant must match the
 // lowercased form. The Android package/bundle id (com.StudyDesk.app) is
 // unrelated and stays as-is.
-export const OAUTH_REDIRECT_URL = 'com.studydesk.app://login-callback';
+//
+// WEB uses the app's own origin instead. The constant used to be the native
+// scheme unconditionally, and a BROWSER cannot navigate to
+// `com.studydesk.app://login-callback` — Supabase fell back to the project's
+// Site URL (limecore.dev/confirmed), so the session landed there rather than in
+// the app and the user stayed signed out. Broke on localhost; would have broken
+// identically on any hosted web build.
+//
+// `window.location.origin` rather than a hardcoded host, so dev
+// (http://localhost:5173) and any deployed origin both work with no build flag
+// — but every origin must ALSO be listed in Supabase's
+// Auth -> URL Configuration -> Redirect URLs, or Supabase silently falls back
+// to the Site URL again and the symptom returns unchanged.
+export const OAUTH_REDIRECT_URL = isNative
+  ? 'com.studydesk.app://login-callback'
+  : `${window.location.origin}/`;

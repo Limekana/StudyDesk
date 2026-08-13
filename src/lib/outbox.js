@@ -275,4 +275,24 @@ const KIND_DISPATCH = {
   // `courses` snapshot is captured at enqueue time so the batch is stable.
   archive_semester: (p) => sync.archiveSemester(p.courses, p.semester),
   restore_semester: (p) => sync.restoreSemester(p.courses, p.semester),
+  // v1.10 — planned study blocks, the academic-term tree and the weekly
+  // timetable. Same snapshot-not-patch contract as the assignments above.
+  upsert_planned: (p) => sync.upsertPlannedSession(p),
+  delete_planned: (p) => sync.deletePlannedSession(p.id),
+  upsert_term: (p) => sync.upsertTerm(p),
+  // Carries the descendant ids resolved at enqueue time, so a retry
+  // soft-deletes exactly the subtree that existed when the user pressed
+  // delete rather than re-walking a tree that has since changed.
+  delete_term: (p) => sync.deleteTerm(p),
+  upsert_timetable: (p) => sync.upsertTimetableEntry(p),
+  delete_timetable: (p) => sync.deleteTimetableEntry(p.id),
+  // Attachment DELETE queues; attachment UPLOAD deliberately does not. A File
+  // cannot survive the JSON round-trip this queue is persisted through — it
+  // would serialise to `{}` and a retry would push an empty object under the
+  // user's filename. Uploads therefore require connectivity and report their
+  // own failure. See `uploadAttachment` in sync.js.
+  delete_attachment: (p) => sync.deleteAttachment(p),
+  // Non-study blockers — training, clubs, shifts.
+  upsert_commitment: (p) => sync.upsertCommitment(p),
+  delete_commitment: (p) => sync.deleteCommitment(p.id),
 };

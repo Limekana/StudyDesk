@@ -1,0 +1,141 @@
+/* v1.9 Item 14a — analytics dashboard.
+ * Same paper vocabulary as the calendar sheet: hairline rules, square corners
+ * on the data surfaces, colour spent only on identifying a course. */
+
+.an { display: flex; flex-direction: column; gap: 18px; }
+
+.an-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: var(--shadow);
+  padding: 16px 18px 14px;
+  min-width: 0;
+}
+.an-head { margin-bottom: 12px; }
+.an-title { font-family: var(--font-display); font-size: 17px; font-weight: 500; }
+.an-sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--muted2);
+  margin-top: 3px;
+}
+
+/* ── Legend ────────────────────────────────────────────────────────────── */
+.an-legend { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.an-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface2);
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  transition: opacity 0.12s, border-color 0.12s;
+}
+.an-key:hover { border-color: var(--border2); }
+/* A hidden series fades rather than disappearing from the legend — you have to
+   be able to find it again to switch it back on. */
+.an-key.off { opacity: 0.4; }
+.an-key.off .an-key-pip { background: var(--border2) !important; }
+.an-key-pip { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.an-key-n { font-family: var(--font-mono); font-size: 9px; color: var(--muted2); }
+
+/* ── Plot ──────────────────────────────────────────────────────────────── */
+.an-plot { width: 100%; min-height: 200px; }
+.an-grid { stroke: var(--border); stroke-width: 1; stroke-dasharray: 2 3; }
+.an-axis { font-family: var(--font-mono); font-size: 9px; fill: var(--muted2); }
+.an-empty { font-size: 12px; color: var(--muted2); font-style: italic; padding: 24px 0; }
+
+/* ── Heatmap ───────────────────────────────────────────────────────────── */
+/* Scrolls inside itself rather than widening the page: 26 weeks of 11px
+   columns does not fit a phone, and the page must not gain a horizontal
+   scrollbar because of one card. */
+.an-heat-wrap { overflow-x: auto; padding-bottom: 4px; }
+.an-heat { display: grid; gap: 3px; min-width: max-content; }
+.an-heat-col { display: grid; grid-template-rows: repeat(7, 1fr); gap: 3px; }
+.an-heat-cell {
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+}
+.an-heat-cell.empty { background: transparent; border-color: transparent; }
+/* Ink at increasing strength rather than five different hues: this measures
+   one quantity, and a rainbow would imply five categories. */
+.an-heat-cell.lv0 { background: var(--surface2); }
+.an-heat-cell.lv1 { background: rgba(26, 24, 20, 0.16); border-color: transparent; }
+.an-heat-cell.lv2 { background: rgba(26, 24, 20, 0.34); border-color: transparent; }
+.an-heat-cell.lv3 { background: rgba(26, 24, 20, 0.58); border-color: transparent; }
+.an-heat-cell.lv4 { background: rgba(26, 24, 20, 0.85); border-color: transparent; }
+
+.an-scale {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted2);
+}
+.an-scale-max { margin-inline-start: auto; text-transform: none; letter-spacing: 0.04em; }
+
+/* ── Correlation ───────────────────────────────────────────────────────── */
+.an-corr {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 0;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.an-corr:first-of-type { border-top: 0; }
+.an-corr-name { font-size: 13px; flex: 1; min-width: 0; }
+.an-corr-verdict {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 3px;
+  border: 1px solid var(--border2);
+  color: var(--muted);
+}
+/* Only a real finding gets colour. "Insufficient" and "none" stay grey, so a
+   glance at the card cannot mistake an absence of evidence for a result. */
+.an-corr-verdict.v-strongPositive { color: #2e7d52; border-color: rgba(46, 125, 82, 0.4); background: rgba(46, 125, 82, 0.07); }
+.an-corr-verdict.v-weakPositive { color: #2e7d52; border-color: rgba(46, 125, 82, 0.25); }
+.an-corr-verdict.v-strongNegative { color: var(--danger); border-color: rgba(192, 57, 43, 0.4); background: rgba(192, 57, 43, 0.06); }
+.an-corr-verdict.v-weakNegative { color: var(--danger); border-color: rgba(192, 57, 43, 0.25); }
+.an-corr-n { font-family: var(--font-mono); font-size: 10px; color: var(--muted2); }
+.an-caveat {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted2);
+}
+
+/* ── Tiers ─────────────────────────────────────────────────────────────── */
+/* The heatmap is the wide one and the two others are tall, so on a genuinely
+   wide screen the trend and correlation sit side by side under a full-width
+   heatmap rather than all three stacking into a very long page. */
+@media (min-width: 1201px) {
+  .an { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 380px); gap: 18px; align-items: start; }
+  .an > :nth-child(2) { grid-column: 1 / -1; order: 2; }
+  .an > :nth-child(1) { order: 1; }
+  .an > :nth-child(3) { order: 1; }
+}
+@media (max-width: 768px) {
+  .an-card { padding: 14px; }
+  .an-heat-cell { width: 9px; height: 9px; }
+}
