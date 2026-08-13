@@ -1,0 +1,238 @@
+/* v1.10 — academic terms + the weekly timetable.
+ *
+ * Same cream-paper vocabulary as the calendar: hairline rules rather than
+ * bordered cards, square corners, mono micro-labels, and colour spent only
+ * where it identifies a course. The term tree is deliberately an INDENTED
+ * LIST rather than a set of nested boxes — School Year > Semester > Jakso is
+ * an outline, and an outline is what a ruled page draws well.
+ */
+
+.tt {
+  --tt-hour-h: 40px;
+  padding: 16px 0 80px;
+}
+
+.tt-panes {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+/* ── Term tree ─────────────────────────────────────────────────────────── */
+
+.tt-roots, .tt-children { list-style: none; margin: 0; padding: 0; }
+.tt-node { margin: 0; }
+
+.tt-term {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  /* Indent is a CSS variable rather than a nested margin so every level lines
+     up against the same origin no matter how deep the tree goes. */
+  padding-inline-start: calc(var(--tt-depth, 0) * 16px);
+  border-top: 1px solid var(--cal-rule, var(--border));
+}
+.tt-node:first-child > .tt-term { border-top: 0; }
+
+.tt-term-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  background: none;
+  border: 0;
+  text-align: start;
+  cursor: pointer;
+  padding: 9px 6px;
+  color: inherit;
+  font: inherit;
+}
+.tt-term.selected { background: var(--surface2); }
+.tt-term.selected .tt-term-name { font-weight: 600; }
+
+.tt-term-level {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted2);
+  flex-shrink: 0;
+  min-width: 52px;
+}
+/* `min-width: 0` is the load-bearing declaration here, not the ellipsis.
+   A flex item defaults to `min-width: auto`, which refuses to shrink below its
+   own content — so a long term name kept its full width and shoved the date
+   range out over the top of it instead of truncating. The ellipsis rules were
+   already present and did nothing, because the box was never made narrow
+   enough to trigger them. */
+.tt-term-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tt-term-dates {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  /* A real gap rather than `margin-inline-start: auto`. The auto margin was
+     pointless once the name flexes (the name eats the free space), and it left
+     the dates butting straight against the truncated name with no breathing
+     room to read them as a separate field. */
+  margin-inline-start: 12px;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+/* Inherited dates are stated more quietly than a term's own. "This jakso runs
+   Aug–Dec" means something different when the jakso says so and when it is
+   merely sitting inside a semester that does. */
+.tt-term-dates.inherited { opacity: 0.5; font-style: italic; }
+
+.tt-term-actions { display: flex; gap: 2px; flex-shrink: 0; padding-inline-end: 4px; }
+.tt-term-actions button {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--muted2);
+  padding: 5px;
+  line-height: 0;
+  border-radius: 4px;
+}
+.tt-term-actions button:hover { color: var(--text); background: var(--surface2); }
+.tt-term-actions button.danger:hover { color: var(--danger); }
+
+.tt-empty {
+  padding: 28px 18px;
+  text-align: center;
+  color: var(--muted);
+  border: 1px dashed var(--border2);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.tt-empty-title { font-weight: 600; color: var(--text); margin: 8px 0 5px; }
+.tt-empty-body { font-size: 13px; line-height: 1.5; }
+
+/* ── Main pane ─────────────────────────────────────────────────────────── */
+
+.tt-main-head {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.tt-main-title { font-family: var(--font-display); font-size: 21px; line-height: 1.15; }
+.tt-main-sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.tt-main-head .btn { margin-inline-start: auto; flex-shrink: 0; }
+
+.tt-warn {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-inline-start: 3px solid var(--danger);
+  border-radius: 6px;
+  padding: 9px 12px;
+  margin-bottom: 14px;
+}
+
+.tt-hint { font-size: 12px; line-height: 1.5; color: var(--muted); margin: -4px 0 12px; }
+.tt-error { font-size: 12px; color: var(--danger); margin-bottom: 10px; }
+.tt-form-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.tt-form-row:has(.input-group:nth-child(2):last-child) { grid-template-columns: repeat(2, 1fr); }
+
+/* ── Weekly grid ───────────────────────────────────────────────────────── */
+
+.tt-grid { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); overflow: hidden; }
+
+.tt-grid-head,
+.tt-grid-body {
+  display: grid;
+  grid-template-columns: 44px repeat(7, minmax(0, 1fr));
+}
+.tt-grid-head { border-bottom: 1px solid var(--border); }
+
+/* The first hour label is raised onto its own rule (see `.tt-grid-hour`), which
+   put "08" straight through the header's bottom border — the same collision the
+   calendar's ALL DAY strip had. The padding goes on the GRID, so the gutter and
+   the seven day columns move together and the rules stay in step with the
+   lesson blocks; padding the gutter alone would slide the labels out of
+   alignment with the lines they name. */
+.tt-grid-body { padding-top: 7px; }
+.tt-grid-dow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
+  padding: 8px 2px;
+  border-inline-start: 1px solid var(--cal-rule, var(--border));
+}
+
+.tt-grid-gutter,
+.tt-grid-col { height: calc(var(--tt-hour-count, 8) * var(--tt-hour-h)); }
+
+.tt-grid-gutter { position: relative; }
+.tt-grid-hour {
+  height: var(--tt-hour-h);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted2);
+  text-align: end;
+  padding-inline-end: 6px;
+  /* Raised so the label sits ON its own rule, the way a printed timetable
+     prints it, rather than floating in the middle of the band below it. */
+  transform: translateY(-5px);
+}
+
+.tt-grid-col {
+  position: relative;
+  min-width: 0;
+  border-inline-start: 1px solid var(--cal-rule, var(--border));
+  cursor: copy;
+}
+.tt-grid-line { height: var(--tt-hour-h); border-top: 1px solid var(--cal-rule, var(--border)); }
+.tt-grid-line:first-child { border-top: 0; }
+
+.tt-lesson {
+  position: absolute;
+  inset-inline: 2px;
+  overflow: hidden;
+  text-align: start;
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.25;
+  background: var(--tt-wash, var(--surface2));
+  border: 1px solid var(--border2);
+  border-inline-start: 3px solid var(--tt-color, var(--border2));
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.tt-lesson:hover { box-shadow: var(--shadow-md); }
+.tt-lesson-title { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tt-lesson-meta { font-family: var(--font-mono); font-size: 9px; color: var(--muted); }
+
+@media (max-width: 700px) {
+  /* The gutter is the first thing to go on a phone: seven columns of lessons
+     matter more than the hour labels, which the block times already state. */
+  .tt-grid-head, .tt-grid-body { grid-template-columns: 26px repeat(7, minmax(0, 1fr)); }
+  .tt-grid-hour { font-size: 8px; padding-inline-end: 3px; }
+  .tt-lesson-meta { display: none; }
+  .tt-term-level { min-width: 0; }
+  .tt-term-dates { display: none; }
+}

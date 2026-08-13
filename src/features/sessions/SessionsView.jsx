@@ -99,7 +99,7 @@ export default function SessionsView({ state, dispatch, showFlash, session }) {
         {grouped.map(([dateKey, list]) => {
           const dayTotal = list.reduce((a, s) => a + (Number(s.durationMinutes) || 0), 0);
           return (
-            <div key={dateKey}>
+            <div key={dateKey} className="sv-day">
               <div className="sv-date-head">
                 {fmtDateHeader(dateKey, t, lang)} · {(dayTotal / 60).toFixed(1)}h
               </div>

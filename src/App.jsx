@@ -30,10 +30,20 @@ import './styles/base.css';
 import './styles/forms.css';
 import './styles/cards.css';
 import './styles/onboarding.css';
+// v1.9 Item 14a — imported at the shell so the print rules apply to every
+// screen, not only the ones that offer a print button.
+import './styles/print.css';
+import './styles/desktop.css';
 import { COURSE_COLORS } from "./lib/courseColors.js";
-import { NotebookPen, CalendarDays, Award, Timer } from "lucide-react";
+import { NotebookPen, CalendarDays, Award, Timer, PanelLeftClose, PanelLeftOpen, Paperclip } from "lucide-react";
 import { GuestAvatar } from "./lib/avatar.jsx";
+import { useShellTier, useSidebarRail } from "./lib/useShell.js";
 import StatsView from "./features/stats/StatsView.jsx";
+import CalendarView from "./features/calendar/CalendarView.jsx";
+import AnalyticsView from "./features/analytics/AnalyticsView.jsx";
+import TimetableView from "./features/timetable/TimetableView.jsx";
+import AttachmentList from "./features/plan/Attachments.jsx";
+import { useAttachmentDrop } from "./features/plan/useAttachmentDrop.js";
 import SettingsView from "./features/settings/SettingsView.jsx";
 
 // v1.3.1 — initials for the top-right profile avatar (opens Settings, like NCC).
@@ -184,6 +194,15 @@ async function scheduleNotifications(exams, assignments, courses) {
 const INITIAL = {
   courses:{}, assignments:[], actions:[], exams:[],
   grades:[], studySessions:[],
+  // v1.10 — planned study blocks, the School Year > Semester > Jakso tree, the
+  // weekly lessons hanging off it, and assignment file attachments.
+  // `plannedSessions` is separate from `studySessions` on purpose and must
+  // stay that way: NCC reads study_sessions for its Life Score, so an intended
+  // block living there would be counted as study that actually happened.
+  plannedSessions:[], academicTerms:[], timetableEntries:[], attachments:[],
+  // Non-study blockers — training, clubs, shifts. Time that is NOT available
+  // for study, and never counted as study anywhere.
+  commitments:[],
   gradeMode:"ib",                  // 'ib' | 'us' | 'custom' — persisted locally
   customScale:DEFAULT_CUSTOM_SCALE, // bounds for gradeMode 'custom' (SD-F4)
   aiEnabled:false,                 // AI debrief opt-in — device-level, persisted locally
@@ -286,6 +305,173 @@ function reducer(state, action) {
     case "ADD_SESSION":    { const s={id:action.id||newSyncId(),subjectId:action.subjectId||null,startedAt:action.startedAt,durationMinutes:Math.max(1,Math.min(1440,Math.round(action.durationMinutes))),notes:action.notes||null,focusRating:action.focusRating!=null?Math.max(1,Math.min(5,Math.round(action.focusRating))):null,aiDebriefRaw:action.aiDebriefRaw??null,aiSubjectCovered:action.aiSubjectCovered??null,aiComprehension:action.aiComprehension!=null?Math.max(1,Math.min(5,Math.round(action.aiComprehension))):null,aiConfusionFlags:Array.isArray(action.aiConfusionFlags)?action.aiConfusionFlags:null,aiSessionSummary:action.aiSessionSummary??null,updatedAt:action.updatedAt||new Date().toISOString(),deletedAt:null}; return {...state,studySessions:[...(state.studySessions||[]),s]}; }
     case "EDIT_SESSION":   return {...state,studySessions:(state.studySessions||[]).map(s=>s.id===action.id?{...s,subjectId:action.subjectId!==undefined?(action.subjectId||null):s.subjectId,startedAt:action.startedAt??s.startedAt,durationMinutes:action.durationMinutes!==undefined?Math.max(1,Math.min(1440,Math.round(action.durationMinutes))):s.durationMinutes,notes:action.notes!==undefined?(action.notes||null):s.notes,focusRating:action.focusRating!==undefined?(action.focusRating!=null?Math.max(1,Math.min(5,Math.round(action.focusRating))):null):s.focusRating,aiDebriefRaw:action.aiDebriefRaw!==undefined?action.aiDebriefRaw:s.aiDebriefRaw,aiSubjectCovered:action.aiSubjectCovered!==undefined?action.aiSubjectCovered:s.aiSubjectCovered,aiComprehension:action.aiComprehension!==undefined?(action.aiComprehension!=null?Math.max(1,Math.min(5,Math.round(action.aiComprehension))):null):s.aiComprehension,aiConfusionFlags:action.aiConfusionFlags!==undefined?(Array.isArray(action.aiConfusionFlags)?action.aiConfusionFlags:null):s.aiConfusionFlags,aiSessionSummary:action.aiSessionSummary!==undefined?action.aiSessionSummary:s.aiSessionSummary,updatedAt:new Date().toISOString()}:s)};
     case "DELETE_SESSION": { const stamp=new Date().toISOString(); return {...state,studySessions:(state.studySessions||[]).map(s=>s.id===action.id?{...s,deletedAt:stamp,updatedAt:stamp}:s)}; }
+
+    // ── Planned study blocks (v1.10) ──
+    // A block the user INTENDS to study. Never written to studySessions — see
+    // the note on INITIAL. Deletes are hard removals locally, matching
+    // assignments/exams: applyRemotePull drops remotely-deleted rows the same
+    // way, so no render path needs a tombstone guard.
+    case "ADD_PLANNED": {
+      const p = {
+        id: action.id || newSyncId(),
+        subjectId: action.subjectId || null,
+        startsAt: action.startsAt,
+        durationMinutes: Math.max(1, Math.min(1440, Math.round(action.durationMinutes))),
+        title: action.title || "",
+        notes: action.notes || "",
+        fulfilledBy: null,
+        dismissedAt: null,
+        updatedAt: action.updatedAt || new Date().toISOString(),
+      };
+      return { ...state, plannedSessions: [...(state.plannedSessions || []), p] };
+    }
+    case "EDIT_PLANNED":
+      return { ...state, plannedSessions: (state.plannedSessions || []).map(p => p.id !== action.id ? p : {
+        ...p,
+        subjectId: action.subjectId !== undefined ? (action.subjectId || null) : p.subjectId,
+        startsAt: action.startsAt ?? p.startsAt,
+        durationMinutes: action.durationMinutes !== undefined
+          ? Math.max(1, Math.min(1440, Math.round(action.durationMinutes)))
+          : p.durationMinutes,
+        title: action.title !== undefined ? (action.title || "") : p.title,
+        notes: action.notes !== undefined ? (action.notes || "") : p.notes,
+        updatedAt: new Date().toISOString(),
+      })};
+    // The two outcomes are mutually exclusive, and the DB enforces that. Each
+    // clears the other rather than only setting its own, so a block dismissed
+    // and later fulfilled cannot end up claiming both.
+    case "RESOLVE_PLANNED":
+      return { ...state, plannedSessions: (state.plannedSessions || []).map(p => p.id !== action.id ? p : {
+        ...p,
+        fulfilledBy: action.fulfilledBy || null,
+        dismissedAt: action.fulfilledBy ? null : (action.dismissedAt || null),
+        updatedAt: new Date().toISOString(),
+      })};
+    case "DELETE_PLANNED":
+      return { ...state, plannedSessions: (state.plannedSessions || []).filter(p => p.id !== action.id) };
+
+    // ── Academic terms + timetable (v1.10) ──
+    case "ADD_TERM": {
+      const term = {
+        id: action.id || newSyncId(),
+        parentId: action.level === "year" ? null : (action.parentId || null),
+        level: action.level,
+        name: action.name,
+        startsOn: action.startsOn || "",
+        endsOn: action.endsOn || "",
+        position: Number.isFinite(Number(action.position)) ? Number(action.position) : 0,
+        updatedAt: action.updatedAt || new Date().toISOString(),
+      };
+      return { ...state, academicTerms: [...(state.academicTerms || []), term] };
+    }
+    case "EDIT_TERM":
+      return { ...state, academicTerms: (state.academicTerms || []).map(x => x.id !== action.id ? x : {
+        ...x,
+        name: action.name ?? x.name,
+        startsOn: action.startsOn !== undefined ? (action.startsOn || "") : x.startsOn,
+        endsOn: action.endsOn !== undefined ? (action.endsOn || "") : x.endsOn,
+        position: action.position !== undefined ? Number(action.position) || 0 : x.position,
+        updatedAt: new Date().toISOString(),
+      })};
+    case "DELETE_TERM": {
+      // Takes the whole subtree and every lesson attached to any of it.
+      // Leaving descendants behind would orphan them from a parent that no
+      // longer resolves, and resolveTermRange would then inherit dates from
+      // further up the tree and draw those lessons across the wrong months.
+      const doomed = new Set([action.id, ...(action.descendantIds || [])]);
+      return {
+        ...state,
+        academicTerms: (state.academicTerms || []).filter(x => !doomed.has(x.id)),
+        timetableEntries: (state.timetableEntries || []).filter(e => !doomed.has(e.termId)),
+      };
+    }
+    case "ADD_TT_ENTRY": {
+      const e = {
+        id: action.id || newSyncId(),
+        termId: action.termId,
+        subjectId: action.subjectId || null,
+        title: action.title || "",
+        weekday: Math.max(0, Math.min(6, Math.round(Number(action.weekday)))),
+        startsAt: action.startsAt,
+        endsAt: action.endsAt,
+        room: action.room || "",
+        color: action.color || null,
+        updatedAt: action.updatedAt || new Date().toISOString(),
+      };
+      return { ...state, timetableEntries: [...(state.timetableEntries || []), e] };
+    }
+    case "EDIT_TT_ENTRY":
+      return { ...state, timetableEntries: (state.timetableEntries || []).map(e => e.id !== action.id ? e : {
+        ...e,
+        subjectId: action.subjectId !== undefined ? (action.subjectId || null) : e.subjectId,
+        title: action.title !== undefined ? (action.title || "") : e.title,
+        weekday: action.weekday !== undefined ? Math.max(0, Math.min(6, Math.round(Number(action.weekday)))) : e.weekday,
+        startsAt: action.startsAt ?? e.startsAt,
+        endsAt: action.endsAt ?? e.endsAt,
+        room: action.room !== undefined ? (action.room || "") : e.room,
+        color: action.color !== undefined ? (action.color || null) : e.color,
+        updatedAt: new Date().toISOString(),
+      })};
+    case "DELETE_TT_ENTRY":
+      return { ...state, timetableEntries: (state.timetableEntries || []).filter(e => e.id !== action.id) };
+
+    // ── Assignment attachments (v1.10) ──
+    // ADD carries a row the upload already created server-side, so there is no
+    // client-generated id here — the storage key and the row id are the same
+    // uuid, minted inside uploadAttachment where the object is written.
+    case "ADD_ATTACHMENT":
+      return { ...state, attachments: [...(state.attachments || []).filter(a => a.id !== action.attachment.id), action.attachment] };
+    case "DELETE_ATTACHMENT":
+      return { ...state, attachments: (state.attachments || []).filter(a => a.id !== action.id) };
+
+    // ── Commitments (v1.10) ──
+    // A blocker: training, a club, a shift. Weekly when `weekday` is a number,
+    // one-off when it is null — that null is the switch, so it is preserved
+    // rather than defaulted (Number(null) is 0, which is Sunday).
+    case "ADD_COMMITMENT": {
+      const c = {
+        id: action.id || newSyncId(),
+        title: (action.title || "").trim(),
+        color: action.color || null,
+        weekday: action.weekday === null || action.weekday === undefined || action.weekday === ""
+          ? null
+          : Math.max(0, Math.min(6, Math.round(Number(action.weekday)))),
+        startsOn: action.startsOn || "",
+        endsOn: action.endsOn || "",
+        startTime: action.startTime,
+        endTime: action.endTime,
+        notes: action.notes || "",
+        updatedAt: action.updatedAt || new Date().toISOString(),
+      };
+      // An end date on a one-off is meaningless and the DB rejects it.
+      if (c.weekday === null) c.endsOn = "";
+      return { ...state, commitments: [...(state.commitments || []), c] };
+    }
+    case "EDIT_COMMITMENT":
+      return { ...state, commitments: (state.commitments || []).map(c => {
+        if (c.id !== action.id) return c;
+        const weekday = action.weekday !== undefined
+          ? (action.weekday === null || action.weekday === ""
+            ? null
+            : Math.max(0, Math.min(6, Math.round(Number(action.weekday)))))
+          : c.weekday;
+        const next = {
+          ...c,
+          title: action.title !== undefined ? (action.title || "").trim() : c.title,
+          color: action.color !== undefined ? (action.color || null) : c.color,
+          weekday,
+          startsOn: action.startsOn !== undefined ? (action.startsOn || "") : c.startsOn,
+          endsOn: action.endsOn !== undefined ? (action.endsOn || "") : c.endsOn,
+          startTime: action.startTime ?? c.startTime,
+          endTime: action.endTime ?? c.endTime,
+          notes: action.notes !== undefined ? (action.notes || "") : c.notes,
+          updatedAt: new Date().toISOString(),
+        };
+        if (next.weekday === null) next.endsOn = "";
+        return next;
+      })};
+    case "DELETE_COMMITMENT":
+      return { ...state, commitments: (state.commitments || []).filter(c => c.id !== action.id) };
 
     // ── Settings ──
     // The old form was `action.mode==="us"?"us":"ib"`, which silently coerced
@@ -500,6 +686,15 @@ export default function App() {
         actions: migratedActions,
         grades: migratedGrades,
         studySessions: migratedSessions,
+        // v1.10. No UUID migration pass for these four: they were born after
+        // v1.0.4, so every id they have ever held came from crypto.randomUUID.
+        // Shape-guarded individually for the same reason as the lists above —
+        // one malformed array must not blank the others.
+        plannedSessions: Array.isArray(saved.plannedSessions) ? saved.plannedSessions : [],
+        academicTerms: Array.isArray(saved.academicTerms) ? saved.academicTerms : [],
+        timetableEntries: Array.isArray(saved.timetableEntries) ? saved.timetableEntries : [],
+        attachments: Array.isArray(saved.attachments) ? saved.attachments : [],
+        commitments: Array.isArray(saved.commitments) ? saved.commitments : [],
         activeCourse: migratedActiveCourse,
         gradeMode,
         customScale,
@@ -521,8 +716,13 @@ export default function App() {
       exams:state.exams,
       grades:state.grades,
       studySessions:state.studySessions,
+      plannedSessions:state.plannedSessions,
+      academicTerms:state.academicTerms,
+      timetableEntries:state.timetableEntries,
+      attachments:state.attachments,
+      commitments:state.commitments,
     })); } catch {}
-  }, [state.courses,state.assignments,state.actions,state.exams,state.grades,state.studySessions]);
+  }, [state.courses,state.assignments,state.actions,state.exams,state.grades,state.studySessions,state.plannedSessions,state.academicTerms,state.timetableEntries,state.attachments,state.commitments]);
   // gradeMode is UI-only — persist separately so it doesn't trigger a v1 rewrite on every toggle.
   useEffect(() => {
     try { localStorage.setItem("studydesk-grade-mode", state.gradeMode); } catch {}
@@ -801,6 +1001,32 @@ export default function App() {
   // v1.3 — sub-tab within the Timer view (Timer / Log / Stats), so Log + Stats
   // don't need their own bottom-bar slots.
   const [timerSub, setTimerSub] = useState("timer");
+  // v1.9 Item 14a — sub-tab within Plan (List / Calendar), same shape as the
+  // Timer hub above rather than a fifth bottom tab: the four-tab bar was sized
+  // and tuned in v1.9 Item 6 against the longest label the app ships, and a
+  // fifth slot would undo that on a 360px screen.
+  //
+  // `null` means "follow the tier" — the calendar is the point of a wide
+  // screen, and the list is the better read on a phone. Once the user picks
+  // one, their choice wins at every width. Same 'auto until you touch it'
+  // semantics as the sidebar rail, so the two preferences behave alike.
+  const [planSubPref, setPlanSubPref] = useState(() => {
+    try {
+      const v = localStorage.getItem("studydesk-plan-sub");
+      // v1.10 adds "timetable". An unrecognised value falls back to null (=
+      // follow the tier) rather than being written through, so a downgrade
+      // leaves a working screen instead of an empty sub-tab.
+      return v === "list" || v === "calendar" || v === "timetable" ? v : null;
+    } catch { return null; }
+  });
+  // v1.9 Item 14a — Grades / Trends. Not tier-defaulted like the Plan sub-tab:
+  // the grade list is the answer to "what did I get", which is what this screen
+  // is opened for at every width; Trends is the follow-up question.
+  const [gradesSub, setGradesSub] = useState("grades");
+  const choosePlanSub = useCallback((v) => {
+    try { localStorage.setItem("studydesk-plan-sub", v); } catch { /* private mode */ }
+    setPlanSubPref(v);
+  }, []);
   // Stale persisted nav: pre-v1.3 builds could have state.view === "log"/"stats"
   // (now removed as top-level views). Re-home them into the Timer hub so the
   // routed area never renders blank after upgrading.
@@ -1008,6 +1234,17 @@ export default function App() {
     if (session) outbox.enqueue("upsert_subject", { id, name, color });
   };
 
+  // v1.9 (Item 14, Phase 1) — desktop shell. `tier` is phone/tablet/desktop;
+  // `rail` is whether the sidebar is the 64px icon rail. Declared here rather
+  // than lower down because the early returns below (auth gate, loading) must
+  // not sit between a hook and its call site.
+  const shellTier = useShellTier();
+  const [rail, toggleRail] = useSidebarRail(shellTier);
+  // Resolved here rather than stored, so a user who has never chosen follows
+  // the tier as it changes (resizing a window, rotating a tablet) instead of
+  // being pinned to whatever tier they first loaded at.
+  const planSub = planSubPref ?? (shellTier === "desktop" ? "calendar" : "list");
+
   // v1.9 (Item 6) — icons are back, but not the ones that were dropped.
   // SD-F2 removed a set of emoji/text glyphs in v1.6.0 because they were
   // inconsistent and crowded the label. These are lucide line icons at the
@@ -1043,47 +1280,78 @@ export default function App() {
     
     {!onboarded && <OnboardingView onComplete={handleOnboardingComplete}/>}
     {onboarded && (
-      <div className="app">
-      {/* ── Desktop sidebar ── */}
+      <div className={"app"+(rail?" is-rail":"")} data-tier={shellTier}>
+      {/* ── Desktop sidebar ──
+          v1.9 Item 14: `.rail-hide` marks everything that has no room in the
+          64px icon rail. `aria-label` is unconditional — when railed the label
+          text is display:none and would otherwise take the accessible name
+          with it — while `title` is added only when railed, since a tooltip
+          repeating a label you can already read is just noise. */}
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="sidebar-logo-wrap">
             <img src="/logo.png" alt="StudyDesk" className="sidebar-logo" />
-            <div>
+            <div className="rail-hide">
               <div className="sidebar-wordmark">Studydesk</div>
               <div className="sidebar-sub">{t('av.chrome.subtitle')}</div>
             </div>
           </div>
         </div>
         <nav className="sidebar-nav">
-          {views.map(v=><div key={v.id} role="button" tabIndex={0} className={"nav-item"+(state.view===v.id?" active":"")} onClick={()=>dispatch({type:"SET_VIEW",view:v.id})} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&dispatch({type:"SET_VIEW",view:v.id})}>
+          {views.map(v=><div key={v.id} role="button" tabIndex={0} aria-label={v.label} title={rail?v.label:undefined} className={"nav-item"+(state.view===v.id?" active":"")} onClick={()=>dispatch({type:"SET_VIEW",view:v.id})} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&dispatch({type:"SET_VIEW",view:v.id})}>
             {/* The sidebar tracks the mobile bar: it dropped glyphs with it in
                 v1.6.0 and takes the lucide icons back with it now. `.nav-item`
                 is already a horizontal flex row with a 10px gap, so the icon
                 sits inline before the label rather than above it. */}
             <v.Icon size={16} strokeWidth={1.75} aria-hidden="true"/>
-            {v.label}
+            <span className="rail-hide">{v.label}</span>
           </div>)}
         </nav>
         <div className="sidebar-courses">
-          {courses.length>0&&<div className="courses-label">{t('av.chrome.coursesLabel')}</div>}
+          {courses.length>0&&<div className="courses-label rail-hide">{t('av.chrome.coursesLabel')}</div>}
           {courses.map(c=>{
             const open=state.assignments.filter(a=>a.courseId===c.id&&!a.done).length;
             const exams=state.exams.filter(e=>e.courseId===c.id&&!e.done).length;
-            return <div key={c.id} role="button" tabIndex={0} className={"course-item"+(state.activeCourse===c.id?" active":"")} onClick={()=>dispatch({type:"SET_VIEW",view:"status",course:c.id})} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&dispatch({type:"SET_VIEW",view:"status",course:c.id})}>
-              <div className="course-pip" style={{background:c.color}}/><span className="course-name">{c.name}</span>
+            return <div key={c.id} role="button" tabIndex={0} aria-label={c.name} title={rail?c.name:undefined} className={"course-item"+(state.activeCourse===c.id?" active":"")} onClick={()=>dispatch({type:"SET_VIEW",view:"status",course:c.id})} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&dispatch({type:"SET_VIEW",view:"status",course:c.id})}>
+              {/* The count survives into the rail — an unread-style badge is
+                  the one thing on this row that still reads at 64px. The name
+                  and the edit affordance do not, so they go. */}
+              <div className="course-pip" style={{background:c.color}}/><span className="course-name rail-hide">{c.name}</span>
               {(open+exams)>0&&<span className="course-count">{open+exams}</span>}
-              <span className="course-edit-btn" onClick={e=>{e.stopPropagation();setEditingCourse({id:c.id,name:c.name,color:c.color});}} title={t('av.pl.edit')}>✎</span>
+              <span className="course-edit-btn rail-hide" onClick={e=>{e.stopPropagation();setEditingCourse({id:c.id,name:c.name,color:c.color});}} title={t('av.pl.edit')}>✎</span>
             </div>;
           })}
-          <div className="add-course-btn" onClick={()=>setShowAddCourse(true)}><span style={{fontSize:16}}>+</span> {t('av.chrome.addCourse')}</div>
+          <div className="add-course-btn" role="button" tabIndex={0} aria-label={t('av.chrome.addCourse')} title={rail?t('av.chrome.addCourse'):undefined} onClick={()=>setShowAddCourse(true)} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&setShowAddCourse(true)}><span style={{fontSize:16}}>+</span> <span className="rail-hide">{t('av.chrome.addCourse')}</span></div>
+        </div>
+        <div className="sidebar-foot">
+          <button type="button" className="rail-toggle" onClick={toggleRail}
+            aria-expanded={!rail}
+            aria-label={rail?t('av.chrome.expandSidebar'):t('av.chrome.collapseSidebar')}
+            title={rail?t('av.chrome.expandSidebar'):t('av.chrome.collapseSidebar')}>
+            {rail
+              ? <PanelLeftOpen size={16} strokeWidth={1.75} aria-hidden="true"/>
+              : <PanelLeftClose size={16} strokeWidth={1.75} aria-hidden="true"/>}
+            <span className="rail-hide">{t('av.chrome.collapseSidebar')}</span>
+          </button>
         </div>
       </aside>
 
       {/* ── Main content ── */}
       <main className="main">
         <div className="topbar">
-          <h1 className="topbar-title">{state.view==="actions"?t('topbar.nextUp'):activeView?.label}</h1>
+          {/* v1.9 Item 14 — the inner wrapper carries the gutter and shares
+              `.content`'s max-width, so the title stays aligned with the column
+              it labels instead of drifting to the window edge on wide screens. */}
+          <div className="topbar-inner">
+          {/* `status` has no entry in `views` (it is reached by picking a course,
+              not from the nav), so it fell through to `undefined` here — the
+              visible half of the dead-route bug fixed below. It names the
+              course, which is what the pane is showing. */}
+          <h1 className="topbar-title">{
+            state.view==="actions" ? t('topbar.nextUp')
+            : state.view==="status" ? (state.courses[state.activeCourse]?.name || t('nav.plan'))
+            : activeView?.label
+          }</h1>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             <div className="topbar-date">{todayStr}</div>
             {/* v1.3.1 — profile avatar opens Settings (matches NCC/LimeLog).
@@ -1096,8 +1364,13 @@ export default function App() {
               {avatarInitials(session) ?? <GuestAvatar/>}
             </button>
           </div>
+          </div>
         </div>
-        <div className="content">
+        {/* v1.9 Item 14a — `.content-wide` (added in Phase 1 as the documented
+            opt-out) is claimed by the two surfaces that genuinely want the
+            shell width rather than a reading measure: the calendar sheet and
+            the multi-pane course detail. Everything else keeps the measure. */}
+        <div className={"content"+(((state.view==="plan"&&(planSub==="calendar"||planSub==="timetable"))||state.view==="status")?" content-wide":"")}>
           {(urgent.length>0||urgentExams.length>0)&&state.view==="plan"&&(
             <div className="urgent-banner"><span>⚠️</span><div>
               <strong>{t('av.chrome.urgent')}</strong> —{" "}
@@ -1110,9 +1383,57 @@ export default function App() {
               The urgent banner above stays sticky (lives outside the wrapper), so
               only the routed view animates. */}
           <div className="page-turn" key={state.view}>
-          {state.view==="plan"   &&<PlanView    state={state} dispatch={dispatch} showFlash={showFlash} onAddAsgn={()=>setShowAddAsgn(true)} onAddExam={()=>setShowAddExam(true)} onAddCourse={()=>setShowAddCourse(true)} onEditCourse={(c)=>setEditingCourse(c)}/>}
+          {state.view==="plan"   &&(
+            <>
+              <div className="timer-subtabs" role="tablist" aria-label={t('cal.viewMode')}>
+                {/* Timetable is a third sub-tab rather than a fifth bottom tab,
+                    for the reason the calendar was: Item 6 sized that bar
+                    against the longest label the app ships, and the recurring
+                    skeleton of the week belongs beside the plan it shapes. */}
+                {[["list","cal.planList"],["calendar","cal.planCalendar"],["timetable","tt.tab"]].map(([id,key])=>(
+                  <button key={id} type="button" role="tab" aria-selected={planSub===id}
+                    className={"timer-subtab"+(planSub===id?" active":"")}
+                    onClick={()=>choosePlanSub(id)}>{t(key)}</button>
+                ))}
+              </div>
+              <div className="page-turn" key={planSub}>
+                {planSub==="calendar" &&
+                  <CalendarView state={state} dispatch={dispatch} session={session} showFlash={showFlash} tier={shellTier} onAddAsgn={()=>setShowAddAsgn(true)} onAddExam={()=>setShowAddExam(true)}/>}
+                {planSub==="timetable" &&
+                  <TimetableView state={state} dispatch={dispatch} session={session} showFlash={showFlash}/>}
+                {planSub==="list" &&
+                  <PlanView state={state} dispatch={dispatch} session={session} showFlash={showFlash} onAddAsgn={()=>setShowAddAsgn(true)} onAddExam={()=>setShowAddExam(true)} onAddCourse={()=>setShowAddCourse(true)} onEditCourse={(c)=>setEditingCourse(c)}/>}
+              </div>
+            </>
+          )}
+          {/* v1.9 Item 14a — `status` was a DEAD ROUTE: clicking a course in the
+              desktop sidebar has always dispatched view:"status", and nothing
+              rendered it, so the content area went blank and the topbar title
+              read `undefined`. StatusView existed but was never mounted. It is
+              the course-detail pane of the three-pane layout, so it lands here
+              rather than being patched out of the sidebar. */}
+          {state.view==="status" &&<CourseDetailView state={state} dispatch={dispatch} session={session} showFlash={showFlash} tier={shellTier} onAddAsgn={()=>setShowAddAsgn(true)} onAddExam={()=>setShowAddExam(true)} onEditCourse={(c)=>setEditingCourse(c)}/>}
           {state.view==="actions" &&<ActionsView state={state} dispatch={dispatch} showFlash={showFlash} onAddCourse={()=>setShowAddCourse(true)}/>}
-          {state.view==="grades"  &&<GradesView  state={state} dispatch={dispatch} showFlash={showFlash} session={session}/>}
+          {/* v1.9 Item 14a — Grades gains a Trends sub-tab. The analytics read
+              grades AND study sessions together, and "how am I doing" is the
+              question this screen already answers, so it belongs here rather
+              than as a sixth destination in a four-tab bar. */}
+          {state.view==="grades"  &&(
+            <>
+              <div className="timer-subtabs" role="tablist" aria-label={t('nav.grades')}>
+                {[["grades","nav.grades"],["trends","an.trends"]].map(([id,key])=>(
+                  <button key={id} type="button" role="tab" aria-selected={gradesSub===id}
+                    className={"timer-subtab"+(gradesSub===id?" active":"")}
+                    onClick={()=>setGradesSub(id)}>{t(key)}</button>
+                ))}
+              </div>
+              <div className="page-turn" key={gradesSub}>
+                {gradesSub==="trends"
+                  ? <AnalyticsView state={state}/>
+                  : <GradesView state={state} dispatch={dispatch} showFlash={showFlash} session={session}/>}
+              </div>
+            </>
+          )}
           {state.view==="timer"   &&(
             <>
               <div className="timer-subtabs" role="tablist" aria-label="Timer sections">
@@ -1306,24 +1627,142 @@ function OnboardingView({ onComplete }) {
   return null;
 }
 
-function StatusView({ state, dispatch, onAddAsgn }) {
+// ── CourseDetailView — the middle pane of the desktop three-pane layout ──────
+//
+// v1.9 Item 14a. Replaces `StatusView`, which was written for the `status`
+// route and then never mounted — clicking a course in the sidebar dispatched
+// `view:"status"` and rendered nothing at all. Rather than restore a component
+// that only listed assignments, this is the course-detail pane the build plan
+// asks for: the sidebar is the list, this is the detail, and on the desktop
+// tier a third column carries what is coming up and what has been put in.
+function CourseDetailView({ state, dispatch, session, showFlash, tier, onAddAsgn, onAddExam, onEditCourse }) {
   const { t } = useTranslation();
-  const courses=Object.values(state.courses); const ac=state.activeCourse;
-  const assignments=ac?state.assignments.filter(a=>a.courseId===ac):state.assignments;
-  const open=assignments.filter(a=>!a.done); const done=assignments.filter(a=>a.done);
-  return <div>
-    <div className="section-label">{t('av.pl.assignments')}{ac&&" · "+(state.courses[ac]?.name||"")}</div>
-    {open.length===0&&courses.length>0&&<div className="empty">{t('av.pl.noOpenAsgn')}</div>}
-    {open.slice().sort((a,b)=>new Date(a.dueDate||"9999-12-31")-new Date(b.dueDate||"9999-12-31")).map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch}/>)}
-    <div style={{marginTop:12,marginBottom:24}}><button className="btn-outline" onClick={onAddAsgn}>{t('av.md.addAssignment')}</button></div>
-    {done.length>0&&<><div className="divider"/><div className="section-label">{t('av.pl.completed',{count:done.length})}</div>{done.slice().sort((a,b)=>new Date(b.dueDate||"1970-01-01")-new Date(a.dueDate||"1970-01-01")).map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch}/>)}</>}
-  </div>;
+  const ac = state.activeCourse;
+  const course = ac ? state.courses[ac] : null;
+
+  if (!course || course.deletedAt) {
+    return <div className="empty">{t('cal.courseGone')}</div>;
+  }
+
+  const assignments = state.assignments.filter(a => a.courseId === ac);
+  const open = assignments.filter(a => !a.done)
+    .sort((a, b) => new Date(a.dueDate || "9999-12-31") - new Date(b.dueDate || "9999-12-31"));
+  const done = assignments.filter(a => a.done)
+    .sort((a, b) => new Date(b.dueDate || "1970-01-01") - new Date(a.dueDate || "1970-01-01"));
+  const exams = state.exams.filter(e => e.courseId === ac);
+  const openExams = exams.filter(e => !e.done).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+
+  const sessions = (state.studySessions || []).filter(s => !s.deletedAt && s.subjectId === ac);
+  const totalMin = sessions.reduce((n, s) => n + (s.durationMinutes || 0), 0);
+
+  // Weighted mean of this course's own grades. No scale conversion: every
+  // grade within one course shares the same scale, so the raw weighted mean is
+  // the honest number here — converting would need the GPA machinery and would
+  // say something different from what the Grades screen already shows.
+  const grades = (state.grades || []).filter(g => !g.deletedAt && g.subjectId === ac);
+  const wSum = grades.reduce((n, g) => n + (Number(g.weight) || 0), 0);
+  const mean = wSum > 0
+    ? grades.reduce((n, g) => n + Number(g.grade) * (Number(g.weight) || 0), 0) / wSum
+    : null;
+
+  const stats = [
+    { label: t('cal.statOpen'), value: open.length },
+    { label: t('cal.statExams'), value: openExams.length },
+    { label: t('cal.statStudied'), value: totalMin >= 60 ? `${Math.round(totalMin / 60)}h` : `${totalMin}m` },
+    { label: t('cal.statAverage'), value: mean === null ? '—' : mean.toFixed(2) },
+  ];
+
+  const body = (
+    <div>
+      <div className="cdv-head" style={{ borderInlineStartColor: course.color }}>
+        <div className="cdv-head-main">
+          <div className="cdv-name">{course.name}</div>
+          <div className="cdv-sub">
+            {course.semester && <span>{course.semester}</span>}
+            {course.schoolYear && <span>· {course.schoolYear}</span>}
+            {course.credits != null && <span>· {t('cal.credits', { n: course.credits })}</span>}
+            {course.archivedAt && <span>· {t('cal.archived')}</span>}
+          </div>
+        </div>
+        <button className="btn-outline btn-sm" onClick={() => onEditCourse({ id: course.id, name: course.name, color: course.color })}>
+          {t('av.pl.edit')}
+        </button>
+      </div>
+
+      <div className="cdv-stats">
+        {stats.map(s => (
+          <div key={s.label} className="cdv-stat">
+            <div className="cdv-stat-value">{s.value}</div>
+            <div className="cdv-stat-label">{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="section-label">
+        {t('av.pl.assignments')}
+        <button className="btn btn-sm" style={{ marginLeft: "auto" }} onClick={onAddAsgn}>{t('av.pl.add')}</button>
+      </div>
+      {open.length === 0 && <div className="empty">{t('av.pl.noOpenAsgn')}</div>}
+      {open.map(a => <AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch} attachments={state.attachments} session={session} showFlash={showFlash} />)}
+      {done.length > 0 && (
+        <details style={{ marginBottom: 16 }}>
+          <summary style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--muted)", cursor: "pointer", padding: "8px 0" }}>
+            {t('av.pl.completed', { count: done.length })}
+          </summary>
+          {done.map(a => <AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch} attachments={state.attachments} session={session} showFlash={showFlash} />)}
+        </details>
+      )}
+
+      <div className="divider" />
+      <div className="section-label">
+        {t('av.pl.examsCalendar')}
+        <button className="btn btn-sm" style={{ marginLeft: "auto" }} onClick={onAddExam}>{t('av.pl.add')}</button>
+      </div>
+      {openExams.length === 0 && <div className="empty">{t('av.pl.noExams')}</div>}
+      {openExams.map(e => <ExamCard key={e.id} exam={e} courses={state.courses} dispatch={dispatch} />)}
+    </div>
+  );
+
+  if (tier !== 'desktop') return body;
+
+  // Third pane. Recent sessions only — the full history has its own screen,
+  // and a course pane that grows without bound stops being a summary.
+  const recent = sessions
+    .slice()
+    .sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt))
+    .slice(0, 8);
+
+  return (
+    <div className="cdv-split">
+      {body}
+      <aside className="cdv-aside">
+        <div className="cdv-aside-label">{t('cal.recentSessions')}</div>
+        {recent.length === 0 && <div className="cdv-aside-empty">{t('cal.noSessionsYet')}</div>}
+        {recent.map(s => (
+          <div key={s.id} className="cdv-session">
+            <div className="cdv-session-when">{fmtDateFull(toLocalISO(new Date(s.startedAt)))}</div>
+            <div className="cdv-session-len">
+              {s.durationMinutes >= 60
+                ? `${Math.floor(s.durationMinutes / 60)}h ${s.durationMinutes % 60 || ''}${s.durationMinutes % 60 ? 'm' : ''}`.trim()
+                : `${s.durationMinutes}m`}
+              {s.focusRating != null && <span className="cdv-session-focus"> · {t('cal.focus', { n: s.focusRating })}</span>}
+            </div>
+          </div>
+        ))}
+      </aside>
+    </div>
+  );
 }
 
-function AsgnItem({ asgn, courses, dispatch }) {
+function AsgnItem({ asgn, courses, dispatch, attachments = [], session, showFlash }) {
   const { t } = useTranslation();
   const course=courses[asgn.courseId]; const days=daysUntil(asgn.dueDate);
   const [editing,setEditing]=useState(false);
+  // v1.10 — the row itself is the drop target, which is what "drag-drop file
+  // attachment on assignments" actually means: drag the essay onto the essay.
+  const [showAt,setShowAt]=useState(false);
+  const drop=useAttachmentDrop({assignmentId:asgn.id,dispatch,session,showFlash});
+  const mine=attachments.filter(a=>a.assignmentId===asgn.id&&!a.deletedAt);
   const [editTitle,setEditTitle]=useState(asgn.title);
   const [editDate,setEditDate]=useState(asgn.dueDate||"");
   const [editNotes,setEditNotes]=useState(asgn.notes||"");
@@ -1334,7 +1773,11 @@ function AsgnItem({ asgn, courses, dispatch }) {
     <textarea value={editNotes} onChange={e=>setEditNotes(e.target.value)} placeholder={t('sv.fNotes')+"…"} style={{minHeight:48,fontSize:12}}/>
     <div style={{display:"flex",gap:8}}><button className="btn btn-sm" onClick={save}>{t('common.save')}</button><button className="btn-outline btn-sm" onClick={()=>setEditing(false)}>{t('common.cancel')}</button></div>
   </div>;
-  return <div className={"asgn-item"+(asgn.done?" done":"")}>
+  return <div
+    className={"asgn-item"+(asgn.done?" done":"")+(drop.isOver?" drop-over":"")+(showAt?" has-panel":"")}
+    {...drop.dropProps}
+    onDrop={(e)=>{ drop.dropProps.onDrop(e); setShowAt(true); }}
+  >
     <div className={"asgn-check"+(asgn.done?" checked":"")} onClick={()=>dispatch({type:"TOGGLE_ASSIGNMENT",id:asgn.id})}/>
     <div className="asgn-body">
       <div className={"asgn-title"+(asgn.done?" done":"")}>{asgn.title}</div>
@@ -1345,12 +1788,29 @@ function AsgnItem({ asgn, courses, dispatch }) {
       </div>
       {asgn.notes&&<div className="asgn-notes">{asgn.notes}</div>}
     </div>
+    <button
+      className={"asgn-clip"+(mine.length?" has":"")}
+      onClick={()=>setShowAt(v=>!v)}
+      aria-expanded={showAt}
+      title={mine.length?t('at.countTitle',{n:mine.length}):t('at.title')}
+    >
+      <Paperclip size={13} strokeWidth={1.75}/>
+      {mine.length>0&&<span className="asgn-clip-n">{mine.length}</span>}
+    </button>
     <button className="btn-danger-text" style={{fontSize:13,color:"var(--muted2)"}} onClick={()=>setEditing(true)} title={t('av.pl.edit')}>✎</button>
     <button className="btn-danger-text" onClick={()=>dispatch({type:"DELETE_ASSIGNMENT",id:asgn.id})}>×</button>
+    {showAt&&<AttachmentList
+      attachments={mine}
+      dispatch={dispatch}
+      session={session}
+      showFlash={showFlash}
+      uploadFiles={drop.uploadFiles}
+      busy={drop.busy}
+    />}
   </div>;
 }
 
-function PlanView({ state, dispatch, onAddAsgn, onAddExam, onAddCourse, onEditCourse }) {
+function PlanView({ state, dispatch, session, showFlash, onAddAsgn, onAddExam, onAddCourse, onEditCourse }) {
   const { t, i18n } = useTranslation();
   const lang = (i18n.language || "en").split("-")[0];
   const courses = Object.values(state.courses).filter(c => !c.deletedAt);
@@ -1379,11 +1839,14 @@ function PlanView({ state, dispatch, onAddAsgn, onAddExam, onAddCourse, onEditCo
   for(let i=0;i<60;i++){const d=new Date(_agendaBase);d.setDate(_agendaBase.getDate()+i);const ev=eventsOnDay(d);if(ev.length>0)agendaEvents.push({date:d,events:ev});}
   const openAsgns=state.assignments.filter(a=>!a.done).sort((a,b)=>new Date(a.dueDate||"9999-12-31")-new Date(b.dueDate||"9999-12-31"));
   const openExams=state.exams.filter(e=>!e.done).sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));
-  return <div>
+  // The root is NOT a tiling grid: this view also holds the month grid, the
+  // agenda and the course cards, and tiling those would break each of them.
+  // Only the flat lists tile, which is where the vertical length comes from.
+  return <div className="sd-page-plan">
     <div className="section-label">{t('av.pl.assignments')}<button className="btn btn-sm" style={{marginLeft:"auto"}} onClick={onAddAsgn}>{t('av.pl.add')}</button></div>
     {openAsgns.length===0&&<div className="empty">{t('av.pl.noOpenAsgn')}</div>}
-    {openAsgns.map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch}/>)}
-    {state.assignments.filter(a=>a.done).length>0&&<details style={{marginBottom:16}}><summary style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",cursor:"pointer",padding:"8px 0"}}>{t('av.pl.completed',{count:state.assignments.filter(a=>a.done).length})}</summary>{state.assignments.filter(a=>a.done).sort((a,b)=>new Date(b.dueDate||"1970-01-01")-new Date(a.dueDate||"1970-01-01")).map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch}/>)}</details>}
+    <div className="sd-list-tile">{openAsgns.map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch} attachments={state.attachments} session={session} showFlash={showFlash}/>)}</div>
+    {state.assignments.filter(a=>a.done).length>0&&<details style={{marginBottom:16}}><summary style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",cursor:"pointer",padding:"8px 0"}}>{t('av.pl.completed',{count:state.assignments.filter(a=>a.done).length})}</summary>{state.assignments.filter(a=>a.done).sort((a,b)=>new Date(b.dueDate||"1970-01-01")-new Date(a.dueDate||"1970-01-01")).map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch} attachments={state.attachments} session={session} showFlash={showFlash}/>)}</details>}
     <div className="divider"/>
     <div className="section-label">{t('av.pl.examsCalendar')}<button className="btn btn-sm" style={{marginLeft:"auto"}} onClick={onAddExam}>{t('av.pl.add')}</button></div>
     <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
@@ -1567,7 +2030,10 @@ function ActionsView({ state, dispatch, showFlash, onAddCourse }) {
       </div>
     </div>
   </div>;
-  return <div>
+  // Three buckets side by side on a wide screen rather than stacked: Today /
+  // This week / Later are a natural three-column read, and stacking them is
+  // what made this screen a long thin ribbon in a 1600px window.
+  return <div className="sd-page-actions sd-bucket-tile">
     {BUCKETS.map(bucket=>{
       const items=allActions.filter(a=>a.bucket===bucket);
       if(items.length===0) return null;

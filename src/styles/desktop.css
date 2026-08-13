@@ -1,0 +1,244 @@
+/* v1.9 Item 14a follow-up — desktop fitting for the screens that were still
+ * mobile stacks in a wide frame.
+ *
+ * Owner review: "Timer, Grades and Study/Next up page look small … they were
+ * just taken from the mobile version and not fitted properly". Correct, and
+ * the cause is the same one NCC hit twice: A MAX-WIDTH ON THE CONTENT COLUMN
+ * IS THE DEAD SPACE. Settings capped itself at 680px, and the rest inherited
+ * `.content`'s reading measure — perfectly reasonable for a column of prose,
+ * and wrong for a screen made of independent panels.
+ *
+ * The fix is width AND columns, not one or the other: lift the cap so the
+ * screen can use the shell, then tile the panels so the extra width buys MORE
+ * PANELS SIDE BY SIDE rather than wider ones. A 1600px-wide settings row is
+ * not an improvement over a 680px one.
+ *
+ * Specificity note: these views inject their own CSS from a `<style>` block
+ * inside the component, which lands in the DOM after any imported stylesheet
+ * and therefore wins on a tie. Everything here is scoped to
+ * `.app[data-tier="desktop"]`, which outranks the bare class selectors it
+ * overrides — deliberate, not decorative.
+ */
+
+/* ── The topbar cap ────────────────────────────────────────────────────── */
+/* THE SAME BUG AS `.content`, AND I FIXED ONLY ONE OF THEM.
+   `.topbar-inner` was given `max-width: var(--content-max)` in Phase 1 so the
+   page title would sit above the column it labels — correct while `.content`
+   was also capped. Lifting the cap on `.content` (below) and not here left the
+   topbar centred at 1360px inside a 2320px shell: measured at 2560, the title
+   and the avatar each sat 528px in from their own edge, which is exactly the
+   "dead space between them and the sides" the owner reported.
+   The rule is one fact, not two: the topbar shares whatever measure the
+   content column has. Tablet keeps its 900px reading measure and so does the
+   topbar there, which is why this is scoped to the desktop tier. */
+.app[data-tier="desktop"] .topbar-inner {
+  max-width: none;
+}
+
+/* ── The shell cap ─────────────────────────────────────────────────────── */
+/* THE ONE THAT ACTUALLY MATTERED. Lifting each view's own inner max-width was
+   necessary but not sufficient: `.content` still capped everything at
+   1180/1360px, so on anything wider than about 1600 every screen was still a
+   centred column with dead space either side no matter what its contents did.
+   That is why the first pass measured correctly at 1600 and still looked
+   unfitted on a real display.
+   Only the desktop tier. The tablet tier keeps its 900px reading measure,
+   which is the right density at that width and is what it has always shipped. */
+.app[data-tier="desktop"] .content {
+  max-width: none;
+}
+
+/* ── Settings ──────────────────────────────────────────────────────────── */
+/* CSS columns rather than grid: the panels are independent, self-contained
+   and wildly different heights, which is exactly the case multi-column
+   handles better than a row-aligned grid (no ragged bottoms to chase). */
+.app[data-tier="desktop"] .sv2-wrap {
+  max-width: none;
+  padding-inline: 0;
+  columns: 2;
+  column-gap: 18px;
+}
+.app[data-tier="desktop"] .sv2-section {
+  break-inside: avoid;
+  /* `columns` needs this: a margin-top on the first block in a column is
+     dropped in some engines and kept in others, which staggers the tops. */
+  margin-top: 0;
+  margin-bottom: 18px;
+  display: inline-block;
+  width: 100%;
+}
+
+/* ── Grades ────────────────────────────────────────────────────────────── */
+.app[data-tier="desktop"] .gv-wrap {
+  max-width: none;
+}
+/* The hero (GPA / average) stays full width — it is the headline number, and
+   a headline in a side column stops being one. Everything after it tiles. */
+.app[data-tier="desktop"] .gv-wrap > .gv-hero {
+  grid-column: 1 / -1;
+}
+
+/* ── Study stats (Timer > Stats) ───────────────────────────────────────── */
+/* Was capped at 820px. The cards are independent readings of different
+   heights, so the same multi-column treatment as Settings applies. The hero
+   card leads and stays full width — it is the headline figure. */
+.app[data-tier="desktop"] .st-wrap {
+  max-width: none;
+  padding-inline: 0;
+}
+.app[data-tier="desktop"] .st-wrap {
+  columns: 2;
+  column-gap: 18px;
+}
+.app[data-tier="desktop"] .st-card {
+  break-inside: avoid;
+  display: inline-block;
+  width: 100%;
+  margin-top: 0;
+  margin-bottom: 18px;
+}
+
+/* ── Session log (Timer > Log) ─────────────────────────────────────────── */
+/* Was capped at 780px and had been missed entirely on the first pass. The
+   stat row spans; the day groups tile, since a day's sessions are a
+   self-contained block and the list is the thing that gets long. */
+.app[data-tier="desktop"] .sv-wrap {
+  max-width: none;
+  padding-inline: 0;
+  columns: 2;
+  column-gap: 18px;
+}
+/* EVERYTHING that is not a day group breaks out of the column flow.
+ *
+ * Written as a negation rather than a list on purpose. Owner's screenshot
+ * showed the empty-state box rendered as two half-boxes, each missing the
+ * border on the side where it split — that is CSS multi-column FRAGMENTING a
+ * bordered element across the column break, and it happens to any child I
+ * failed to anticipate. Listing the children I happened to know about is the
+ * same guess that left `.pomo-ring` matching nothing; this covers the ones I
+ * have not seen too.
+ */
+.app[data-tier="desktop"] .sv-wrap > :not(.sv-day) {
+  column-span: all;
+  break-inside: avoid;
+}
+/* One day of sessions is a self-contained block and must not be split across
+   a column boundary — a date heading at the bottom of the left column with
+   its sessions at the top of the right one is unreadable. */
+.app[data-tier="desktop"] .sv-day {
+  break-inside: avoid;
+  display: inline-block;
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+/* ── Next Up / Plan list ───────────────────────────────────────────────── */
+/* Both are a stack of `.section-label` + list pairs. Tiling the whole stack
+   would break the label→list pairing, so instead the LISTS tile internally:
+   assignment and exam rows are fixed-height items that read fine two or three
+   abreast, and that is where the vertical length actually comes from. */
+.app[data-tier="desktop"] .sd-page-actions,
+.app[data-tier="desktop"] .sd-page-plan {
+  max-width: none;
+}
+.app[data-tier="desktop"] .sd-list-tile {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 8px;
+  align-items: start;
+}
+/* Next Up's three buckets — Today / This week / Later — read as columns.
+   `auto-fit` with a floor rather than a fixed `3`: below ~1100px of content
+   two columns is the better fit, and a hard three would squeeze each to
+   ~300px on the narrow end of the desktop tier. */
+.app[data-tier="desktop"] .sd-bucket-tile {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+/* Anything that is a control for the whole screen, rather than one bucket,
+   spans instead of taking a column. */
+.app[data-tier="desktop"] .sd-bucket-tile > .quick-add-box,
+.app[data-tier="desktop"] .sd-bucket-tile > .nextup-unlock,
+.app[data-tier="desktop"] .sd-bucket-tile > .suggest-banner,
+.app[data-tier="desktop"] .sd-bucket-tile > .divider,
+.app[data-tier="desktop"] .sd-bucket-tile > .empty {
+  grid-column: 1 / -1;
+}
+/* A section label introduces the list under it, so it spans rather than
+   sitting in the first column with rows beside it. */
+.app[data-tier="desktop"] .sd-list-tile > .section-label,
+.app[data-tier="desktop"] .sd-list-tile > .divider,
+.app[data-tier="desktop"] .sd-list-tile > .empty,
+.app[data-tier="desktop"] .sd-list-tile > details {
+  grid-column: 1 / -1;
+}
+@media (min-width: 1600px) {
+  .app[data-tier="desktop"] .sv2-wrap { columns: 3; }
+  .app[data-tier="desktop"] .sd-list-tile { grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); }
+}
+
+/* ── Timetable (v1.10) ─────────────────────────────────────────────────── */
+/* Two panes on a wide screen: the term outline stays visible while the week
+   grid is edited, because picking a jakso and laying out its lessons is one
+   task and paging between them would make it two. The tree is a fixed measure
+   rather than a fraction — it holds short names and dates, and a 600px-wide
+   outline column is dead space wearing a border. */
+/* 380px, not 300. At 300 the row had to fit an indent, a level chip, the name,
+   a date range and three action buttons — measured, that left roughly 50px for
+   the name, so even "Autumn" truncated. Shortening the date range (see
+   `formatTermRange`) bought some of it back; the rest is just column width the
+   outline needed and the grid did not miss. */
+.app[data-tier="desktop"] .tt-panes,
+.app[data-tier="tablet"] .tt-panes {
+  grid-template-columns: 380px minmax(0, 1fr);
+  gap: 26px;
+  align-items: start;
+}
+/* The tablet tier has far less to give away, so it keeps the tighter column. */
+.app[data-tier="tablet"] .tt-panes { grid-template-columns: 300px minmax(0, 1fr); }
+/* Row height, raised deliberately rather than nudged. Measured at 2560×1200:
+   the timetable page came to 567px against the calendar's 968px and the
+   list's 895px, because an 8-hour window at 48px rows is a 384px band sitting
+   at the top of a 1200px screen — the owner read that, correctly, as the page
+   being smaller than its two siblings.
+   A timetable does NOT fix that by widening its window the way the calendar
+   does: a day planner shows 07–22 because evenings are plannable, whereas a
+   school timetable padded out to 22:00 is mostly empty rows, which is worse
+   than short. What it needs is TALLER ROWS, so a 75-minute lesson reads as a
+   block rather than a bar, and a school-day window that reaches the
+   after-school slot (see WEEK_FROM/WEEK_TO in TimetableView). */
+.app[data-tier="desktop"] .tt { --tt-hour-h: 68px; }
+/* The grid gets the width, so the hour gutter can afford to be legible. */
+.app[data-tier="desktop"] .tt-grid-head,
+.app[data-tier="desktop"] .tt-grid-body {
+  grid-template-columns: 54px repeat(7, minmax(0, 1fr));
+}
+
+/* ── Timer ─────────────────────────────────────────────────────────────── */
+/* The dial stays CENTRED rather than stretching — a timer spread across
+   1600px would be worse, not better, the same call the NCC lock screen came
+   to. What it gets instead is presence: it is the only thing on the screen,
+   so it can afford to be large. */
+/* The real class is `.pomo-ring-wrap` (220x220 in timer.css), NOT `.pomo-ring`
+   or `.pomo-dial` — those were written from memory and matched nothing, which
+   is why this page was still visibly untouched after two passes. Sized
+   explicitly rather than `transform: scale()`: a transform does not reserve
+   layout space, so the segments and controls beneath would have been overlapped
+   by a dial that only *looked* bigger. */
+.app[data-tier="desktop"] .pomo-ring-wrap {
+  width: 340px;
+  height: 340px;
+  margin-bottom: 34px;
+}
+.app[data-tier="desktop"] .pomo-time { font-size: 68px; }
+.app[data-tier="desktop"] .pomo-phase { font-size: 13px; letter-spacing: 0.14em; }
+/* Widened, NOT uncapped. The first pass set `max-width: none` here, which was
+   wrong: this is the short "today's sessions" list sitting under a centred
+   dial, and stretching it to the full shell would leave a 1600px-wide list of
+   three rows beneath a 400px timer. It grows with the dial and stops. */
+.app[data-tier="desktop"] .pomo-session-log,
+.app[data-tier="desktop"] .pomo-task-row {
+  max-width: 560px;
+}
