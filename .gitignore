@@ -62,3 +62,9 @@ android/app/src/main/assets/capacitor.plugins.json
 .vercel
 
 .vercel
+
+# Electron packaging output — the NSIS installer + unpacked build (~100MB+).
+# Built locally via `npm run electron:build` and uploaded by hand to the
+# GitHub Release; never belongs in git history.
+/release/
+.electron-builder-cache/

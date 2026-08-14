@@ -9,6 +9,7 @@
     "type": "git",
     "url": "https://github.com/Limekana/StudyDesk.git"
   },
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "prepare": "git config core.hooksPath .githooks || true",
@@ -16,7 +17,9 @@
     "build": "vite build",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "cap:sync": "npm run build && cap sync android"
+    "cap:sync": "npm run build && cap sync android",
+    "electron:dev": "electron .",
+    "electron:build": "npm run build && electron-builder --win"
   },
   "dependencies": {
     "@capacitor/android": "^8.2.0",
@@ -38,10 +41,33 @@
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.4",
+    "electron": "^43.4.0",
+    "electron-builder": "^26.15.3",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.26",
     "globals": "^16.5.0",
+    "sharp": "^0.35.3",
     "vite": "^7.3.1"
+  },
+  "build": {
+    "appId": "com.limecore.studydesk.desktop",
+    "productName": "StudyDesk",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "resources/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "StudyDesk-Desktop-Setup-${version}.${ext}"
+    }
   }
 }
