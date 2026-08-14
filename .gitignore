@@ -57,3 +57,8 @@ finalize.ps1
 android/app/src/main/assets/public/
 android/app/src/main/assets/capacitor.config.json
 android/app/src/main/assets/capacitor.plugins.json
+
+# Vercel CLI local project link (project/org ids, machine-local)
+.vercel
+
+.vercel
