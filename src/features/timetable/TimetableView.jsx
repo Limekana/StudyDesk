@@ -284,6 +284,13 @@ function WeekGrid({ entries, courses, weekStart, locale, onAdd, onEdit, t }) {
   // Measured over the COURSE LIST rather than over the lesson titles on the
   // grid. A lesson the user retitled by hand, or a term holding a single
   // course, would otherwise change how every other label is shortened.
+  // Applied at EVERY tier, including desktop. This was briefly gated to the
+  // narrow tiers on the assumption that a desktop column has room for a full
+  // course name; measured, it does not. The default desktop layout puts the
+  // grid in a ~669px pane beside the term tree, which is 67px of text per
+  // block — "Pre-IB Mathematics" wants 96px and truncates, while
+  // "Mathematics" wants 62px and fits. Seven columns is narrow at any window
+  // size, so the shortening earns its place everywhere.
   const shortLabelMap = shortenLabels(
     Object.values(courses || {})
       .filter((c) => c && !c.deletedAt && !c.archivedAt)

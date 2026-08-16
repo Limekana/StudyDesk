@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from 'react';
+import { webNotifyPermission, requestWebNotifyPermission, webNotifySupported } from '../../lib/webNotify.js';
+import { Capacitor } from '@capacitor/core';
 import { useTranslation } from 'react-i18next';
 import { setLanguage, SUPPORTED_LANGS, LANGUAGE_NAMES } from '../../i18n/index.js';
 import { useScrollSelectedIntoView } from '../../lib/useScrollSelectedIntoView.js';
@@ -135,6 +137,12 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
   // Remembers the time across an off/on round trip. Without it, switching the
   // setting off and back on silently resets 22:30 to the 21:00 default, which
   // reads as the app forgetting rather than as a default.
+  // Browser-notification permission, web only. Tracked in state because the
+  // answer changes in response to a prompt this component raises.
+  // Native detection is a constant for the lifetime of the process, so it is a
+  // plain const rather than state.
+  const isNative = Capacitor.isNativePlatform();
+  const [webPerm, setWebPerm] = useState(() => webNotifyPermission());
   const lastStudyUntil = useRef(state.studyUntil ?? 21 * 60);
   if (state.studyUntil !== null) lastStudyUntil.current = state.studyUntil;
   useEffect(() => { let live = true; focusCapabilities().then((c) => { if (live) setFocusCaps(c); }); return () => { live = false; }; }, []);
@@ -497,6 +505,39 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
               ? t('settings.planRemindNote')
               : t('settings.planRemindBlocked')}
           </div>
+
+          {/* Web only. On Android these are OS alarms and there is nothing to
+              grant here beyond the notification permission the app already
+              asks for; showing a second, differently-worded control there
+              would imply two separate things to switch on. */}
+          {!isNative && webNotifySupported() && (
+            <>
+              <div className="sv2-row">
+                <span className="sv2-row-label">{t('settings.webNotify')}</span>
+                <span className="sv2-row-value">
+                  {webPerm === 'granted' ? (
+                    <span className="sv2-row-value">{t('settings.webNotifyOn')}</span>
+                  ) : webPerm === 'denied' ? (
+                    <span className="sv2-row-value" style={{ color: 'var(--danger)' }}>
+                      {t('settings.webNotifyBlocked')}
+                    </span>
+                  ) : (
+                    <button
+                      className="btn-outline"
+                      onClick={async () => setWebPerm(await requestWebNotifyPermission())}
+                    >
+                      {t('settings.webNotifyAsk')}
+                    </button>
+                  )}
+                </span>
+              </div>
+              <div className="sv2-note">
+                {webPerm === 'denied'
+                  ? t('settings.webNotifyDeniedNote')
+                  : t('settings.webNotifyNote')}
+              </div>
+            </>
+          )}
         </div>
 
         {/* ── Lock In (v1.10, Item 12) — native only ── */}

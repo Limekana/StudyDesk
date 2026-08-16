@@ -712,7 +712,7 @@ function DayAgenda({ iso, byDay, lessons, commitments, locale, onOpen, onClose, 
   // planned block is content and content sets the window.
   const gapSource = [...lessons, ...commitments, ...timed, ...planned];
   const gapWin = ribbonWindow(gapSource, undefined, studyUntil);
-  const gaps = onPlanGap ? freeSlots(gapSource, gapWin) : [];
+  const gaps = freeSlots(gapSource, gapWin);
 
   return (
     <div className="cal-agenda-pane">
@@ -860,21 +860,41 @@ function DayAgenda({ iso, byDay, lessons, commitments, locale, onOpen, onClose, 
         </div>
       )}
 
+      {/* Free windows at EVERY tier now. This was phone-only, which quietly
+          made the Study-until setting a no-op on desktop — the preference was
+          offered in Settings at all tiers and had exactly one consumer, gated
+          to phone. A setting that does nothing where it is shown is worse
+          than one that is not shown.
+
+          The row is only a BUTTON where tapping it is the way to plan. On
+          wide tiers the grid is drag-to-create, so a second creation route
+          would be a duplicate; there the gap is a readout, which is still the
+          thing worth knowing — "you have 3h free tonight" — without pretending
+          to be a control that does something subtly different from the drag. */}
       {gaps.length > 0 && (
         <div className="cal-agenda-group">
           <div className="cal-agenda-rel">{t('cal.freeWindows')}</div>
-          {gaps.map((g) => (
-            <button
-              key={`${g.from}-${g.to}`}
-              type="button"
-              className="cal-gap"
-              onClick={() => onPlanGap(iso, g.from, Math.min(g.to - g.from, DEFAULT_PLAN_MIN))}
-            >
-              <span className="cal-gap-time">{minutesClock(g.from)}</span>
-              <span className="cal-gap-len">{t('cal.freeFor', { len: minutesLabel(g.to - g.from) })}</span>
-              <span className="cal-gap-add" aria-hidden="true">+</span>
-            </button>
-          ))}
+          {gaps.map((g) => {
+            const inner = (
+              <>
+                <span className="cal-gap-time">{minutesClock(g.from)}</span>
+                <span className="cal-gap-len">{t('cal.freeFor', { len: minutesLabel(g.to - g.from) })}</span>
+                {onPlanGap && <span className="cal-gap-add" aria-hidden="true">+</span>}
+              </>
+            );
+            return onPlanGap ? (
+              <button
+                key={`${g.from}-${g.to}`}
+                type="button"
+                className="cal-gap"
+                onClick={() => onPlanGap(iso, g.from, Math.min(g.to - g.from, DEFAULT_PLAN_MIN))}
+              >
+                {inner}
+              </button>
+            ) : (
+              <div key={`${g.from}-${g.to}`} className="cal-gap is-static">{inner}</div>
+            );
+          })}
         </div>
       )}
     </div>

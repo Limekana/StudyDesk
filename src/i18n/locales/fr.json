@@ -230,7 +230,13 @@
     "planRemindStart": "Rappel au début",
     "minsShort": "{{n}} min",
     "planRemindNote": "Rappels pour les blocs de révision planifiés dans le calendrier.",
-    "planRemindBlocked": "Activez les rappels ci-dessus pour les recevoir."
+    "planRemindBlocked": "Activez les rappels ci-dessus pour les recevoir.",
+    "webNotify": "Notifications du navigateur",
+    "webNotifyAsk": "Autoriser",
+    "webNotifyOn": "Autorisées",
+    "webNotifyBlocked": "Bloquées",
+    "webNotifyNote": "Les rappels apparaissent tant que StudyDesk est ouvert dans un onglet, même en arrière-plan. Ils ne peuvent pas arriver une fois l'onglet ferme.",
+    "webNotifyDeniedNote": "Votre navigateur bloque les notifications pour ce site. Réautorisez-les dans les paramètres du site, à côté de la barre d'adresse."
   },
   "sdob": {
     "brand": "Arrête de choisir. Commence à réviser.",

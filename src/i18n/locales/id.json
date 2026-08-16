@@ -226,7 +226,13 @@
     "planRemindStart": "Ingatkan saat mulai",
     "minsShort": "{{n}} mnt",
     "planRemindNote": "Pengingat untuk blok belajar yang kamu rencanakan di kalender.",
-    "planRemindBlocked": "Aktifkan Pengingat di atas agar ini terkirim."
+    "planRemindBlocked": "Aktifkan Pengingat di atas agar ini terkirim.",
+    "webNotify": "Notifikasi browser",
+    "webNotifyAsk": "Izinkan",
+    "webNotifyOn": "Diizinkan",
+    "webNotifyBlocked": "Diblokir",
+    "webNotifyNote": "Pengingat muncul selama StudyDesk terbuka di tab, termasuk di latar belakang. Tidak bisa muncul setelah tab ditutup.",
+    "webNotifyDeniedNote": "Browser kamu memblokir notifikasi untuk situs ini. Izinkan lagi lewat pengaturan situs di sebelah bilah alamat."
   },
   "sdob": {
     "brand": "Berhenti menimbang. Mulai belajar.",

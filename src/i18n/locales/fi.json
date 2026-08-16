@@ -228,7 +228,13 @@
     "planRemindStart": "Muistuta alkaessa",
     "minsShort": "{{n}} min",
     "planRemindNote": "Muistutukset kalenteriin suunnitelluista opiskelujaksoista.",
-    "planRemindBlocked": "Ota muistutukset yltä käyttöön, jotta nama toimitetaan."
+    "planRemindBlocked": "Ota muistutukset yltä käyttöön, jotta nama toimitetaan.",
+    "webNotify": "Selainilmoitukset",
+    "webNotifyAsk": "Salli",
+    "webNotifyOn": "Sallittu",
+    "webNotifyBlocked": "Estetty",
+    "webNotifyNote": "Muistutukset näkyvät kun StudyDesk on auki välilehdellä, myös taustalla. Ne eivät voi saapua kun välilehti on suljettu.",
+    "webNotifyDeniedNote": "Selaimesi estää tämän sivuston ilmoitukset. Salli ne uudelleen osoiterivin vieressä olevista sivuston asetuksista."
   },
   "sdob": {
     "brand": "Lopeta miettiminen. Aloita opiskelu.",

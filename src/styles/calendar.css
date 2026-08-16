@@ -742,6 +742,9 @@
   }
   .cal-gap-time { font-family: var(--font-mono); font-size: 10px; color: var(--accent2, var(--muted)); flex: 0 0 auto; }
   .cal-gap-len { font-size: 12px; color: var(--muted); font-style: italic; }
+  /* The readout variant on wide tiers: same row, no affordance. Cursor and
+     hover are what say "this does something", so both go. */
+  .cal-gap.is-static { cursor: default; }
   .cal-gap-add {
     margin-inline-start: auto; width: 20px; height: 20px; border-radius: 50%;
     border: 1px solid var(--accent2, var(--border2)); color: var(--accent2, var(--muted));

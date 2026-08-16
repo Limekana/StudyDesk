@@ -228,7 +228,13 @@
     "planRemindStart": "Erinnern zum Start",
     "minsShort": "{{n}} Min",
     "planRemindNote": "Erinnerungen für im Kalender geplante Lernblöcke.",
-    "planRemindBlocked": "Aktiviere oben die Erinnerungen, damit diese ankommen."
+    "planRemindBlocked": "Aktiviere oben die Erinnerungen, damit diese ankommen.",
+    "webNotify": "Browser-Benachrichtigungen",
+    "webNotifyAsk": "Zulassen",
+    "webNotifyOn": "Zugelassen",
+    "webNotifyBlocked": "Blockiert",
+    "webNotifyNote": "Erinnerungen erscheinen, solange StudyDesk in einem Tab geöffnet ist, auch im Hintergrund. Nach dem Schließen des Tabs kommen keine mehr an.",
+    "webNotifyDeniedNote": "Dein Browser blockiert Benachrichtigungen für diese Seite. Erlaube sie wieder in den Seiteneinstellungen neben der Adressleiste."
   },
   "sdob": {
     "brand": "Schluss mit Grübeln. Fang an zu lernen.",

@@ -228,7 +228,13 @@
     "planRemindStart": "开始时提醒",
     "minsShort": "{{n}} 分钟",
     "planRemindNote": "针对日历中已规划学习时段的提醒。",
-    "planRemindBlocked": "请先在上方开启提醒，才能收到。"
+    "planRemindBlocked": "请先在上方开启提醒，才能收到。",
+    "webNotify": "浏览器通知",
+    "webNotifyAsk": "允许",
+    "webNotifyOn": "已允许",
+    "webNotifyBlocked": "已阻止",
+    "webNotifyNote": "只要 StudyDesk 在标签页中打开（包括后台），提醒就会出现。关闭标签页后就无法送达。",
+    "webNotifyDeniedNote": "浏览器正在阻止本站的通知。请在地址栏旁的站点设置中重新允许。"
   },
   "sdob": {
     "brand": "别再纠结，开始学习。",

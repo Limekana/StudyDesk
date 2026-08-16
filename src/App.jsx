@@ -38,6 +38,7 @@ import { COURSE_COLORS } from "./lib/courseColors.js";
 import { NotebookPen, CalendarDays, Award, Timer, PanelLeftClose, PanelLeftOpen, Paperclip } from "lucide-react";
 import { GuestAvatar } from "./lib/avatar.jsx";
 import { useShellTier, useSidebarRail } from "./lib/useShell.js";
+import { startPlanReminderLoop, webNotifySupported } from "./lib/webNotify.js";
 import StatsView from "./features/stats/StatsView.jsx";
 import CalendarView from "./features/calendar/CalendarView.jsx";
 import AnalyticsView from "./features/analytics/AnalyticsView.jsx";
@@ -923,6 +924,34 @@ export default function App() {
     // without rescheduling leaves the OS holding a stale set of alarms.
   }, [onboarded, state.notifEnabled, state.exams, state.assignments, state.courses,
       state.plannedSessions, state.planRemindLead, state.planRemindStart, t]);
+
+  // ── Web reminders (v1.10) ────────────────────────────────────────────────
+  //
+  // Android gets OS alarms through LocalNotifications; the browser has no
+  // equivalent, so on web the same two preferences are served by a polling
+  // loop. See lib/webNotify.js for why it polls rather than setTimeout, and
+  // for the honest limit: this fires while StudyDesk is OPEN in a tab, hidden
+  // or minimised included, and cannot fire once the tab is closed.
+  //
+  // The loop reads through a ref so it is started once. Passing state directly
+  // would rebuild it on every plan edit and every keystroke in Settings, which
+  // resets the tick and drops whatever was about to fire.
+  const webNotifyState = useRef(null);
+  webNotifyState.current = {
+    enabled: onboarded && state.notifEnabled,
+    plans: state.plannedSessions,
+    courses: state.courses,
+    prefs: { lead: state.planRemindLead, atStart: state.planRemindStart },
+    labels: {
+      fallback: t('notif.planFallback'),
+      now: t('notif.planNowTitle'),
+      soon: (n) => t('notif.planSoonTitle', { n }),
+    },
+  };
+  useEffect(() => {
+    if (Capacitor.isNativePlatform() || !webNotifySupported()) return undefined;
+    return startPlanReminderLoop(() => webNotifyState.current);
+  }, []);
 
   // v1.9 (Item 8) — keep the home-screen widgets in step with the same data,
   // on the same triggers as the notifications above. Both answer "what's next"

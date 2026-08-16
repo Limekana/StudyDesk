@@ -230,7 +230,13 @@
     "planRemindStart": "Avisar ao começar",
     "minsShort": "{{n}} min",
     "planRemindNote": "Avisos dos blocos de estudo planeados no calendário.",
-    "planRemindBlocked": "Ativa os lembretes acima para os receberes."
+    "planRemindBlocked": "Ativa os lembretes acima para os receberes.",
+    "webNotify": "Notificações do navegador",
+    "webNotifyAsk": "Permitir",
+    "webNotifyOn": "Permitidas",
+    "webNotifyBlocked": "Bloqueadas",
+    "webNotifyNote": "Os avisos aparecem enquanto o StudyDesk estiver aberto num separador, mesmo em segundo plano. Não podem chegar depois de fechares o separador.",
+    "webNotifyDeniedNote": "O teu navegador está a bloquear as notificacoes deste site. Permite-as de novo nas definições do site, junto à barra de endereços."
   },
   "sdob": {
     "brand": "Pare de decidir. Comece a estudar.",

@@ -228,7 +228,13 @@
     "planRemindStart": "Remind at start",
     "minsShort": "{{n}} min",
     "planRemindNote": "Reminders for study blocks you have planned in the calendar.",
-    "planRemindBlocked": "Turn Reminders on above for these to be delivered."
+    "planRemindBlocked": "Turn Reminders on above for these to be delivered.",
+    "webNotify": "Browser notifications",
+    "webNotifyAsk": "Allow",
+    "webNotifyOn": "Allowed",
+    "webNotifyBlocked": "Blocked",
+    "webNotifyNote": "Reminders appear while StudyDesk is open in a tab, even in the background. They cannot arrive once the tab is closed.",
+    "webNotifyDeniedNote": "Your browser is blocking notifications for this site. Re-allow them in the site settings next to the address bar."
   },
   "sdob": {
     "brand": "Stop deciding. Start studying.",
