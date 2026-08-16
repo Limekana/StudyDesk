@@ -78,7 +78,12 @@ export default function PeriodHistory({ courses, grades, mode = 'ib' }) {
     );
   }
 
-  const gpaLabel = mode === 'us' ? t('history.gpaUs') : t('history.gpaIb');
+  // Same two-branches-for-three-modes bug as the Grades hero: history rows
+  // captioned a custom average "IB". Named scales are not used here — the row
+  // is a dense one-liner and a long user-chosen name would crowd out the date.
+  const gpaLabel = mode === 'us' ? t('history.gpaUs')
+    : mode === 'custom' ? t('history.gpaCustom')
+    : t('history.gpaIb');
 
   return (
     <>

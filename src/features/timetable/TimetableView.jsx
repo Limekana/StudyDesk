@@ -16,6 +16,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Pencil, Trash2, CalendarRange } from 'lucide-react';
+import { shortenLabels } from '../../lib/courseLabels.js';
 import {
   TERM_LEVELS, childLevel, childrenOf, termIndex, resolveTermRange,
   descendantTermIds, timeToMinutes, minutesToTime, minutesToSqlTime,
@@ -270,6 +271,29 @@ function WeekGrid({ entries, courses, weekStart, locale, onAdd, onEdit, t }) {
     .map((e) => ({ e, from: timeToMinutes(e.startsAt), to: timeToMinutes(e.endsAt) }))
     .filter((x) => x.from !== null && x.to !== null && x.to > x.from);
 
+  // Seven day columns on a phone leave roughly eight characters per block, and
+  // the owner takes a full year of Pre-IB courses — so every block on the grid
+  // truncated to the same three letters, "Pre", and the timetable stopped
+  // saying anything at a glance. `shortenLabels` drops the words EVERY course
+  // shares, and no more than it must to tell them apart. Computed across the
+  // whole grid rather than per column, so a course reads the same on Monday as
+  // it does on Friday.
+  const displayName = (e) => e.title
+    || (e.subjectId && !courses[e.subjectId]?.deletedAt ? courses[e.subjectId]?.name : null)
+    || t('tt.lesson');
+  // Measured over the COURSE LIST rather than over the lesson titles on the
+  // grid. A lesson the user retitled by hand, or a term holding a single
+  // course, would otherwise change how every other label is shortened.
+  const shortLabelMap = shortenLabels(
+    Object.values(courses || {})
+      .filter((c) => c && !c.deletedAt && !c.archivedAt)
+      .map((c) => c.name),
+  );
+  const shortName = (e) => {
+    const full = displayName(e);
+    return shortLabelMap.get(full) || full;
+  };
+
   // The window fits the timetable rather than assuming a school day. A single
   // 07:15 lesson widens the grid; an empty term still gets the full default
   // window so the columns are clickable rather than collapsed to nothing.
@@ -339,8 +363,15 @@ function WeekGrid({ entries, courses, weekStart, locale, onAdd, onEdit, t }) {
                   }}
                   onClick={(ev) => { ev.stopPropagation(); onEdit(e); }}
                 >
-                  <span className="tt-lesson-title">{e.title || live?.name || t('tt.lesson')}</span>
-                  <span className="tt-lesson-meta">{clock(s)}–{clock(en)}{e.room ? ` · ${e.room}` : ''}</span>
+                  <span className="tt-lesson-title" title={displayName(e)}>{shortName(e)}</span>
+                  <span className="tt-lesson-meta">
+                    {/* The time hides on a phone and the room does not. The
+                        block's own position on the grid already states when it
+                        is; nothing on screen stated WHERE it is, which is half
+                        of what a timetable gets checked for on the way there. */}
+                    <span className="tt-lesson-time">{clock(s)}–{clock(en)}</span>
+                    {e.room && <span className="tt-lesson-room">{e.room}</span>}
+                  </span>
                 </button>
               );
             })}

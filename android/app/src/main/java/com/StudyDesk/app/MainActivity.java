@@ -16,6 +16,9 @@ public class MainActivity extends BridgeActivity {
         // home-screen widgets. Registered before super.onCreate for the same
         // reason as above: the bridge reads the plugin list during it.
         registerPlugin(WidgetBridgePlugin.class);
+        // v1.10 (Item 12) — Lock In's native half: the ongoing focus chip and
+        // screen pinning, each behind its own setting.
+        registerPlugin(FocusModePlugin.class);
 
         // Must run BEFORE super.onCreate(): that call builds the bridge and so
         // publishes the plugin instance, which is what stashLaunchView() uses

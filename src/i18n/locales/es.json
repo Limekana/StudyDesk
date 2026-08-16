@@ -65,7 +65,8 @@
     "gpaIb": "Media IB",
     "gpaUs": "Media",
     "noGrades": "Sin notas",
-    "course_many": "{{count}} asignaturas"
+    "course_many": "{{count}} asignaturas",
+    "gpaCustom": "Prom."
   },
   "nextup": {
     "newPeriodTitle": "¿Nuevo periodo? Empieza añadiendo tus asignaturas",
@@ -211,7 +212,25 @@
     "gradeNoteCustom": "Tu propia escala numérica: la media es una media ponderada, igual que en IB. Se guarda solo en este dispositivo y no se sincroniza. El cálculo oficial de tu centro es siempre el que vale.",
     "support": "Apoyo",
     "supportDev": "Apoya el desarrollo",
-    "supportDevSub": "Un enlace a Ko-fi. Nada en la app depende de ello."
+    "supportDevSub": "Un enlace a Ko-fi. Nada en la app depende de ello.",
+    "lockInLbl": "Lock In",
+    "focusChip": "Chip de enfoque",
+    "focusPin": "Fijar pantalla",
+    "focusChipOnNote": "Aparece una cuenta atrás en la barra de estado y, en One UI 8, en la Now Bar.",
+    "focusChipOnNoteLegacy": "Aparece una cuenta atrás en la barra de estado durante el bloque.",
+    "focusChipOffNote": "Sin notificación durante el bloque.",
+    "focusPinOnNote": "Android fija la pantalla. Mantén Atrás + Recientes para salir.",
+    "focusPinOffNote": "Puedes cambiar de app libremente durante el bloque.",
+    "planningLbl": "Planificación",
+    "studyUntil": "Estudiar hasta",
+    "studyUntilOnNote": "Las ventanas libres del calendario llegan hasta las {{time}}, así la tarde aparece como tiempo que puedes planificar.",
+    "studyUntilOffNote": "Las ventanas libres terminan en lo último que ya tienes en el día.",
+    "scaleName": "Nombre",
+    "planRemindLead": "Avisar antes",
+    "planRemindStart": "Avisar al empezar",
+    "minsShort": "{{n}} min",
+    "planRemindNote": "Avisos de los bloques de estudio planificados en el calendario.",
+    "planRemindBlocked": "Activa los recordatorios arriba para recibirlos."
   },
   "sdob": {
     "brand": "Deja de decidir. Empieza a estudiar.",
@@ -276,7 +295,8 @@
     "grades_many": "{{count}} notas",
     "courses_many": "{{count}} cursos",
     "modeCustom": "Propia",
-    "scaleSummary": "{{min}}–{{max}} · aprobado {{pass}} · {{best}} es lo mejor"
+    "scaleSummary": "{{min}}–{{max}} · aprobado {{pass}} · {{best}} es lo mejor",
+    "customAverage": "Promedio"
   },
   "sv": {
     "today": "Hoy",
@@ -584,7 +604,11 @@
       "kept": "Registraste una sesión para este bloque.",
       "missed": "Este bloque ya pasó y no se registró nada.",
       "dismissed": "Marcaste este bloque como no hecho."
-    }
+    },
+    "thisWeek": "Esta semana",
+    "ribbonSummary": "{{free}} libre · {{planned}} planificado · {{logged}} registrado",
+    "freeWindows": "Ventanas libres",
+    "freeFor": "{{len}} libre"
   },
   "an": {
     "trends": "Tendencias",
@@ -702,6 +726,18 @@
     "deleteSeries": "Eliminar serie",
     "errTitle": "Ponle un nombre al compromiso.",
     "errDate": "Elige una fecha.",
-    "committedTotal": "{{total}} comprometido"
+    "committedTotal": "{{total}} comprometido",
+    "addBlocker": "Añadir bloqueo",
+    "addBlockerHint": "Entrenamientos, trabajo, cualquier cosa que ocupe tiempo pero no sea estudiar."
+  },
+  "timer": {
+    "focusChipTitle": "Concentrado",
+    "focusChipRunning": "Bloque de enfoque en curso",
+    "focusChipPaused": "En pausa"
+  },
+  "notif": {
+    "planSoonTitle": "Bloque de estudio en {{n}} min",
+    "planNowTitle": "El bloque de estudio empieza ahora",
+    "planFallback": "Sesión de estudio"
   }
 }

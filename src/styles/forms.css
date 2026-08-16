@@ -7,10 +7,44 @@
 /* v1.6.2 — input[type=password] was missing from this list, so the password
    field on the auth screen got none of the shared sizing (no width:100%, no
    padding, no border) and rendered visibly smaller than the email field next
-   to it. Added here rather than in AuthGate so every password input matches. */
-input[type=text],input[type=password],input[type=date],select,textarea{background:var(--surface);border:1px solid var(--border2);color:var(--text);padding:9px 12px;font-family:var(--font-sans);font-size:13px;border-radius:4px;outline:none;transition:border-color 0.15s;width:100%;}
-input[type=text]:focus,input[type=password]:focus,input[type=date]:focus,select:focus,textarea:focus{border-color:#aaa;}
-textarea{resize:vertical;min-height:80px;line-height:1.6;}select{cursor:pointer;}
+   to it. Added here rather than in AuthGate so every password input matches.
+
+   v1.10 — the same omission again, this time `time` and `number`. The lesson
+   editor puts a day select and two time inputs in one three-column row, and
+   the times rendered at the browser's default size beside a fully-styled
+   select: different height, different border, not on a shared baseline. That
+   is the whole of "the time pickers are smaller than the day picker and they
+   dont line up". `number` had it too (9 inputs across the app) and is fixed in
+   the same pass rather than waiting to be reported separately.
+
+   `color` and `file` are deliberately still out: a swatch and a file button
+   are not text fields, and width:100% with 9px padding would make both wrong.
+   This list is opt-in by design — anything new added to a form needs adding
+   here too, which is the trap that has now caught three input types. */
+input[type=text],input[type=password],input[type=date],input[type=time],input[type=number],select,textarea{background:var(--surface);border:1px solid var(--border2);color:var(--text);padding:9px 12px;font-family:var(--font-sans);font-size:13px;border-radius:4px;outline:none;transition:border-color 0.15s;width:100%;}
+input[type=text]:focus,input[type=password]:focus,input[type=date]:focus,input[type=time]:focus,input[type=number]:focus,select:focus,textarea:focus{border-color:#aaa;}
+textarea{resize:vertical;min-height:80px;line-height:1.6;}
+/* The native dropdown arrow is painted INSIDE the padding box, so symmetric
+   padding lets the value slide under it. Invisible at full width, obvious in a
+   narrow column — the day abbreviation was sitting beneath the chevron.
+   `padding-inline-end` rather than `padding-right` so RTL, where the arrow
+   moves to the other side, gets the clearance on the correct side. */
+select{cursor:pointer;padding-inline-end:30px;}
+/* Chrome/WebView give date and time inputs an internal indicator with its own
+   margin, which pushes an already-narrow field's text off-centre. Trimming the
+   trailing padding to match keeps the text optically centred against the
+   select beside it rather than shunted left. */
+input[type=date],input[type=time]{padding-inline-end:8px;}
+/* One explicit height for every text-like control, because they never agreed:
+   measured in the lesson editor, a text input was 37px, a select 39px and a
+   time input 39.64px. Each was picking its own intrinsic height from padding
+   plus whatever the UA thinks its content is, and a select in particular
+   ignores line-height entirely — so no amount of padding tuning makes the
+   three converge. Stacked in a column nobody notices 2px; side by side in the
+   day/start/end row it reads as controls that do not line up, which is exactly
+   what was reported. 40px also lands closer to the 48dp touch guidance than
+   the 37px it replaces. textarea re-asserts its own 80px below. */
+input[type=text],input[type=password],input[type=date],input[type=time],input[type=number],select{min-height:40px;}
 .input-group{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
 .input-label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;}
 .input-row{display:flex;gap:8px;align-items:flex-start;}

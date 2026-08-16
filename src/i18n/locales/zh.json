@@ -64,7 +64,8 @@
     "course_other": "{{count}} 门课程",
     "gpaIb": "IB 均分",
     "gpaUs": "绩点",
-    "noGrades": "无成绩"
+    "noGrades": "无成绩",
+    "gpaCustom": "平均"
   },
   "nextup": {
     "newPeriodTitle": "新学段？先添加你的课程",
@@ -209,7 +210,25 @@
     "gradeNoteCustom": "你自定义的分数区间 —— 平均分按加权平均计算，与 IB 相同。仅保存在本设备，不会同步。以学校的官方计算方式为准。",
     "support": "支持",
     "supportDev": "支持开发",
-    "supportDevSub": "一个 Ko-fi 链接。应用中没有任何功能因此被锁定。"
+    "supportDevSub": "一个 Ko-fi 链接。应用中没有任何功能因此被锁定。",
+    "lockInLbl": "Lock In",
+    "focusChip": "专注卡片",
+    "focusPin": "屏幕固定",
+    "focusChipOnNote": "状态栏会显示倒计时，One UI 8 上还会显示在 Now Bar。",
+    "focusChipOnNoteLegacy": "专注期间状态栏会显示倒计时。",
+    "focusChipOffNote": "专注期间不显示通知。",
+    "focusPinOnNote": "Android 会固定屏幕。长按返回 + 最近任务退出。",
+    "focusPinOffNote": "专注期间可以自由切换应用。",
+    "planningLbl": "规划",
+    "studyUntil": "学习截止时间",
+    "studyUntilOnNote": "日历中的空闲时段会延伸到 {{time}}，这样晚上也会显示为可以安排的时间。",
+    "studyUntilOffNote": "空闲时段止于当天已有的最后一项安排。",
+    "scaleName": "名称",
+    "planRemindLead": "提前提醒",
+    "planRemindStart": "开始时提醒",
+    "minsShort": "{{n}} 分钟",
+    "planRemindNote": "针对日历中已规划学习时段的提醒。",
+    "planRemindBlocked": "请先在上方开启提醒，才能收到。"
   },
   "sdob": {
     "brand": "别再纠结，开始学习。",
@@ -272,7 +291,8 @@
     "fDate": "日期",
     "bAdd": "添加成绩",
     "modeCustom": "自定义",
-    "scaleSummary": "{{min}}–{{max}} · 及格 {{pass}} · {{best}} 最佳"
+    "scaleSummary": "{{min}}–{{max}} · 及格 {{pass}} · {{best}} 最佳",
+    "customAverage": "平均分"
   },
   "sv": {
     "today": "今天",
@@ -579,7 +599,11 @@
       "kept": "你已为该时段记录了一次学习。",
       "missed": "该时段已过去且没有任何记录。",
       "dismissed": "你已把该时段标记为未完成。"
-    }
+    },
+    "thisWeek": "本周",
+    "ribbonSummary": "{{free}} 空闲 · {{planned}} 已计划 · {{logged}} 已记录",
+    "freeWindows": "空闲时段",
+    "freeFor": "{{len}} 空闲"
   },
   "an": {
     "trends": "趋势",
@@ -697,6 +721,18 @@
     "deleteSeries": "删除系列",
     "errTitle": "请为该安排命名。",
     "errDate": "请选择日期。",
-    "committedTotal": "已占用 {{total}}"
+    "committedTotal": "已占用 {{total}}",
+    "addBlocker": "添加占用时段",
+    "addBlockerHint": "训练、工作，任何占用时间但不算学习的事情。"
+  },
+  "timer": {
+    "focusChipTitle": "专注中",
+    "focusChipRunning": "专注时段进行中",
+    "focusChipPaused": "已暂停"
+  },
+  "notif": {
+    "planSoonTitle": "学习时段将在 {{n}} 分钟后开始",
+    "planNowTitle": "学习时段现在开始",
+    "planFallback": "学习时段"
   }
 }

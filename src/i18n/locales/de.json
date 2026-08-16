@@ -64,7 +64,8 @@
     "course_other": "{{count}} Kurse",
     "gpaIb": "IB-Schnitt",
     "gpaUs": "Schnitt",
-    "noGrades": "Keine Noten"
+    "noGrades": "Keine Noten",
+    "gpaCustom": "Ø"
   },
   "nextup": {
     "newPeriodTitle": "Neue Periode? Füge zuerst deine Kurse hinzu",
@@ -209,7 +210,25 @@
     "gradeNoteCustom": "Deine eigene Notenskala — der Schnitt ist ein gewichtetes Mittel wie bei IB. Nur auf diesem Gerät gespeichert, wird nicht synchronisiert. Maßgeblich bleibt immer die offizielle Berechnung deiner Schule.",
     "support": "Unterstützen",
     "supportDev": "Entwicklung unterstützen",
-    "supportDevSub": "Ein Link zu Ko-fi. Nichts in der App ist davon abhängig."
+    "supportDevSub": "Ein Link zu Ko-fi. Nichts in der App ist davon abhängig.",
+    "lockInLbl": "Lock In",
+    "focusChip": "Fokus-Chip",
+    "focusPin": "Bildschirm anheften",
+    "focusChipOnNote": "Ein Countdown erscheint in der Statusleiste und unter One UI 8 in der Now Bar.",
+    "focusChipOnNoteLegacy": "Ein Countdown erscheint während eines Blocks in der Statusleiste.",
+    "focusChipOffNote": "Keine Benachrichtigung während eines Blocks.",
+    "focusPinOnNote": "Android heftet den Bildschirm an. Zum Verlassen Zurück + Übersicht gedrückt halten.",
+    "focusPinOffNote": "Du kannst die App während eines Blocks frei wechseln.",
+    "planningLbl": "Planung",
+    "studyUntil": "Lernen bis",
+    "studyUntilOnNote": "Freie Zeitfenster im Kalender reichen bis {{time}}, sodass der Abend als planbare Zeit erscheint.",
+    "studyUntilOffNote": "Freie Zeitfenster enden beim letzten Eintrag des Tages.",
+    "scaleName": "Name",
+    "planRemindLead": "Erinnern vorher",
+    "planRemindStart": "Erinnern zum Start",
+    "minsShort": "{{n}} Min",
+    "planRemindNote": "Erinnerungen für im Kalender geplante Lernblöcke.",
+    "planRemindBlocked": "Aktiviere oben die Erinnerungen, damit diese ankommen."
   },
   "sdob": {
     "brand": "Schluss mit Grübeln. Fang an zu lernen.",
@@ -272,7 +291,8 @@
     "fDate": "Datum",
     "bAdd": "Note hinzufügen",
     "modeCustom": "Eigene",
-    "scaleSummary": "{{min}}–{{max}} · bestanden ab {{pass}} · {{best}} am besten"
+    "scaleSummary": "{{min}}–{{max}} · bestanden ab {{pass}} · {{best}} am besten",
+    "customAverage": "Durchschnitt"
   },
   "sv": {
     "today": "Heute",
@@ -579,7 +599,11 @@
       "kept": "Du hast für diesen Block eine Lerneinheit gebucht.",
       "missed": "Der Block ist vorbei und nichts wurde gebucht.",
       "dismissed": "Du hast diesen Block als nicht erledigt markiert."
-    }
+    },
+    "thisWeek": "Diese Woche",
+    "ribbonSummary": "{{free}} frei · {{planned}} geplant · {{logged}} erfasst",
+    "freeWindows": "Freie Fenster",
+    "freeFor": "{{len}} frei"
   },
   "an": {
     "trends": "Verlauf",
@@ -697,6 +721,18 @@
     "deleteSeries": "Serie löschen",
     "errTitle": "Gib dem Termin einen Namen.",
     "errDate": "Wähle ein Datum.",
-    "committedTotal": "{{total}} verplant"
+    "committedTotal": "{{total}} verplant",
+    "addBlocker": "Blocker hinzufügen",
+    "addBlockerHint": "Training, Arbeit - alles, was Zeit kostet, aber kein Lernen ist."
+  },
+  "timer": {
+    "focusChipTitle": "Fokus aktiv",
+    "focusChipRunning": "Fokusblock läuft",
+    "focusChipPaused": "Pausiert"
+  },
+  "notif": {
+    "planSoonTitle": "Lernblock in {{n}} Min",
+    "planNowTitle": "Lernblock beginnt jetzt",
+    "planFallback": "Lernsitzung"
   }
 }

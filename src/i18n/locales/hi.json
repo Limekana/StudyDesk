@@ -116,7 +116,8 @@
     "course_other": "{{count}} विषय",
     "gpaIb": "IB औसत",
     "gpaUs": "GPA",
-    "noGrades": "कोई ग्रेड नहीं"
+    "noGrades": "कोई ग्रेड नहीं",
+    "gpaCustom": "औसत"
   },
   "nextup": {
     "newPeriodTitle": "नई अवधि? पहले अपने विषय जोड़ें",
@@ -209,7 +210,25 @@
     "gradeNoteCustom": "आपका अपना अंक पैमाना — औसत भारित माध्य है, जैसे IB में। केवल इसी डिवाइस पर सहेजा जाता है, सिंक नहीं होता। आपके संस्थान की आधिकारिक गणना ही हमेशा मान्य होती है।",
     "support": "सहयोग",
     "supportDev": "विकास में सहयोग करें",
-    "supportDevSub": "Ko-fi का एक लिंक। ऐप में कुछ भी इसके पीछे बंद नहीं है।"
+    "supportDevSub": "Ko-fi का एक लिंक। ऐप में कुछ भी इसके पीछे बंद नहीं है।",
+    "lockInLbl": "Lock In",
+    "focusChip": "फोकस चिप",
+    "focusPin": "स्क्रीन पिन करें",
+    "focusChipOnNote": "स्थिति बार में और One UI 8 पर Now Bar में उलटी गिनती दिखती है।",
+    "focusChipOnNoteLegacy": "ब्लॉक के दौरान स्थिति बार में उलटी गिनती दिखती है।",
+    "focusChipOffNote": "ब्लॉक के दौरान कोई सूचना नहीं।",
+    "focusPinOnNote": "Android स्क्रीन पिन करता है। बाहर निकलने के लिए Back + Recents दबाए रखें।",
+    "focusPinOffNote": "ब्लॉक के दौरान आप स्वतंत्र रूप से ऐप बदल सकते हैं।",
+    "planningLbl": "योजना",
+    "studyUntil": "इस समय तक पढ़ाई",
+    "studyUntilOnNote": "कैलेंडर में खाली समय {{time}} तक दिखता है, इसलिए शाम भी ऐसे समय के रूप में दिखती है जिसकी योजना बनाई जा सके।",
+    "studyUntilOffNote": "खाली समय आपके दिन की आखिरी प्रविष्टि पर समाप्त हो जाता है।",
+    "scaleName": "नाम",
+    "planRemindLead": "पहले याद दिलाएं",
+    "planRemindStart": "शुरू होने पर याद दिलाएं",
+    "minsShort": "{{n}} मिनट",
+    "planRemindNote": "कैलेंडर में योजित अध्ययन ब्लॉक के लिए अनुस्मारक।",
+    "planRemindBlocked": "इन्हें पाने के लिए ऊपर अनुस्मारक चालू करें।"
   },
   "sdob": {
     "brand": "सोचना बंद करें। पढ़ना शुरू करें।",
@@ -272,7 +291,8 @@
     "fDate": "तारीख़",
     "bAdd": "ग्रेड जोड़ें",
     "modeCustom": "कस्टम",
-    "scaleSummary": "{{min}}–{{max}} · उत्तीर्ण {{pass}} · {{best}} सर्वोत्तम"
+    "scaleSummary": "{{min}}–{{max}} · उत्तीर्ण {{pass}} · {{best}} सर्वोत्तम",
+    "customAverage": "औसत"
   },
   "sv": {
     "today": "आज",
@@ -579,7 +599,11 @@
       "kept": "आपने इस ब्लॉक के लिए सत्र दर्ज किया।",
       "missed": "यह ब्लॉक बीत गया और कुछ दर्ज नहीं हुआ।",
       "dismissed": "आपने इस ब्लॉक को अपूर्ण चिह्नित किया।"
-    }
+    },
+    "thisWeek": "इस सप्ताह",
+    "ribbonSummary": "{{free}} खाली · {{planned}} नियोजित · {{logged}} दर्ज",
+    "freeWindows": "खाली समय",
+    "freeFor": "{{len}} खाली"
   },
   "an": {
     "trends": "रुझान",
@@ -697,6 +721,18 @@
     "deleteSeries": "शृंखला हटाएँ",
     "errTitle": "इस प्रतिबद्धता को नाम दें।",
     "errDate": "तारीख़ चुनें।",
-    "committedTotal": "{{total}} तय"
+    "committedTotal": "{{total}} तय",
+    "addBlocker": "ब्लॉकर जोड़ें",
+    "addBlockerHint": "अभ्यास, काम, या कुछ भी जो समय लेता है पर पढ़ाई नहीं है।"
+  },
+  "timer": {
+    "focusChipTitle": "फोकस में",
+    "focusChipRunning": "फोकस ब्लॉक चल रहा है",
+    "focusChipPaused": "रोका गया"
+  },
+  "notif": {
+    "planSoonTitle": "{{n}} मिनट में अध्ययन ब्लॉक",
+    "planNowTitle": "अध्ययन ब्लॉक अब शुरू",
+    "planFallback": "अध्ययन सत्र"
   }
 }

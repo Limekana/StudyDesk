@@ -624,9 +624,127 @@
   .cal-chip-label, .cal-pip, .cal-more { display: none; }
   .cal-band { font-size: 0; height: 4px; padding: 0; }
   .cal-bands { padding: 0 2px; }
-  /* The week grid's hour columns do not survive this width at all. */
-  .cal-weekwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .cal-weekwrap .cal-weekhead,
-  .cal-weekwrap .cal-allday,
-  .cal-weekwrap .cal-hours { min-width: 620px; }
+  /* v1.10 — the sideways-scrolling week grid is gone from this tier. It used
+     to force a 620px min-width box here, which showed about three and a half
+     days at once; you cannot answer "is my week full?" by scrolling, because
+     by the time Friday is visible Monday is a memory. `WeekRibbon` renders
+     instead below 769px (the tier is resolved in JS, so WeekSheet never
+     mounts here and these rules had become dead). */
+
+  .cal-ribbon-sum {
+    display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+    padding: 9px 11px; margin-bottom: 4px;
+    background: var(--paper2, var(--card));
+    border-radius: 8px; border-inline-start: 2.5px solid var(--accent2, var(--border2));
+  }
+  .cal-ribbon-sum-l {
+    font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.13em;
+    text-transform: uppercase; color: var(--muted2);
+  }
+  .cal-ribbon-sum-v { font-family: var(--font-display); font-size: 14px; color: var(--text); }
+
+  /* The axis is positioned, not flowed: a tick sits at the same percentage its
+     hour occupies in the tracks below, so labels line up with the grid rather
+     than being spaced evenly and drifting out of step with it. */
+  .cal-ribbon-axis {
+    position: relative; height: 12px;
+    margin-inline-start: var(--rb-gutter, 38px);
+  }
+  .cal-ribbon-tick {
+    position: absolute; top: 0; transform: translateX(-50%);
+    font-family: var(--font-mono); font-size: 8px; color: var(--muted2);
+  }
+  [dir="rtl"] .cal-ribbon-tick { transform: translateX(50%); }
+
+  /* Lane pitch 22px, block 18px (was 18/14). The old numbers were sized as if
+     the label were decoration; at a 7px face nothing on a 45-minute block was
+     readable, which made a plan look like a dash rather than a thing you had
+     committed to. */
+  .cal-ribbon-row {
+    display: flex; align-items: stretch;
+    min-height: calc(22px * var(--rb-lanes, 1) + 10px);
+    border-top: 1px solid var(--rule, var(--border2));
+  }
+  .cal-ribbon-row:last-child { border-bottom: 1px solid var(--rule, var(--border2)); }
+  .cal-ribbon-row.sel { background: var(--paper2, var(--card)); }
+
+  .cal-ribbon-day {
+    width: var(--rb-gutter, 38px); flex: 0 0 var(--rb-gutter, 38px);
+    display: flex; flex-direction: column; justify-content: center; align-items: flex-start;
+    gap: 1px; padding: 0; background: none; border: 0; cursor: pointer;
+  }
+  .cal-ribbon-dow {
+    font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted2);
+  }
+  .cal-ribbon-num { font-family: var(--font-display); font-size: 14px; color: var(--muted); line-height: 1.1; }
+  .cal-ribbon-row.today .cal-ribbon-num { color: var(--text); font-weight: 600; }
+  .cal-ribbon-pins { display: flex; gap: 2px; }
+  .cal-ribbon-pin { width: 5px; height: 5px; border-radius: 50%; background: var(--muted2); }
+  .cal-ribbon-pin.k-exam { background: var(--danger, #c2757a); }
+  .cal-ribbon-pin.k-assignment { background: transparent; border: 1px solid var(--muted2); }
+
+  .cal-ribbon-track { position: relative; flex: 1 1 auto; min-width: 0; }
+  .cal-ribbon-now { position: absolute; top: 0; bottom: 0; width: 1.5px; background: var(--danger, #c2757a); }
+
+  .cal-ribbon-b {
+    position: absolute; top: calc(5px + var(--rb-lane, 0) * 22px); height: 18px;
+    border-radius: 3px; border: 0; padding: 0 4px;
+    font-family: var(--font-mono); font-size: 9px; line-height: 18px;
+    overflow: hidden; white-space: nowrap; text-align: start; cursor: pointer;
+    background: var(--rb-color, var(--border2)); color: #fff;
+  }
+  /* Lessons are the day's skeleton: palest, and drawn as context rather than
+     as an event competing with the things sitting on top of them. */
+  .cal-ribbon-b.k-lesson { background: var(--rule2, #e7e0d1); color: var(--muted); }
+  /* Planned is OUTLINED and logged is FILLED, mirroring the schema's own split
+     between `planned_sessions` and `study_sessions`. An intention is not a
+     fact, and the UI must not blur what the database keeps apart. */
+  /* Planned is OUTLINED and logged is FILLED (see below), but "outlined" used
+     to mean fully transparent with a 1.5px dashed rule — which reads as a hole
+     in the row rather than as a block sitting in it, and at 45 minutes wide the
+     two dashed edges were most of the block. A 1px rule over the course's own
+     colour at low opacity keeps the intention/fact distinction legible while
+     giving the block the same optical weight as a lesson. `line-height` is one
+     border-pair short of the height because the box is border-box. */
+  .cal-ribbon-b.k-planned {
+    background: var(--rb-wash, transparent); color: var(--rb-color, var(--muted));
+    border: 1px dashed var(--rb-color, var(--border2)); line-height: 16px;
+  }
+  .cal-ribbon-b.k-planned.s-dismissed { opacity: 0.45; }
+  .cal-ribbon-b.k-planned.s-missed { border-style: dotted; }
+
+  /* SD-F4 — the way in to a blocker. Until this button, commitments could only
+     be created by pressing "c", which is not a gesture a phone has; the feature
+     shipped invisible and training sessions got entered as school lessons
+     instead. Styled as a quiet outlined action rather than a primary button:
+     it is an occasional act, not the main thing you do on this screen. */
+  .cal-add-blocker {
+    display: flex; align-items: center; gap: 7px; width: 100%;
+    padding: 9px 10px; text-align: start; cursor: pointer;
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted);
+    background: none; border: 1px dashed var(--rule, var(--border2)); border-radius: 6px;
+  }
+  .cal-add-blocker-plus {
+    font-family: var(--font-display); font-size: 14px; line-height: 1;
+    color: var(--accent2, var(--muted));
+  }
+  .cal-agenda-note {
+    padding: 5px 2px 0; font-size: 11px; font-style: italic; color: var(--muted2);
+  }
+
+  /* Named free windows in the day agenda — the planning half of this view. */
+  .cal-gap {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    padding: 9px 2px; background: none; border: 0;
+    border-bottom: 1px dashed var(--rule, var(--border2)); cursor: pointer; text-align: start;
+  }
+  .cal-gap-time { font-family: var(--font-mono); font-size: 10px; color: var(--accent2, var(--muted)); flex: 0 0 auto; }
+  .cal-gap-len { font-size: 12px; color: var(--muted); font-style: italic; }
+  .cal-gap-add {
+    margin-inline-start: auto; width: 20px; height: 20px; border-radius: 50%;
+    border: 1px solid var(--accent2, var(--border2)); color: var(--accent2, var(--muted));
+    font-size: 13px; line-height: 18px; text-align: center; flex: 0 0 auto;
+  }
 }

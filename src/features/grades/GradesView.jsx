@@ -211,7 +211,15 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
       <div className="gv-wrap">
         <div className="gv-hero">
           <div className="gv-gpa">
-            <div className="gv-gpa-label">{mode === 'us' ? t('gv.gpa') : t('gv.ibAverage')}</div>
+            {/* Three modes, and this had two branches — so 'custom' fell into
+                the IB arm and a Finnish 4-10 average was captioned "IB
+                Average". The number underneath was right; the word above it
+                was not, which is the worse of the two ways to be wrong. */}
+            <div className="gv-gpa-label">
+              {mode === 'us' ? t('gv.gpa')
+                : mode === 'custom' ? (scale.name || t('gv.customAverage'))
+                : t('gv.ibAverage')}
+            </div>
             <div className="gv-gpa-value">{gpa.toFixed(2)}</div>
             <div className="gv-gpa-scale" style={{ textTransform: 'uppercase' }}>
               {mode === 'custom' ? describeScale(scale, t) : mode === 'us' ? t('gv.usScale') : t('gv.ibScale')}

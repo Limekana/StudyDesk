@@ -119,7 +119,18 @@ async function cancelAllNotifications() {
   }
 }
 
-async function scheduleNotifications(exams, assignments, courses) {
+/** How far ahead planned-session reminders are scheduled, and how many.
+ *
+ *  Both caps exist because Android holds a finite number of pending alarms per
+ *  app (a few hundred) and this function already spends 30 on the daily digest
+ *  plus up to three per exam and two per assignment. A user who plans a session
+ *  every evening for a term would silently push the exam reminders out of the
+ *  queue — the reminders that actually matter. Nearest-first ordering means the
+ *  ones that survive the cap are the ones arriving soonest. */
+const PLAN_NOTIFY_HORIZON_DAYS = 30;
+const PLAN_NOTIFY_MAX = 60;
+
+async function scheduleNotifications(exams, assignments, courses, plannedSessions, planPrefs, t) {
   try {
     const perm = await LocalNotifications.requestPermissions();
     if (perm.display !== "granted") return;
@@ -183,6 +194,54 @@ async function scheduleNotifications(exams, assignments, courses) {
       if (dueDay.getTime() > now) notes.push({ id: id++, title: "📋 Due today", body: label, schedule: { at: dueDay }, smallIcon: "ic_stat_studydesk", iconColor: "#8b4a62", actionTypeId: ASSIGNMENT_ACTION_TYPE, extra: { assignmentId: asgn.id } });
     });
 
+    // ── Planned study sessions (v1.10) ──────────────────────────────────
+    //
+    // Skips anything already resolved: `fulfilledBy` means the session was
+    // logged and `dismissedAt` means it was dropped, and nagging about either
+    // is how a reminder system teaches people to ignore it. Skips the past
+    // too — a plan whose start time has gone is not upcoming.
+    const lead = planPrefs?.lead;
+    const wantStart = !!planPrefs?.atStart;
+    if (Number.isFinite(lead) || wantStart) {
+      const horizon = now + PLAN_NOTIFY_HORIZON_DAYS * 24 * 60 * 60 * 1000;
+      const upcoming = (plannedSessions || [])
+        .filter((p) => p && p.startsAt && !p.fulfilledBy && !p.dismissedAt && !p.deletedAt)
+        .map((p) => ({ p, at: new Date(p.startsAt).getTime() }))
+        .filter((x) => Number.isFinite(x.at) && x.at > now && x.at <= horizon)
+        .sort((a, b) => a.at - b.at);
+
+      let planned = 0;
+      for (const { p, at } of upcoming) {
+        if (planned >= PLAN_NOTIFY_MAX) break;
+        const c = p.subjectId ? courses[p.subjectId] : null;
+        const label = p.title || (c && !c.deletedAt ? c.name : null) || t('notif.planFallback');
+        // The lead reminder is dropped, not clamped, when it would land in the
+        // past: a plan made 10 minutes before it starts should still get its
+        // at-start ping without also firing a "in 30 minutes" one immediately.
+        if (Number.isFinite(lead)) {
+          const leadAt = at - lead * 60 * 1000;
+          if (leadAt > now) {
+            notes.push({
+              id: id++, title: t('notif.planSoonTitle', { n: lead }), body: label,
+              schedule: { at: new Date(leadAt) },
+              smallIcon: "ic_stat_studydesk", iconColor: "#8b4a62",
+              extra: { view: "timer" },
+            });
+            planned++;
+          }
+        }
+        if (wantStart && planned < PLAN_NOTIFY_MAX) {
+          notes.push({
+            id: id++, title: t('notif.planNowTitle'), body: label,
+            schedule: { at: new Date(at) },
+            smallIcon: "ic_stat_studydesk", iconColor: "#8b4a62",
+            extra: { view: "timer" },
+          });
+          planned++;
+        }
+      }
+    }
+
     if (notes.length > 0) await LocalNotifications.schedule({ notifications: notes });
   } catch(e) {
     console.error("[StudyDesk] scheduleNotifications failed:", e);
@@ -206,6 +265,23 @@ const INITIAL = {
   gradeMode:"ib",                  // 'ib' | 'us' | 'custom' — persisted locally
   customScale:DEFAULT_CUSTOM_SCALE, // bounds for gradeMode 'custom' (SD-F4)
   aiEnabled:false,                 // AI debrief opt-in — device-level, persisted locally
+  // v1.10 (Item 12) — Lock In's two native additions, independent on purpose.
+  // The chip is harmless so it defaults on; screen pinning traps the user in
+  // the app until they hold Back+Recents, so it defaults off and stays that way
+  // until someone deliberately asks for it.
+  focusChip:true, focusPin:false,
+  // v1.10 (owner feedback) — how late you are willing to study, in minutes past
+  // midnight, or null for "stop at whatever is already in the day".
+  //
+  // The calendar's free-window list used to end at the last lesson, which put
+  // the evening — the part a student actually plans in — off the end of the
+  // list entirely. 21:00 by default: late enough to be useful, early enough to
+  // still read as "before bed" rather than "all night".
+  studyUntil:21*60,
+  // Reminders for planned study sessions. Two independent settings because
+  // they answer different questions: the lead one is "start wrapping up", the
+  // at-start one is "go". Both default on at the owner's suggested baseline.
+  planRemindLead:30, planRemindStart:true,
   notifEnabled:true,               // reminders opt-in — set at onboarding, changeable in Settings
   view:"actions", activeCourse:null,
 };
@@ -482,6 +558,27 @@ function reducer(state, action) {
     case "SET_CUSTOM_SCALE":
       return {...state, customScale: normalizeScale(action.scale)};
     case "SET_AI_ENABLED": return {...state,aiEnabled:!!action.on};
+    case "SET_FOCUS_CHIP": return {...state,focusChip:!!action.on};
+    case "SET_FOCUS_PIN": return {...state,focusPin:!!action.on};
+    case "SET_PLAN_REMIND": {
+      const next = { ...state };
+      if (action.lead !== undefined) {
+        const n = action.lead === null ? null : Number(action.lead);
+        next.planRemindLead = n === null || !Number.isFinite(n) ? null : Math.max(1, Math.min(24*60, Math.round(n)));
+      }
+      if (action.atStart !== undefined) next.planRemindStart = !!action.atStart;
+      return next;
+    }
+    case "SET_STUDY_UNTIL": {
+      // null switches it off. Anything else is clamped into the day: a stray
+      // 25:00 would push the free window past midnight and start listing
+      // tomorrow morning as tonight.
+      const m = action.minutes;
+      if (m === null || m === undefined) return {...state, studyUntil:null};
+      const n = Number(m);
+      if (!Number.isFinite(n)) return state;
+      return {...state, studyUntil: Math.max(0, Math.min(24*60, Math.round(n)))};
+    }
     case "SET_NOTIF_ENABLED": return {...state,notifEnabled:!!action.on};
 
     // ── Sync: bulk merge from Supabase pull (LWW logic in merge.js) ──
@@ -556,6 +653,44 @@ export default function App() {
       // rather than inheriting an "on" it was never asked about.
       const aiEnabled = (() => {
         try { return localStorage.getItem("studydesk-ai-enabled") === "1"; } catch { return false; }
+      })();
+      // Lock In's native extras. The chip's key is absent for everyone who
+      // installed before v1.10, and absent must mean ON there — it is the
+      // half of the feature the owner actually asked for. Pinning's absent
+      // key means OFF, because nobody consents to being locked in by default.
+      const focusChip = (() => {
+        try { return localStorage.getItem("studydesk-focus-chip") !== "0"; } catch { return true; }
+      })();
+      const focusPin = (() => {
+        try { return localStorage.getItem("studydesk-focus-pin") === "1"; } catch { return false; }
+      })();
+      // Study-until. Absent means the default is in force, which is the right
+      // reading for every install that predates the setting — the evening was
+      // never deliberately excluded, it just fell off the end of the window.
+      // An explicit "off" is the only thing that disables it.
+      const studyUntil = (() => {
+        try {
+          const raw = localStorage.getItem("studydesk-study-until");
+          if (raw === null) return 21*60;
+          if (raw === "off") return null;
+          const n = Number(raw);
+          return Number.isFinite(n) ? Math.max(0, Math.min(24*60, Math.round(n))) : 21*60;
+        } catch { return 21*60; }
+      })();
+      // Planned-session reminders. Absent keys mean the defaults, which is the
+      // right reading for an install that predates the feature — nobody there
+      // declined it, it did not exist.
+      const planRemindLead = (() => {
+        try {
+          const raw = localStorage.getItem("studydesk-plan-lead");
+          if (raw === null) return 30;
+          if (raw === "off") return null;
+          const n = Number(raw);
+          return Number.isFinite(n) ? Math.max(1, Math.min(24*60, Math.round(n))) : 30;
+        } catch { return 30; }
+      })();
+      const planRemindStart = (() => {
+        try { return localStorage.getItem("studydesk-plan-start") !== "0"; } catch { return true; }
       })();
       // Reminders. The key is absent for everyone who onboarded before this
       // preference existed, and those users have already been through the
@@ -700,6 +835,11 @@ export default function App() {
         customScale,
         aiEnabled,
         notifEnabled,
+        focusChip,
+        focusPin,
+        studyUntil,
+        planRemindLead,
+        planRemindStart,
         view: "actions",
       };
     } catch { return init; }
@@ -735,8 +875,25 @@ export default function App() {
     try { localStorage.setItem("studydesk-ai-enabled", state.aiEnabled ? "1" : "0"); } catch {}
   }, [state.aiEnabled]);
   useEffect(() => {
+    try { localStorage.setItem("studydesk-focus-chip", state.focusChip ? "1" : "0"); } catch {}
+  }, [state.focusChip]);
+  useEffect(() => {
+    try { localStorage.setItem("studydesk-focus-pin", state.focusPin ? "1" : "0"); } catch {}
+  }, [state.focusPin]);
+  useEffect(() => {
     try { localStorage.setItem("studydesk-notifications", state.notifEnabled ? "1" : "0"); } catch {}
   }, [state.notifEnabled]);
+  useEffect(() => {
+    try {
+      localStorage.setItem("studydesk-study-until", state.studyUntil === null ? "off" : String(state.studyUntil));
+    } catch {}
+  }, [state.studyUntil]);
+  useEffect(() => {
+    try {
+      localStorage.setItem("studydesk-plan-lead", state.planRemindLead === null ? "off" : String(state.planRemindLead));
+      localStorage.setItem("studydesk-plan-start", state.planRemindStart ? "1" : "0");
+    } catch {}
+  }, [state.planRemindLead, state.planRemindStart]);
 
   // Schedule notifications after onboarding with fresh state (#21 fix)
   // Reschedule notifications whenever exams or assignments change (not just onboarding)
@@ -747,7 +904,12 @@ export default function App() {
     // scheduleNotifications — which calls requestPermissions() and therefore
     // raised the very OS prompt the user had just declined.
     if (state.notifEnabled) {
-      scheduleNotifications(state.exams, state.assignments, state.courses);
+      scheduleNotifications(
+        state.exams, state.assignments, state.courses,
+        state.plannedSessions,
+        { lead: state.planRemindLead, atStart: state.planRemindStart },
+        t,
+      );
     } else {
       // Turning them off must also clear anything already scheduled, or
       // reminders keep arriving from a previous session's schedule.
@@ -756,7 +918,11 @@ export default function App() {
     // state.courses belongs here: notification bodies carry the course name, so
     // renaming a course left stale text scheduled until an exam or assignment
     // happened to change.
-  }, [onboarded, state.notifEnabled, state.exams, state.assignments, state.courses]);
+    // plannedSessions and both reminder prefs belong here for the same reason
+    // state.courses does: the schedule is derived from them, so changing one
+    // without rescheduling leaves the OS holding a stale set of alarms.
+  }, [onboarded, state.notifEnabled, state.exams, state.assignments, state.courses,
+      state.plannedSessions, state.planRemindLead, state.planRemindStart, t]);
 
   // v1.9 (Item 8) — keep the home-screen widgets in step with the same data,
   // on the same triggers as the notifications above. Both answer "what's next"

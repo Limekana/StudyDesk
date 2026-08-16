@@ -120,7 +120,8 @@
     "course_other": "{{count}} مادة",
     "gpaIb": "متوسط IB",
     "gpaUs": "المعدّل التراكمي",
-    "noGrades": "لا توجد درجات"
+    "noGrades": "لا توجد درجات",
+    "gpaCustom": "المتوسط"
   },
   "nextup": {
     "newPeriodTitle": "فترة جديدة؟ ابدأ بإضافة موادّك",
@@ -217,7 +218,25 @@
     "gradeNoteCustom": "مقياسك الرقمي الخاص — المعدّل متوسط مرجّح، كما في IB. يُحفظ على هذا الجهاز فقط ولا تتم مزامنته. الحساب الرسمي لمؤسستك هو المعتمد دائمًا.",
     "support": "الدعم",
     "supportDev": "ادعم التطوير",
-    "supportDevSub": "رابط إلى Ko-fi. لا شيء في التطبيق مقيّد به."
+    "supportDevSub": "رابط إلى Ko-fi. لا شيء في التطبيق مقيّد به.",
+    "lockInLbl": "Lock In",
+    "focusChip": "شارة التركيز",
+    "focusPin": "تثبيت الشاشة",
+    "focusChipOnNote": "يظهر عد تنازلي في شريط الحالة، وفي Now Bar على One UI 8.",
+    "focusChipOnNoteLegacy": "يظهر عد تنازلي في شريط الحالة أثناء الجلسة.",
+    "focusChipOffNote": "لا يوجد إشعار أثناء الجلسة.",
+    "focusPinOnNote": "يثبّت أندرويد الشاشة. اضغط مطوّلاً على رجوع + الأخيرة للخروج.",
+    "focusPinOffNote": "يمكنك تبديل التطبيقات بحرية أثناء الجلسة.",
+    "planningLbl": "التخطيط",
+    "studyUntil": "أدرس حتى",
+    "studyUntilOnNote": "تمتد الفترات الحرة في التقويم حتى {{time}}، فيظهر المساء كوقت يمكنك التخطيط فيه.",
+    "studyUntilOffNote": "تنتهي الفترات الحرة عند آخر موعد موجود في يومك.",
+    "scaleName": "الاسم",
+    "planRemindLead": "تذكير قبل",
+    "planRemindStart": "تذكير عند البدء",
+    "minsShort": "{{n}} دقيقة",
+    "planRemindNote": "تذكيرات لفترات الدراسة المخططة في التقويم.",
+    "planRemindBlocked": "فعّل التذكيرات في الأعلى لاستلامها."
   },
   "sdob": {
     "brand": "كفى ترددًا. ابدأ الدراسة.",
@@ -288,7 +307,8 @@
     "fDate": "التاريخ",
     "bAdd": "إضافة درجة",
     "modeCustom": "مخصّص",
-    "scaleSummary": "{{min}}–{{max}} · النجاح {{pass}} · {{best}} هو الأفضل"
+    "scaleSummary": "{{min}}–{{max}} · النجاح {{pass}} · {{best}} هو الأفضل",
+    "customAverage": "المتوسط"
   },
   "sv": {
     "today": "اليوم",
@@ -599,7 +619,11 @@
       "kept": "سجَّلت جلسة لهذه الفترة.",
       "missed": "مضت هذه الفترة ولم يُسجَّل شيء.",
       "dismissed": "وضعت هذه الفترة كغير منجَزة."
-    }
+    },
+    "thisWeek": "هذا الأسبوع",
+    "ribbonSummary": "{{free}} متاح · {{planned}} مخطط · {{logged}} مسجل",
+    "freeWindows": "أوقات متاحة",
+    "freeFor": "{{len}} متاح"
   },
   "an": {
     "trends": "الاتجاهات",
@@ -717,6 +741,18 @@
     "deleteSeries": "حذف السلسلة",
     "errTitle": "أعطِ هذا الالتزام اسمًا.",
     "errDate": "اختر تاريخًا.",
-    "committedTotal": "{{total}} محجوزة"
+    "committedTotal": "{{total}} محجوزة",
+    "addBlocker": "إضافة وقت محجوز",
+    "addBlockerHint": "التدريب أو العمل أو أي شيء يستهلك الوقت وليس دراسة."
+  },
+  "timer": {
+    "focusChipTitle": "وضع التركيز",
+    "focusChipRunning": "جلسة تركيز جارية",
+    "focusChipPaused": "موقفة مؤقتاً"
+  },
+  "notif": {
+    "planSoonTitle": "فترة دراسة بعد {{n}} دقيقة",
+    "planNowTitle": "فترة الدراسة تبدأ الآن",
+    "planFallback": "جلسة دراسة"
   }
 }

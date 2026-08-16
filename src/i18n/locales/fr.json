@@ -65,7 +65,8 @@
     "gpaIb": "Moy. IB",
     "gpaUs": "Moyenne",
     "noGrades": "Aucune note",
-    "course_many": "{{count}} cours"
+    "course_many": "{{count}} cours",
+    "gpaCustom": "Moy."
   },
   "nextup": {
     "newPeriodTitle": "Nouvelle période ? Commence par ajouter tes cours",
@@ -211,7 +212,25 @@
     "gradeNoteCustom": "Votre propre échelle numérique — la moyenne est une moyenne pondérée, comme en IB. Enregistrée sur cet appareil uniquement, sans synchronisation. Le calcul officiel de votre établissement fait toujours foi.",
     "support": "Soutien",
     "supportDev": "Soutenir le développement",
-    "supportDevSub": "Un lien vers Ko-fi. Rien dans l’app n’en dépend."
+    "supportDevSub": "Un lien vers Ko-fi. Rien dans l’app n’en dépend.",
+    "lockInLbl": "Lock In",
+    "focusChip": "Puce de concentration",
+    "focusPin": "Épinglage d’écran",
+    "focusChipOnNote": "Un compte à rebours apparaît dans la barre d’état et, sur One UI 8, dans la Now Bar.",
+    "focusChipOnNoteLegacy": "Un compte à rebours apparaît dans la barre d’état pendant le bloc.",
+    "focusChipOffNote": "Aucune notification pendant le bloc.",
+    "focusPinOnNote": "Android épingle l’écran. Maintiens Retour + Récents pour sortir.",
+    "focusPinOffNote": "Tu peux changer d’application librement pendant le bloc.",
+    "planningLbl": "Planification",
+    "studyUntil": "Étudier jusqu'à",
+    "studyUntilOnNote": "Les créneaux libres du calendrier vont jusqu'à {{time}}, la soirée apparaît donc comme du temps à planifier.",
+    "studyUntilOffNote": "Les créneaux libres s'arrêtent au dernier élément déjà présent dans la journée.",
+    "scaleName": "Nom",
+    "planRemindLead": "Rappel avant",
+    "planRemindStart": "Rappel au début",
+    "minsShort": "{{n}} min",
+    "planRemindNote": "Rappels pour les blocs de révision planifiés dans le calendrier.",
+    "planRemindBlocked": "Activez les rappels ci-dessus pour les recevoir."
   },
   "sdob": {
     "brand": "Arrête de choisir. Commence à réviser.",
@@ -276,7 +295,8 @@
     "grades_many": "{{count}} notes",
     "courses_many": "{{count}} cours",
     "modeCustom": "Perso",
-    "scaleSummary": "{{min}}–{{max}} · admis {{pass}} · {{best}} = meilleur"
+    "scaleSummary": "{{min}}–{{max}} · admis {{pass}} · {{best}} = meilleur",
+    "customAverage": "Moyenne"
   },
   "sv": {
     "today": "Aujourd’hui",
@@ -584,7 +604,11 @@
       "kept": "Vous avez enregistré une session pour ce créneau.",
       "missed": "Ce créneau est passé et rien n'a été enregistré.",
       "dismissed": "Vous avez marqué ce créneau comme non fait."
-    }
+    },
+    "thisWeek": "Cette semaine",
+    "ribbonSummary": "{{free}} libre · {{planned}} planifié · {{logged}} enregistré",
+    "freeWindows": "Créneaux libres",
+    "freeFor": "{{len}} libre"
   },
   "an": {
     "trends": "Tendances",
@@ -702,6 +726,18 @@
     "deleteSeries": "Supprimer la série",
     "errTitle": "Donnez un nom à cet engagement.",
     "errDate": "Choisissez une date.",
-    "committedTotal": "{{total}} pris"
+    "committedTotal": "{{total}} pris",
+    "addBlocker": "Ajouter un créneau bloqué",
+    "addBlockerHint": "Entraînement, travail, tout ce qui prend du temps sans être du travail scolaire."
+  },
+  "timer": {
+    "focusChipTitle": "Concentration",
+    "focusChipRunning": "Bloc de concentration en cours",
+    "focusChipPaused": "En pause"
+  },
+  "notif": {
+    "planSoonTitle": "Bloc de révision dans {{n}} min",
+    "planNowTitle": "Le bloc de révision commence",
+    "planFallback": "Session de révision"
   }
 }

@@ -37,6 +37,8 @@ import {
 } from '../../lib/calendar.js';
 import { lessonsOn, localTimestamp, minutesToSqlTime, timeToMinutes } from '../../lib/timetable.js';
 import { commitmentsOn } from '../../lib/commitments.js';
+import { shortenLabels } from '../../lib/courseLabels.js';
+import { ribbonWindow, spanPct, packRibbon, weekLoad, freeSlots, pctIn } from '../../lib/weekRibbon.js';
 import { COURSE_COLORS } from '../../lib/courseColors.js';
 import { parseLocalDate, toLocalISO, addDays, fmtTime, formatLocale } from '../../lib/dates.js';
 import { downloadIcs } from '../../lib/ics.js';
@@ -209,6 +211,149 @@ function MonthSheet({ rows, bands, byDay, commitmentsByDay, weekStart, locale, s
 function blocksOn(byDay, commitmentsByDay, iso) {
   return [...timedOn(byDay, iso), ...(commitmentsByDay.get(iso) || [])]
     .sort((a, b) => a.startMin - b.startMin);
+}
+
+/** Phone week view — days as ROWS, time running across.
+ *
+ *  Replaces `WeekSheet` below the tablet breakpoint. That sheet is
+ *  days-as-columns, and at 360px it was forced into a 620px min-width box that
+ *  scrolled sideways: about three and a half days on screen, which defeats the
+ *  one thing this view is for. See `lib/weekRibbon.js` for the layout rules,
+ *  in particular why all seven rows share ONE time window.
+ *
+ *  Deliberately NOT drag-to-create, unlike the desktop grid. At a 40px row a
+ *  drag is fiddly and fights the page scroll; the owner agreed to drop it.
+ *  Planning happens by tapping a named free gap in the day agenda instead,
+ *  which is a bigger target and states the length of the gap before you commit
+ *  to filling it.
+ */
+function WeekRibbon({ days, byDay, lessonsByDay, commitmentsByDay, locale, courseLabels, selected, onSelect, onOpen, t }) {
+  const [nowMin, setNowMin] = useState(() => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); });
+  useEffect(() => {
+    const id = setInterval(() => { const d = new Date(); setNowMin(d.getHours() * 60 + d.getMinutes()); }, 60000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Lessons first so they land under everything else in paint order; the
+  // packer pins them to lane 0 regardless, but source order decides which of
+  // two same-lane blocks draws on top.
+  const dayItems = useMemo(
+    () => days.map((d) => [...(lessonsByDay.get(d.iso) || []), ...blocksOn(byDay, commitmentsByDay, d.iso)]),
+    [days, byDay, lessonsByDay, commitmentsByDay],
+  );
+  const flatItems = useMemo(() => dayItems.flat(), [dayItems]);
+  // Same Pre-IB problem the timetable had, on an even narrower surface: a
+  // 45-minute block is about 20px here, and every label started with the same
+  // six characters. Shortening cannot make 20px readable, but "Mat" identifies
+  // a course and "Pre" does not. The map is built from the COURSE LIST by the
+  // parent and passed in, rather than from the titles on this screen — measured
+  // over the latter, one commitment named "Basketball practice" shares no
+  // prefix with anything and collapses the whole map back to identity.
+  const label = useCallback((it) => courseLabels.get(it.title) || it.title || '', [courseLabels]);
+  const win = useMemo(() => ribbonWindow(flatItems), [flatItems]);
+  const load = useMemo(() => weekLoad(dayItems, win), [dayItems, win]);
+
+  // Ticks every two hours. Hourly labels collide at this width — the text is
+  // wider than the space between two hours once the gutter is taken out.
+  const ticks = useMemo(() => {
+    const out = [];
+    const step = 120;
+    for (let m = Math.ceil(win.from / step) * step; m <= win.to; m += step) out.push(m);
+    return out;
+  }, [win]);
+
+  const today = todayIso();
+
+  return (
+    <div className="cal-ribbon">
+      <div className="cal-ribbon-sum">
+        <div className="cal-ribbon-sum-l">{t('cal.thisWeek')}</div>
+        <div className="cal-ribbon-sum-v">
+          {t('cal.ribbonSummary', {
+            free: minutesLabel(load.freeMin),
+            planned: minutesLabel(load.plannedMin),
+            logged: minutesLabel(load.loggedMin),
+          })}
+        </div>
+      </div>
+
+      <div className="cal-ribbon-axis" aria-hidden="true">
+        {ticks.map((m) => (
+          <span key={m} className="cal-ribbon-tick" style={{ insetInlineStart: `${pctIn(m, win)}%` }}>
+            {String(Math.floor(m / 60)).padStart(2, '0')}
+          </span>
+        ))}
+      </div>
+
+      <div className="cal-ribbon-rows">
+        {days.map((d, i) => {
+          const items = dayItems[i];
+          const { placed, lanes } = packRibbon(items);
+          const allDay = allDayOn(byDay, d.iso);
+          const isToday = d.iso === today;
+          const isSel = selected === d.iso;
+          const date = parseLocalDate(d.iso);
+          return (
+            <div
+              key={d.iso}
+              className={`cal-ribbon-row${isToday ? ' today' : ''}${isSel ? ' sel' : ''}`}
+              style={{ '--rb-lanes': lanes }}
+            >
+              {/* The day label is the accessible control for the row. The
+                  track beside it is a redundant pointer target only, so there
+                  is no nested interactive element to trap a screen reader. */}
+              <button
+                type="button"
+                className="cal-ribbon-day"
+                onClick={() => onSelect(isSel ? null : d.iso)}
+                aria-expanded={isSel}
+              >
+                <span className="cal-ribbon-dow">{date.toLocaleDateString(locale, { weekday: 'short' })}</span>
+                <span className="cal-ribbon-num">{date.getDate()}</span>
+                {allDay.length > 0 && (
+                  <span className="cal-ribbon-pins">
+                    {allDay.slice(0, 3).map((it) => (
+                      <i key={it.id} className={`cal-ribbon-pin k-${it.kind}`} />
+                    ))}
+                  </span>
+                )}
+              </button>
+
+              <div className="cal-ribbon-track" onClick={() => onSelect(isSel ? null : d.iso)}>
+                {isToday && nowMin >= win.from && nowMin <= win.to && (
+                  <span className="cal-ribbon-now" style={{ insetInlineStart: `${pctIn(nowMin, win)}%` }} />
+                )}
+                {placed.map(({ item, lane }) => {
+                  const { left, width } = spanPct(item, win);
+                  return (
+                    <button
+                      key={item.occurrenceId || item.id}
+                      type="button"
+                      className={`cal-ribbon-b k-${item.kind}${item.status ? ` s-${item.status}` : ''}`}
+                      style={{
+                        insetInlineStart: `${left}%`,
+                        width: `${width}%`,
+                        '--rb-lane': lane,
+                        // The wash is what stops an outlined plan reading as a
+                        // hole punched in the row. Same trick the timetable
+                        // uses (`--tt-wash`): the course's own colour at ~12%,
+                        // by appending an alpha pair to the hex.
+                        ...(item.color ? { '--rb-color': item.color, '--rb-wash': `${item.color}1f` } : null),
+                      }}
+                      onClick={(e) => { e.stopPropagation(); onOpen(item); }}
+                      title={item.title || ''}
+                    >
+                      <span>{label(item)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function WeekSheet({ days, byDay, lessonsByDay, commitmentsByDay, weekStart, locale, onOpen, onMoveBlock, onCreatePlan, t }) {
@@ -532,7 +677,7 @@ function WeekSheet({ days, byDay, lessonsByDay, commitmentsByDay, weekStart, loc
 
 // ── Day agenda ─────────────────────────────────────────────────────────────
 
-function DayAgenda({ iso, byDay, lessons, commitments, locale, onOpen, onClose, t }) {
+function DayAgenda({ iso, byDay, lessons, commitments, locale, onOpen, onClose, onPlanGap, onAddBlocker, studyUntil, t }) {
   const items = sortDayItems(byDay.get(iso) || []);
   const timed = items.filter((i) => i.kind === 'session');
   const planned = items.filter((i) => i.kind === 'planned').sort((a, b) => a.startMin - b.startMin);
@@ -546,6 +691,28 @@ function DayAgenda({ iso, byDay, lessons, commitments, locale, onOpen, onClose, 
     .reduce((n, p) => n + (p.durationMinutes || 0), 0);
   // Time the day has already spent before any studying is planned into it.
   const committedMin = commitments.reduce((n, c) => n + c.durationMinutes, 0);
+
+  // v1.10 — the day's free stretches, named. This is the planning half of the
+  // phone calendar: the ribbon shows that an evening is gone, and this says
+  // exactly how much is left and offers to fill it. Computed from the SAME
+  // helper the ribbon uses for its load figures, so the two can never disagree
+  // about what counts as free. Only rendered when a handler is supplied —
+  // desktop plans by dragging the grid and does not need a second route.
+  //
+  // `studyUntil` is why the evening is on this list at all. Without it the
+  // window stops at the last thing already in the day — so a Tuesday whose
+  // last lesson ends at 15:00 reported no free time after 15:00, which is
+  // precisely backwards: that is the free time.
+  //
+  // Applied HERE and not to the ribbon on purpose. The ribbon shares one
+  // horizontal scale across all seven rows, so stretching its window to 21:00
+  // would squeeze every block on the screen narrower — and blocks being too
+  // small is the other half of this same round of feedback. The ribbon still
+  // grows to fit anything you actually plan into the evening, because a
+  // planned block is content and content sets the window.
+  const gapSource = [...lessons, ...commitments, ...timed, ...planned];
+  const gapWin = ribbonWindow(gapSource, undefined, studyUntil);
+  const gaps = onPlanGap ? freeSlots(gapSource, gapWin) : [];
 
   return (
     <div className="cal-agenda-pane">
@@ -679,6 +846,34 @@ function DayAgenda({ iso, byDay, lessons, commitments, locale, onOpen, onClose, 
                 </div>
               </div>
             </div>
+          ))}
+        </div>
+      )}
+
+      {onAddBlocker && (
+        <div className="cal-agenda-group">
+          <button type="button" className="cal-add-blocker" onClick={() => onAddBlocker(iso)}>
+            <span className="cal-add-blocker-plus" aria-hidden="true">+</span>
+            {t('cm.addBlocker')}
+          </button>
+          <div className="cal-agenda-note">{t('cm.addBlockerHint')}</div>
+        </div>
+      )}
+
+      {gaps.length > 0 && (
+        <div className="cal-agenda-group">
+          <div className="cal-agenda-rel">{t('cal.freeWindows')}</div>
+          {gaps.map((g) => (
+            <button
+              key={`${g.from}-${g.to}`}
+              type="button"
+              className="cal-gap"
+              onClick={() => onPlanGap(iso, g.from, Math.min(g.to - g.from, DEFAULT_PLAN_MIN))}
+            >
+              <span className="cal-gap-time">{minutesClock(g.from)}</span>
+              <span className="cal-gap-len">{t('cal.freeFor', { len: minutesLabel(g.to - g.from) })}</span>
+              <span className="cal-gap-add" aria-hidden="true">+</span>
+            </button>
           ))}
         </div>
       )}
@@ -966,6 +1161,20 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
 
   const { byDay, bands } = useMemo(() => buildEvents(state), [state]);
 
+  // Course name -> the shortest label that still tells the courses apart. Only
+  // the ribbon uses it: the day agenda and every editor show full names, where
+  // there is room and where an abbreviated course would read as a different
+  // course. Archived and deleted courses are excluded — a name nobody can
+  // schedule any more must not influence how the live ones are shortened.
+  const courseLabels = useMemo(
+    () => shortenLabels(
+      Object.values(state.courses || {})
+        .filter((c) => c && !c.deletedAt && !c.archivedAt)
+        .map((c) => c.name),
+    ),
+    [state.courses],
+  );
+
   const anchorDate = parseLocalDate(anchor);
   const rows = useMemo(
     () => monthGrid(anchorDate.getFullYear(), anchorDate.getMonth(), weekStart),
@@ -1164,6 +1373,10 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
 
   const openNewCommitment = useCallback((iso, startMin) => {
     setSelected(iso);
+    // Called from the day agenda with no time, where the sensible draft is the
+    // late-afternoon slot almost every training and club actually sits in —
+    // not "now", which on a Sunday morning drafts an 09:00 practice.
+    if (!Number.isFinite(startMin)) startMin = 17 * 60;
     setCommitment({
       startsOn: iso,
       endsOn: '',
@@ -1301,6 +1514,10 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
     else if (e.key === 'Escape' && selected) setSelected(null);
   };
 
+  // Phone week view is the ribbon, not the vertical grid — the grid needed
+  // 620px of horizontal scroll to show a week, which is not a week you can
+  // read at a glance. Tablet and desktop keep the grid, where the height is
+  // available and drag-to-create earns its place.
   const sheet = mode === 'month'
     ? (
       <MonthSheet
@@ -1308,7 +1525,13 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
         selected={selected} onSelect={setSelected} onOpen={openItem} t={t}
       />
     )
-    : (
+    : tier === 'phone' ? (
+      <WeekRibbon
+        days={days} byDay={byDay} lessonsByDay={lessonsByDay} commitmentsByDay={commitmentsByDay} locale={locale}
+        courseLabels={courseLabels}
+        selected={selected} onSelect={setSelected} onOpen={openItem} t={t}
+      />
+    ) : (
       <WeekSheet
         days={days} byDay={byDay} lessonsByDay={lessonsByDay} commitmentsByDay={commitmentsByDay} weekStart={weekStart} locale={locale}
         onOpen={openItem} onMoveBlock={onMoveBlock} onCreatePlan={openNewPlan} t={t}
@@ -1358,6 +1581,14 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
             locale={locale}
             onOpen={openItem}
             onClose={() => setSelected(null)}
+            onPlanGap={tier === 'phone' ? openNewPlan : undefined}
+            // Every tier gets this button, not just phone. Blockers shipped in
+            // v1.10 reachable ONLY by pressing "c" — which meant that on a
+            // phone the feature did not exist, and the owner ended up entering
+            // training sessions as school lessons instead. A keyboard shortcut
+            // is an accelerator, never the only door.
+            onAddBlocker={openNewCommitment}
+            studyUntil={state.studyUntil}
             t={t}
           />
         )}
