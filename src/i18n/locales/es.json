@@ -236,7 +236,24 @@
     "webNotifyOn": "Permitidas",
     "webNotifyBlocked": "Bloqueadas",
     "webNotifyNote": "Los avisos aparecen mientras StudyDesk esté abierto en una pestaña, incluso en segundo plano. No pueden llegar si cierras la pestaña.",
-    "webNotifyDeniedNote": "Tu navegador bloquea las notificaciones de este sitio. Vuelve a permitirlas en la configuración del sitio junto a la barra de direcciones."
+    "webNotifyDeniedNote": "Tu navegador bloquea las notificaciones de este sitio. Vuelve a permitirlas en la configuración del sitio junto a la barra de direcciones.",
+    "feedback": "Comentarios",
+    "feedbackBlurb": "Cuéntale al desarrollador qué funciona y qué no. Se envía con la versión de la app y la plataforma para poder rastrear el informe.",
+    "feedbackCategory": "Categoría",
+    "feedbackRating": "Valoración",
+    "feedbackRatingN": "{{n}} de 5",
+    "feedbackPlaceholder": "¿Qué ha pasado, o qué te gustaría ver?",
+    "feedbackSend": "Enviar comentarios",
+    "feedbackThanks": "Gracias — ya va en camino.",
+    "feedbackEmpty": "Escribe un mensaje primero.",
+    "feedbackSignIn": "Inicia sesión para enviar comentarios.",
+    "feedbackMeta": "Enviado con {{app}} v{{version}}.",
+    "fbCat": {
+      "bug": "Error",
+      "idea": "Idea",
+      "praise": "Elogio",
+      "other": "Otro"
+    }
   },
   "sdob": {
     "brand": "Deja de decidir. Empieza a estudiar.",

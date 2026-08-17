@@ -234,7 +234,24 @@
     "webNotifyOn": "已允许",
     "webNotifyBlocked": "已阻止",
     "webNotifyNote": "只要 StudyDesk 在标签页中打开（包括后台），提醒就会出现。关闭标签页后就无法送达。",
-    "webNotifyDeniedNote": "浏览器正在阻止本站的通知。请在地址栏旁的站点设置中重新允许。"
+    "webNotifyDeniedNote": "浏览器正在阻止本站的通知。请在地址栏旁的站点设置中重新允许。",
+    "feedback": "反馈",
+    "feedbackBlurb": "告诉开发者哪些好用、哪些不好用。会附带应用版本和平台，便于追踪问题。",
+    "feedbackCategory": "分类",
+    "feedbackRating": "评分",
+    "feedbackRatingN": "5 分中的 {{n}} 分",
+    "feedbackPlaceholder": "发生了什么，或者你希望看到什么？",
+    "feedbackSend": "发送反馈",
+    "feedbackThanks": "谢谢 — 已发送。",
+    "feedbackEmpty": "请先写一条消息。",
+    "feedbackSignIn": "登录后即可发送反馈。",
+    "feedbackMeta": "随 {{app}} v{{version}} 一起发送。",
+    "fbCat": {
+      "bug": "缺陷",
+      "idea": "建议",
+      "praise": "表扬",
+      "other": "其他"
+    }
   },
   "sdob": {
     "brand": "别再纠结，开始学习。",

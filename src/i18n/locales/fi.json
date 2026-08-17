@@ -234,7 +234,24 @@
     "webNotifyOn": "Sallittu",
     "webNotifyBlocked": "Estetty",
     "webNotifyNote": "Muistutukset näkyvät kun StudyDesk on auki välilehdellä, myös taustalla. Ne eivät voi saapua kun välilehti on suljettu.",
-    "webNotifyDeniedNote": "Selaimesi estää tämän sivuston ilmoitukset. Salli ne uudelleen osoiterivin vieressä olevista sivuston asetuksista."
+    "webNotifyDeniedNote": "Selaimesi estää tämän sivuston ilmoitukset. Salli ne uudelleen osoiterivin vieressä olevista sivuston asetuksista.",
+    "feedback": "Palaute",
+    "feedbackBlurb": "Kerro kehittäjälle mikä toimii ja mikä ei. Lähetetään sovellusversion ja alustan kanssa, jotta raportti voidaan jäljittää.",
+    "feedbackCategory": "Luokka",
+    "feedbackRating": "Arvosana",
+    "feedbackRatingN": "{{n}} / 5",
+    "feedbackPlaceholder": "Mitä tapahtui, tai mitä haluaisit nähdä?",
+    "feedbackSend": "Lähetä palaute",
+    "feedbackThanks": "Kiitos — palaute on matkalla.",
+    "feedbackEmpty": "Kirjoita ensin viesti.",
+    "feedbackSignIn": "Kirjaudu sisään lähettääksesi palautetta.",
+    "feedbackMeta": "Lähetetään tiedolla {{app}} v{{version}}.",
+    "fbCat": {
+      "bug": "Vika",
+      "idea": "Idea",
+      "praise": "Kehu",
+      "other": "Muu"
+    }
   },
   "sdob": {
     "brand": "Lopeta miettiminen. Aloita opiskelu.",

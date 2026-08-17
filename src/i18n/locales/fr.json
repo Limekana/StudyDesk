@@ -236,7 +236,24 @@
     "webNotifyOn": "Autorisées",
     "webNotifyBlocked": "Bloquées",
     "webNotifyNote": "Les rappels apparaissent tant que StudyDesk est ouvert dans un onglet, même en arrière-plan. Ils ne peuvent pas arriver une fois l'onglet ferme.",
-    "webNotifyDeniedNote": "Votre navigateur bloque les notifications pour ce site. Réautorisez-les dans les paramètres du site, à côté de la barre d'adresse."
+    "webNotifyDeniedNote": "Votre navigateur bloque les notifications pour ce site. Réautorisez-les dans les paramètres du site, à côté de la barre d'adresse.",
+    "feedback": "Commentaires",
+    "feedbackBlurb": "Dites au développeur ce qui fonctionne et ce qui ne fonctionne pas. Envoyé avec la version de l'app et la plateforme pour faciliter le suivi.",
+    "feedbackCategory": "Catégorie",
+    "feedbackRating": "Note",
+    "feedbackRatingN": "{{n}} sur 5",
+    "feedbackPlaceholder": "Que s'est-il passé, ou que souhaiteriez-vous voir ?",
+    "feedbackSend": "Envoyer",
+    "feedbackThanks": "Merci — c'est en route.",
+    "feedbackEmpty": "Écrivez d'abord un message.",
+    "feedbackSignIn": "Connectez-vous pour envoyer un commentaire.",
+    "feedbackMeta": "Envoyé avec {{app}} v{{version}}.",
+    "fbCat": {
+      "bug": "Bug",
+      "idea": "Idée",
+      "praise": "Compliment",
+      "other": "Autre"
+    }
   },
   "sdob": {
     "brand": "Arrête de choisir. Commence à réviser.",

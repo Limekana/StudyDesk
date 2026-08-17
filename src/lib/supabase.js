@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { Preferences } from '@capacitor/preferences';
 import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
 
 // Supabase backend — overridable at build time via Vite env vars so the app
 // can be re-built against a self-hosted Supabase instance without forking
@@ -57,6 +58,25 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     flowType: 'pkce',
   },
 });
+
+// ── Mobile session durability (v1.10) ───────────────────────────────────
+// Ported from NCC's supabase.ts, which got this in v1.7; this app never did.
+// supabase-js drives its token auto-refresh loop off browser visibility /
+// `online` events. In a Capacitor Android WebView those fire unreliably once
+// the app is paused, so a backgrounded app can sail past the access-token
+// expiry without refreshing. Driving the loop off the native app lifecycle
+// instead is Supabase's documented mobile fix: stop on background, (re)start
+// on foreground. startAutoRefresh() also runs an immediate tick, so a token
+// that expired while backgrounded is refreshed the moment the app returns.
+if (isNative) {
+  void CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+    if (isActive) {
+      void supabase.auth.startAutoRefresh();
+    } else {
+      void supabase.auth.stopAutoRefresh();
+    }
+  });
+}
 
 // NOTE: URI scheme must be lowercase. Supabase normalizes redirect URLs
 // per RFC 3986 (which says the scheme part of a URI is case-insensitive

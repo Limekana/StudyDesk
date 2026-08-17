@@ -234,7 +234,24 @@
     "webNotifyOn": "Allowed",
     "webNotifyBlocked": "Blocked",
     "webNotifyNote": "Reminders appear while StudyDesk is open in a tab, even in the background. They cannot arrive once the tab is closed.",
-    "webNotifyDeniedNote": "Your browser is blocking notifications for this site. Re-allow them in the site settings next to the address bar."
+    "webNotifyDeniedNote": "Your browser is blocking notifications for this site. Re-allow them in the site settings next to the address bar.",
+    "feedback": "Feedback",
+    "feedbackBlurb": "Tell the developer what's working and what isn't. Sent with your app version and platform so a report can be traced.",
+    "feedbackCategory": "Category",
+    "feedbackRating": "Rating",
+    "feedbackRatingN": "{{n}} out of 5",
+    "feedbackPlaceholder": "What happened, or what would you like to see?",
+    "feedbackSend": "Send feedback",
+    "feedbackThanks": "Thanks — that's on its way.",
+    "feedbackEmpty": "Write a message first.",
+    "feedbackSignIn": "Sign in to send feedback.",
+    "feedbackMeta": "Sent with {{app}} v{{version}}.",
+    "fbCat": {
+      "bug": "Bug",
+      "idea": "Idea",
+      "praise": "Praise",
+      "other": "Other"
+    }
   },
   "sdob": {
     "brand": "Stop deciding. Start studying.",

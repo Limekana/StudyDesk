@@ -232,7 +232,24 @@
     "webNotifyOn": "Diizinkan",
     "webNotifyBlocked": "Diblokir",
     "webNotifyNote": "Pengingat muncul selama StudyDesk terbuka di tab, termasuk di latar belakang. Tidak bisa muncul setelah tab ditutup.",
-    "webNotifyDeniedNote": "Browser kamu memblokir notifikasi untuk situs ini. Izinkan lagi lewat pengaturan situs di sebelah bilah alamat."
+    "webNotifyDeniedNote": "Browser kamu memblokir notifikasi untuk situs ini. Izinkan lagi lewat pengaturan situs di sebelah bilah alamat.",
+    "feedback": "Masukan",
+    "feedbackBlurb": "Beri tahu pengembang apa yang berhasil dan apa yang tidak. Dikirim dengan versi aplikasi dan platform agar laporan bisa ditelusuri.",
+    "feedbackCategory": "Kategori",
+    "feedbackRating": "Penilaian",
+    "feedbackRatingN": "{{n}} dari 5",
+    "feedbackPlaceholder": "Apa yang terjadi, atau apa yang ingin kamu lihat?",
+    "feedbackSend": "Kirim masukan",
+    "feedbackThanks": "Terima kasih — sudah dikirim.",
+    "feedbackEmpty": "Tulis pesan dulu.",
+    "feedbackSignIn": "Masuk untuk mengirim masukan.",
+    "feedbackMeta": "Dikirim dengan {{app}} v{{version}}.",
+    "fbCat": {
+      "bug": "Bug",
+      "idea": "Ide",
+      "praise": "Pujian",
+      "other": "Lainnya"
+    }
   },
   "sdob": {
     "brand": "Berhenti menimbang. Mulai belajar.",

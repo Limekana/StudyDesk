@@ -234,7 +234,24 @@
     "webNotifyOn": "Zugelassen",
     "webNotifyBlocked": "Blockiert",
     "webNotifyNote": "Erinnerungen erscheinen, solange StudyDesk in einem Tab geöffnet ist, auch im Hintergrund. Nach dem Schließen des Tabs kommen keine mehr an.",
-    "webNotifyDeniedNote": "Dein Browser blockiert Benachrichtigungen für diese Seite. Erlaube sie wieder in den Seiteneinstellungen neben der Adressleiste."
+    "webNotifyDeniedNote": "Dein Browser blockiert Benachrichtigungen für diese Seite. Erlaube sie wieder in den Seiteneinstellungen neben der Adressleiste.",
+    "feedback": "Feedback",
+    "feedbackBlurb": "Sag dem Entwickler, was funktioniert und was nicht. Wird mit App-Version und Plattform gesendet, damit Meldungen nachvollziehbar sind.",
+    "feedbackCategory": "Kategorie",
+    "feedbackRating": "Bewertung",
+    "feedbackRatingN": "{{n}} von 5",
+    "feedbackPlaceholder": "Was ist passiert, oder was wünschst du dir?",
+    "feedbackSend": "Feedback senden",
+    "feedbackThanks": "Danke — es ist unterwegs.",
+    "feedbackEmpty": "Schreib zuerst eine Nachricht.",
+    "feedbackSignIn": "Melde dich an, um Feedback zu senden.",
+    "feedbackMeta": "Gesendet mit {{app}} v{{version}}.",
+    "fbCat": {
+      "bug": "Fehler",
+      "idea": "Idee",
+      "praise": "Lob",
+      "other": "Sonstiges"
+    }
   },
   "sdob": {
     "brand": "Schluss mit Grübeln. Fang an zu lernen.",

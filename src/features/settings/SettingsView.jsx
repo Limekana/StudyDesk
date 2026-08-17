@@ -17,10 +17,35 @@ import { scaleFor, normalizeScale, describeScale } from '../../lib/gradeScale.js
 import { GuestAvatar } from '../../lib/avatar.jsx';
 import pkg from '../../../package.json';
 
+// A v4 uuid for a feedback row. crypto.randomUUID needs a secure context, and
+// the fallback builds one by hand rather than inventing a non-uuid id string —
+// the column is `uuid`, so a "fb-1a2b3c" style fallback would be rejected by
+// the database at the worst possible moment (offline, on retry).
+function newFeedbackId() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  const b = new Uint8Array(16);
+  globalThis.crypto.getRandomValues(b);
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
 const css = `
 .sv2-wrap{padding:16px 24px 80px;max-width:680px;margin:0 auto;}
 .sv2-section{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:14px;}
 .sv2-section-title{font-family:var(--font-mono);font-size:10px;letter-spacing:0.18em;color:var(--muted2);text-transform:uppercase;margin-bottom:14px;}
+
+/* Feedback (v1.10) */
+.sv2-fb-cats{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+.sv2-fb-cat{font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;padding:8px 13px;border-radius:999px;border:1px solid var(--border2);background:var(--bg);color:var(--muted2);cursor:pointer;transition:border-color .15s,background .15s,color .15s;}
+.sv2-fb-cat:hover{border-color:var(--muted2);}
+.sv2-fb-cat--on{border-color:var(--accent,#2e7d52);background:color-mix(in srgb,var(--accent,#2e7d52) 8%,transparent);color:var(--accent,#2e7d52);font-weight:600;}
+.sv2-fb-stars{display:flex;gap:4px;margin-bottom:12px;}
+.sv2-fb-star{font-size:21px;line-height:1;background:none;border:none;padding:2px 3px;cursor:pointer;color:var(--border2);transition:color .12s;}
+.sv2-fb-star--on{color:var(--accent,#2e7d52);}
+.sv2-fb-text{width:100%;min-height:98px;resize:vertical;}
+.sv2-fb-count{font-family:var(--font-mono);font-size:10px;color:var(--muted2);text-align:end;margin-top:5px;}
 
 /* Language switcher grid (v1.5.1) */
 .sv2-lang-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:184px;overflow-y:auto;overscroll-behavior:contain;}
@@ -133,6 +158,13 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
   // because the user cannot tell it apart from a bug. Null until the answer
   // arrives, which is also the correct state on web (the probe resolves to all
   // -false there and the section never renders).
+  // ── Feedback (v1.10) ──────────────────────────────────────────────────
+  const FEEDBACK_MAX = 4000;
+  const FEEDBACK_CATEGORIES = ['bug', 'idea', 'praise', 'other'];
+  const [fbCategory, setFbCategory] = useState('bug');
+  const [fbRating, setFbRating] = useState(0);
+  const [fbMessage, setFbMessage] = useState('');
+
   const [focusCaps, setFocusCaps] = useState(null);
   // Remembers the time across an off/on round trip. Without it, switching the
   // setting off and back on silently resets 22:30 to the 21:00 default, which
@@ -192,6 +224,28 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
     });
   }, [dispatch]);
 
+  // Goes through the outbox rather than straight to Supabase, so a report
+  // written on a train is not lost — enqueue persists first and drains on the
+  // next connection. enqueue() does not throw and does not need awaiting, so
+  // there is no failure path to show here; a delivery problem surfaces in the
+  // Cloud sync panel like every other queued write.
+  const handleSendFeedback = useCallback(() => {
+    const message = fbMessage.trim();
+    if (!message) { showFlash(t('settings.feedbackEmpty')); return; }
+    if (!session) { showFlash(t('settings.feedbackSignIn')); return; }
+    outbox.enqueue('submit_feedback', {
+      id: newFeedbackId(),
+      category: fbCategory,
+      rating: fbRating || null,
+      message,
+      appVersion: pkg.version,
+      platform: Capacitor.getPlatform(),
+    });
+    setFbMessage('');
+    setFbRating(0);
+    showFlash(t('settings.feedbackThanks'));
+  }, [fbMessage, fbCategory, fbRating, session, showFlash, t]);
+
   const onSignOut = useCallback(async () => {
     if (!(await confirm(t('settings.signOutConfirm')))) return;
     setSigningOut(true);
@@ -204,7 +258,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
       dispatch({ type: 'RESET_AFTER_SIGNOUT' });
       setGuestMode(true);
       window.dispatchEvent(new CustomEvent('studydesk:guest-mode-changed'));
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: 'local' });
       showFlash(t('settings.signedOutLocal'));
     } catch (e) {
       showFlash(t('settings.signOutFailed', { msg: e.message }));
@@ -731,6 +785,65 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
               {deleting ? t('settings.deletingAccount') : t('settings.deleteAccount')}
             </button>
           </div>
+        </div>
+
+        {/* ── Feedback (v1.10) ──
+            Deliberately in the app rather than a survey link: a link leaves
+            the app, cannot work offline, and arrives without the app version
+            or platform, which is most of what makes a report actionable. */}
+        <div className="sv2-section">
+          <div className="sv2-section-title">{t('settings.feedback')}</div>
+          <div className="sv2-note">{t('settings.feedbackBlurb')}</div>
+
+          <div className="sv2-fb-cats" role="group" aria-label={t('settings.feedbackCategory')}>
+            {FEEDBACK_CATEGORIES.map((c) => (
+              <button
+                key={c}
+                type="button"
+                className={`sv2-fb-cat${fbCategory === c ? ' sv2-fb-cat--on' : ''}`}
+                onClick={() => setFbCategory(c)}
+                aria-pressed={fbCategory === c}
+              >
+                {t(`settings.fbCat.${c}`)}
+              </button>
+            ))}
+          </div>
+
+          <div className="sv2-fb-stars" role="group" aria-label={t('settings.feedbackRating')}>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                className={`sv2-fb-star${n <= fbRating ? ' sv2-fb-star--on' : ''}`}
+                onClick={() => setFbRating(n === fbRating ? 0 : n)}
+                aria-label={t('settings.feedbackRatingN', { n })}
+                aria-pressed={n <= fbRating}
+              >
+                {n <= fbRating ? '★' : '☆'}
+              </button>
+            ))}
+          </div>
+
+          <textarea
+            className="sv2-fb-text"
+            value={fbMessage}
+            maxLength={FEEDBACK_MAX}
+            onChange={(e) => setFbMessage(e.target.value)}
+            placeholder={t('settings.feedbackPlaceholder')}
+            aria-label={t('settings.feedback')}
+          />
+          <div className="sv2-fb-count">{fbMessage.length}/{FEEDBACK_MAX}</div>
+
+          <div className="sv2-action">
+            <button
+              className="btn-outline"
+              onClick={handleSendFeedback}
+              disabled={!fbMessage.trim()}
+            >
+              {t('settings.feedbackSend')}
+            </button>
+          </div>
+          <div className="sv2-note">{t('settings.feedbackMeta', { app: 'StudyDesk', version: appVersion })}</div>
         </div>
 
         {/* ── Support ──
