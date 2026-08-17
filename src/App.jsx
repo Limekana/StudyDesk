@@ -12,6 +12,7 @@ import AuthGate from "./features/auth/AuthGate.jsx";
 import { isGuestMode, setGuestMode } from "./lib/guestMode.js";
 import { scheduleOriginStamp } from "./lib/originMarker.js";
 import { inheritFromNexus } from "./lib/suiteSso.js";
+import { hydrateOnboardedFromCloud, markOnboardedCloud } from "./lib/onboardingCloud.js";
 import * as sync from "./lib/sync.js";
 import * as outbox from "./lib/outbox.js";
 import { applyRemotePull } from "./lib/merge.js";
@@ -849,6 +850,23 @@ export default function App() {
   const [onboarded, setOnboarded] = useState(() => {
     try { return localStorage.getItem("studydesk-onboarded") === "1"; } catch { return false; }
   });
+  // v1.10 - ask the ACCOUNT whether onboarding is already done, not just this
+  // device. Gated so a signed-in user never sees a frame of the wizard before
+  // the answer lands; a guest or signed-out user resolves immediately, because
+  // there is no account to ask.
+  const [onboardChecked, setOnboardChecked] = useState(false);
+  useEffect(() => {
+    if (session === undefined) return;   // auth still resolving
+    if (!session) { setOnboardChecked(true); return; }
+    let cancelled = false;
+    setOnboardChecked(false);
+    hydrateOnboardedFromCloud().then((done) => {
+      if (cancelled) return;
+      if (done) setOnboarded(true);
+      setOnboardChecked(true);
+    });
+    return () => { cancelled = true; };
+  }, [session]);
   useEffect(() => {
     try { localStorage.setItem("studydesk-v1", JSON.stringify({
       courses:state.courses,
@@ -1078,6 +1096,7 @@ export default function App() {
     // step 3) behaves as before; only an explicit false opts out.
     dispatch({type:"SET_NOTIF_ENABLED", on: opts.notifications !== false});
     try { localStorage.setItem("studydesk-onboarded","1"); } catch {}
+    void markOnboardedCloud();
     setOnboarded(true);
     // Notifications scheduled via useEffect watching onboarded — avoids stale closure (#21)
   }, []);
@@ -1473,7 +1492,7 @@ export default function App() {
 
   return (<>
     
-    {!onboarded && <OnboardingView onComplete={handleOnboardingComplete}/>}
+    {!onboarded && onboardChecked && <OnboardingView onComplete={handleOnboardingComplete}/>}
     {onboarded && (
       <div className={"app"+(rail?" is-rail":"")} data-tier={shellTier}>
       {/* ── Desktop sidebar ──
