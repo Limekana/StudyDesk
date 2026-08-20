@@ -1,0 +1,7 @@
+Ein Kalender auf dem Telefon – und Schluss mit den ständigen Abmeldungen.
+
+Die Wochenansicht gibt es jetzt mobil: Unterricht, geplante Lernblöcke und andere Termine nebeneinander, neue Blöcke direkt im Raster. Stundenpläne sind besser lesbar, und Planungen können erinnern.
+
+Das Abmelden alle ein bis zwei Tage ist behoben – jede App hält jetzt ihre eigene Sitzung.
+
+Außerdem: Feedback aus den Einstellungen, und die Einrichtung wiederholt sich nicht.

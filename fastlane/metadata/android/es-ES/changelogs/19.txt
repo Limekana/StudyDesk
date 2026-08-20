@@ -1,0 +1,7 @@
+Un calendario en el móvil y el fin de los cierres de sesión constantes.
+
+La vista semanal llega al móvil: clases, bloques de estudio planificados y otros compromisos juntos, y puedes añadir un bloque desde la propia rejilla. Los horarios se leen mejor y las sesiones planificadas pueden avisarte.
+
+Se ha corregido el cierre de sesión cada uno o dos días: cada app mantiene su propia sesión.
+
+Además: comentarios desde Ajustes y configuración que ya no se repite.
