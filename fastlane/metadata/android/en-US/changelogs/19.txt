@@ -1,0 +1,7 @@
+A calendar on the phone, and an end to the constant sign-outs.
+
+The week view has come to mobile: lessons, planned study blocks and other commitments laid out together, and you can add a block straight from the grid. Timetables are easier to read, and planned sessions can remind you.
+
+Being signed out every day or two is fixed — each app now holds its own session instead of sharing one they kept invalidating.
+
+Also: send feedback from Settings, and setup no longer repeats on a known account.

@@ -1,7 +1,7 @@
 {
   "name": "studydesk",
   "private": true,
-  "version": "1.9.0",
+  "version": "1.10.0",
   "type": "module",
   "license": "MIT",
   "author": "Limecore Studio",
@@ -19,7 +19,8 @@
     "preview": "vite preview",
     "cap:sync": "npm run build && cap sync android",
     "electron:dev": "electron .",
-    "electron:build": "npm run build && electron-builder --win"
+    "electron:build": "npm run build && node electron/build.cjs --win && npm run electron:zip",
+    "electron:zip": "node electron/package-zip.cjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.2.0",

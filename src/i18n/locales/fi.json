@@ -64,7 +64,8 @@
     "course_other": "{{count}} kurssia",
     "gpaIb": "IB-ka.",
     "gpaUs": "Keskiarvo",
-    "noGrades": "Ei arvosanoja"
+    "noGrades": "Ei arvosanoja",
+    "gpaCustom": "KA"
   },
   "nextup": {
     "newPeriodTitle": "Uusi jakso? Aloita lisäämällä kurssisi",
@@ -209,7 +210,48 @@
     "gradeNoteCustom": "Oma numeroasteikkosi — keskiarvo on painotettu keskiarvo kuten IB:ssä. Tallennetaan vain tälle laitteelle eikä synkronoidu. Oppilaitoksesi virallinen laskenta on aina se, joka ratkaisee.",
     "support": "Tuki",
     "supportDev": "Tue kehitystä",
-    "supportDevSub": "Linkki Ko-fiin. Mikään sovelluksessa ei ole sen takana."
+    "supportDevSub": "Linkki Ko-fiin. Mikään sovelluksessa ei ole sen takana.",
+    "lockInLbl": "Lock In",
+    "focusChip": "Keskittymismerkki",
+    "focusPin": "Näytön kiinnitys",
+    "focusChipOnNote": "Ajastin näkyy tilapalkissa ja One UI 8:ssa Now Barissa.",
+    "focusChipOnNoteLegacy": "Ajastin näkyy tilapalkissa jakson ajan.",
+    "focusChipOffNote": "Ei ilmoitusta jakson aikana.",
+    "focusPinOnNote": "Android kiinnittää näytön jakson alkaessa. Poistu pitämällä Takaisin + Viimeisimmät.",
+    "focusPinOffNote": "Voit vaihtaa sovellusta vapaasti jakson aikana.",
+    "planningLbl": "Suunnittelu",
+    "studyUntil": "Opiskelen enintään klo",
+    "studyUntilOnNote": "Kalenterin vapaat ajat ulottuvat klo {{time}} asti, joten ilta näkyy aikana, jota voit suunnitella.",
+    "studyUntilOffNote": "Vapaat ajat päättyvät päivän viimeiseen merkintään.",
+    "scaleName": "Nimi",
+    "planRemindLead": "Muistuta ennen",
+    "planRemindStart": "Muistuta alkaessa",
+    "minsShort": "{{n}} min",
+    "planRemindNote": "Muistutukset kalenteriin suunnitelluista opiskelujaksoista.",
+    "planRemindBlocked": "Ota muistutukset yltä käyttöön, jotta nama toimitetaan.",
+    "webNotify": "Selainilmoitukset",
+    "webNotifyAsk": "Salli",
+    "webNotifyOn": "Sallittu",
+    "webNotifyBlocked": "Estetty",
+    "webNotifyNote": "Muistutukset näkyvät kun StudyDesk on auki välilehdellä, myös taustalla. Ne eivät voi saapua kun välilehti on suljettu.",
+    "webNotifyDeniedNote": "Selaimesi estää tämän sivuston ilmoitukset. Salli ne uudelleen osoiterivin vieressä olevista sivuston asetuksista.",
+    "feedback": "Palaute",
+    "feedbackBlurb": "Kerro kehittäjälle mikä toimii ja mikä ei. Lähetetään sovellusversion ja alustan kanssa, jotta raportti voidaan jäljittää.",
+    "feedbackCategory": "Luokka",
+    "feedbackRating": "Arvosana",
+    "feedbackRatingN": "{{n}} / 5",
+    "feedbackPlaceholder": "Mitä tapahtui, tai mitä haluaisit nähdä?",
+    "feedbackSend": "Lähetä palaute",
+    "feedbackThanks": "Kiitos — palaute on matkalla.",
+    "feedbackEmpty": "Kirjoita ensin viesti.",
+    "feedbackSignIn": "Kirjaudu sisään lähettääksesi palautetta.",
+    "feedbackMeta": "Lähetetään tiedolla {{app}} v{{version}}.",
+    "fbCat": {
+      "bug": "Vika",
+      "idea": "Idea",
+      "praise": "Kehu",
+      "other": "Muu"
+    }
   },
   "sdob": {
     "brand": "Lopeta miettiminen. Aloita opiskelu.",
@@ -272,7 +314,8 @@
     "fDate": "Päivämäärä",
     "bAdd": "Lisää arvosana",
     "modeCustom": "Oma",
-    "scaleSummary": "{{min}}–{{max}} · läpäisy {{pass}} · {{best}} paras"
+    "scaleSummary": "{{min}}–{{max}} · läpäisy {{pass}} · {{best}} paras",
+    "customAverage": "Keskiarvo"
   },
   "sv": {
     "today": "Tänään",
@@ -579,7 +622,11 @@
       "kept": "Kirjasit tälle jaksolle opiskelukerran.",
       "missed": "Jakso on mennyt eikä mitään kirjattu.",
       "dismissed": "Merkitsit jakson tekemättömäksi."
-    }
+    },
+    "thisWeek": "Tällä viikolla",
+    "ribbonSummary": "{{free}} vapaana · {{planned}} suunniteltu · {{logged}} kirjattu",
+    "freeWindows": "Vapaat ikkunat",
+    "freeFor": "{{len}} vapaana"
   },
   "an": {
     "trends": "Kehitys",
@@ -697,6 +744,18 @@
     "deleteSeries": "Poista sarja",
     "errTitle": "Anna menolle nimi.",
     "errDate": "Valitse päivä.",
-    "committedTotal": "{{total}} varattu"
+    "committedTotal": "{{total}} varattu",
+    "addBlocker": "Lisää varaus",
+    "addBlockerHint": "Treenit, työ tai mikä tahansa, joka vie aikaa mutta ei ole opiskelua."
+  },
+  "timer": {
+    "focusChipTitle": "Lock In päällä",
+    "focusChipRunning": "Keskittymisjakso käynnissä",
+    "focusChipPaused": "Tauolla"
+  },
+  "notif": {
+    "planSoonTitle": "Opiskelujakso {{n}} min kuluttua",
+    "planNowTitle": "Opiskelujakso alkaa nyt",
+    "planFallback": "Opiskelujakso"
   }
 }

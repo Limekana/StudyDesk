@@ -225,14 +225,42 @@
 }
 .tt-lesson:hover { box-shadow: var(--shadow-md); }
 .tt-lesson-title { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tt-lesson-meta { font-family: var(--font-mono); font-size: 9px; color: var(--muted); }
+.tt-lesson-meta {
+  font-family: var(--font-mono); font-size: 9px; color: var(--muted);
+  display: flex; gap: 5px; min-width: 0;
+}
+.tt-lesson-room { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 @media (max-width: 700px) {
   /* The gutter is the first thing to go on a phone: seven columns of lessons
-     matter more than the hour labels, which the block times already state. */
-  .tt-grid-head, .tt-grid-body { grid-template-columns: 26px repeat(7, minmax(0, 1fr)); }
-  .tt-grid-hour { font-size: 8px; padding-inline-end: 3px; }
-  .tt-lesson-meta { display: none; }
+     matter more than the hour labels, which the block times already state.
+     Trimmed again to 20px — every pixel taken off the gutter is a pixel of
+     course name across all seven columns, and the labels are two digits. */
+  .tt-grid-head, .tt-grid-body { grid-template-columns: 20px repeat(7, minmax(0, 1fr)); }
+  .tt-grid-hour { font-size: 8px; padding-inline-end: 2px; }
+  .tt-grid-dow { font-size: 9px; padding: 6px 0; letter-spacing: 0.04em; }
+
+  /* Taller hours so a 45-minute lesson has room for two lines of name plus the
+     room underneath. At the old 40px an hour, a single lesson was 30px tall —
+     one line and nothing else, which is how the room came to be hidden here in
+     the first place. */
+  .tt { --tt-hour-h: 58px; }
+
+  .tt-lesson {
+    padding: 2px 3px; font-size: 9px; gap: 0;
+    border-inline-start-width: 2px; inset-inline: 1px;
+  }
+  /* Two lines instead of one, because "Mathematics" does not fit on one at this
+     width and half a word is not a course. */
+  .tt-lesson-title {
+    white-space: normal; text-overflow: clip; line-height: 1.15;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  }
+  /* The meta line stays — only the TIME goes. The block's position on the grid
+     already says when the lesson is; nothing else says where it is. */
+  .tt-lesson-meta { font-size: 8px; gap: 0; }
+  .tt-lesson-time { display: none; }
+
   .tt-term-level { min-width: 0; }
   .tt-term-dates { display: none; }
 }

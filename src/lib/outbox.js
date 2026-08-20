@@ -253,6 +253,9 @@ export function subscribe(listener) {
 // only path to true data loss in this design.
 
 const KIND_DISPATCH = {
+  // v1.10 - feedback. Idempotent on retry via the client-supplied id; see
+  // sync.submitFeedback for why it is an INSERT rather than an UPSERT.
+  submit_feedback: (p) => sync.submitFeedback(p),
   upsert_subject: (p) => sync.upsertSubject(p),
   delete_subject: (p) => sync.deleteSubject(p.id),
   upsert_grade: (p) => sync.upsertGrade(p),

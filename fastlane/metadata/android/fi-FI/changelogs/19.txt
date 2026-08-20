@@ -1,0 +1,7 @@
+Kalenteri puhelimeen, ja jatkuva uloskirjautuminen loppuu.
+
+Viikkonäkymä on nyt mobiilissa: oppitunnit, suunnitellut lukublokit ja muut menot samassa ruudukossa, ja uuden blokin voi lisätä suoraan siitä. Lukujärjestykset ovat luettavampia, ja suunnitelmat voivat muistuttaa.
+
+Uloskirjautuminen parin päivän välein on korjattu — jokaisella sovelluksella on nyt oma istuntonsa.
+
+Lisäksi: palautetta voi lähettää asetuksista, eikä käyttöönotto toistu tutulla tilillä.

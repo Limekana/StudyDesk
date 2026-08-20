@@ -1,0 +1,7 @@
+Un calendrier sur le téléphone, et la fin des déconnexions permanentes.
+
+La vue semaine arrive sur mobile : cours, blocs de révision planifiés et autres engagements côte à côte, avec ajout direct depuis la grille. Les emplois du temps sont plus lisibles et les séances planifiées peuvent vous rappeler.
+
+La déconnexion tous les un ou deux jours est corrigée — chaque application gère sa propre session.
+
+Aussi : retour depuis les réglages, et configuration qui ne se répète plus.

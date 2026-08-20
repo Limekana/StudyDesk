@@ -117,7 +117,8 @@
     "gpaIb": "Média IB",
     "gpaUs": "GPA",
     "noGrades": "Sem notas",
-    "course_many": "{{count}} disciplinas"
+    "course_many": "{{count}} disciplinas",
+    "gpaCustom": "Méd."
   },
   "nextup": {
     "newPeriodTitle": "Período novo? Comece adicionando suas disciplinas",
@@ -211,7 +212,48 @@
     "gradeNoteCustom": "Sua própria escala numérica — a média é uma média ponderada, como no IB. Guardada apenas neste aparelho e não sincroniza. O cálculo oficial da sua instituição é sempre o que vale.",
     "support": "Apoio",
     "supportDev": "Apoiar o desenvolvimento",
-    "supportDevSub": "Um link para o Ko-fi. Nada na app depende disso."
+    "supportDevSub": "Um link para o Ko-fi. Nada na app depende disso.",
+    "lockInLbl": "Lock In",
+    "focusChip": "Chip de foco",
+    "focusPin": "Fixar ecrã",
+    "focusChipOnNote": "Aparece uma contagem decrescente na barra de estado e, no One UI 8, na Now Bar.",
+    "focusChipOnNoteLegacy": "Aparece uma contagem decrescente na barra de estado durante o bloco.",
+    "focusChipOffNote": "Sem notificação durante o bloco.",
+    "focusPinOnNote": "O Android fixa o ecrã. Mantém Voltar + Recentes para sair.",
+    "focusPinOffNote": "Podes trocar de app livremente durante o bloco.",
+    "planningLbl": "Planeamento",
+    "studyUntil": "Estudar até",
+    "studyUntilOnNote": "As janelas livres do calendário vão até às {{time}}, por isso a noite aparece como tempo que podes planear.",
+    "studyUntilOffNote": "As janelas livres terminam no último item já marcado no dia.",
+    "scaleName": "Nome",
+    "planRemindLead": "Avisar antes",
+    "planRemindStart": "Avisar ao começar",
+    "minsShort": "{{n}} min",
+    "planRemindNote": "Avisos dos blocos de estudo planeados no calendário.",
+    "planRemindBlocked": "Ativa os lembretes acima para os receberes.",
+    "webNotify": "Notificações do navegador",
+    "webNotifyAsk": "Permitir",
+    "webNotifyOn": "Permitidas",
+    "webNotifyBlocked": "Bloqueadas",
+    "webNotifyNote": "Os avisos aparecem enquanto o StudyDesk estiver aberto num separador, mesmo em segundo plano. Não podem chegar depois de fechares o separador.",
+    "webNotifyDeniedNote": "O teu navegador está a bloquear as notificacoes deste site. Permite-as de novo nas definições do site, junto à barra de endereços.",
+    "feedback": "Comentários",
+    "feedbackBlurb": "Diga ao desenvolvedor o que funciona e o que não funciona. Enviado com a versão do app e a plataforma para rastrear o relato.",
+    "feedbackCategory": "Categoria",
+    "feedbackRating": "Avaliação",
+    "feedbackRatingN": "{{n}} de 5",
+    "feedbackPlaceholder": "O que aconteceu, ou o que você gostaria de ver?",
+    "feedbackSend": "Enviar comentários",
+    "feedbackThanks": "Obrigado — já está a caminho.",
+    "feedbackEmpty": "Escreva uma mensagem primeiro.",
+    "feedbackSignIn": "Entre para enviar comentários.",
+    "feedbackMeta": "Enviado com {{app}} v{{version}}.",
+    "fbCat": {
+      "bug": "Erro",
+      "idea": "Ideia",
+      "praise": "Elogio",
+      "other": "Outro"
+    }
   },
   "sdob": {
     "brand": "Pare de decidir. Comece a estudar.",
@@ -276,7 +318,8 @@
     "grades_many": "{{count}} notas",
     "courses_many": "{{count}} disciplinas",
     "modeCustom": "Própria",
-    "scaleSummary": "{{min}}–{{max}} · aprovação {{pass}} · {{best}} é o melhor"
+    "scaleSummary": "{{min}}–{{max}} · aprovação {{pass}} · {{best}} é o melhor",
+    "customAverage": "Média"
   },
   "sv": {
     "today": "Hoje",
@@ -584,7 +627,11 @@
       "kept": "Registaste uma sessão para este bloco.",
       "missed": "Este bloco passou e nada foi registado.",
       "dismissed": "Marcaste este bloco como não feito."
-    }
+    },
+    "thisWeek": "Esta semana",
+    "ribbonSummary": "{{free}} livre · {{planned}} planeado · {{logged}} registado",
+    "freeWindows": "Janelas livres",
+    "freeFor": "{{len}} livre"
   },
   "an": {
     "trends": "Tendências",
@@ -702,6 +749,18 @@
     "deleteSeries": "Eliminar série",
     "errTitle": "Dá um nome a este compromisso.",
     "errDate": "Escolhe uma data.",
-    "committedTotal": "{{total}} comprometido"
+    "committedTotal": "{{total}} comprometido",
+    "addBlocker": "Adicionar bloqueio",
+    "addBlockerHint": "Treinos, trabalho, tudo o que ocupa tempo mas não é estudo."
+  },
+  "timer": {
+    "focusChipTitle": "Em foco",
+    "focusChipRunning": "Bloco de foco a decorrer",
+    "focusChipPaused": "Em pausa"
+  },
+  "notif": {
+    "planSoonTitle": "Bloco de estudo em {{n}} min",
+    "planNowTitle": "O bloco de estudo começa agora",
+    "planFallback": "Sessão de estudo"
   }
 }
