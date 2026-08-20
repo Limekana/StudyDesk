@@ -851,22 +851,11 @@ export default function App() {
     try { return localStorage.getItem("studydesk-onboarded") === "1"; } catch { return false; }
   });
   // v1.10 - ask the ACCOUNT whether onboarding is already done, not just this
-  // device. Gated so a signed-in user never sees a frame of the wizard before
-  // the answer lands; a guest or signed-out user resolves immediately, because
-  // there is no account to ask.
+  // device. The effect that does the asking lives further down, immediately
+  // after `session` is declared -- it reads `session`, and a dependency array
+  // is evaluated during render, so up here it referenced the binding before
+  // its useState had run.
   const [onboardChecked, setOnboardChecked] = useState(false);
-  useEffect(() => {
-    if (session === undefined) return;   // auth still resolving
-    if (!session) { setOnboardChecked(true); return; }
-    let cancelled = false;
-    setOnboardChecked(false);
-    hydrateOnboardedFromCloud().then((done) => {
-      if (cancelled) return;
-      if (done) setOnboarded(true);
-      setOnboardChecked(true);
-    });
-    return () => { cancelled = true; };
-  }, [session]);
   useEffect(() => {
     try { localStorage.setItem("studydesk-v1", JSON.stringify({
       courses:state.courses,
@@ -1117,6 +1106,33 @@ export default function App() {
   // are already session-gated, so this is a pure UI bypass — no other code
   // changes needed). When the user signs in or signs out, the flag is cleared.
   const [guest, setGuest] = useState(() => isGuestMode());
+
+  // v1.10 - the account-level onboarding check. Declared HERE, below `session`,
+  // rather than beside the `onboardChecked` state it drives: the dependency
+  // array `[session]` is evaluated on every render, so with this block above
+  // `const [session, ...] = useState(...)` it read `session` inside its
+  // temporal dead zone and threw "Cannot access 'session' before
+  // initialization", blanking the app on first paint.
+  //
+  // That failure was invisible to `npm run build` and to eslint, and did not
+  // reproduce under `npm run dev` -- only a production preview of the built
+  // bundle showed it. Keep this effect below the declaration.
+  //
+  // Gated so a signed-in user never sees a frame of the wizard before the
+  // answer lands; a guest or signed-out user resolves immediately, because
+  // there is no account to ask.
+  useEffect(() => {
+    if (session === undefined) return;   // auth still resolving
+    if (!session) { setOnboardChecked(true); return; }
+    let cancelled = false;
+    setOnboardChecked(false);
+    hydrateOnboardedFromCloud().then((done) => {
+      if (cancelled) return;
+      if (done) setOnboarded(true);
+      setOnboardChecked(true);
+    });
+    return () => { cancelled = true; };
+  }, [session]);
   useEffect(() => {
     let cancelled = false;
     (async () => {
