@@ -68,3 +68,7 @@ android/app/src/main/assets/capacitor.plugins.json
 # GitHub Release; never belongs in git history.
 /release/
 .electron-builder-cache/
+
+# electron-builder tool cache (relocated off %LOCALAPPDATA% — see electron/build.cjs)
+.electron-cache/
+/StudyDesk-Desktop-*.zip
