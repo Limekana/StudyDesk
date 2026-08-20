@@ -19,7 +19,7 @@ const GRADE_MODES = ['ib', 'us', 'custom'];
 
 /** Suggested when "Custom" is first picked: the Finnish scale that prompted
  *  the request, which also makes the feature self-explanatory. */
-export const DEFAULT_CUSTOM_SCALE = { min: 4, max: 10, passMark: 5, direction: 'up' };
+export const DEFAULT_CUSTOM_SCALE = { min: 4, max: 10, passMark: 5, direction: 'up', name: '' };
 
 // Built-in scales, expressed in the same shape as a custom one so every
 // consumer can read bounds without caring which mode is active.
@@ -58,7 +58,14 @@ export function normalizeScale(raw) {
 
   const passMark = Math.min(max, Math.max(min, num(raw?.passMark, d.passMark)));
   const direction = raw?.direction === 'down' ? 'down' : 'up';
-  return { min, max, passMark, direction };
+  // What the user calls this scale. Empty means "no name given" and every
+  // consumer falls back to a translated default — storing the translated word
+  // instead would freeze one language into the saved scale and then show a
+  // Finnish user's label to them after they switch the app to English.
+  // Capped because it is rendered into a fixed-height hero line, and trimmed
+  // so a stray space does not count as a name and defeat the fallback.
+  const name = typeof raw?.name === 'string' ? raw.name.trim().slice(0, 24) : '';
+  return { min, max, passMark, direction, name };
 }
 
 /** The active scale's bounds, whichever mode is in play. */

@@ -115,7 +115,8 @@
     "course_other": "{{count}} mata pelajaran",
     "gpaIb": "Rata-rata IB",
     "gpaUs": "GPA",
-    "noGrades": "Belum ada nilai"
+    "noGrades": "Belum ada nilai",
+    "gpaCustom": "Rata"
   },
   "nextup": {
     "newPeriodTitle": "Periode baru? Mulai dengan menambahkan mata pelajaranmu",
@@ -207,7 +208,48 @@
     "gradeNoteCustom": "Skala angka Anda sendiri — rata-ratanya adalah rata-rata terbobot, sama seperti IB. Disimpan hanya di perangkat ini dan tidak disinkronkan. Perhitungan resmi sekolah Anda tetap yang berlaku.",
     "support": "Dukungan",
     "supportDev": "Dukung pengembangan",
-    "supportDevSub": "Tautan ke Ko-fi. Tidak ada fitur yang dikunci karenanya."
+    "supportDevSub": "Tautan ke Ko-fi. Tidak ada fitur yang dikunci karenanya.",
+    "lockInLbl": "Lock In",
+    "focusChip": "Chip fokus",
+    "focusPin": "Sematkan layar",
+    "focusChipOnNote": "Hitung mundur muncul di bilah status dan, di One UI 8, di Now Bar.",
+    "focusChipOnNoteLegacy": "Hitung mundur muncul di bilah status selama blok berjalan.",
+    "focusChipOffNote": "Tanpa notifikasi selama blok berjalan.",
+    "focusPinOnNote": "Android menyematkan layar. Tahan Kembali + Terkini untuk keluar.",
+    "focusPinOffNote": "Kamu bebas berpindah aplikasi selama blok.",
+    "planningLbl": "Perencanaan",
+    "studyUntil": "Belajar sampai",
+    "studyUntilOnNote": "Jendela kosong di kalender berlanjut sampai {{time}}, jadi malam hari muncul sebagai waktu yang bisa kamu rencanakan.",
+    "studyUntilOffNote": "Jendela kosong berhenti pada hal terakhir yang sudah ada di harimu.",
+    "scaleName": "Nama",
+    "planRemindLead": "Ingatkan sebelum",
+    "planRemindStart": "Ingatkan saat mulai",
+    "minsShort": "{{n}} mnt",
+    "planRemindNote": "Pengingat untuk blok belajar yang kamu rencanakan di kalender.",
+    "planRemindBlocked": "Aktifkan Pengingat di atas agar ini terkirim.",
+    "webNotify": "Notifikasi browser",
+    "webNotifyAsk": "Izinkan",
+    "webNotifyOn": "Diizinkan",
+    "webNotifyBlocked": "Diblokir",
+    "webNotifyNote": "Pengingat muncul selama StudyDesk terbuka di tab, termasuk di latar belakang. Tidak bisa muncul setelah tab ditutup.",
+    "webNotifyDeniedNote": "Browser kamu memblokir notifikasi untuk situs ini. Izinkan lagi lewat pengaturan situs di sebelah bilah alamat.",
+    "feedback": "Masukan",
+    "feedbackBlurb": "Beri tahu pengembang apa yang berhasil dan apa yang tidak. Dikirim dengan versi aplikasi dan platform agar laporan bisa ditelusuri.",
+    "feedbackCategory": "Kategori",
+    "feedbackRating": "Penilaian",
+    "feedbackRatingN": "{{n}} dari 5",
+    "feedbackPlaceholder": "Apa yang terjadi, atau apa yang ingin kamu lihat?",
+    "feedbackSend": "Kirim masukan",
+    "feedbackThanks": "Terima kasih — sudah dikirim.",
+    "feedbackEmpty": "Tulis pesan dulu.",
+    "feedbackSignIn": "Masuk untuk mengirim masukan.",
+    "feedbackMeta": "Dikirim dengan {{app}} v{{version}}.",
+    "fbCat": {
+      "bug": "Bug",
+      "idea": "Ide",
+      "praise": "Pujian",
+      "other": "Lainnya"
+    }
   },
   "sdob": {
     "brand": "Berhenti menimbang. Mulai belajar.",
@@ -268,7 +310,8 @@
     "fDate": "Tanggal",
     "bAdd": "Tambah nilai",
     "modeCustom": "Khusus",
-    "scaleSummary": "{{min}}–{{max}} · lulus {{pass}} · {{best}} terbaik"
+    "scaleSummary": "{{min}}–{{max}} · lulus {{pass}} · {{best}} terbaik",
+    "customAverage": "Rata-rata"
   },
   "sv": {
     "today": "Hari ini",
@@ -574,7 +617,11 @@
       "kept": "Kamu mencatat sesi untuk blok ini.",
       "missed": "Blok ini sudah lewat dan tidak ada yang dicatat.",
       "dismissed": "Kamu menandai blok ini tidak selesai."
-    }
+    },
+    "thisWeek": "Minggu ini",
+    "ribbonSummary": "{{free}} kosong · {{planned}} direncanakan · {{logged}} tercatat",
+    "freeWindows": "Waktu kosong",
+    "freeFor": "{{len}} kosong"
   },
   "an": {
     "trends": "Tren",
@@ -692,6 +739,18 @@
     "deleteSeries": "Hapus seri",
     "errTitle": "Beri nama agenda ini.",
     "errDate": "Pilih tanggal.",
-    "committedTotal": "{{total}} terpakai"
+    "committedTotal": "{{total}} terpakai",
+    "addBlocker": "Tambah blokir",
+    "addBlockerHint": "Latihan, pekerjaan, apa pun yang memakan waktu tetapi bukan belajar."
+  },
+  "timer": {
+    "focusChipTitle": "Sedang fokus",
+    "focusChipRunning": "Blok fokus berjalan",
+    "focusChipPaused": "Dijeda"
+  },
+  "notif": {
+    "planSoonTitle": "Blok belajar dalam {{n}} mnt",
+    "planNowTitle": "Blok belajar dimulai sekarang",
+    "planFallback": "Sesi belajar"
   }
 }

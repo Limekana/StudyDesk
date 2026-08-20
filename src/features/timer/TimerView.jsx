@@ -11,6 +11,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fmtTime } from '../../lib/dates.js';
+import { startFocus, stopFocus } from '../../lib/focusMode.js';
 import '../../styles/timer.css';
 
 function fmtMMSS(sec){ return String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0"); }
@@ -224,6 +225,38 @@ export default function TimerView({ state, onTimerComplete }) {
     else document.body.classList.remove('locked-in');
     return () => document.body.classList.remove('locked-in');
   }, [lockedIn]);
+
+  // ── v1.10 (Item 12) — the native half of Lock In ──────────────────────
+  //
+  // The status chip and screen pinning are driven from here rather than from
+  // toggleLockIn, because Lock In can also be restored from persisted state on
+  // a cold start — driving it from the toggle alone would leave a resumed
+  // session with no chip and no pin.
+  //
+  // `secsLeft` is read through a ref on purpose. It changes every second, and
+  // listing it as a dependency would re-post the notification on every tick,
+  // fighting the system chronometer that is already counting down from the
+  // deadline we handed it. The deadline only needs recomputing when the timer
+  // starts or stops, which is exactly what this effect depends on.
+  const secsRef = useRef(secsLeft);
+  useEffect(() => { secsRef.current = secsLeft; }, [secsLeft]);
+
+  useEffect(() => {
+    if (!lockedIn) { stopFocus(); return; }
+    startFocus({
+      title: t('timer.focusChipTitle'),
+      text: running ? t('timer.focusChipRunning') : t('timer.focusChipPaused'),
+      // A paused block has no deadline, so it gets no countdown rather than a
+      // frozen one — a clock that has stopped is worse than no clock.
+      endsAt: running ? Date.now() + secsRef.current * 1000 : 0,
+      chip: state.focusChip !== false,
+      pin: state.focusPin === true,
+    });
+  }, [lockedIn, running, state.focusChip, state.focusPin, t]);
+
+  // Leaving the screen — or the app going away entirely — must not strand a
+  // pinned screen or a chip that outlives the session it describes.
+  useEffect(() => () => { stopFocus(); }, []);
 
   // v1.9 Item 14a follow-up — Lock In takes the whole screen, not just the
   // app's own chrome. On desktop the browser's tab strip and address bar are

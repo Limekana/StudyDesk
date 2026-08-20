@@ -64,7 +64,8 @@
     "course_other": "{{count}} courses",
     "gpaIb": "IB avg",
     "gpaUs": "GPA",
-    "noGrades": "No grades"
+    "noGrades": "No grades",
+    "gpaCustom": "Avg"
   },
   "nextup": {
     "newPeriodTitle": "New period? Start by adding your courses",
@@ -209,7 +210,48 @@
     "gradeNoteCustom": "Your own numeric scale — the average is a straight weighted mean, as with IB. Stored on this device only; it does not sync. Your school's official calculation is always the one that counts.",
     "support": "Support",
     "supportDev": "Support development",
-    "supportDevSub": "A link to Ko-fi. Nothing in the app is locked behind it."
+    "supportDevSub": "A link to Ko-fi. Nothing in the app is locked behind it.",
+    "lockInLbl": "Lock In",
+    "focusChip": "Focus chip",
+    "focusPin": "Screen pinning",
+    "focusChipOnNote": "A live countdown appears in the status bar and, on One UI 8, in the Now Bar.",
+    "focusChipOnNoteLegacy": "A live countdown appears in the status bar while a block runs.",
+    "focusChipOffNote": "No notification while a block runs.",
+    "focusPinOnNote": "Android pins the screen when a block starts. Hold Back + Recents to leave.",
+    "focusPinOffNote": "You can switch apps freely during a block.",
+    "planningLbl": "Planning",
+    "studyUntil": "Study until",
+    "studyUntilOnNote": "Free windows in the calendar run to {{time}}, so the evening shows up as time you can plan into.",
+    "studyUntilOffNote": "Free windows stop at the last thing already in your day.",
+    "scaleName": "Name",
+    "planRemindLead": "Remind before",
+    "planRemindStart": "Remind at start",
+    "minsShort": "{{n}} min",
+    "planRemindNote": "Reminders for study blocks you have planned in the calendar.",
+    "planRemindBlocked": "Turn Reminders on above for these to be delivered.",
+    "webNotify": "Browser notifications",
+    "webNotifyAsk": "Allow",
+    "webNotifyOn": "Allowed",
+    "webNotifyBlocked": "Blocked",
+    "webNotifyNote": "Reminders appear while StudyDesk is open in a tab, even in the background. They cannot arrive once the tab is closed.",
+    "webNotifyDeniedNote": "Your browser is blocking notifications for this site. Re-allow them in the site settings next to the address bar.",
+    "feedback": "Feedback",
+    "feedbackBlurb": "Tell the developer what's working and what isn't. Sent with your app version and platform so a report can be traced.",
+    "feedbackCategory": "Category",
+    "feedbackRating": "Rating",
+    "feedbackRatingN": "{{n}} out of 5",
+    "feedbackPlaceholder": "What happened, or what would you like to see?",
+    "feedbackSend": "Send feedback",
+    "feedbackThanks": "Thanks — that's on its way.",
+    "feedbackEmpty": "Write a message first.",
+    "feedbackSignIn": "Sign in to send feedback.",
+    "feedbackMeta": "Sent with {{app}} v{{version}}.",
+    "fbCat": {
+      "bug": "Bug",
+      "idea": "Idea",
+      "praise": "Praise",
+      "other": "Other"
+    }
   },
   "sdob": {
     "brand": "Stop deciding. Start studying.",
@@ -272,7 +314,8 @@
     "fDate": "Date",
     "bAdd": "Add Grade",
     "modeCustom": "Custom",
-    "scaleSummary": "{{min}}–{{max}} · pass {{pass}} · {{best}} best"
+    "scaleSummary": "{{min}}–{{max}} · pass {{pass}} · {{best}} best",
+    "customAverage": "Average"
   },
   "sv": {
     "today": "Today",
@@ -579,7 +622,11 @@
       "kept": "You logged a session for this block.",
       "missed": "This block has passed and nothing was logged.",
       "dismissed": "You marked this block as not done."
-    }
+    },
+    "thisWeek": "This week",
+    "ribbonSummary": "{{free}} free · {{planned}} planned · {{logged}} logged",
+    "freeWindows": "Free windows",
+    "freeFor": "{{len}} free"
   },
   "an": {
     "trends": "Trends",
@@ -697,6 +744,18 @@
     "deleteSeries": "Delete series",
     "errTitle": "Give this commitment a name.",
     "errDate": "Pick a date.",
-    "committedTotal": "{{total}} committed"
+    "committedTotal": "{{total}} committed",
+    "addBlocker": "Add blocker",
+    "addBlockerHint": "Training, work, anything that takes the time but is not study."
+  },
+  "timer": {
+    "focusChipTitle": "Locked in",
+    "focusChipRunning": "Focus block running",
+    "focusChipPaused": "Paused"
+  },
+  "notif": {
+    "planSoonTitle": "Study block in {{n}} min",
+    "planNowTitle": "Study block starting now",
+    "planFallback": "Study session"
   }
 }
