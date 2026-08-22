@@ -47,6 +47,7 @@ import TimetableView from "./features/timetable/TimetableView.jsx";
 import AttachmentList from "./features/plan/Attachments.jsx";
 import { useAttachmentDrop } from "./features/plan/useAttachmentDrop.js";
 import SettingsView from "./features/settings/SettingsView.jsx";
+import { Analytics } from "@vercel/analytics/react";
 
 // v1.3.1 — initials for the top-right profile avatar (opens Settings, like NCC).
 // Derives 1–2 letters from the signed-in email's local part; guests get "·".
@@ -1737,6 +1738,7 @@ export default function App() {
       />
     )}
     {flash&&<div className="flash">{flash}</div>}
+    <Analytics />
   </>);
 }
 

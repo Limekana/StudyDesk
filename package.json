@@ -31,6 +31,7 @@
     "@capacitor/local-notifications": "^8.0.2",
     "@capacitor/preferences": "^8.0.1",
     "@supabase/supabase-js": "^2.106.0",
+    "@vercel/analytics": "^2.0.1",
     "i18next": "^23.16.8",
     "lucide-react": "^0.414.0",
     "react": "^19.2.4",
