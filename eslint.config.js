@@ -33,4 +33,12 @@ export default defineConfig([
       'react-hooks/static-components': 'warn',
     },
   },
+  {
+    // Vite's own config runs in Node, not the browser — it reads process.env
+    // to decide the build-time web-analytics flag (see src/lib/webAnalytics.js).
+    // Without this it inherits the browser globals above and `process` reads as
+    // undefined.
+    files: ['vite.config.js'],
+    languageOptions: { globals: globals.node },
+  },
 ])
