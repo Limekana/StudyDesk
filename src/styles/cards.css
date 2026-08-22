@@ -133,3 +133,28 @@
   .cdv-head{padding:14px;}
   .cdv-name{font-size:19px;}
 }
+
+/* ── Referral prompt (v1.11 Item 8) ────────────────────────────────────────
+   Corner card, not a modal — see ReferralPrompt.jsx for why. Sits where the
+   flash toast sits on desktop and clears the mobile tab bar the same way, so
+   it never covers navigation. Existing tokens only; nothing new is defined
+   here, so an alternate theme's token set restyles it for free. */
+.ref-card{position:fixed;bottom:24px;inset-inline-end:24px;z-index:210;width:300px;max-width:calc(100vw - 32px);
+  background:var(--surface);border:1px solid var(--border2);border-radius:6px;box-shadow:var(--shadow-md);
+  padding:16px 18px 14px;animation:fadeup 0.24s var(--ease-settle);}
+.ref-eyebrow{font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted2);}
+.ref-title{font-family:var(--font-display);font-size:16px;line-height:1.3;margin:6px 0 12px;}
+.ref-options{display:flex;flex-direction:column;gap:6px;}
+.ref-option{text-align:start;font-family:var(--font-sans);font-size:13px;color:var(--text);
+  background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:8px 11px;cursor:pointer;
+  transition:background 0.1s,border-color 0.1s;}
+.ref-option:hover{background:var(--surface2);border-color:var(--border2);}
+.ref-dismiss{display:block;margin:11px 0 0 auto;background:none;border:none;cursor:pointer;
+  font-family:var(--font-mono);font-size:10px;letter-spacing:0.06em;color:var(--muted);padding:2px 0;}
+.ref-dismiss:hover{color:var(--text);}
+.ref-thanks{font-family:var(--font-display);font-size:15px;padding:6px 0;}
+@media(max-width:768px){
+  /* Same clearance the flash toast uses, for the same reason: the bottom tab
+     bar plus the home-indicator inset. */
+  .ref-card{bottom:calc(72px + env(safe-area-inset-bottom));inset-inline-end:14px;inset-inline-start:14px;width:auto;}
+}

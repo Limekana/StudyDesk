@@ -763,5 +763,17 @@
     "planSoonTitle": "Bloc de révision dans {{n}} min",
     "planNowTitle": "Le bloc de révision commence",
     "planFallback": "Session de révision"
+  },
+  "referral": {
+    "eyebrow": "UNE QUESTION",
+    "title": "Comment avez-vous connu StudyDesk ?",
+    "opt": {
+      "reddit": "Reddit",
+      "store": "En parcourant F-Droid ou un magasin d’applis",
+      "friend": "Un ami",
+      "other": "Ailleurs"
+    },
+    "dismiss": "Pas maintenant",
+    "thanks": "Merci, ça nous aide."
   }
 }

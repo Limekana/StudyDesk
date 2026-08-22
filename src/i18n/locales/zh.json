@@ -758,5 +758,17 @@
     "planSoonTitle": "学习时段将在 {{n}} 分钟后开始",
     "planNowTitle": "学习时段现在开始",
     "planFallback": "学习时段"
+  },
+  "referral": {
+    "eyebrow": "一个问题",
+    "title": "你从哪里知道 StudyDesk 的？",
+    "opt": {
+      "reddit": "Reddit",
+      "store": "在 F-Droid 或应用商店里浏览时",
+      "friend": "朋友推荐",
+      "other": "其他地方"
+    },
+    "dismiss": "以后再说",
+    "thanks": "谢谢，这很有帮助。"
   }
 }

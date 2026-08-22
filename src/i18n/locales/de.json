@@ -758,5 +758,17 @@
     "planSoonTitle": "Lernblock in {{n}} Min",
     "planNowTitle": "Lernblock beginnt jetzt",
     "planFallback": "Lernsitzung"
+  },
+  "referral": {
+    "eyebrow": "EINE FRAGE",
+    "title": "Woher kennst du StudyDesk?",
+    "opt": {
+      "reddit": "Reddit",
+      "store": "Beim Stöbern in F-Droid oder einem App-Store",
+      "friend": "Von Freunden",
+      "other": "Woanders"
+    },
+    "dismiss": "Nicht jetzt",
+    "thanks": "Danke – das hilft."
   }
 }

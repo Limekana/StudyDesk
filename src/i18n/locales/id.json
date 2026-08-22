@@ -753,5 +753,17 @@
     "planSoonTitle": "Blok belajar dalam {{n}} mnt",
     "planNowTitle": "Blok belajar dimulai sekarang",
     "planFallback": "Sesi belajar"
+  },
+  "referral": {
+    "eyebrow": "SATU PERTANYAAN",
+    "title": "Dari mana kamu tahu StudyDesk?",
+    "opt": {
+      "reddit": "Reddit",
+      "store": "Menjelajah F-Droid atau toko aplikasi",
+      "friend": "Dari teman",
+      "other": "Dari tempat lain"
+    },
+    "dismiss": "Nanti saja",
+    "thanks": "Terima kasih — ini membantu."
   }
 }

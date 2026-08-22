@@ -778,5 +778,17 @@
     "planSoonTitle": "فترة دراسة بعد {{n}} دقيقة",
     "planNowTitle": "فترة الدراسة تبدأ الآن",
     "planFallback": "جلسة دراسة"
+  },
+  "referral": {
+    "eyebrow": "سؤال واحد",
+    "title": "كيف عرفت StudyDesk؟",
+    "opt": {
+      "reddit": "Reddit",
+      "store": "أثناء التصفّح في F-Droid أو متجر تطبيقات",
+      "friend": "من صديق",
+      "other": "من مكان آخر"
+    },
+    "dismiss": "ليس الآن",
+    "thanks": "شكرًا — هذا يساعدنا."
   }
 }

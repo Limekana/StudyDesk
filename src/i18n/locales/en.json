@@ -758,5 +758,17 @@
     "planSoonTitle": "Study block in {{n}} min",
     "planNowTitle": "Study block starting now",
     "planFallback": "Study session"
+  },
+  "referral": {
+    "eyebrow": "ONE QUESTION",
+    "title": "Where did you hear about StudyDesk?",
+    "opt": {
+      "reddit": "Reddit",
+      "store": "Browsing F-Droid or an app store",
+      "friend": "A friend",
+      "other": "Somewhere else"
+    },
+    "dismiss": "Not now",
+    "thanks": "Thanks — that helps."
   }
 }

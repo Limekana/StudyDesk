@@ -758,5 +758,17 @@
     "planSoonTitle": "Opiskelujakso {{n}} min kuluttua",
     "planNowTitle": "Opiskelujakso alkaa nyt",
     "planFallback": "Opiskelujakso"
+  },
+  "referral": {
+    "eyebrow": "YKSI KYSYMYS",
+    "title": "Mistä kuulit StudyDeskistä?",
+    "opt": {
+      "reddit": "Reddit",
+      "store": "Selaillessa F-Droidia tai sovelluskauppaa",
+      "friend": "Kaverilta",
+      "other": "Jostain muualta"
+    },
+    "dismiss": "Ei nyt",
+    "thanks": "Kiitos – tästä on apua."
   }
 }
