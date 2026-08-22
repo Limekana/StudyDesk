@@ -547,7 +547,8 @@
   },
   "widget": {
     "today": "आज",
-    "tomorrow": "कल"
+    "tomorrow": "कल",
+    "noPlanToday": "आज कुछ भी नियोजित नहीं"
   },
   "cal": {
     "title": "कैलेंडर",

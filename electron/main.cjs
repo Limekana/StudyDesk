@@ -40,13 +40,14 @@
 // provide SPA-fallback routing, and `resolveRequest` below does that directly.
 'use strict';
 
-const { app, BrowserWindow, protocol, net } = require('electron');
+const { app, BrowserWindow, Menu, Tray, ipcMain, protocol, net, screen } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const { pathToFileURL } = require('node:url');
 
 const DIST_DIR = path.join(__dirname, '..', 'dist');
 const ICON_PATH = path.join(__dirname, '..', 'resources', 'icon.ico');
+const WIDGET_PRELOAD = path.join(__dirname, 'widget-preload.cjs');
 
 const SCHEME = 'studydesk';
 const APP_ORIGIN = `${SCHEME}://app`;
@@ -166,11 +167,162 @@ function createWindow() {
   }
 }
 
+// ── glance widget (v1.11) ───────────────────────────────────────────────────
+//
+// A second, frameless, always-on-top window showing the next assignment due
+// and what is left of today. It runs its own renderer and its own Supabase
+// client rather than being fed over IPC, because the entire point is to be
+// readable with the main window closed — an IPC-tethered widget only has data
+// while the app is open, which is just the app in a smaller frame.
+//
+// That only works because both windows now share an origin (see the note at
+// the top of this file). Under the old random-port server there was no stable
+// origin, so the widget could never have seen the session at all.
+
+const WIDGET_SIZE = { width: 320, height: 200 };
+const BOUNDS_PATH = path.join(app.getPath('userData'), 'widget-bounds.json');
+
+let widgetWindow = null;
+let tray = null;
+
+// Position is persisted rather than the window being kept alive hidden. A
+// hidden window would leave the app running with nothing on screen, which is
+// how a tray app becomes a process the user cannot account for; destroying it
+// and remembering where it sat gets the same result with none of that.
+function readBounds() {
+  try {
+    const saved = JSON.parse(fs.readFileSync(BOUNDS_PATH, 'utf8'));
+    if (!Number.isFinite(saved.x) || !Number.isFinite(saved.y)) return null;
+    // A monitor that has since been unplugged would strand the widget
+    // off-screen, where it is both invisible and un-draggable.
+    const onScreen = screen.getAllDisplays().some((d) => {
+      const w = d.workArea;
+      return saved.x < w.x + w.width && saved.x + WIDGET_SIZE.width > w.x
+        && saved.y < w.y + w.height && saved.y + WIDGET_SIZE.height > w.y;
+    });
+    return onScreen ? { x: saved.x, y: saved.y } : null;
+  } catch {
+    return null;   // absent or corrupt — fall back to the default corner
+  }
+}
+
+function saveBounds() {
+  if (!widgetWindow || widgetWindow.isDestroyed()) return;
+  try {
+    const [x, y] = widgetWindow.getPosition();
+    fs.writeFileSync(BOUNDS_PATH, JSON.stringify({ x, y }));
+  } catch (err) {
+    log(`saveBounds failed: ${err && err.message}`);
+  }
+}
+
+function defaultBounds() {
+  // Bottom-right of the primary display's work area, inset by a comfortable
+  // margin — out of the way of whatever is being worked on, which is where a
+  // glance widget belongs.
+  const { workArea } = screen.getPrimaryDisplay();
+  return {
+    x: workArea.x + workArea.width - WIDGET_SIZE.width - 24,
+    y: workArea.y + workArea.height - WIDGET_SIZE.height - 24,
+  };
+}
+
+function createWidget() {
+  const pos = readBounds() || defaultBounds();
+  widgetWindow = new BrowserWindow({
+    ...WIDGET_SIZE,
+    ...pos,
+    frame: false,
+    resizable: false,
+    maximizable: false,
+    minimizable: false,
+    fullscreenable: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,       // it is a widget, not a second app in the switcher
+    icon: ICON_PATH,
+    backgroundColor: '#faf8f4',   // --surface, so it opens as paper not white
+    webPreferences: {
+      preload: WIDGET_PRELOAD,
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+
+  // 'floating' keeps it above ordinary windows without fighting full-screen
+  // apps and system UI for the very top of the stack.
+  widgetWindow.setAlwaysOnTop(true, 'floating');
+  widgetWindow.on('moved', saveBounds);
+  widgetWindow.on('close', saveBounds);
+  widgetWindow.on('closed', () => { widgetWindow = null; refreshTrayMenu(); });
+  widgetWindow.webContents.on('did-fail-load', (_e, code, desc, url) => {
+    log(`widget did-fail-load: code=${code} desc=${desc} url=${url}`);
+  });
+  widgetWindow.webContents.on('did-finish-load', () => log('widget did-finish-load'));
+
+  widgetWindow.loadURL(`${APP_ORIGIN}/widget.html`);
+}
+
+function toggleWidget() {
+  if (widgetWindow && !widgetWindow.isDestroyed()) {
+    widgetWindow.close();
+    return;
+  }
+  createWidget();
+  refreshTrayMenu();
+}
+
+function openMainWindow() {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+    return;
+  }
+  createWindow();
+}
+
+// NOTE: these labels are English-only. The renderer is fully localised in ten
+// languages via i18next, but that lives in the renderer and the tray menu is
+// built in the main process, which has no translator. Logged as a known gap
+// rather than left to look intentional.
+function refreshTrayMenu() {
+  if (!tray) return;
+  tray.setContextMenu(Menu.buildFromTemplate([
+    {
+      label: 'Glance widget',
+      type: 'checkbox',
+      checked: Boolean(widgetWindow && !widgetWindow.isDestroyed()),
+      click: toggleWidget,
+    },
+    { label: 'Open StudyDesk', click: openMainWindow },
+    { type: 'separator' },
+    { label: 'Quit', click: () => app.quit() },
+  ]));
+}
+
+function createTray() {
+  try {
+    tray = new Tray(ICON_PATH);
+    tray.setToolTip('StudyDesk');
+    tray.on('double-click', openMainWindow);
+    refreshTrayMenu();
+  } catch (err) {
+    // A missing tray is a degraded app, not a broken one — the main window
+    // still works, so this must never take the launch down with it.
+    log(`createTray failed: ${err && err.stack}`);
+  }
+}
+
+ipcMain.on('widget:close', () => {
+  if (widgetWindow && !widgetWindow.isDestroyed()) widgetWindow.close();
+});
+
 app.whenReady().then(() => {
   log('app.whenReady resolved');
   registerProtocolHandler();
   log(`serving ${DIST_DIR} at ${APP_ORIGIN}/ (stable origin)`);
   createWindow();
+  createTray();
 });
 
 app.on('window-all-closed', () => {

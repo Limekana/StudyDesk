@@ -547,7 +547,8 @@
   },
   "widget": {
     "today": "Tänään",
-    "tomorrow": "Huomenna"
+    "tomorrow": "Huomenna",
+    "noPlanToday": "Ei suunnitelmia tänään"
   },
   "cal": {
     "title": "Kalenteri",

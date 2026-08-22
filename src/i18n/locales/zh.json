@@ -547,7 +547,8 @@
   },
   "widget": {
     "today": "今天",
-    "tomorrow": "明天"
+    "tomorrow": "明天",
+    "noPlanToday": "今天没有安排"
   },
   "cal": {
     "title": "日历",

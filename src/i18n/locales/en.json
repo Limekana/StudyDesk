@@ -547,7 +547,8 @@
   },
   "widget": {
     "today": "Today",
-    "tomorrow": "Tomorrow"
+    "tomorrow": "Tomorrow",
+    "noPlanToday": "Nothing planned today"
   },
   "cal": {
     "title": "Calendar",

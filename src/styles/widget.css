@@ -1,0 +1,273 @@
+/* Desktop glance widget — a 320×200 frameless always-on-top window.
+ *
+ * Reuses the app's tokens from base.css rather than redefining them, so the
+ * widget cannot drift off the cream-paper palette. base.css also supplies the
+ * paper-grain overlay on body::before, which is why this file never draws a
+ * texture of its own: the widget is a torn-off piece of the same sheet.
+ *
+ * Type sizes here are smaller than anywhere else in the app on purpose. This
+ * is a dial read at a glance from across a desk, not a screen to be worked in,
+ * so the ratio between the one serif statement and everything else is wider
+ * than the main UI would ever use.
+ */
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden;             /* no scrollbars in a chrome-less 200px window */
+}
+
+.wg {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  /* The window has no frame, so this border IS the edge of the paper. Without
+     it the widget bleeds into whatever is behind it on a light desktop. */
+  border: 1px solid var(--border2);
+  color: var(--text);
+  user-select: none;            /* it is a readout; text selection is noise */
+}
+
+/* ── title bar / drag handle ─────────────────────────────────────────────── */
+
+.wg-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 6px 0 12px;
+  height: 26px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  /* Frameless windows cannot be moved without an explicit drag region. This
+     strip is the only one — making the whole widget draggable would swallow
+     the close button's clicks on some platforms. */
+  -webkit-app-region: drag;
+}
+
+.wg-bar-date {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--muted2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wg-bar-close {
+  -webkit-app-region: no-drag;  /* or the button is a drag handle, not a button */
+  flex: none;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--muted2);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background 0.12s var(--ease-paper), color 0.12s var(--ease-paper);
+}
+.wg-bar-close:hover { background: var(--surface2); color: var(--text); }
+.wg-bar-close:focus-visible { outline: 1px solid var(--muted2); outline-offset: 1px; }
+
+/* ── the one statement ───────────────────────────────────────────────────── */
+
+.wg-lead {
+  flex: none;
+  padding: 9px 12px 8px;
+  min-height: 0;
+}
+
+.wg-label {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted2);
+  margin-bottom: 3px;
+}
+
+.wg-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 19px;
+  line-height: 1.16;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  /* Two lines, then ellipsis. A third line would push the plan out of the
+     window, and an assignment title long enough to need one is rare. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.wg-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 5px;
+  font-size: 10px;
+  color: var(--muted);
+  min-width: 0;
+}
+
+.wg-course {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wg-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tick, var(--border2));
+}
+
+.wg-urgency {
+  flex: none;
+  margin-inline-start: auto;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  color: var(--muted2);
+}
+.wg-urgency.is-overdue {
+  color: var(--danger);
+  font-weight: 500;
+}
+
+.wg-quiet {
+  font-size: 11px;
+  color: var(--muted2);
+  padding: 2px 0;
+}
+.wg-quiet--plan { font-size: 10.5px; }
+
+/* ── rule ────────────────────────────────────────────────────────────────── */
+
+.wg-rule {
+  flex: none;
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 0 12px;
+}
+
+/* ── the rest of today ───────────────────────────────────────────────────── */
+
+.wg-plan {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 8px 12px 10px;
+  overflow: hidden;
+}
+
+.wg-label--plan {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+
+.wg-more {
+  font-size: 8.5px;
+  letter-spacing: 0.06em;
+  color: var(--muted2);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 0 3px;
+}
+
+.wg-rows {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+/* Everything already over: the whole block recedes rather than each row
+   fighting for the same attention as an upcoming one. */
+.wg-rows.is-spent { opacity: 0.7; }
+
+.wg-row {
+  display: grid;
+  grid-template-columns: 34px 2px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.wg-row-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted2);
+  font-variant-numeric: tabular-nums;
+}
+
+.wg-row-tick {
+  align-self: stretch;
+  min-height: 13px;
+  background: var(--tick, var(--border2));
+}
+/* A lesson is somewhere you have to be — solid. A planned block is a promise
+   to yourself — dashed. Same distinction the calendar already draws, so the
+   two surfaces teach the same vocabulary. */
+.wg-row-tick--planned {
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--tick, var(--border2)) 0 3px,
+    transparent 3px 6px
+  );
+}
+
+.wg-row-body {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.wg-row-title {
+  font-size: 11px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wg-row-room {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted2);
+}
+
+.wg-row.is-past { opacity: 0.45; }
+.wg-row.is-done .wg-row-title { text-decoration: line-through; color: var(--muted2); }
+
+/* ── motion ──────────────────────────────────────────────────────────────── */
+/* One staged reveal on open, and nothing else. The widget is opened, read, and
+   ignored; anything that moves after that is movement in the corner of the
+   user's eye while they are trying to work. */
+
+@keyframes wg-settle {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.wg-lead, .wg-row {
+  animation: wg-settle 0.26s var(--ease-settle) both;
+}
+.wg-row { animation-delay: calc(60ms + var(--row-index, 0) * 45ms); }
+
+@media (prefers-reduced-motion: reduce) {
+  .wg-lead, .wg-row { animation: none; }
+  .wg-bar-close { transition: none; }
+}
