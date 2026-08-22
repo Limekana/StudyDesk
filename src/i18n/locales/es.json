@@ -552,7 +552,8 @@
   },
   "widget": {
     "today": "Hoy",
-    "tomorrow": "Mañana"
+    "tomorrow": "Mañana",
+    "noPlanToday": "Nada planeado para hoy"
   },
   "cal": {
     "title": "Calendario",

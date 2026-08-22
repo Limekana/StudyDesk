@@ -567,7 +567,8 @@
   },
   "widget": {
     "today": "اليوم",
-    "tomorrow": "غدًا"
+    "tomorrow": "غدًا",
+    "noPlanToday": "لا شيء مخطط اليوم"
   },
   "cal": {
     "title": "التقويم",

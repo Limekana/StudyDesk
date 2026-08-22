@@ -542,7 +542,8 @@
   },
   "widget": {
     "today": "Hari ini",
-    "tomorrow": "Besok"
+    "tomorrow": "Besok",
+    "noPlanToday": "Tidak ada rencana hari ini"
   },
   "cal": {
     "title": "Kalender",

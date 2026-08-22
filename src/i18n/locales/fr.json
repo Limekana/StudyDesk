@@ -552,7 +552,8 @@
   },
   "widget": {
     "today": "Aujourd’hui",
-    "tomorrow": "Demain"
+    "tomorrow": "Demain",
+    "noPlanToday": "Rien de prévu aujourd'hui"
   },
   "cal": {
     "title": "Calendrier",
