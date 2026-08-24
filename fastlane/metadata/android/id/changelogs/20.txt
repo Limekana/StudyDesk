@@ -1,0 +1,5 @@
+Memperbaiki pembaruan yang tidak mau terbuka.
+
+Versi 1.10.0 gagal dijalankan: aplikasi hanya menampilkan layar kosong dan tidak bisa dipakai sama sekali. Rilis ini hanya berisi perbaikan tersebut.
+
+Tidak ada yang hilang. Aplikasi tidak pernah sampai menyentuh datamu, jadi semua dari 1.9.0 masih ada. Maaf atas ketidaknyamanannya.

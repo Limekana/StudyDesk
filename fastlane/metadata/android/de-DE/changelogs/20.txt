@@ -1,0 +1,5 @@
+Behebt ein Update, das sich nicht öffnen ließ.
+
+Version 1.10.0 startete nicht: Die App zeigte nur einen leeren Bildschirm und ließ sich nicht bedienen. Diese Version enthält ausschließlich diese Korrektur.
+
+Es ging nichts verloren. Die App kam nie so weit, deine Daten anzurühren – alles aus 1.9.0 ist noch da. Entschuldige die Umstände.
