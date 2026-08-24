@@ -1,0 +1,5 @@
+Fixes an update that would not open.
+
+Version 1.10.0 failed to start: the app opened to a blank screen and nothing could be used. This release contains that fix and nothing else.
+
+Nothing was lost. The app never got far enough to touch your data, so everything from 1.9.0 is still there. Sorry for the trouble.

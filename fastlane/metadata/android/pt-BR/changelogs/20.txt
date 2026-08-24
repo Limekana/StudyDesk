@@ -1,0 +1,5 @@
+Corrige uma atualização que não abria.
+
+A versão 1.10.0 não iniciava: o aplicativo abria uma tela em branco e nada podia ser usado. Esta versão contém apenas essa correção.
+
+Nada foi perdido. O aplicativo nunca chegou a tocar nos seus dados, então tudo da 1.9.0 continua lá. Desculpe o transtorno.

@@ -1,0 +1,5 @@
+Corrige una actualización que no abría.
+
+La versión 1.10.0 no arrancaba: la aplicación mostraba una pantalla en blanco y no se podía usar nada. Esta versión contiene solo esa corrección.
+
+No se perdió nada. La aplicación nunca llegó a tocar tus datos, así que todo lo de 1.9.0 sigue ahí. Perdona las molestias.

@@ -1,0 +1,5 @@
+Korjaus päivitykseen, joka ei auennut.
+
+Versio 1.10.0 ei käynnistynyt: sovellus avautui tyhjään näkymään eikä mitään voinut käyttää. Tämä julkaisu sisältää vain tämän korjauksen.
+
+Mitään ei kadonnut. Sovellus ei ehtinyt koskea tietoihisi, joten kaikki versiosta 1.9.0 on yhä tallessa. Pahoittelut vaivasta.
