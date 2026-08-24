@@ -253,7 +253,9 @@
       "idea": "Idée",
       "praise": "Compliment",
       "other": "Autre"
-    }
+    },
+    "discord": "Communauté Discord",
+    "discordSub": "Questions, rapports de bugs et la suite du programme"
   },
   "sdob": {
     "brand": "Arrête de choisir. Commence à réviser.",

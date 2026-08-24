@@ -251,7 +251,9 @@
       "idea": "建议",
       "praise": "表扬",
       "other": "其他"
-    }
+    },
+    "discord": "Discord 社区",
+    "discordSub": "提问、报告问题，了解后续计划"
   },
   "sdob": {
     "brand": "别再纠结，开始学习。",
