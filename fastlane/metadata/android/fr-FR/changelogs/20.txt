@@ -1,0 +1,5 @@
+Corrige une mise à jour qui ne s’ouvrait pas.
+
+La version 1.10.0 ne démarrait pas : l’application affichait un écran vide et rien n’était utilisable. Cette version ne contient que ce correctif.
+
+Rien n’a été perdu. L’application n’est jamais allée jusqu’à toucher vos données : tout ce qui venait de 1.9.0 est intact. Désolé pour la gêne.
