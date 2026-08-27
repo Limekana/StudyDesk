@@ -253,7 +253,9 @@
       "idea": "Idea",
       "praise": "Elogio",
       "other": "Otro"
-    }
+    },
+    "discord": "Comunidad de Discord",
+    "discordSub": "Preguntas, informes de errores y lo que viene"
   },
   "sdob": {
     "brand": "Deja de decidir. Empieza a estudiar.",
