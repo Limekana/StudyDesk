@@ -11,6 +11,7 @@ import { supabase } from "./lib/supabase.js";
 import AuthGate from "./features/auth/AuthGate.jsx";
 import { isGuestMode, setGuestMode } from "./lib/guestMode.js";
 import { scheduleOriginStamp } from "./lib/originMarker.js";
+import ReferralPrompt from "./features/referral/ReferralPrompt.jsx";
 import { inheritFromNexus } from "./lib/suiteSso.js";
 import { hydrateOnboardedFromCloud, markOnboardedCloud } from "./lib/onboardingCloud.js";
 import * as sync from "./lib/sync.js";
@@ -1737,6 +1738,10 @@ export default function App() {
       />
     )}
     {flash&&<div className="flash">{flash}</div>}
+    {/* Item 8 — asks once per account, only inside the account-age window,
+        and only once onboarding is out of the way. Guests have no auth
+        metadata to write to, so `session?.user` is the whole gate. */}
+    {onboarded && session?.user && <ReferralPrompt user={session.user}/>}
   </>);
 }
 

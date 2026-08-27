@@ -760,5 +760,17 @@
     "planSoonTitle": "{{n}} मिनट में अध्ययन ब्लॉक",
     "planNowTitle": "अध्ययन ब्लॉक अब शुरू",
     "planFallback": "अध्ययन सत्र"
+  },
+  "referral": {
+    "eyebrow": "एक सवाल",
+    "title": "आपने StudyDesk के बारे में कहाँ सुना?",
+    "opt": {
+      "reddit": "Reddit",
+      "store": "F-Droid या किसी ऐप स्टोर में ब्राउज़ करते हुए",
+      "friend": "किसी दोस्त से",
+      "other": "कहीं और"
+    },
+    "dismiss": "अभी नहीं",
+    "thanks": "धन्यवाद — इससे मदद मिलती है।"
   }
 }

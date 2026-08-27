@@ -765,5 +765,17 @@
     "planSoonTitle": "Bloque de estudio en {{n}} min",
     "planNowTitle": "El bloque de estudio empieza ahora",
     "planFallback": "Sesión de estudio"
+  },
+  "referral": {
+    "eyebrow": "UNA PREGUNTA",
+    "title": "¿Cómo conociste StudyDesk?",
+    "opt": {
+      "reddit": "Reddit",
+      "store": "Explorando F-Droid o una tienda de apps",
+      "friend": "Un amigo",
+      "other": "En otro sitio"
+    },
+    "dismiss": "Ahora no",
+    "thanks": "Gracias, nos ayuda."
   }
 }
