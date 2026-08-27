@@ -38,12 +38,34 @@ async function adoptSession(bundle) {
     if (error) {
       console.warn('[sso] suite-session unavailable, using shared-token fallback:', error.message);
     } else if (data && data.token_hash) {
-      const { error: otpErr } = await supabase.auth.verifyOtp({
-        token_hash: data.token_hash,
-        type: 'email',
-      });
-      if (!otpErr) return { ok: true, email: bundle.email };
-      console.warn('[sso] one-time credential rejected, using fallback:', otpErr.message);
+      // v1.11 — try each credential type rather than betting on one.
+      //
+      // `suite-session` mints with `generateLink({ type: 'magiclink' })`, but
+      // GoTrue has no `magiclink` value in its `one_time_token_type` enum — it
+      // files a magiclink under `recovery_token`. Which string `verifyOtp`
+      // wants for that row has moved between GoTrue versions, and getting it
+      // wrong fails as `403 "One-time token not found"`, which the server logs
+      // show happening.
+      //
+      // That failure is not cosmetic: it drops us to the shared-token fallback
+      // below, which is exactly the refresh-token collision this whole SSO
+      // rewrite exists to prevent. The server-side record shows the result —
+      // healthy rotation for hours, then the entire token family revoked and a
+      // fresh session seconds later, i.e. all three apps signed out.
+      //
+      // Trying the three plausible types costs one round trip on the unlucky
+      // path and nothing on the lucky one, and it stops a version difference
+      // in Auth from silently re-enabling a daily logout.
+      let otpErr = null;
+      for (const type of ['magiclink', 'email', 'recovery']) {
+        const { error } = await supabase.auth.verifyOtp({ token_hash: data.token_hash, type });
+        if (!error) return { ok: true, email: bundle.email };
+        otpErr = error;
+        // A consumed one-time token cannot be retried with another type, so
+        // stop rather than burning the remaining attempts on a dead credential.
+        if (!/not found|invalid|expired/i.test(error.message || '')) break;
+      }
+      console.warn('[sso] one-time credential rejected, using fallback:', otpErr && otpErr.message);
     }
   } catch (e) {
     console.warn('[sso] suite-session threw, using shared-token fallback:', e.message);
