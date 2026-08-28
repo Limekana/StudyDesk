@@ -259,7 +259,9 @@
       "idea": "فكرة",
       "praise": "إشادة",
       "other": "أخرى"
-    }
+    },
+    "discord": "مجتمع Discord",
+    "discordSub": "الأسئلة وتقارير الأخطاء وما هو قادم"
   },
   "sdob": {
     "brand": "كفى ترددًا. ابدأ الدراسة.",
@@ -567,7 +569,8 @@
   },
   "widget": {
     "today": "اليوم",
-    "tomorrow": "غدًا"
+    "tomorrow": "غدًا",
+    "noPlanToday": "لا شيء مخطط اليوم"
   },
   "cal": {
     "title": "التقويم",
@@ -777,5 +780,17 @@
     "planSoonTitle": "فترة دراسة بعد {{n}} دقيقة",
     "planNowTitle": "فترة الدراسة تبدأ الآن",
     "planFallback": "جلسة دراسة"
+  },
+  "referral": {
+    "eyebrow": "سؤال واحد",
+    "title": "كيف عرفت StudyDesk؟",
+    "opt": {
+      "reddit": "Reddit",
+      "store": "أثناء التصفّح في F-Droid أو متجر تطبيقات",
+      "friend": "من صديق",
+      "other": "من مكان آخر"
+    },
+    "dismiss": "ليس الآن",
+    "thanks": "شكرًا — هذا يساعدنا."
   }
 }

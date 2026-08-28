@@ -7,6 +7,7 @@ import { supabase, OAUTH_REDIRECT_URL } from '../../lib/supabase.js';
 import { inheritFromNexus } from '../../lib/suiteSso.js';
 import { setGuestMode } from '../../lib/guestMode.js';
 import { translateAuthError } from '../../lib/authErrors.js';
+import { withCaptcha } from '../../lib/captcha.js';
 
 // v1.8 / ACT-3 — has this device ever completed first run? `studydesk-onboarded`
 // is written at the end of onboarding, which lives *behind* this gate, so an
@@ -234,7 +235,10 @@ export default function AuthGate() {
     setErr(''); setInfo(''); setLoading(true);
     try {
       if (mode === 'signup') {
-        const { error } = await supabase.auth.signUp({ email, password });
+        // withCaptcha only involves hCaptcha if the server asks for it — see
+        // lib/captcha.js for why this is not a widget on the screen.
+        const { error } = await withCaptcha((captchaToken) =>
+          supabase.auth.signUp({ email, password, options: { captchaToken } }));
         if (error) throw error;
         // v1.7 — "Confirm email" is ON in the project, so this returns no
         // session and the account is unusable until confirmed. (An older
@@ -247,7 +251,8 @@ export default function AuthGate() {
           setResendIn(30);
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await withCaptcha((captchaToken) =>
+          supabase.auth.signInWithPassword({ email, password, options: { captchaToken } }));
         if (error) throw error;
       }
     } catch (e) {
@@ -297,7 +302,8 @@ export default function AuthGate() {
     if (resendIn > 0 || loading) return;
     setErr(''); setInfo(''); setLoading(true);
     try {
-      const { error } = await supabase.auth.resend({ type: 'signup', email });
+      const { error } = await withCaptcha((captchaToken) =>
+        supabase.auth.resend({ type: 'signup', email, options: { captchaToken } }));
       if (error) throw error;
       setInfo(t('auth.otpSent'));
       setResendIn(60);

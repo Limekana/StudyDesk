@@ -863,6 +863,22 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
               {t('settings.supportDev')}
             </a>
           </div>
+          {/* Sits with Ko-fi rather than in its own section because the two are
+              about to be connected: Ko-fi's Discord bot maps a membership tier
+              onto a Discord role. Same shape as the link above — an ordinary
+              outbound link, no SDK, no embed, nothing fetched from discord.com
+              unless the user taps it. */}
+          <div className="sv2-note">{t('settings.discordSub')}</div>
+          <div className="sv2-action">
+            <a
+              className="btn-outline"
+              href="https://discord.gg/g8VuB4yXHY"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t('settings.discord')}
+            </a>
+          </div>
         </div>
 
         {/* ── About ── */}

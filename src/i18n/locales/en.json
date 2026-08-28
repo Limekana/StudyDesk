@@ -251,7 +251,9 @@
       "idea": "Idea",
       "praise": "Praise",
       "other": "Other"
-    }
+    },
+    "discord": "Discord community",
+    "discordSub": "Questions, bug reports, and what's coming next"
   },
   "sdob": {
     "brand": "Stop deciding. Start studying.",
@@ -547,7 +549,8 @@
   },
   "widget": {
     "today": "Today",
-    "tomorrow": "Tomorrow"
+    "tomorrow": "Tomorrow",
+    "noPlanToday": "Nothing planned today"
   },
   "cal": {
     "title": "Calendar",
@@ -757,5 +760,17 @@
     "planSoonTitle": "Study block in {{n}} min",
     "planNowTitle": "Study block starting now",
     "planFallback": "Study session"
+  },
+  "referral": {
+    "eyebrow": "ONE QUESTION",
+    "title": "Where did you hear about StudyDesk?",
+    "opt": {
+      "reddit": "Reddit",
+      "store": "Browsing F-Droid or an app store",
+      "friend": "A friend",
+      "other": "Somewhere else"
+    },
+    "dismiss": "Not now",
+    "thanks": "Thanks — that helps."
   }
 }

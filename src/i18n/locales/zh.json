@@ -251,7 +251,9 @@
       "idea": "建议",
       "praise": "表扬",
       "other": "其他"
-    }
+    },
+    "discord": "Discord 社区",
+    "discordSub": "提问、报告问题，了解后续计划"
   },
   "sdob": {
     "brand": "别再纠结，开始学习。",
@@ -547,7 +549,8 @@
   },
   "widget": {
     "today": "今天",
-    "tomorrow": "明天"
+    "tomorrow": "明天",
+    "noPlanToday": "今天没有安排"
   },
   "cal": {
     "title": "日历",
@@ -757,5 +760,17 @@
     "planSoonTitle": "学习时段将在 {{n}} 分钟后开始",
     "planNowTitle": "学习时段现在开始",
     "planFallback": "学习时段"
+  },
+  "referral": {
+    "eyebrow": "一个问题",
+    "title": "你从哪里知道 StudyDesk 的？",
+    "opt": {
+      "reddit": "Reddit",
+      "store": "在 F-Droid 或应用商店里浏览时",
+      "friend": "朋友推荐",
+      "other": "其他地方"
+    },
+    "dismiss": "以后再说",
+    "thanks": "谢谢，这很有帮助。"
   }
 }

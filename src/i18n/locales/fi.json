@@ -251,7 +251,9 @@
       "idea": "Idea",
       "praise": "Kehu",
       "other": "Muu"
-    }
+    },
+    "discord": "Discord-yhteisö",
+    "discordSub": "Kysymykset, bugi-ilmoitukset ja mitä on tulossa"
   },
   "sdob": {
     "brand": "Lopeta miettiminen. Aloita opiskelu.",
@@ -547,7 +549,8 @@
   },
   "widget": {
     "today": "Tänään",
-    "tomorrow": "Huomenna"
+    "tomorrow": "Huomenna",
+    "noPlanToday": "Ei suunnitelmia tänään"
   },
   "cal": {
     "title": "Kalenteri",
@@ -757,5 +760,17 @@
     "planSoonTitle": "Opiskelujakso {{n}} min kuluttua",
     "planNowTitle": "Opiskelujakso alkaa nyt",
     "planFallback": "Opiskelujakso"
+  },
+  "referral": {
+    "eyebrow": "YKSI KYSYMYS",
+    "title": "Mistä kuulit StudyDeskistä?",
+    "opt": {
+      "reddit": "Reddit",
+      "store": "Selaillessa F-Droidia tai sovelluskauppaa",
+      "friend": "Kaverilta",
+      "other": "Jostain muualta"
+    },
+    "dismiss": "Ei nyt",
+    "thanks": "Kiitos – tästä on apua."
   }
 }
