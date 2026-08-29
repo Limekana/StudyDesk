@@ -1,0 +1,5 @@
+Corrige la saisie avec les claviers chinois, japonais et coréens.
+
+Le texte n'apparaissait tout simplement pas. L'application utilisait la WebView Android dans un mode clavier simplifié, incapable de gérer la façon dont ces claviers composent les caractères. Ce mode est désormais désactivé. Il pouvait aussi gêner la saisie avec correction automatique en anglais.
+
+Entrée valide maintenant les caractères au lieu d'envoyer le formulaire. Tous les champs sont corrigés.

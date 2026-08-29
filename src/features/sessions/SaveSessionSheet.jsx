@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { analyseStudySession } from '../../lib/aiStudyDebrief.js';
 import { fmtTime } from '../../lib/dates.js';
+import { enterSubmit } from '../../lib/imeSubmit.js';
 
 export default function SaveSessionSheet({ pending, courses, onSave, onClose, canDebrief = false }) {
   const { t } = useTranslation();
@@ -86,7 +87,7 @@ export default function SaveSessionSheet({ pending, courses, onSave, onClose, ca
 
         <div className="input-group">
           <div className="input-label">{t('ss.fNotes')}</div>
-          <input type="text" placeholder={t('ss.phNotes')} value={notes} onChange={(e) => setNotes(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} autoFocus />
+          <input type="text" placeholder={t('ss.phNotes')} value={notes} onChange={(e) => setNotes(e.target.value)} {...enterSubmit(submit)} autoFocus />
         </div>
 
         <div className="input-group">

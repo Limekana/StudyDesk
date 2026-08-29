@@ -1,0 +1,5 @@
+Behebt die Eingabe mit chinesischen, japanischen und koreanischen Tastaturen.
+
+Der Text erschien schlicht nicht. Die App betrieb die Android-WebView in einem vereinfachten Tastaturmodus, der nicht damit umgehen kann, wie diese Tastaturen Zeichen aufbauen. Dieser Modus ist jetzt aus. Er konnte auch die Autokorrektur-Eingabe im Englischen stören.
+
+Die Eingabetaste bestätigt nun die Zeichen, statt das Formular abzusenden. Alle Textfelder sind korrigiert.
