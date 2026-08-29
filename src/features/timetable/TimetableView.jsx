@@ -25,6 +25,7 @@ import { resolveWeekStart, weekdayLabels } from '../../lib/calendar.js';
 import { formatLocale, parseLocalDate } from '../../lib/dates.js';
 import * as outbox from '../../lib/outbox.js';
 import '../../styles/timetable.css';
+import { enterSubmit } from '../../lib/imeSubmit.js';
 
 const DEFAULT_LESSON_MIN = 75;
 // Default hour window for the week grid. Referenced by name from desktop.css,
@@ -145,7 +146,7 @@ function TermForm({ draft, onSave, onClose, t }) {
             type="text" value={name} autoFocus
             onChange={(e) => { setName(e.target.value); setErr(''); }}
             placeholder={t(`tt.namePlaceholder.${draft.level}`)}
-            onKeyDown={(e) => e.key === 'Enter' && submit()}
+            {...enterSubmit(submit)}
           />
         </div>
         <div className="tt-form-row">

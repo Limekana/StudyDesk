@@ -1,0 +1,5 @@
+Fixes typing with Chinese, Japanese and Korean keyboards.
+
+Text simply would not appear. The app was running the Android WebView in a simplified keyboard mode that cannot handle the way these keyboards build up characters, so nothing you typed reached the field. That mode is now off. It could also break autocorrect-style typing in English on some keyboards.
+
+Enter now confirms your characters instead of submitting the form. Every text field in the app is fixed.

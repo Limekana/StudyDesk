@@ -16,6 +16,7 @@ import CoursePicker from '../../lib/CoursePicker.jsx';
 import { ASSIGN_TYPES, OTHER_ASSIGN_TYPE } from '../../lib/assignTypes.js';
 import { DIFFICULTY_DAYS, DIFFICULTY_COLORS } from '../../lib/examDifficulty.js';
 import { addDays, fmtDateFull } from '../../lib/dates.js';
+import { enterSubmit } from '../../lib/imeSubmit.js';
 
 export function AddAsgnModal({ courses, activeCourse, onAdd, onClose }) {
   const { t } = useTranslation();
@@ -92,7 +93,7 @@ export function EditCourseModal({ course, courses, onSave, onDelete, onClose }) 
   };
   return <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={t('course.edit')} onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
     <div className="modal-title">{t('course.edit')}</div>
-    <div className="input-group"><div className="input-label">{t('course.name')}</div><input type="text" value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doSave()} autoFocus/></div>
+    <div className="input-group"><div className="input-label">{t('course.name')}</div><input type="text" value={name} onChange={e=>setName(e.target.value)} {...enterSubmit(doSave)} autoFocus/></div>
     <div className="modal-grid">
       <div className="input-group"><div className="input-label">{t('course.credits')}</div><input type="number" step="0.5" min="0" value={credits} onChange={e=>setCredits(e.target.value)}/></div>
       <div className="input-group"><div className="input-label">{t('course.period')}</div><input type="text" list="period-options" placeholder={t('course.periodPlaceholder')} value={semester} onChange={e=>setSemester(e.target.value)}/>
