@@ -44,6 +44,7 @@ import { parseLocalDate, toLocalISO, addDays, fmtTime, formatLocale } from '../.
 import { downloadIcs } from '../../lib/ics.js';
 import * as outbox from '../../lib/outbox.js';
 import '../../styles/calendar.css';
+import { enterSubmit } from '../../lib/imeSubmit.js';
 
 const MAX_CHIPS = 3;
 // Drag snapping. 15 minutes matches the granularity a study block is actually
@@ -976,7 +977,7 @@ function PlanEditor({ draft, courses, onSave, onDelete, onLog, onDismiss, onClos
         </div>
         <div className="input-group">
           <div className="input-label">{t('sv.fNotes')}</div>
-          <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} />
+          <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} {...enterSubmit(submit)} />
         </div>
 
         <div className="plan-actions">
@@ -1066,7 +1067,7 @@ function CommitmentEditor({ draft, onSave, onDelete, onClose, t }) {
             type="text" value={title} autoFocus
             onChange={(ev) => { setTitle(ev.target.value); setErr(''); }}
             placeholder={t('cm.titlePlaceholder')}
-            onKeyDown={(ev) => ev.key === 'Enter' && submit()}
+            {...enterSubmit(submit)}
           />
         </div>
 

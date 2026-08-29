@@ -1,0 +1,5 @@
+Memperbaiki pengetikan dengan papan ketik Tionghoa, Jepang, dan Korea.
+
+Teks sama sekali tidak muncul. Aplikasi menjalankan WebView Android dalam mode papan ketik sederhana yang tidak dapat menangani cara papan ketik tersebut menyusun karakter. Mode itu kini dimatikan. Mode itu juga bisa mengganggu pengetikan dengan koreksi otomatis dalam bahasa Inggris.
+
+Enter kini mengonfirmasi karakter, bukan mengirim formulir. Semua kolom teks sudah diperbaiki.

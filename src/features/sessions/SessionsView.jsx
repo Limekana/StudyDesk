@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as outbox from '../../lib/outbox.js';
 import { fmtTime } from '../../lib/dates.js';
+import { enterSubmit } from '../../lib/imeSubmit.js';
 
 const css = `
 .sv-wrap{padding:16px 24px 80px;max-width:780px;margin:0 auto;}
@@ -213,7 +214,7 @@ function SessionEditModal({ session, courses, onClose, onSave }) {
         </div>
         <div className="input-group">
           <div className="input-label">{t('sv.fNotes')}</div>
-          <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} />
+          <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} {...enterSubmit(submit)} />
         </div>
         <div className="input-group">
           <div className="input-label">{t('sv.fFocus')}</div>

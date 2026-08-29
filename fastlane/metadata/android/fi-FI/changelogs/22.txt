@@ -1,0 +1,5 @@
+Korjaa kirjoittamisen kiinan, japanin ja korean näppäimistöillä.
+
+Teksti ei yksinkertaisesti ilmestynyt. Sovellus käytti Android-selainkomponentissa yksinkertaistettua näppäimistötilaa, joka ei osaa käsitellä näiden näppäimistöjen tapaa koota merkkejä. Tila on nyt pois päältä. Se saattoi haitata myös englannin automaattikorjausta.
+
+Enter vahvistaa nyt merkit sen sijaan että lähettäisi lomakkeen. Kaikki tekstikentät on korjattu.

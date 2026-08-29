@@ -48,6 +48,7 @@ import TimetableView from "./features/timetable/TimetableView.jsx";
 import AttachmentList from "./features/plan/Attachments.jsx";
 import { useAttachmentDrop } from "./features/plan/useAttachmentDrop.js";
 import SettingsView from "./features/settings/SettingsView.jsx";
+import { enterSubmit } from "./lib/imeSubmit.js";
 
 // v1.3.1 — initials for the top-right profile avatar (opens Settings, like NCC).
 // Derives 1–2 letters from the signed-in email's local part; guests get "·".
@@ -1701,7 +1702,7 @@ export default function App() {
     {/* ── Modals ── */}
     {showAddCourse&&<div className="modal-overlay" role="dialog" aria-modal="true" aria-label={t('av.md.addCourse')} onClick={()=>setShowAddCourse(false)}><div className="modal" onClick={e=>e.stopPropagation()}>
       <div className="modal-title">{t('av.md.addCourse')}</div>
-      <div className="input-group"><div className="input-label">{t('course.name')}</div><input type="text" placeholder={t('course.namePlaceholder')} value={newCourseName} onChange={e=>setNewCourseName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCourse()} autoFocus/></div>
+      <div className="input-group"><div className="input-label">{t('course.name')}</div><input type="text" placeholder={t('course.namePlaceholder')} value={newCourseName} onChange={e=>setNewCourseName(e.target.value)} {...enterSubmit(addCourse)} autoFocus/></div>
       <div style={{marginBottom:16}}><CoursePicker value={newCourseColor} onChange={setNewCourseColor}/></div>
       <div style={{display:"flex",gap:8}}><button className="btn" onClick={addCourse}>{t('av.chrome.addCourse')}</button><button className="btn-outline" onClick={()=>setShowAddCourse(false)}>{t('common.cancel')}</button></div>
     </div></div>}
@@ -1824,7 +1825,7 @@ function OnboardingView({ onComplete }) {
         <div className="input-label">{t('sdob.courseNameLabel')}</div>
         <input type="text" placeholder={t('sdob.coursePlaceholder')}
           value={courseName} onChange={e=>setCourseName(e.target.value)}
-          onKeyDown={e=>e.key==="Enter"&&courseName.trim()&&setStep(3)}
+          {...enterSubmit(()=>courseName.trim()&&setStep(3))}
           autoFocus/>
       </div>
       <div className="input-group">
@@ -2155,7 +2156,7 @@ function ExamCard({ exam, courses, dispatch }) {
           <button className="topic-del" onClick={e=>{e.stopPropagation();dispatch({type:"DELETE_EXAM_TOPIC",examId:exam.id,topicId:tp.id});}}>×</button>
         </div>)}
         <div className="topic-add-row">
-          <input type="text" placeholder={t('av.ec.addTopic')} value={topicInput} onChange={e=>setTopicInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addTopic()}/>
+          <input type="text" placeholder={t('av.ec.addTopic')} value={topicInput} onChange={e=>setTopicInput(e.target.value)} {...enterSubmit(addTopic)}/>
           <button className="topic-add-btn" onClick={addTopic}>{t('av.ec.add')}</button>
         </div>
       </div>
@@ -2294,7 +2295,7 @@ function ActionsView({ state, dispatch, showFlash, onAddCourse }) {
     <div className="section-label">{t('av.act.addManually')}</div>
     <div className="quick-add-box">
       <div className="input-row">
-        <input type="text" placeholder={t('av.act.whatToDo')} value={newText} onChange={e=>setNewText(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addAction()} style={{flex:2}}/>
+        <input type="text" placeholder={t('av.act.whatToDo')} value={newText} onChange={e=>setNewText(e.target.value)} {...enterSubmit(addAction)} style={{flex:2}}/>
         <select value={newBucket} onChange={e=>setNewBucket(e.target.value)} style={{flex:1,maxWidth:130}}>{BUCKETS.map(b=><option key={b} value={b}>{t(`av.bucket.${b}`)}</option>)}</select>
         <button className="btn" onClick={addAction}>{t('av.act.add')}</button>
       </div>

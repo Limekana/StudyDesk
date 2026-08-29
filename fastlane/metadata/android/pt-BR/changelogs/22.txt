@@ -1,0 +1,5 @@
+Corrige a digitação com teclados chinês, japonês e coreano.
+
+O texto simplesmente não aparecia. O aplicativo usava a WebView do Android em um modo de teclado simplificado que não lida com a forma como esses teclados compõem os caracteres. Esse modo foi desativado. Ele também podia atrapalhar a digitação com autocorreção em inglês.
+
+O Enter agora confirma os caracteres em vez de enviar o formulário. Todos os campos de texto foram corrigidos.

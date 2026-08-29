@@ -1,0 +1,5 @@
+Corrige la escritura con teclados chino, japonés y coreano.
+
+El texto sencillamente no aparecía. La aplicación usaba la WebView de Android en un modo de teclado simplificado que no sabe manejar cómo estos teclados componen los caracteres. Ese modo ya está desactivado. También podía afectar a la escritura con autocorrección en inglés.
+
+Intro ahora confirma los caracteres en lugar de enviar el formulario. Todos los campos están corregidos.
