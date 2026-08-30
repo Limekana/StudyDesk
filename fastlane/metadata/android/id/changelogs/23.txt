@@ -1,0 +1,7 @@
+Memperbaiki sinkronisasi dan menyesuaikan timer dengan cara belajar nyata.
+
+Beberapa mata kuliah tidak sampai ke server dan memblokir antrean di belakangnya. Aplikasi kini mendeteksi yang hilang dan mengirimkannya, jadi kemacetan pulih sendiri.
+
+Timer menerima durasi apa pun hingga empat jam, menyimpan waktumu jika berhenti lebih awal, dan punya stopwatch. Blok berjalan tampil di setiap layar.
+
+Kamu juga bisa mengatur nama dan memilih simbol, warna, atau foto.

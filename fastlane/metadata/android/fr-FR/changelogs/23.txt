@@ -1,0 +1,7 @@
+Corrige la synchronisation et adapte le minuteur à la réalité.
+
+Certains cours n'atteignaient pas le serveur et bloquaient tout derrière. L'app repère désormais ce qui manque et l'envoie : un blocage se résout seul.
+
+Le minuteur accepte toute durée jusqu'à quatre heures, enregistre ton temps si tu arrêtes plus tôt, et propose un chronomètre. Un bloc en cours s'affiche sur chaque écran.
+
+Tu peux aussi définir un nom et choisir symbole, couleur ou photo.
