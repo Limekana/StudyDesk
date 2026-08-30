@@ -11,6 +11,8 @@ import * as sync from '../../lib/sync.js';
 import * as outbox from '../../lib/outbox.js';
 import { reconcileUnsynced } from '../../lib/reconcile.js';
 import { clearEntitlement } from '../../lib/entitlement.js';
+import { clearAvatarCache } from '../../lib/profile.js';
+import ProfileSection from './ProfileSection.jsx';
 import { downloadExport, deleteAccount } from '../../lib/dataRights.js';
 import { useConfirm } from '../../lib/useConfirm.js';
 import { avatarInitials } from '../../lib/avatarInitials.js';
@@ -113,6 +115,30 @@ const css = `
 .sv2-note-warn{color:var(--warning);background:var(--warning-bg);border:1px solid var(--warning-border);border-radius:7px;padding:10px 12px;}
 .sv2-inline-btn{display:block;margin-top:8px;background:none;border:1px solid var(--warning-border);color:var(--warning);padding:6px 12px;border-radius:6px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;}
 .sv2-inline-btn:active{background:var(--warning-border);}
+
+/* v1.12 Item 9 - profile + avatar. Paper-first: the preview is a real circle
+   on the page ground, the pickers are flat swatches, nothing floats. */
+.sv2-profile-preview{display:flex;align-items:center;gap:14px;margin-bottom:14px;}
+.sv2-avatar-lg{width:64px;height:64px;min-width:64px;font-size:26px;overflow:hidden;}
+.sv2-avatar-img{width:100%;height:100%;object-fit:cover;display:block;}
+.sv2-profile-name-field{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;}
+.sv2-field-label{font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted2);}
+.sv2-name-input{width:100%;}
+
+/* auto-fill rather than a fixed count: the glyph set is a round dozen today and
+   a different number later, and a hardcoded column count would leave a ragged
+   last row the moment that changes. */
+.sv2-glyph-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:8px;margin-top:12px;}
+.sv2-glyph{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--bg);border:1px solid var(--border2);border-radius:9px;color:var(--text);cursor:pointer;transition:border-color .15s,background .15s;}
+.sv2-glyph:hover{border-color:var(--muted2);}
+.sv2-glyph--on{border-color:var(--text);background:var(--surface2);}
+
+.sv2-color-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+/* The selected swatch is marked with a ring drawn OUTSIDE the colour rather
+   than a border inside it, so the swatch still shows the full colour it is
+   offering - a border would eat 2px of the only thing being chosen. */
+.sv2-swatch{width:30px;height:30px;border-radius:50%;border:1px solid var(--border2);cursor:pointer;padding:0;transition:box-shadow .15s;}
+.sv2-swatch--on{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--text);}
 /* width:auto overrides the width:100% this input now inherits from the
    shared control selector in forms.css. That inheritance is correct for a
    field stacked in an .input-group and wrong for one sitting in a flex row
@@ -271,6 +297,9 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
       // hand the next user of a shared device a paid perk. Same reasoning as
       // every other on-signout local wipe in the suite.
       clearEntitlement();
+      // v1.12 Item 9 - same shared-device reasoning: a cached signed URL would
+      // show user A's face to user B.
+      clearAvatarCache();
       dispatch({ type: 'RESET_AFTER_SIGNOUT' });
       setGuestMode(true);
       window.dispatchEvent(new CustomEvent('studydesk:guest-mode-changed'));
@@ -305,6 +334,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
         clearLocal: async () => {
           outbox.clear();
           clearEntitlement();
+          clearAvatarCache();
           dispatch({ type: 'RESET_AFTER_SIGNOUT' });
           for (const k of ['studydesk-v1', 'studydesk-needs-initial-push',
                            'studydesk-onboarded', 'studydesk-grade-mode', 'sd-timer']) {
@@ -385,6 +415,10 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
             </div>
           )}
         </div>
+
+        {/* ── Profile (v1.12 Item 9) — renders nothing for a guest, who has no
+            server-side profile to edit. ── */}
+        <ProfileSection session={session} showFlash={showFlash} />
 
         {/* ── Language ── */}
         <div className="sv2-section">
