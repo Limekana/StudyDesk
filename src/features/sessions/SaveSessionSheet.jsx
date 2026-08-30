@@ -4,6 +4,19 @@ import { analyseStudySession } from '../../lib/aiStudyDebrief.js';
 import { fmtTime } from '../../lib/dates.js';
 import { enterSubmit } from '../../lib/imeSubmit.js';
 
+// `datetime-local` reads and writes LOCAL wall-clock time with no zone, so it
+// must never be fed or read through toISOString(). NCC 1.10.1 shipped exactly
+// that bug: a 15:00 task reopened as 12:00 in UTC+3, and because the field also
+// drove the next save, every edit walked the deadline further back. Build the
+// local string by hand, and let `new Date('YYYY-MM-DDTHH:mm')` — which the spec
+// defines as local when there is no Z — do the conversion on the way out.
+function toLocalInput(iso) {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function SaveSessionSheet({ pending, courses, onSave, onClose, canDebrief = false }) {
   const { t } = useTranslation();
   // Focus labels are looked up per-rating via t('ss.focus{n}') (1–5); index 0 is unused.
@@ -11,6 +24,10 @@ export default function SaveSessionSheet({ pending, courses, onSave, onClose, ca
   const [subjectId, setSubjectId] = useState('');
   const [duration, setDuration] = useState(String(pending.durationMinutes));
   const [notes, setNotes] = useState(pending.task || '');
+  // 2d - a manually logged session needs its own when; a timer-driven one
+  // already knows and shows it read-only, exactly as before.
+  const editableWhen = pending.allowDateEdit === true;
+  const [startedLocal, setStartedLocal] = useState(() => toLocalInput(pending.startedAt));
   // v1.3 (BUG-22) — optional focus quality. null = skipped (the default).
   const [focus, setFocus] = useState(null);
   // v1.4 — optional AI debrief. The user types what they covered; the cloud
@@ -34,11 +51,17 @@ export default function SaveSessionSheet({ pending, courses, onSave, onClose, ca
   function submit() {
     const d = parseInt(duration, 10);
     if (isNaN(d) || d < 1) return;
+    let startedAt = pending.startedAt;
+    if (editableWhen) {
+      const parsed = new Date(startedLocal);   // no Z - parsed as local time
+      if (isNaN(parsed.getTime())) return;
+      startedAt = parsed.toISOString();
+    }
     onSave({
       subjectId: subjectId || null,
       durationMinutes: d,
       notes: notes.trim() || null,
-      startedAt: pending.startedAt,
+      startedAt,
       focusRating: focus,
       // Only attach AI fields when an analysis was actually produced.
       ...(debrief
@@ -75,13 +98,23 @@ export default function SaveSessionSheet({ pending, courses, onSave, onClose, ca
             <input type="number" min="1" max="1440" value={duration} onChange={(e) => setDuration(e.target.value)} />
           </div>
           <div className="input-group">
-            <div className="input-label">{t('ss.fStarted')}</div>
-            <input
-              type="text"
-              readOnly
-              value={fmtTime(pending.startedAt)}
-              style={{ background: 'var(--surface2)' }}
-            />
+            <div className="input-label">{editableWhen ? t('ss.fWhen') : t('ss.fStarted')}</div>
+            {editableWhen ? (
+              <input
+                type="datetime-local"
+                value={startedLocal}
+                // A "past session" in the future is a typo, not a record.
+                max={toLocalInput(new Date().toISOString())}
+                onChange={(e) => setStartedLocal(e.target.value)}
+              />
+            ) : (
+              <input
+                type="text"
+                readOnly
+                value={fmtTime(pending.startedAt)}
+                style={{ background: 'var(--surface2)' }}
+              />
+            )}
           </div>
         </div>
 

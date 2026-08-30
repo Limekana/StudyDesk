@@ -5,7 +5,7 @@
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 h1,h2,h3,h4,h5,h6{font-weight:inherit;font-size:inherit;}
-:root{--bg:#f5f2ed;--surface:#faf8f4;--surface2:#f0ece4;--border:#e0d9cf;--border2:#cfc8bc;--text:#1a1814;--muted:#6b6560;--muted2:#7a7570;--danger:#c0392b;--danger-bg:#fee;--danger-border:#fcc;--danger-on:#fff;--warning:#b5470b;--warning-bg:#fff4e6;--warning-border:#f0d4a0;--font-display:'Playfair Display',serif;--font-mono:'DM Mono',monospace;--font-sans:'DM Sans',sans-serif;--shadow:0 1px 3px rgba(0,0,0,0.08);--shadow-md:0 4px 12px rgba(0,0,0,0.08);--ease-paper:cubic-bezier(0.4,0,0.2,1);--ease-page-turn:cubic-bezier(0.3,0,0.2,1);--ease-settle:cubic-bezier(0.16,1,0.3,1);}
+:root{--bg:#f5f2ed;--surface:#faf8f4;--surface2:#f0ece4;--border:#e0d9cf;--border2:#cfc8bc;--text:#1a1814;--muted:#6b6560;--muted2:#7a7570;--danger:#c0392b;--danger-bg:#fee;--danger-border:#fcc;--danger-on:#fff;--warning:#b5470b;--warning-bg:#fff4e6;--warning-border:#f0d4a0;--font-display:'Playfair Display',serif;--font-mono:'DM Mono',monospace;--font-sans:'DM Sans',sans-serif;--shadow:0 1px 3px rgba(0,0,0,0.08);--shadow-md:0 4px 12px rgba(0,0,0,0.08);--ease-paper:cubic-bezier(0.4,0,0.2,1);--ease-page-turn:cubic-bezier(0.3,0,0.2,1);--ease-settle:cubic-bezier(0.16,1,0.3,1);/* Pomodoro phase colours, previously hardcoded in TimerView.jsx. Identical values, tokenised so the clock can be retinted: the focus one is the free theme's ink, so on a dark ground it rendered black-on-black. It drives the ring stroke as well as the numerals, so a literal there loses the whole timer, not one part of it. */--phase-focus:#1a1814;--phase-short:#2e7d52;--phase-long:#1a5c9e;}
 /* ── Shell tokens (v1.9 Item 14, Phase 1) ──────────────────────────────────
    The three-tier desktop shell is driven entirely by these three values, so a
    later desktop surface sizes itself against the same rhythm instead of
@@ -57,12 +57,36 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
    element instead, the two centre against different available widths and the
    page title drifts left of the column it labels — visible from about 1300px
    up, which is exactly the range this milestone adds. */
-.topbar{display:flex;align-items:center;padding:18px 0;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:10;}
+/* v1.12 - clear the display cutout.
+   `StatusBar.overlaysWebView:false` in capacitor.config.json used to keep
+   the WebView below the status bar, but Android 15+ ENFORCES edge-to-edge
+   for apps targeting SDK 35+ and this app targets 36 - so that setting is
+   now a no-op and the topbar draws behind the status bar and the punch-hole
+   camera. Found on an S24 (Android 36), where the timer pill was the first
+   thing tall enough to visibly collide with the cutout.
+   `max()` rather than a bare inset so desktop and any device reporting 0
+   keep the original 18px. */
+.topbar{display:flex;align-items:center;padding:max(18px,env(safe-area-inset-top)) 0 18px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:10;}
 .topbar-inner{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;max-width:var(--content-max);margin:0 auto;padding:0 var(--shell-gutter);}
 .topbar-title{font-family:var(--font-display);font-size:22px;font-weight:500;}
 .topbar-avatar{width:36px;height:36px;min-width:36px;border-radius:50%;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-family:var(--font-display);font-size:14px;font-weight:600;letter-spacing:0.02em;cursor:pointer;display:flex;align-items:center;justify-content:center;text-transform:uppercase;transition:all 0.12s var(--ease-paper,ease);-webkit-tap-highlight-color:transparent;}
 .topbar-avatar:hover{border-color:var(--text);}
 .topbar-avatar.active{background:var(--text);color:var(--bg);border-color:var(--text);}
+/* v1.12 Item 9 - the shared AccountAvatar renders into both the 36px topbar
+   button and the 64px Settings preview, so its two inner elements are styled
+   once, here, rather than per-surface. overflow:hidden on the button is what
+   keeps a square photo inside the circle. */
+.topbar-avatar{overflow:hidden;}
+.avatar-img{width:100%;height:100%;object-fit:cover;display:block;}
+/* Vertically centred at RUNTIME by AccountAvatar, not by a constant here.
+   Two attempts with CSS alone failed and the second made it worse: flex centres
+   the line box, and how far the ink sits from that box's centre depends on
+   WHICH FONT the platform falls back to for these symbols - they are not in
+   Playfair Display. Measured in desktop Chrome the glyphs were already centred
+   to 0.21px, so any constant tuned there is wrong on Android's WebView, which
+   falls back differently. The component measures the font that actually
+   rendered and corrects for it. */
+.avatar-glyph{line-height:1;display:block;}
 .topbar-date{font-family:var(--font-mono);font-size:11px;color:var(--muted);}
 .content{padding:var(--shell-gutter);flex:1;max-width:var(--content-max);width:100%;margin:0 auto;}
 /* Opt-out for surfaces that genuinely want the full shell width rather than a
@@ -83,7 +107,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
   .main{height:100dvh;overflow-y:auto;padding-bottom:calc(64px + env(safe-area-inset-bottom));}
   /* Same pixels as before the topbar was split into outer/inner — 14px top,
      16px sides, 12px bottom. The phone tier is deliberately unchanged. */
-  .topbar{padding:14px 0 12px;position:sticky;top:0;z-index:10;}
+  .topbar{padding:max(14px,env(safe-area-inset-top)) 0 12px;position:sticky;top:0;z-index:10;}
   .topbar-inner{max-width:100%;padding:0 16px;}
   .topbar-title{font-size:18px;}
   .content{padding:16px 14px;max-width:100%;}

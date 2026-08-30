@@ -8,6 +8,8 @@
 // server-side account to delete.
 
 import { supabase } from './supabase.js';
+import { removeForUser } from './userStorage.js';
+import { AVATAR_BUCKET, AVATAR_FILE } from './profile.js';
 
 const EXPORT_SCHEMA_VERSION = 1;
 
@@ -101,6 +103,25 @@ export async function deleteAccount({ clearLocal }) {
     // of the erasure.
     await clearLocal();
     return { deleted: 'local' };
+  }
+
+  // v1.12 Item 9 — remove the avatar object BEFORE the account goes.
+  //
+  // `auth.admin.deleteUser` cascades DATABASE rows; it does not touch Storage.
+  // An avatar left behind would be an orphaned object nobody can ever reach or
+  // delete, since the RLS policy keys on a `auth.uid()` that no longer exists —
+  // exactly the second orphan class the plan says not to create alongside
+  // AUDIT-NCC-V15-1. Done here rather than in the Edge Function because the
+  // user is still authenticated at this moment, so their own delete policy
+  // applies and no deploy is required.
+  //
+  // Deliberately not fatal: erasure of the account must not be blocked by a
+  // storage hiccup. A failure here leaves one 256 KB object, which is a
+  // housekeeping problem; a failure to delete the account is a GDPR one.
+  try {
+    await removeForUser(AVATAR_BUCKET, AVATAR_FILE);
+  } catch (e) {
+    console.warn('[delete-account] avatar removal failed, continuing:', e?.message || e);
   }
 
   const { error } = await supabase.functions.invoke('delete-account', {
