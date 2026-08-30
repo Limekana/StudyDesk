@@ -1,0 +1,8 @@
+# studydesk.limecore.dev
+User-agent: *
+Allow: /
+
+# Cross-submission. A sitemap is scoped to its own host, so the entry for this
+# subdomain inside limecore.dev/sitemap.xml is only honoured if this host
+# points back at it (or both hosts are verified in one Search Console account).
+Sitemap: https://limecore.dev/sitemap.xml
