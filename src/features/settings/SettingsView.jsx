@@ -13,6 +13,7 @@ import { reconcileUnsynced } from '../../lib/reconcile.js';
 import { clearEntitlement } from '../../lib/entitlement.js';
 import { clearAvatarCache } from '../../lib/profile.js';
 import ProfileSection from './ProfileSection.jsx';
+import SupporterBlock from './SupporterBlock.jsx';
 import { downloadExport, deleteAccount } from '../../lib/dataRights.js';
 import { useConfirm } from '../../lib/useConfirm.js';
 import { avatarInitials } from '../../lib/avatarInitials.js';
@@ -139,6 +140,17 @@ const css = `
    offering - a border would eat 2px of the only thing being chosen. */
 .sv2-swatch{width:30px;height:30px;border-radius:50%;border:1px solid var(--border2);cursor:pointer;padding:0;transition:box-shadow .15s;}
 .sv2-swatch--on{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--text);}
+
+/* v1.12 Items 6b/6c - supporter badge + Ko-fi alt-email self-link. */
+.sv2-supporter{display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px 14px;border:1px solid var(--accent,#2e7d52);border-radius:10px;background:color-mix(in srgb,var(--accent,#2e7d52) 7%,transparent);}
+.sv2-supporter-mark{font-size:20px;line-height:1;color:var(--accent,#2e7d52);}
+.sv2-supporter-title{font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--text);}
+.sv2-supporter-sub{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-top:3px;}
+/* A disclosure, not a field in everyone's face: most users are not supporters
+   and should not be nagged, but someone who paid and sees nothing will look. */
+.sv2-linkish{display:inline-block;margin-top:12px;background:none;border:none;padding:0;font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);text-decoration:underline;text-underline-offset:3px;cursor:pointer;}
+.sv2-linkish:hover{color:var(--text);}
+.sv2-kofi-link{margin-top:10px;padding-top:12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px;}
 /* width:auto overrides the width:100% this input now inherits from the
    shared control selector in forms.css. That inheritance is correct for a
    field stacked in an .input-group and wrong for one sitting in a flex row
@@ -922,9 +934,13 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
         </div>
 
         {/* ── Support ──
-            A link out, nothing more. No entitlements, no supporter-only
-            features, no webhook — nothing here gates the app or changes
-            behaviour for someone who never clicks it. */}
+            Was "a link out, nothing more. No entitlements, no supporter-only
+            features, no webhook." That stopped being true in v1.12: the Ko-fi
+            webhook, the matcher and the entitlement reader all ship, so this
+            section now also shows a supporter their badge (Item 6c) and offers
+            the alt-email self-link (Item 6b).
+            Still true, and worth keeping true: nothing here GATES the app. A
+            user who never clicks any of it loses no functionality. */}
         <div className="sv2-section">
           <div className="sv2-section-title">{t('settings.support')}</div>
           <div className="sv2-note">{t('settings.supportDevSub')}</div>
@@ -938,6 +954,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
               {t('settings.supportDev')}
             </a>
           </div>
+          <SupporterBlock session={session} showFlash={showFlash} />
           {/* Sits with Ko-fi rather than in its own section because the two are
               about to be connected: Ko-fi's Discord bot maps a membership tier
               onto a Discord role. Same shape as the link above — an ordinary
