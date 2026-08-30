@@ -18,10 +18,19 @@
 //   5. Manual "Retry now" button in Settings
 //
 // All sync.js operations are idempotent UPSERTs (or DELETEs by id), so a
-// retry that races with a successful first attempt is a safe no-op. The
-// outbox does NOT guarantee ordering across kinds — within a kind the FIFO
-// order is preserved, but the drain processes all items in oldest-first
-// order so practical ordering holds for the same-row case.
+// retry that races with a successful first attempt is a safe no-op.
+//
+// ── Ordering (rewritten v1.12 Item 1, issue #38) ───────────────────────────
+// This file used to say: "the outbox does NOT guarantee ordering across kinds
+// — the drain processes all items in oldest-first order so practical ordering
+// holds for the same-row case." That justification did not cover the case that
+// actually broke: a subject and its exam are DIFFERENT KINDS joined by a
+// foreign key, and oldest-first says nothing useful about them. If the child
+// is queued and the parent is not, the child fails `exams_subject_id_fkey`
+// forever.
+//
+// The drain is now ordered by dependency rank (parents first) and, critically,
+// no longer stops at the first failure. See `KIND_RANK` and `drain()`.
 //
 // Storage shape (localStorage `studydesk-outbox`):
 //   [
@@ -122,16 +131,65 @@ export function enqueue(kind, payload) {
   void drain();
 }
 
+// ── Dependency ranking ─────────────────────────────────────────────────────
+//
+// Lower rank drains first. This encodes foreign keys, nothing else: a row that
+// something else points AT must be written before the row that points at it.
+// Everything unlisted is rank 1, which is the safe default — a child.
+//
+// Rank 0 is the set of parents:
+//   `upsert_subject`  — `grades`, `exams`, `assignments`, `study_actions`,
+//                       `timetable_entries`, `planned_sessions` all carry
+//                       `subject_id`. `exams`/`assignments` are ON DELETE
+//                       CASCADE, and their FK is what issue #38 reported.
+//   `upsert_term`     — `timetable_entries.term_id`, and `academic_terms`
+//                       self-references for the Year > Semester > Jakso tree.
+//   `log_session`     — `planned_sessions.fulfilled_by` points at
+//                       `study_sessions`. CalendarView's `logPlan` already
+//                       relied on oldest-first for this; ranking makes the
+//                       guarantee explicit instead of incidental.
+//
+// Sort stability matters and is relied on: within a rank the original FIFO
+// order is preserved (Array.prototype.sort is stable, ES2019+), so two edits
+// to the same row still apply in the order the user made them.
+const KIND_RANK = {
+  upsert_subject: 0,
+  upsert_term: 0,
+  log_session: 0,
+};
+
+function rankOf(kind) {
+  return KIND_RANK[kind] ?? 1;
+}
+
+/** Dependency-ordered copy of `items`. Does not mutate the input. */
+function orderForDrain(items) {
+  return items
+    .map((item, i) => ({ item, i }))
+    .sort((a, b) => rankOf(a.item.kind) - rankOf(b.item.kind) || a.i - b.i)
+    .map(({ item }) => item);
+}
+
 let draining = false;
 
-/** Process pending items oldest-first. Coalesces concurrent calls via the
- *  `draining` flag — a second invocation while one is in-flight returns
- *  immediately. Stops on the first persistent failure to avoid burning
- *  through the queue with the same network error.
+/** Process pending items in dependency order. Coalesces concurrent calls via
+ *  the `draining` flag — a second invocation while one is in-flight returns
+ *  immediately.
  *
+ *  **Does not stop at the first failure.** The previous implementation did,
+ *  which turned one unsatisfiable item into a frozen queue: the head burned
+ *  its five attempts on every drain, rotated to the back, and the next
+ *  orphaned child failed identically. Issue #38 is that carousel — the
+ *  reporter watched the failing kind rotate `exams` → `assignments` while
+ *  nothing at all synced. One bad item must not block unrelated mutations.
+ *
+ *  @param {object}  [opts]
+ *  @param {boolean} [opts.force]  Clear quarantine + reset attempts first.
+ *                                 The manual "Retry now" button — an explicit
+ *                                 user request to try everything again.
  *  Returns the new queue depth so callers can decide whether to flash a
  *  result message. */
-export async function drain() {
+export async function drain(opts = {}) {
   if (draining) return loadItems().length;
   // Skip if offline — items stay queued. `online` event will re-trigger.
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
@@ -139,47 +197,68 @@ export async function drain() {
   }
   draining = true;
   try {
-    while (true) {
+    if (opts.force) {
+      saveItems(loadItems().map((i) => ({ ...i, attempts: 0, quarantined: false })));
+    }
+
+    // Snapshot which items this pass will attempt, in dependency order.
+    // Anything enqueued mid-pass is picked up by the next drain rather than
+    // extending this one indefinitely.
+    const planned = orderForDrain(loadItems()).map((i) => i.id);
+
+    // The FIRST failure of the pass, not the last. With dependency ordering
+    // the first failure is the closest thing to a root cause the queue can
+    // observe — a failing parent explains its children, never the reverse.
+    // Surfacing only `lastError` is why #38 was reported as "exams" when the
+    // subject was the actual problem.
+    let firstError = null;
+    let firstErrorKind = null;
+
+    for (const id of planned) {
       const items = loadItems();
-      if (items.length === 0) break;
-      const item = items[0];
+      const item = items.find((i) => i.id === id);
+      // Gone — a concurrent clear() (sign-out) or a parallel drain took it.
+      if (!item) continue;
+      // Quarantined items are skipped until an explicit forced retry. They
+      // are NOT dropped: silent data loss is still worse than a stuck item,
+      // and the Settings panel surfaces the count.
+      if (item.quarantined) continue;
+
       const handler = KIND_DISPATCH[item.kind];
       if (!handler) {
         // Unknown kind — drop it (came from an older app version or a typo).
-        // Logging so we notice in dev.
         console.error('[outbox] dropping item with unknown kind:', item.kind);
-        saveItems(items.slice(1));
+        saveItems(loadItems().filter((i) => i.id !== id));
         continue;
       }
+
       try {
         await handler(item.payload);
-        // Success — remove from queue + bump last-success.
-        saveItems(items.slice(1));
-        saveMeta({ ...loadMeta(), lastSuccessAt: new Date().toISOString(), lastError: null });
+        saveItems(loadItems().filter((i) => i.id !== id));
+        saveMeta({ ...loadMeta(), lastSuccessAt: new Date().toISOString() });
       } catch (e) {
-        const attempts = (item.attempts || 0) + 1;
         const errMsg = (e && e.message) || String(e);
-        // Update the item in-place with attempt + error metadata.
-        const updated = [
-          { ...item, attempts, lastAttemptAt: new Date().toISOString(), lastError: errMsg },
-          ...items.slice(1),
-        ];
-        // Hit the ceiling? Move to the back of the queue so subsequent items
-        // can still attempt. The user can manually retry or the next mutation
-        // will trigger another drain. We do NOT drop — silent data loss is
-        // worse than a stuck queue surfacing in the UI.
-        if (attempts >= MAX_ATTEMPTS) {
-          saveItems([...updated.slice(1), updated[0]]);
-        } else {
-          saveItems(updated);
-        }
-        saveMeta({ ...loadMeta(), lastError: errMsg, lastErrorAt: new Date().toISOString() });
-        // Stop the drain pass — most likely the next item would hit the
-        // same error. Next trigger (online event / visibility / manual)
-        // tries again.
-        break;
+        const attempts = (item.attempts || 0) + 1;
+        // At the ceiling an item is quarantined rather than rotated to the
+        // back. Rotating is what produced #38's confusing carousel: the item
+        // never left the queue, so it re-failed on every subsequent drain and
+        // kept overwriting `lastError` with whichever child ran last.
+        const quarantined = attempts >= MAX_ATTEMPTS;
+        saveItems(loadItems().map((i) => (
+          i.id === id
+            ? { ...i, attempts, quarantined, lastAttemptAt: new Date().toISOString(), lastError: errMsg }
+            : i
+        )));
+        if (!firstError) { firstError = errMsg; firstErrorKind = item.kind; }
       }
     }
+
+    saveMeta({
+      ...loadMeta(),
+      lastError: firstError,
+      lastErrorKind: firstErrorKind,
+      lastErrorAt: firstError ? new Date().toISOString() : loadMeta().lastErrorAt || null,
+    });
   } finally {
     draining = false;
   }
@@ -207,10 +286,16 @@ export function getStatus() {
     lastSuccessAt: meta.lastSuccessAt || null,
     lastError: meta.lastError || null,
     lastErrorAt: meta.lastErrorAt || null,
+    // Which kind produced the first failure of the last pass. `lastError`
+    // alone reads as "exams are broken" when the real answer is "the course
+    // those exams hang off never reached the server" — see #38.
+    lastErrorKind: meta.lastErrorKind || null,
     // Oldest pending item — useful UI hint ("waiting since 5m ago").
     oldestEnqueuedAt: items[0]?.createdAt || null,
-    // Items at the attempt ceiling — surfaced as a stuck-queue warning.
-    stuck: items.filter((i) => (i.attempts || 0) >= MAX_ATTEMPTS).length,
+    // Quarantined items — past the attempt ceiling, skipped by ordinary
+    // drains, retried only when the user explicitly asks. Surfaced as a
+    // needs-attention count rather than left to rotate invisibly.
+    stuck: items.filter((i) => i.quarantined).length,
   };
   return cachedStatus;
 }
@@ -298,4 +383,10 @@ const KIND_DISPATCH = {
   // Non-study blockers — training, clubs, shifts.
   upsert_commitment: (p) => sync.upsertCommitment(p),
   delete_commitment: (p) => sync.deleteCommitment(p.id),
+  // v1.12 Item 0 — one row per user per app per day, written on foreground.
+  // Queued rather than pushed directly for two reasons: a cold start can
+  // foreground before `adoptSession()` has resolved, and RLS would reject the
+  // write with no session; and the phone is often offline at exactly the
+  // moment the app comes up. Both resolve into a retry rather than a lost day.
+  record_app_open: (p) => sync.recordAppOpen(p),
 };

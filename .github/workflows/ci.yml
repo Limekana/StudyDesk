@@ -31,6 +31,13 @@ jobs:
 
       # The working agreement calls this gate mandatory. Two releases shipped
       # broken because it was skipped by hand; this makes it structural.
+      # v1.12 Item 1. StudyDesk shipped `android.captureInput: true` for months,
+      # which made CJK text entry impossible, because nobody has ever typed
+      # Chinese into any of these apps. A one-line fix does not stop that
+      # recurring; failing the build does.
+      - name: IME guard
+        run: node scripts/check-ime.mjs
+
       - name: Build gate
         run: npm run build
 

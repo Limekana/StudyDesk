@@ -75,8 +75,40 @@ public class FocusModePlugin extends Plugin {
         // Live Updates / promoted ongoing landed in Android 16 (API 36).
         // Below that the notification is still posted, just never promoted.
         out.put("promotedOngoing", Build.VERSION.SDK_INT >= 36);
-        out.put("notifications", true);
+        // Issue #39. This used to be a hardcoded `true`, which made the whole
+        // feature undiagnosable: the settings screen rendered the chip toggle,
+        // the user switched it on, and `nm.notify()` was then a silent no-op
+        // because the OS had never been granted POST_NOTIFICATIONS. No error,
+        // no callback, nothing in logcat — "it has never worked."
+        //
+        // `areNotificationsEnabled()` is the honest answer and covers both ways
+        // it can be off: the runtime permission ungranted on API 33+, and the
+        // user disabling notifications for the app in system settings. API 24+,
+        // which is this app's minSdk, so no compat shim is needed.
+        out.put("notifications", notificationsAllowed());
         call.resolve(out);
+    }
+
+    /** Re-read the notification permission. Separate from `capabilities()`
+     *  because the JS side caches that for the lifetime of the process — this
+     *  is what the settings screen calls after asking for the permission, and
+     *  after the user comes back from the system settings app. */
+    @PluginMethod
+    public void notificationsEnabled(PluginCall call) {
+        JSObject out = new JSObject();
+        out.put("enabled", notificationsAllowed());
+        call.resolve(out);
+    }
+
+    private boolean notificationsAllowed() {
+        try {
+            NotificationManager nm =
+                    (NotificationManager) getContext().getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm == null) return false;
+            return Build.VERSION.SDK_INT < Build.VERSION_CODES.N || nm.areNotificationsEnabled();
+        } catch (Throwable t) {
+            return false;
+        }
     }
 
     /**
@@ -100,13 +132,22 @@ public class FocusModePlugin extends Plugin {
         out.put("pinned", false);
 
         if (wantChip) {
-            try {
-                postChip(title, text, endsAt);
-                out.put("chip", true);
-            } catch (Throwable t) {
-                // A refused notification must not take the focus session with
-                // it. Lock In is still a focus mode without a status chip.
-                out.put("chipError", String.valueOf(t.getMessage()));
+            // Issue #39: check BEFORE posting. `nm.notify()` does not throw
+            // when POST_NOTIFICATIONS is ungranted — it silently drops the
+            // notification — so the old try/catch reported `chip: true` for a
+            // chip that was never shown. The caller then had no way to tell a
+            // working chip from a blocked one, and neither did the user.
+            if (!notificationsAllowed()) {
+                out.put("chipError", "notifications-blocked");
+            } else {
+                try {
+                    postChip(title, text, endsAt);
+                    out.put("chip", true);
+                } catch (Throwable t) {
+                    // A refused notification must not take the focus session
+                    // with it. Lock In is still a focus mode without a chip.
+                    out.put("chipError", String.valueOf(t.getMessage()));
+                }
             }
         }
 

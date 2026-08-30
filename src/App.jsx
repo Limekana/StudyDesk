@@ -11,11 +11,13 @@ import { supabase } from "./lib/supabase.js";
 import AuthGate from "./features/auth/AuthGate.jsx";
 import { isGuestMode, setGuestMode } from "./lib/guestMode.js";
 import { scheduleOriginStamp } from "./lib/originMarker.js";
+import { watchAppOpens } from "./lib/appOpens.js";
 import ReferralPrompt from "./features/referral/ReferralPrompt.jsx";
 import { inheritFromNexus } from "./lib/suiteSso.js";
 import { hydrateOnboardedFromCloud, markOnboardedCloud } from "./lib/onboardingCloud.js";
 import * as sync from "./lib/sync.js";
 import * as outbox from "./lib/outbox.js";
+import { reconcileUnsynced } from "./lib/reconcile.js";
 import { applyRemotePull } from "./lib/merge.js";
 import GradesView from "./features/grades/GradesView.jsx";
 import SessionsView from "./features/sessions/SessionsView.jsx";
@@ -1202,6 +1204,14 @@ export default function App() {
   // reconciler below stays disarmed until then.
   const pulledOnceRef = useRef(false);
 
+  // The pull effect below deliberately re-subscribes only when the user id
+  // changes, so its closure holds a stale `state`. The reconcile needs the
+  // CURRENT local rows to diff against what the pull returned — hence a ref.
+  // Written in an effect rather than during render: refs must not be mutated
+  // while rendering, and this commits before any pull callback can resolve.
+  const stateRef = useRef(state);
+  useEffect(() => { stateRef.current = state; });
+
   // ── Sync: initial pull + Realtime, gated on sign-in ─────────────────────────
   useEffect(() => {
     if (!session) { sync.stopRealtime(); pulledOnceRef.current = false; return; }
@@ -1210,6 +1220,21 @@ export default function App() {
       try {
         const remote = await sync.pullAllStudyData();
         if (!cancelled) dispatch({ type: "MERGE_REMOTE", remote });
+        // v1.12 Item 1 (#38) — repair rows that never reached the server.
+        // Every enqueue site is gated on `session`, so anything written while
+        // the session was null (every cold start; and for hours a day under
+        // `SESS-1`) was dropped rather than queued, with no path back. Diffing
+        // local against the pull is what finds them; `outbox.drain`'s
+        // dependency ranking is what lets a rescued course push before the
+        // exams that have been failing on its foreign key.
+        //
+        // Runs against the PRE-merge local state on purpose: the merge only
+        // adds remote rows, and local-only is precisely what we are looking
+        // for. Cheap when there is nothing to do — two set builds and a walk.
+        if (!cancelled) {
+          const queued = reconcileUnsynced(stateRef.current, remote, outbox);
+          if (queued) console.warn(`[StudyDesk] reconcile: re-queued ${queued} unsynced row(s)`);
+        }
       } catch (e) {
         console.error("[StudyDesk] pull failed:", e);
       } finally {
@@ -1432,6 +1457,11 @@ export default function App() {
   // incl. the guestMode=true anti-auto-re-sign-in fix). An earlier duplicate
   // copy here was dead (never wired to a control) and was removed in the v1.7
   // audit to avoid two divergent sign-out paths.
+
+  // v1.12 Item 0 — retention. Mount-only and deliberately independent of the
+  // auth effect: the trigger is the app being foregrounded, not a session
+  // arriving. Guests and same-day repeats are filtered inside recordAppOpen.
+  useEffect(() => watchAppOpens(), []);
 
   // #26 — Android back button: dismiss modals first, then navigate home, then exit
   useEffect(() => {

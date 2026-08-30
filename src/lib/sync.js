@@ -21,6 +21,32 @@ async function currentUserId() {
 function nowISO() { return new Date().toISOString(); }
 function todayISO() { return new Date().toISOString().slice(0, 10); }
 
+// ── retention (v1.12 Item 0) ─────────────────────────────────────────────────
+
+/**
+ * Record that the user opened the app today.
+ *
+ * Retention was previously inferred from content-row timestamps and
+ * `auth.users.last_sign_in_at`. The latter moves on a silent token refresh, so
+ * it records that the client woke up, not that the person came back — it
+ * overstates retention and cannot answer D1/D7/D28 for a named cohort.
+ *
+ * The composite primary key (user_id, app, opened_on) makes this idempotent:
+ * the caller upserts on every foreground and the database collapses same-day
+ * repeats, so there is no dedup at query time and no unbounded growth.
+ */
+export async function recordAppOpen({ app, appVersion, platform, openedOn }) {
+  const userId = await currentUserId();
+  const { error } = await supabase.from('app_opens').upsert({
+    user_id: userId,
+    app,
+    app_version: appVersion || null,
+    platform: platform || null,
+    opened_on: openedOn,
+  }, { onConflict: 'user_id,app,opened_on' });
+  if (error) throw error;
+}
+
 // ── subjects (courses) ───────────────────────────────────────────────────────
 
 export async function upsertSubject({ id, name, credits, semester, color, archivedAt, schoolYear }) {

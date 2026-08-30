@@ -18,6 +18,16 @@
 .pomo-presets{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:28px;}
 .pomo-preset-btn{font-family:var(--font-mono);font-size:10px;padding:6px 14px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all 0.1s;letter-spacing:0.05em;}
 .pomo-preset-btn.active{background:var(--text);color:var(--bg);border-color:var(--text);}
+/* 2a — free-form focus length. Styled as a pill so it sits in the preset row
+   as a peer rather than as a form control that wandered in. */
+.pomo-preset-input{font-family:var(--font-mono);font-size:10px;padding:6px 10px;border-radius:20px;border:1px dashed var(--border2);background:transparent;color:var(--text);width:58px;text-align:center;letter-spacing:0.05em;transition:border-color var(--t-fast,120ms);}
+.pomo-preset-input:focus{outline:none;border-style:solid;border-color:var(--text);}
+.pomo-preset-input:disabled{opacity:0.35;cursor:not-allowed;}
+/* The stepper steps by 1, which is meaningless against 5–240, and it makes
+   the box wider than every pill next to it. */
+.pomo-preset-input::-webkit-outer-spin-button,
+.pomo-preset-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+.pomo-preset-input{-moz-appearance:textfield;appearance:textfield;}
 .pomo-task-row{width:100%;max-width:380px;display:flex;flex-direction:column;gap:8px;}
 .pomo-task-label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;}
 .pomo-session-log{width:100%;max-width:380px;margin-top:24px;}
@@ -63,6 +73,11 @@
 .lockin-preset{background:transparent;color:rgba(250,248,244,0.5);border:1px solid rgba(250,248,244,0.2);padding:6px 14px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;border-radius:99px;cursor:pointer;transition:all 0.1s;}
 .lockin-preset.active{background:rgba(250,248,244,0.12);color:#faf8f4;border-color:rgba(250,248,244,0.4);}
 .lockin-preset:disabled{opacity:0.3;cursor:not-allowed;}
+.lockin-preset-input{width:62px;text-align:center;color:#faf8f4;border-style:dashed;}
+.lockin-preset-input:focus{outline:none;border-style:solid;border-color:rgba(250,248,244,0.6);}
+.lockin-preset-input::-webkit-outer-spin-button,
+.lockin-preset-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+.lockin-preset-input{-moz-appearance:textfield;appearance:textfield;}
 .lockin-exit{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);background:transparent;border:1px solid rgba(250,248,244,0.18);color:rgba(250,248,244,0.55);padding:9px 22px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;cursor:pointer;border-radius:99px;transition:all 0.15s;}
 .lockin-exit:hover{color:#faf8f4;border-color:rgba(250,248,244,0.45);}
 
@@ -70,3 +85,16 @@
 body.locked-in .sidebar,body.locked-in .mobile-tabbar,body.locked-in .topbar{display:none !important;}
 body.locked-in .main{padding:0;}
 body.locked-in .content{padding:0;max-width:none;}
+
+/* 2c — mode switch. Segmented rather than a toggle: the two modes are peers,
+   not an on/off state, and a user should be able to see which one they are in
+   without inferring it from the clock. */
+.timer-mode-switch{display:inline-flex;border:1px solid var(--border2);border-radius:var(--r-pill,99px);overflow:hidden;margin-bottom:20px;}
+.timer-mode-btn{background:transparent;border:none;padding:7px 18px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);cursor:pointer;transition:background var(--t-fast,120ms),color var(--t-fast,120ms);}
+.timer-mode-btn.active{background:var(--text);color:var(--bg);}
+.timer-mode-btn:not(.active):hover{color:var(--text);}
+
+/* 2d — deliberately quiet. Logging by hand is the exception, so it should be
+   findable next to the log it amends without competing with the clock. */
+.pomo-log-past{margin-top:22px;background:transparent;border:1px dashed var(--border2);border-radius:var(--r-pill,99px);padding:7px 16px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.06em;color:var(--muted);cursor:pointer;transition:color var(--t-fast,120ms),border-color var(--t-fast,120ms);}
+.pomo-log-past:hover{color:var(--text);border-color:var(--text);border-style:solid;}

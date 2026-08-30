@@ -13,6 +13,7 @@
   "scripts": {
     "dev": "vite",
     "prepare": "git config core.hooksPath .githooks || true",
+    "check:ime": "node scripts/check-ime.mjs",
     "check:secrets": "node scripts/check-secrets.mjs --all",
     "build": "vite build",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0",

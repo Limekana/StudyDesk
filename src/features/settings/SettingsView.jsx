@@ -9,10 +9,11 @@ import { setGuestMode } from '../../lib/guestMode.js';
 import PeriodHistory from '../grades/PeriodHistory.jsx';
 import * as sync from '../../lib/sync.js';
 import * as outbox from '../../lib/outbox.js';
+import { reconcileUnsynced } from '../../lib/reconcile.js';
 import { downloadExport, deleteAccount } from '../../lib/dataRights.js';
 import { useConfirm } from '../../lib/useConfirm.js';
 import { avatarInitials } from '../../lib/avatarInitials.js';
-import { focusCapabilities } from '../../lib/focusMode.js';
+import { focusCapabilities, ensureNotificationPermission } from '../../lib/focusMode.js';
 import { scaleFor, normalizeScale, describeScale } from '../../lib/gradeScale.js';
 import { GuestAvatar } from '../../lib/avatar.jsx';
 import pkg from '../../../package.json';
@@ -104,6 +105,13 @@ const css = `
 .sv2-signin{background:var(--text);color:var(--bg);border:none;padding:10px 18px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:6px;font-weight:500;}
 .sv2-signin:hover{opacity:0.88;}
 .sv2-note{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.55;}
+/* Issue #39 — the OS is blocking notifications, so the toggle below cannot do
+   anything. Uses the existing warning tokens rather than danger: nothing is
+   broken or destructive, the user simply has to grant something. Warm amber
+   also sits inside the paper palette where --danger's red does not. */
+.sv2-note-warn{color:var(--warning);background:var(--warning-bg);border:1px solid var(--warning-border);border-radius:7px;padding:10px 12px;}
+.sv2-inline-btn{display:block;margin-top:8px;background:none;border:1px solid var(--warning-border);color:var(--warning);padding:6px 12px;border-radius:6px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;}
+.sv2-inline-btn:active{background:var(--warning-border);}
 /* width:auto overrides the width:100% this input now inherits from the
    shared control selector in forms.css. That inheritance is correct for a
    field stacked in an .input-group and wrong for one sitting in a flex row
@@ -198,7 +206,10 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
   const onRetryNow = useCallback(async () => {
     setDraining(true);
     try {
-      const remaining = await outbox.drain();
+      // `force` clears quarantine and resets the attempt counters. Pressing
+      // this button is an explicit "try everything again" — the one case where
+      // an item parked past MAX_ATTEMPTS should get another go.
+      const remaining = await outbox.drain({ force: true });
       showFlash(remaining === 0 ? t('settings.queueDrained') : t('settings.stillPending', { count: remaining }));
     } finally {
       setDraining(false);
@@ -318,6 +329,10 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
     try {
       const remote = await sync.pullAllStudyData();
       dispatch({ type: 'MERGE_REMOTE', remote });
+      // v1.12 Item 1 (#38) — same repair as the cold-start pull in App.jsx.
+      // Wired here too because this button is what a user reaches for when
+      // sync looks wrong, and it is the one the reporter was pressing.
+      reconcileUnsynced(state, remote, outbox);
       setLastPullAt(new Date().toISOString());
       showFlash(t('settings.syncedSummary', { subjects: remote.subjects.length, grades: remote.grades.length, sessions: remote.sessions.length }));
     } catch (e) {
@@ -325,7 +340,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
     } finally {
       setPulling(false);
     }
-  }, [session, dispatch, showFlash, t]);
+  }, [session, state, dispatch, showFlash, t]);
 
   const userEmail = session?.user?.email || '—';
   const userId = session?.user?.id;
@@ -595,9 +610,29 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
         </div>
 
         {/* ── Lock In (v1.10, Item 12) — native only ── */}
-        {focusCaps?.notifications && (
+        {/* Gated on being native, NOT on notifications being allowed (#39).
+            The old gate hid this whole section when the OS was blocking
+            notifications — which is exactly the state a user needs to be able
+            to see and fix. Screen pinning also works without them. */}
+        {focusCaps?.sdk > 0 && (
         <div className="sv2-section">
           <div className="sv2-section-title">{t('settings.lockInLbl')}</div>
+
+          {focusCaps.notifications === false && (
+            <div className="sv2-note sv2-note-warn">
+              {t('settings.focusChipBlocked')}
+              <button
+                className="sv2-inline-btn"
+                onClick={async () => {
+                  const ok = await ensureNotificationPermission();
+                  setFocusCaps((c) => ({ ...c, notifications: ok }));
+                  showFlash(ok ? t('settings.focusChipUnblocked') : t('settings.focusChipStillBlocked'));
+                }}
+              >
+                {t('settings.focusChipAllow')}
+              </button>
+            </div>
+          )}
 
           <div className="sv2-row">
             <span className="sv2-row-label">{t('settings.focusChip')}</span>

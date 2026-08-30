@@ -67,6 +67,64 @@ export async function startFocus({ title, text, endsAt, chip = true, pin = false
   }
 }
 
+// ── Notification permission (issue #39) ─────────────────────────────────────
+//
+// StudyDesk only ever asks for POST_NOTIFICATIONS inside `scheduleNotifications`
+// in App.jsx, which runs when `state.notifEnabled` is true. A user who answered
+// "Maybe later" at onboarding is therefore never asked — and on Android 13+ an
+// ungranted POST_NOTIFICATIONS means every `nm.notify()` in the app is silently
+// dropped. That is one cause for both halves of #39's report: the focus chip
+// "has never worked" AND "most notifications don't come through at all."
+//
+// The chip needs its own path to the prompt because it is reachable without
+// ever turning reminders on.
+
+/** Live notification state, re-read from the OS rather than from the cached
+ *  capabilities. False when the runtime permission is ungranted OR when the
+ *  user has switched notifications off for the app in system settings. */
+export async function notificationsEnabled() {
+  if (!isNative()) return false;
+  try {
+    const { enabled } = await FocusMode.notificationsEnabled();
+    return !!enabled;
+  } catch {
+    // Older shell without the method — fall back to the cached capability so
+    // an app updated mid-session does not report a false negative.
+    const caps = await focusCapabilities();
+    return !!caps.notifications;
+  }
+}
+
+/**
+ * Ask for notification permission if it is not already held, then report the
+ * real outcome.
+ *
+ * Routed through `LocalNotifications.requestPermissions()` rather than a new
+ * native permission callback: that plugin is already a dependency, already
+ * drives this exact prompt for reminders, and already handles the Android 13+
+ * POST_NOTIFICATIONS flow. Adding a second implementation would mean two code
+ * paths to the same OS dialog.
+ *
+ * Re-checks natively afterwards instead of trusting the plugin's answer — the
+ * permission can also be off because notifications are disabled for the app
+ * wholesale, which the request cannot fix and does not report.
+ */
+export async function ensureNotificationPermission() {
+  if (!isNative()) return false;
+  if (await notificationsEnabled()) return true;
+  try {
+    const { LocalNotifications } = await import('@capacitor/local-notifications');
+    await LocalNotifications.requestPermissions();
+  } catch {
+    /* Prompt unavailable — fall through to the re-check, which reports false
+       and lets the caller point the user at system settings instead. */
+  }
+  // Invalidate the cached capabilities: `notifications` is now stale, and the
+  // settings screen reads it to decide what to show.
+  capsPromise = null;
+  return notificationsEnabled();
+}
+
 /** End a focus block. Safe to call when nothing was started — the native side
  *  clears both halves unconditionally, which is what recovers a session that
  *  was interrupted by a crash rather than by the user. */
