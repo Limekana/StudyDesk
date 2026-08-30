@@ -103,6 +103,13 @@ if (existsSync(SRC)) {
       // A waiver usually needs a sentence of reason, so look back over a short
       // comment block rather than a single line.
       if (lines.slice(Math.max(0, i - 3), i).some((l) => /ime-ok/.test(l))) return;
+      // A REAL guard passes on its own merit. Without this the only way to get
+      // a correctly-guarded handler past the check was to claim a waiver it
+      // did not need, which teaches people to reach for `ime-ok` reflexively
+      // and rots the signal. Looks back further than the waiver window because
+      // an early-return guard is usually separated from the Enter branch by
+      // the comment explaining it.
+      if (lines.slice(Math.max(0, i - 8), i).some((l) => /isComposing\s*\(/.test(l))) return;
       failures.push(
         `${file.slice(ROOT.length + 1)}:${i + 1}: Enter handled without an IME composition check.\n` +
         `    ${line.trim().slice(0, 100)}\n` +
