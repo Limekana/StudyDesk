@@ -152,6 +152,12 @@ npx cap sync android
 
 If `.env` is absent, the build falls back to the public StudyDesk project, so the default `npm run build` keeps working out of the box.
 
+## Support
+
+StudyDesk is free, open source and ad-free. If it's useful to you, you can support development on Ko-fi — it goes straight back into building the suite.
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/J6K8240SNW)
+
 ## License
 
 MIT — see [`LICENSE`](LICENSE). Forks, redistributions, and F-Droid packaging are all welcome.
