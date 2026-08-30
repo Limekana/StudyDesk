@@ -56,6 +56,29 @@ export async function usedBytes(bucket, userId) {
 }
 
 /**
+ * What this upload would bring the user's total to.
+ *
+ * Pure and exported so the arithmetic can be asserted directly — the quota
+ * cannot be reached through avatars alone (one fixed-filename object, capped at
+ * 256 KB server-side, against a 5 MB quota), so there is no end-to-end path
+ * that exercises it until Notebook attachments share this module in v1.13.
+ * Testing the decision is therefore the only honest way to know it works.
+ *
+ * `replacing` is the subtle part: overwriting a 200 KB avatar with another
+ * 200 KB avatar is a net zero, and counting the new one on top of the old would
+ * refuse an upload that costs nothing.
+ */
+export function projectedBytes({ used = 0, incoming = 0, replacing = 0 }) {
+  const total = Math.max(0, used) - Math.max(0, replacing) + Math.max(0, incoming);
+  // Floored at zero. `replacing` is read from a local cache, so a stale value
+  // larger than what is actually stored would drive the projection negative —
+  // and a negative projection passes every quota check, silently granting
+  // unlimited space. Unreachable today; a floor costs nothing and removes the
+  // class of bug rather than relying on the caller staying honest.
+  return Math.max(0, total);
+}
+
+/**
  * Upload a blob to `{user_id}/{relativePath}`, refusing to exceed the quota.
  *
  * @param {object}  opts
@@ -84,10 +107,7 @@ export async function uploadForUser({
   const uid = await currentUserId();
 
   const used = await usedBytes(bucket, uid);
-  // `replacingBytes` matters for the fixed-filename case: overwriting a 200 KB
-  // avatar with another 200 KB avatar is a net zero, and counting the new one
-  // on top of the old would refuse an upload that costs nothing.
-  const projected = used - Math.max(0, replacingBytes) + blob.size;
+  const projected = projectedBytes({ used, incoming: blob.size, replacing: replacingBytes });
   if (projected > quotaBytes) {
     const e = new Error('quota-exceeded');
     e.code = 'quota-exceeded';
