@@ -1,0 +1,7 @@
+Corrige la sincronización y adapta el temporizador al estudio real.
+
+Algunos cursos no llegaban al servidor y bloqueaban todo lo que esperaba detrás. La app detecta ahora lo que falta y lo envía, así que un atasco se resuelve solo.
+
+El temporizador acepta cualquier duración hasta cuatro horas, guarda tu tiempo si paras antes, e incluye cronómetro. Un bloque en curso aparece en todas las pantallas.
+
+También puedes poner un nombre y elegir símbolo, color o foto.

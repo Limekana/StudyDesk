@@ -1,0 +1,7 @@
+Fixes syncing, and makes the timer match how people actually study.
+
+Some courses never reached the server, blocking everything queued behind them. The app now spots what is missing and sends it, so a stuck sync clears itself.
+
+The timer takes any length up to four hours, saves your time if you stop early instead of discarding it, and has a stopwatch. A running block shows at the top of every screen.
+
+You can also set a display name and pick a symbol, colour or photo.

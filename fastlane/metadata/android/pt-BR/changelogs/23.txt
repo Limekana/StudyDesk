@@ -1,0 +1,7 @@
+Corrige a sincronização e adapta o cronômetro ao estudo real.
+
+Alguns cursos nunca chegavam ao servidor e travavam tudo o que estava na fila. O app agora percebe o que falta e envia, então uma sincronização travada se resolve sozinha.
+
+O cronômetro aceita qualquer duração até quatro horas, salva seu tempo se você parar antes em vez de descartá-lo, e tem cronômetro progressivo. Um bloco em andamento aparece no topo de todas as telas.
+
+Você pode definir um nome e escolher símbolo, cor ou foto.

@@ -1,0 +1,7 @@
+Korjaa synkronoinnin ja tekee ajastimesta opiskelun kaltaisen.
+
+Osa kursseista ei päätynyt palvelimelle, mikä jumitti kaiken jonossa olleen. Sovellus huomaa nyt puuttuvat ja lähettää ne, joten jumi purkautuu itsestään.
+
+Ajastin hyväksyy minkä tahansa pituuden neljään tuntiin asti, tallentaa ajan myös kesken lopetettuna ja sisältää sekuntikellon. Käynnissä oleva jakso näkyy joka näkymässä.
+
+Voit myös asettaa näyttönimen ja valita symbolin, värin tai kuvan.

@@ -1,0 +1,7 @@
+Behebt die Synchronisierung und macht den Timer alltagstauglich.
+
+Manche Kurse erreichten den Server nie und blockierten alles dahinter. Die App erkennt Fehlendes jetzt und sendet es nach, sodass sich eine hängende Synchronisierung von selbst löst.
+
+Der Timer nimmt jede Länge bis vier Stunden, speichert deine Zeit auch bei frühem Abbruch und bietet eine Stoppuhr. Ein laufender Block erscheint auf jedem Bildschirm.
+
+Du kannst zudem einen Namen und Symbol, Farbe oder Foto wählen.

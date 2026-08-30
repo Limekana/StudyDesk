@@ -9,10 +9,15 @@ import { setGuestMode } from '../../lib/guestMode.js';
 import PeriodHistory from '../grades/PeriodHistory.jsx';
 import * as sync from '../../lib/sync.js';
 import * as outbox from '../../lib/outbox.js';
+import { reconcileUnsynced } from '../../lib/reconcile.js';
+import { clearEntitlement } from '../../lib/entitlement.js';
+import { clearAvatarCache } from '../../lib/profile.js';
+import ProfileSection from './ProfileSection.jsx';
+import SupporterBlock from './SupporterBlock.jsx';
 import { downloadExport, deleteAccount } from '../../lib/dataRights.js';
 import { useConfirm } from '../../lib/useConfirm.js';
 import { avatarInitials } from '../../lib/avatarInitials.js';
-import { focusCapabilities } from '../../lib/focusMode.js';
+import { focusCapabilities, ensureNotificationPermission } from '../../lib/focusMode.js';
 import { scaleFor, normalizeScale, describeScale } from '../../lib/gradeScale.js';
 import { GuestAvatar } from '../../lib/avatar.jsx';
 import pkg from '../../../package.json';
@@ -104,6 +109,48 @@ const css = `
 .sv2-signin{background:var(--text);color:var(--bg);border:none;padding:10px 18px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:6px;font-weight:500;}
 .sv2-signin:hover{opacity:0.88;}
 .sv2-note{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.55;}
+/* Issue #39 — the OS is blocking notifications, so the toggle below cannot do
+   anything. Uses the existing warning tokens rather than danger: nothing is
+   broken or destructive, the user simply has to grant something. Warm amber
+   also sits inside the paper palette where --danger's red does not. */
+.sv2-note-warn{color:var(--warning);background:var(--warning-bg);border:1px solid var(--warning-border);border-radius:7px;padding:10px 12px;}
+.sv2-inline-btn{display:block;margin-top:8px;background:none;border:1px solid var(--warning-border);color:var(--warning);padding:6px 12px;border-radius:6px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;}
+.sv2-inline-btn:active{background:var(--warning-border);}
+
+/* v1.12 Item 9 - profile + avatar. Paper-first: the preview is a real circle
+   on the page ground, the pickers are flat swatches, nothing floats. */
+.sv2-profile-preview{display:flex;align-items:center;gap:14px;margin-bottom:14px;}
+.sv2-avatar-lg{width:64px;height:64px;min-width:64px;font-size:26px;overflow:hidden;}
+.sv2-avatar-img{width:100%;height:100%;object-fit:cover;display:block;}
+.sv2-profile-name-field{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;}
+.sv2-field-label{font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted2);}
+.sv2-name-input{width:100%;}
+
+/* auto-fill rather than a fixed count: the glyph set is a round dozen today and
+   a different number later, and a hardcoded column count would leave a ragged
+   last row the moment that changes. */
+.sv2-glyph-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:8px;margin-top:12px;}
+.sv2-glyph{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--bg);border:1px solid var(--border2);border-radius:9px;color:var(--text);cursor:pointer;transition:border-color .15s,background .15s;}
+.sv2-glyph:hover{border-color:var(--muted2);}
+.sv2-glyph--on{border-color:var(--text);background:var(--surface2);}
+
+.sv2-color-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+/* The selected swatch is marked with a ring drawn OUTSIDE the colour rather
+   than a border inside it, so the swatch still shows the full colour it is
+   offering - a border would eat 2px of the only thing being chosen. */
+.sv2-swatch{width:30px;height:30px;border-radius:50%;border:1px solid var(--border2);cursor:pointer;padding:0;transition:box-shadow .15s;}
+.sv2-swatch--on{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--text);}
+
+/* v1.12 Items 6b/6c - supporter badge + Ko-fi alt-email self-link. */
+.sv2-supporter{display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px 14px;border:1px solid var(--accent,#2e7d52);border-radius:10px;background:color-mix(in srgb,var(--accent,#2e7d52) 7%,transparent);}
+.sv2-supporter-mark{font-size:20px;line-height:1;color:var(--accent,#2e7d52);}
+.sv2-supporter-title{font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--text);}
+.sv2-supporter-sub{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-top:3px;}
+/* A disclosure, not a field in everyone's face: most users are not supporters
+   and should not be nagged, but someone who paid and sees nothing will look. */
+.sv2-linkish{display:inline-block;margin-top:12px;background:none;border:none;padding:0;font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);text-decoration:underline;text-underline-offset:3px;cursor:pointer;}
+.sv2-linkish:hover{color:var(--text);}
+.sv2-kofi-link{margin-top:10px;padding-top:12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px;}
 /* width:auto overrides the width:100% this input now inherits from the
    shared control selector in forms.css. That inheritance is correct for a
    field stacked in an .input-group and wrong for one sitting in a flex row
@@ -198,7 +245,10 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
   const onRetryNow = useCallback(async () => {
     setDraining(true);
     try {
-      const remaining = await outbox.drain();
+      // `force` clears quarantine and resets the attempt counters. Pressing
+      // this button is an explicit "try everything again" — the one case where
+      // an item parked past MAX_ATTEMPTS should get another go.
+      const remaining = await outbox.drain({ force: true });
       showFlash(remaining === 0 ? t('settings.queueDrained') : t('settings.stillPending', { count: remaining }));
     } finally {
       setDraining(false);
@@ -255,6 +305,13 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
       // queued retry can't replay user A's writes against the next user, and a
       // shared device shows no residue.
       outbox.clear();
+      // v1.12 Item 5 — leaving the previous account's entitlement behind would
+      // hand the next user of a shared device a paid perk. Same reasoning as
+      // every other on-signout local wipe in the suite.
+      clearEntitlement();
+      // v1.12 Item 9 - same shared-device reasoning: a cached signed URL would
+      // show user A's face to user B.
+      clearAvatarCache();
       dispatch({ type: 'RESET_AFTER_SIGNOUT' });
       setGuestMode(true);
       window.dispatchEvent(new CustomEvent('studydesk:guest-mode-changed'));
@@ -288,6 +345,8 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
       await deleteAccount({
         clearLocal: async () => {
           outbox.clear();
+          clearEntitlement();
+          clearAvatarCache();
           dispatch({ type: 'RESET_AFTER_SIGNOUT' });
           for (const k of ['studydesk-v1', 'studydesk-needs-initial-push',
                            'studydesk-onboarded', 'studydesk-grade-mode', 'sd-timer']) {
@@ -318,6 +377,10 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
     try {
       const remote = await sync.pullAllStudyData();
       dispatch({ type: 'MERGE_REMOTE', remote });
+      // v1.12 Item 1 (#38) — same repair as the cold-start pull in App.jsx.
+      // Wired here too because this button is what a user reaches for when
+      // sync looks wrong, and it is the one the reporter was pressing.
+      reconcileUnsynced(state, remote, outbox);
       setLastPullAt(new Date().toISOString());
       showFlash(t('settings.syncedSummary', { subjects: remote.subjects.length, grades: remote.grades.length, sessions: remote.sessions.length }));
     } catch (e) {
@@ -325,7 +388,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
     } finally {
       setPulling(false);
     }
-  }, [session, dispatch, showFlash, t]);
+  }, [session, state, dispatch, showFlash, t]);
 
   const userEmail = session?.user?.email || '—';
   const userId = session?.user?.id;
@@ -364,6 +427,10 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
             </div>
           )}
         </div>
+
+        {/* ── Profile (v1.12 Item 9) — renders nothing for a guest, who has no
+            server-side profile to edit. ── */}
+        <ProfileSection session={session} showFlash={showFlash} />
 
         {/* ── Language ── */}
         <div className="sv2-section">
@@ -595,9 +662,29 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
         </div>
 
         {/* ── Lock In (v1.10, Item 12) — native only ── */}
-        {focusCaps?.notifications && (
+        {/* Gated on being native, NOT on notifications being allowed (#39).
+            The old gate hid this whole section when the OS was blocking
+            notifications — which is exactly the state a user needs to be able
+            to see and fix. Screen pinning also works without them. */}
+        {focusCaps?.sdk > 0 && (
         <div className="sv2-section">
           <div className="sv2-section-title">{t('settings.lockInLbl')}</div>
+
+          {focusCaps.notifications === false && (
+            <div className="sv2-note sv2-note-warn">
+              {t('settings.focusChipBlocked')}
+              <button
+                className="sv2-inline-btn"
+                onClick={async () => {
+                  const ok = await ensureNotificationPermission();
+                  setFocusCaps((c) => ({ ...c, notifications: ok }));
+                  showFlash(ok ? t('settings.focusChipUnblocked') : t('settings.focusChipStillBlocked'));
+                }}
+              >
+                {t('settings.focusChipAllow')}
+              </button>
+            </div>
+          )}
 
           <div className="sv2-row">
             <span className="sv2-row-label">{t('settings.focusChip')}</span>
@@ -847,9 +934,13 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
         </div>
 
         {/* ── Support ──
-            A link out, nothing more. No entitlements, no supporter-only
-            features, no webhook — nothing here gates the app or changes
-            behaviour for someone who never clicks it. */}
+            Was "a link out, nothing more. No entitlements, no supporter-only
+            features, no webhook." That stopped being true in v1.12: the Ko-fi
+            webhook, the matcher and the entitlement reader all ship, so this
+            section now also shows a supporter their badge (Item 6c) and offers
+            the alt-email self-link (Item 6b).
+            Still true, and worth keeping true: nothing here GATES the app. A
+            user who never clicks any of it loses no functionality. */}
         <div className="sv2-section">
           <div className="sv2-section-title">{t('settings.support')}</div>
           <div className="sv2-note">{t('settings.supportDevSub')}</div>
@@ -863,6 +954,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
               {t('settings.supportDev')}
             </a>
           </div>
+          <SupporterBlock session={session} showFlash={showFlash} />
           {/* Sits with Ko-fi rather than in its own section because the two are
               about to be connected: Ko-fi's Discord bot maps a membership tier
               onto a Discord role. Same shape as the link above — an ordinary
