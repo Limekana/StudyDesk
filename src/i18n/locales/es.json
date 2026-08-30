@@ -462,7 +462,15 @@
       "todaysSessions": "Sesiones de hoy",
       "timerTab": "Temporizador",
       "logTab": "Registro",
-      "statsTab": "Estadísticas"
+      "statsTab": "Estadísticas",
+      "pill": {
+        "focus": "Concentración",
+        "break": "Descanso",
+        "stopwatch": "Cronómetro",
+        "open": "Abrir el temporizador",
+        "openWith": "Abrir el temporizador — {{task}}",
+        "aria": "{{label}}, {{time}} — abrir el temporizador"
+      }
     },
     "pl": {
       "assignments": "Tareas",

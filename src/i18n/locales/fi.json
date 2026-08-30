@@ -458,7 +458,15 @@
       "todaysSessions": "Tämän päivän istunnot",
       "timerTab": "Ajastin",
       "logTab": "Loki",
-      "statsTab": "Tilastot"
+      "statsTab": "Tilastot",
+      "pill": {
+        "focus": "Keskity",
+        "break": "Tauko",
+        "stopwatch": "Sekuntikello",
+        "open": "Avaa ajastin",
+        "openWith": "Avaa ajastin — {{task}}",
+        "aria": "{{label}}, {{time}} — avaa ajastin"
+      }
     },
     "pl": {
       "assignments": "Tehtävät",

@@ -458,7 +458,15 @@
       "todaysSessions": "今天的会话",
       "timerTab": "计时器",
       "logTab": "记录",
-      "statsTab": "统计"
+      "statsTab": "统计",
+      "pill": {
+        "focus": "专注",
+        "break": "休息",
+        "stopwatch": "秒表",
+        "open": "打开计时器",
+        "openWith": "打开计时器 — {{task}}",
+        "aria": "{{label}}，{{time}} — 打开计时器"
+      }
     },
     "pl": {
       "assignments": "作业",

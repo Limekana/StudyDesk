@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { fmtTime } from '../../lib/dates.js';
 import { startFocus, stopFocus } from '../../lib/focusMode.js';
 import { enterSubmit } from '../../lib/imeSubmit.js';
+import { TIMER_CHANGE_EVENT } from '../../lib/timerSnapshot.js';
 import '../../styles/timer.css';
 
 function fmtMMSS(sec){ return String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0"); }
@@ -122,6 +123,10 @@ export default function TimerView({ state, onTimerComplete }) {
         secsAtStart: secsAtStartRef.current,
         phaseStartedAt: phaseStartedAtRef.current,
       }));
+      // v1.12 Item 8e — tell the app-level pill. localStorage does not raise
+      // `storage` for same-document writes, so without this the pill would only
+      // notice a start or stop on its next one-second tick.
+      window.dispatchEvent(new CustomEvent(TIMER_CHANGE_EVENT));
     } catch {}
   }, [customFocus, phase, secsLeft, running, session, focusDone, task, lockedIn, mode]);
 

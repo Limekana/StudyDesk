@@ -13,6 +13,7 @@ import { isGuestMode, setGuestMode } from "./lib/guestMode.js";
 import { scheduleOriginStamp } from "./lib/originMarker.js";
 import { watchAppOpens } from "./lib/appOpens.js";
 import { refreshEntitlement } from "./lib/entitlement.js";
+import TimerPill from "./features/timer/TimerPill.jsx";
 import ReferralPrompt from "./features/referral/ReferralPrompt.jsx";
 import { inheritFromNexus } from "./lib/suiteSso.js";
 import { hydrateOnboardedFromCloud, markOnboardedCloud } from "./lib/onboardingCloud.js";
@@ -1628,6 +1629,13 @@ export default function App() {
             : activeView?.label
           }</h1>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
+            {/* v1.12 Item 8e — a running block is visible from every route.
+                Hidden on the timer screen itself: pointing at the page you are
+                already on is the one in-app double-up worth avoiding. */}
+            <TimerPill
+              hidden={state.view==="timer"}
+              onOpen={()=>dispatch({type:"SET_VIEW",view:"timer"})}
+            />
             <div className="topbar-date">{todayStr}</div>
             {/* v1.3.1 — profile avatar opens Settings (matches NCC/LimeLog).
                 Sign in / sign out now live inside Settings. Guests show "·". */}

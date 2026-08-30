@@ -458,7 +458,15 @@
       "todaysSessions": "Today's sessions",
       "timerTab": "Timer",
       "logTab": "Log",
-      "statsTab": "Stats"
+      "statsTab": "Stats",
+      "pill": {
+        "focus": "Focus",
+        "break": "Break",
+        "stopwatch": "Stopwatch",
+        "open": "Open the timer",
+        "openWith": "Open the timer — {{task}}",
+        "aria": "{{label}}, {{time}} — open the timer"
+      }
     },
     "pl": {
       "assignments": "Assignments",

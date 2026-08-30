@@ -98,3 +98,65 @@ body.locked-in .content{padding:0;max-width:none;}
    findable next to the log it amends without competing with the clock. */
 .pomo-log-past{margin-top:22px;background:transparent;border:1px dashed var(--border2);border-radius:var(--r-pill,99px);padding:7px 16px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.06em;color:var(--muted);cursor:pointer;transition:color var(--t-fast,120ms),border-color var(--t-fast,120ms);}
 .pomo-log-past:hover{color:var(--text);border-color:var(--text);border-style:solid;}
+
+
+/* ── v1.12 Item 8e — persistent in-app timer pill ──────────────────────────
+   Lives in the topbar rather than floating over the content. The bottom of a
+   phone screen is already carrying the tab bar, the course strip and the flash
+   toasts; a fourth fixed element there would either stack badly or cover one
+   of them. A running block is *status*, and status belongs next to the title.
+
+   Reads as paper: a hairline pill on the page ground, mono numerals, an
+   uppercase micro-label. The only colour is the phase dot. */
+.timer-pill{
+  display:inline-flex;align-items:center;gap:7px;
+  max-width:38vw;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:var(--r-pill,99px);
+  padding:5px 11px 5px 9px;
+  cursor:pointer;
+  color:var(--text);
+  font-family:var(--font-mono);
+  transition:border-color var(--t-fast,120ms),background var(--t-fast,120ms);
+  -webkit-tap-highlight-color:transparent;
+}
+.timer-pill:hover{border-color:var(--border2);background:var(--surface);}
+.timer-pill:active{background:var(--surface2);}
+
+/* The one piece of colour, and the one piece of motion. The pulse is not
+   decoration: a static pill cannot distinguish "running" from "paused at this
+   value", and that is the single question the pill exists to answer. */
+.timer-pill-dot{
+  width:7px;height:7px;border-radius:50%;flex:0 0 auto;
+  background:var(--phase-focus);
+  animation:timer-pill-pulse 2s var(--ease-paper,ease) infinite;
+}
+.timer-pill-focus .timer-pill-dot{background:var(--phase-focus);}
+.timer-pill-short .timer-pill-dot{background:var(--phase-short);}
+.timer-pill-long  .timer-pill-dot{background:var(--phase-long);}
+
+@keyframes timer-pill-pulse{
+  0%,100%{opacity:1;}
+  50%{opacity:0.35;}
+}
+@media(prefers-reduced-motion:reduce){
+  .timer-pill-dot{animation:none;}
+}
+
+.timer-pill-time{font-size:12px;font-variant-numeric:tabular-nums;letter-spacing:0.02em;}
+
+/* The task name when there is one, the phase when there is not. Truncated
+   rather than wrapped — the topbar is a single row and a two-line pill would
+   push the title out of alignment. */
+.timer-pill-label{
+  font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+
+/* Phone: the topbar also carries the date and the avatar, so the pill gives up
+   its label first and keeps the clock, which is the part that matters. */
+@media(max-width:768px){
+  .timer-pill{max-width:none;padding:4px 9px 4px 8px;gap:6px;}
+  .timer-pill-label{display:none;}
+}

@@ -474,7 +474,15 @@
       "todaysSessions": "جلسات اليوم",
       "timerTab": "المؤقّت",
       "logTab": "السجل",
-      "statsTab": "الإحصاءات"
+      "statsTab": "الإحصاءات",
+      "pill": {
+        "focus": "تركيز",
+        "break": "استراحة",
+        "stopwatch": "ساعة إيقاف",
+        "open": "فتح المؤقت",
+        "openWith": "فتح المؤقت — {{task}}",
+        "aria": "{{label}}، {{time}} — افتح المؤقت"
+      }
     },
     "pl": {
       "assignments": "الواجبات",

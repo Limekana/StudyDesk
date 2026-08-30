@@ -462,7 +462,15 @@
       "todaysSessions": "Sessions du jour",
       "timerTab": "Minuteur",
       "logTab": "Journal",
-      "statsTab": "Stats"
+      "statsTab": "Stats",
+      "pill": {
+        "focus": "Concentration",
+        "break": "Pause",
+        "stopwatch": "Chronomètre",
+        "open": "Ouvrir le minuteur",
+        "openWith": "Ouvrir le minuteur — {{task}}",
+        "aria": "{{label}}, {{time}} — ouvrir le minuteur"
+      }
     },
     "pl": {
       "assignments": "Devoirs",

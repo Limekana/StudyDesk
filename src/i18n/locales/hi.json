@@ -458,7 +458,15 @@
       "todaysSessions": "आज के सत्र",
       "timerTab": "टाइमर",
       "logTab": "लॉग",
-      "statsTab": "आँकड़े"
+      "statsTab": "आँकड़े",
+      "pill": {
+        "focus": "फोकस",
+        "break": "विराम",
+        "stopwatch": "स्टॉपवॉच",
+        "open": "टाइमर खोलें",
+        "openWith": "टाइमर खोलें — {{task}}",
+        "aria": "{{label}}, {{time}} — टाइमर खोलें"
+      }
     },
     "pl": {
       "assignments": "असाइनमेंट",

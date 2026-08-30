@@ -458,7 +458,15 @@
       "todaysSessions": "Heutige Sitzungen",
       "timerTab": "Timer",
       "logTab": "Verlauf",
-      "statsTab": "Statistik"
+      "statsTab": "Statistik",
+      "pill": {
+        "focus": "Fokus",
+        "break": "Pause",
+        "stopwatch": "Stoppuhr",
+        "open": "Timer öffnen",
+        "openWith": "Timer öffnen — {{task}}",
+        "aria": "{{label}}, {{time}} — Timer öffnen"
+      }
     },
     "pl": {
       "assignments": "Aufgaben",

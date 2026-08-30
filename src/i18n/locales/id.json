@@ -454,7 +454,15 @@
       "todaysSessions": "Sesi hari ini",
       "timerTab": "Timer",
       "logTab": "Catatan",
-      "statsTab": "Statistik"
+      "statsTab": "Statistik",
+      "pill": {
+        "focus": "Fokus",
+        "break": "Istirahat",
+        "stopwatch": "Stopwatch",
+        "open": "Buka pengatur waktu",
+        "openWith": "Buka pengatur waktu — {{task}}",
+        "aria": "{{label}}, {{time}} — buka pengatur waktu"
+      }
     },
     "pl": {
       "assignments": "Tugas",
