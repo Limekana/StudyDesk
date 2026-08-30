@@ -27,6 +27,16 @@ export const AVATAR_BUCKET = 'avatars';
 export const AVATAR_FILE = 'avatar.webp';
 
 const CACHE_KEY = 'studydesk.avatarCache';
+
+/** Fired whenever the profile or avatar changes, so every avatar in the app
+ *  re-resolves at once. Without it the topbar kept whatever it read at mount
+ *  and only caught up on a cold start. */
+export const PROFILE_CHANGE_EVENT = 'studydesk:profile-changed';
+
+function announce() {
+  try { window.dispatchEvent(new CustomEvent(PROFILE_CHANGE_EVENT)); }
+  catch { /* SSR / non-window */ }
+}
 /** Signed URLs last an hour server-side; refresh a little early so a render
  *  never lands on one that expired mid-request. */
 const URL_TTL_MS = 55 * 60 * 1000;
@@ -122,6 +132,7 @@ export async function saveProfile(patch) {
       await supabase.auth.updateUser({ data: { full_name: patch.fullName?.trim() || null } });
     } catch { /* the profiles row is the one that matters; metadata is a mirror */ }
   }
+  announce();
   return true;
 }
 
@@ -156,6 +167,7 @@ export async function uploadAvatar(file) {
   // Drop the cached URL: the path is unchanged but the bytes are not, and a
   // stale signed URL would serve the old face until it expired.
   writeCache(null);
+  announce();
   return path;
 }
 
@@ -166,6 +178,7 @@ export async function removeAvatar(kindAfter = 'initials') {
   } catch { /* already gone is success for our purposes */ }
   await saveProfile({ avatarKind: kindAfter });
   writeCache(null);
+  announce();
 }
 
 /**
@@ -203,4 +216,15 @@ export async function resolveAvatar(profile) {
 
   writeCache({ userId: profile?.id, url, fetchedAt: Date.now(), size: cached?.size || 0 });
   return { kind: 'image', glyph, color, url };
+}
+/**
+ * Does this user already have an uploaded avatar?
+ *
+ * Used so choosing "Photo" when one already exists just switches to it, rather
+ * than forcing a fresh upload — which is what it did on first release, and it
+ * reads as "your photo did not save".
+ */
+export async function hasAvatarObject() {
+  const url = await signedUrlForUser(AVATAR_BUCKET, AVATAR_FILE);
+  return !!url;
 }

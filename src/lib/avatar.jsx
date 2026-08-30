@@ -36,3 +36,27 @@ export function GuestAvatar({ title }) {
     </svg>
   );
 }
+
+/**
+ * The account avatar, wherever it is drawn.
+ *
+ * Renders image -> glyph -> initials -> guest silhouette, in that order, from
+ * whatever `useAccountAvatar` could actually honour. Takes the resolved value
+ * as a prop rather than resolving internally so the topbar and the Settings
+ * preview cannot disagree, and so this file keeps exporting only components
+ * (react-refresh/only-export-components).
+ */
+export function AccountAvatar({ avatar, session, className = '' }) {
+  const a = avatar || {};
+  if (!session) return <GuestAvatar />;
+  if (a.kind === 'image' && a.url) {
+    return <img src={a.url} alt="" className={`avatar-img ${className}`.trim()} />;
+  }
+  if (a.kind === 'glyph' && a.glyph) {
+    // line-height:1 because the decorative glyphs sit low on their own baseline
+    // and the flex centring above them cannot see that - they rendered a couple
+    // of pixels under the circle's centre line.
+    return <span className="avatar-glyph" aria-hidden="true">{a.glyph}</span>;
+  }
+  return a.initials ?? <GuestAvatar />;
+}

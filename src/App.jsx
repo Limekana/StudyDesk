@@ -14,6 +14,7 @@ import { scheduleOriginStamp } from "./lib/originMarker.js";
 import { watchAppOpens } from "./lib/appOpens.js";
 import { refreshEntitlement } from "./lib/entitlement.js";
 import TimerPill from "./features/timer/TimerPill.jsx";
+import { useAccountAvatar } from "./lib/useAccountAvatar.js";
 import ReferralPrompt from "./features/referral/ReferralPrompt.jsx";
 import { inheritFromNexus } from "./lib/suiteSso.js";
 import { hydrateOnboardedFromCloud, markOnboardedCloud } from "./lib/onboardingCloud.js";
@@ -24,7 +25,6 @@ import { applyRemotePull } from "./lib/merge.js";
 import GradesView from "./features/grades/GradesView.jsx";
 import SessionsView from "./features/sessions/SessionsView.jsx";
 import SaveSessionSheet from "./features/sessions/SaveSessionSheet.jsx";
-import { avatarInitials } from "./lib/avatarInitials.js";
 import { isGradeMode, normalizeScale, DEFAULT_CUSTOM_SCALE } from "./lib/gradeScale.js";
 import CoursePicker from "./lib/CoursePicker.jsx";
 import { ASSIGN_TYPES, OTHER_ASSIGN_TYPE } from "./lib/assignTypes.js";
@@ -42,7 +42,7 @@ import './styles/print.css';
 import './styles/desktop.css';
 import { COURSE_COLORS } from "./lib/courseColors.js";
 import { NotebookPen, CalendarDays, Award, Timer, PanelLeftClose, PanelLeftOpen, Paperclip } from "lucide-react";
-import { GuestAvatar } from "./lib/avatar.jsx";
+import { GuestAvatar, AccountAvatar } from "./lib/avatar.jsx";
 import { useShellTier, useSidebarRail } from "./lib/useShell.js";
 import { startPlanReminderLoop, webNotifySupported } from "./lib/webNotify.js";
 import StatsView from "./features/stats/StatsView.jsx";
@@ -1211,6 +1211,10 @@ export default function App() {
   // CURRENT local rows to diff against what the pull returned — hence a ref.
   // Written in an effect rather than during render: refs must not be mutated
   // while rendering, and this commits before any pull callback can resolve.
+  // v1.12 Item 9 — the topbar avatar must show what the user actually chose,
+  // not just their initials. Re-resolves on any profile edit.
+  const accountAvatar = useAccountAvatar(session);
+
   const stateRef = useRef(state);
   useEffect(() => { stateRef.current = state; });
 
@@ -1644,7 +1648,7 @@ export default function App() {
               onClick={()=>dispatch({type:"SET_VIEW",view:"settings"})}
               title={session?.user?.email ? t('av.chrome.settingsWith', { email: session.user.email }) : t('av.chrome.settings')}
               aria-label={t('av.chrome.openSettings')}>
-              {avatarInitials(session) ?? <GuestAvatar/>}
+              <AccountAvatar avatar={accountAvatar} session={session} />
             </button>
           </div>
           </div>
@@ -2130,12 +2134,12 @@ function PlanView({ state, dispatch, session, showFlash, onAddAsgn, onAddExam, o
   // agenda and the course cards, and tiling those would break each of them.
   // Only the flat lists tile, which is where the vertical length comes from.
   return <div className="sd-page-plan">
-    <div className="section-label">{t('av.pl.assignments')}<button className="btn btn-sm" style={{marginLeft:"auto"}} onClick={onAddAsgn}>{t('av.pl.add')}</button></div>
+    <div className="section-label">{t('av.pl.assignments')}<button className="btn btn-sm" onClick={onAddAsgn}>{t('av.pl.add')}</button></div>
     {openAsgns.length===0&&<div className="empty">{t('av.pl.noOpenAsgn')}</div>}
     <div className="sd-list-tile">{openAsgns.map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch} attachments={state.attachments} session={session} showFlash={showFlash}/>)}</div>
     {state.assignments.filter(a=>a.done).length>0&&<details style={{marginBottom:16}}><summary style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",cursor:"pointer",padding:"8px 0"}}>{t('av.pl.completed',{count:state.assignments.filter(a=>a.done).length})}</summary>{state.assignments.filter(a=>a.done).sort((a,b)=>new Date(b.dueDate||"1970-01-01")-new Date(a.dueDate||"1970-01-01")).map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch} attachments={state.attachments} session={session} showFlash={showFlash}/>)}</details>}
     <div className="divider"/>
-    <div className="section-label">{t('av.pl.examsCalendar')}<button className="btn btn-sm" style={{marginLeft:"auto"}} onClick={onAddExam}>{t('av.pl.add')}</button></div>
+    <div className="section-label">{t('av.pl.examsCalendar')}<button className="btn btn-sm" onClick={onAddExam}>{t('av.pl.add')}</button></div>
     <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
       <button className="btn-outline btn-sm" onClick={prevMonth}><span className="rtl-mirror" aria-hidden>←</span></button>
       <span style={{fontFamily:"var(--font-display)",fontSize:16,flex:1}}>{monthName}</span>
@@ -2153,7 +2157,7 @@ function PlanView({ state, dispatch, session, showFlash, onAddAsgn, onAddExam, o
     {openExams.length===0&&<div className="empty">{t('av.pl.noExams')}</div>}
     {state.exams.filter(e=>e.done).length>0&&<details style={{marginBottom:16}}><summary style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",cursor:"pointer",padding:"8px 0"}}>{t('av.pl.completedExams',{count:state.exams.filter(e=>e.done).length})}</summary>{state.exams.filter(e=>e.done).map(e=><ExamCard key={e.id} exam={e} courses={state.courses} dispatch={dispatch}/>)}</details>}
     <div className="divider"/>
-    <div className="section-label">{t('av.pl.courses')}<button className="btn btn-sm" style={{marginLeft:"auto"}} onClick={onAddCourse}>{t('av.pl.add')}</button></div>
+    <div className="section-label">{t('av.pl.courses')}<button className="btn btn-sm" onClick={onAddCourse}>{t('av.pl.add')}</button></div>
     {courses.length===0&&<div className="empty">{t('av.pl.noCourses')}</div>}
     <div className="home-grid">
       {courses.map(c=>{const openA=state.assignments.filter(a=>a.courseId===c.id&&!a.done);const openE=state.exams.filter(e=>e.courseId===c.id&&!e.done);const isOpen=!!expandedCourse[c.id];const nextA=openA.filter(a=>a.dueDate).sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate))[0];const nextE=[...openE].sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate))[0];const hasUrgent=openA.some(a=>{const d=daysUntil(a.dueDate);return d!==null&&d<=2;})||openE.some(e=>{const d=daysUntil(e.dueDate);return d!==null&&d<=5;});return <div key={c.id} className="course-card" style={{borderInlineStartColor:c.color}}><div role="button" tabIndex={0} className="course-card-compact" onClick={()=>setExpandedCourse(x=>({...x,[c.id]:!x[c.id]}))} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&setExpandedCourse(x=>({...x,[c.id]:!x[c.id]}))}><div className="course-card-left"><div className="course-card-name">{c.name}</div><div className="course-card-pills">{openA.length>0&&<span className={"course-card-pill"+(hasUrgent?" urgent":"")}>{t('av.pl.due',{count:openA.length})}</span>}{openE.length>0&&<span className="course-card-pill" style={{background:"rgba(109,63,160,0.08)",color:"#6d3fa0",borderColor:"rgba(109,63,160,0.18)"}}>{t('av.pl.exam',{count:openE.length})}</span>}{openA.length===0&&openE.length===0&&<span className="course-card-pill" style={{color:"#2e7d52",borderColor:"rgba(46,125,82,0.2)"}}>{t('av.pl.clear')}</span>}</div></div><span className={"course-card-chevron"+(isOpen?" open":"")}>▶</span></div>{isOpen&&<div className="course-card-detail"><div className="course-card-next">{nextE&&<div style={{color:"#6d3fa0",marginBottom:5,fontFamily:"var(--font-mono)",fontSize:11}}>📝 <strong>{nextE.title}</strong> — {urgencyLabel(daysUntil(nextE.dueDate),t)}</div>}{nextA&&<div style={{marginBottom:5}}>{t('av.pl.next')} <strong>{nextA.title}</strong><span style={{color:urgencyColor(daysUntil(nextA.dueDate)),marginLeft:6,fontFamily:"var(--font-mono)",fontSize:11}}>{urgencyLabel(daysUntil(nextA.dueDate),t)}</span></div>}{!nextA&&!nextE&&<span style={{color:"var(--muted2)",fontFamily:"var(--font-mono)",fontSize:11}}>{t('av.pl.nothingDue')}</span>}</div><div className="course-card-actions"><button className="btn-outline btn-sm" onClick={()=>onEditCourse({id:c.id,name:c.name,color:c.color})}>{t('av.pl.edit')}</button></div></div>}</div>;})}

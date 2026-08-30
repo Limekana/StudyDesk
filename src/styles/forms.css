@@ -80,7 +80,12 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
 .confirm-delete-actions>.btn-outline{flex:1;padding:9px 12px;font-size:10px;text-align:center;white-space:normal;box-sizing:border-box;}
 .confirm-delete-actions>.btn-red{border:1px solid transparent;}
 .section-label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:10px;}
-.section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+/* order:1 puts the hairline BETWEEN the label and the action, so the button
+   lands hard against the right edge. It used to render label -> button -> rule,
+   which left each Add button floating at a different x depending on how long
+   its section name was - three buttons, three positions, on one screen. */
+.section-label::after{content:'';flex:1;height:1px;background:var(--border);order:1;}
+.section-label .btn,.section-label .btn-outline{order:2;flex:0 0 auto;}
 .asgn-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:5px;margin-bottom:8px;box-shadow:var(--shadow);}
 .asgn-item.done{opacity:0.45;}
 .asgn-check{width:17px;height:17px;border:1.5px solid var(--border2);border-radius:3px;flex-shrink:0;margin-top:2px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
@@ -112,7 +117,11 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
 @keyframes slideModal{from{opacity:0;transform:translateY(10px) scale(0.98);}to{opacity:1;transform:translateY(0) scale(1);}}
 @keyframes page-turn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
 .page-turn{animation:page-turn 160ms var(--ease-page-turn);}
-.timer-subtabs{display:flex;gap:0;border:1px solid var(--border2);border-radius:6px;overflow:hidden;max-width:340px;margin:16px auto 4px;}
+/* 4px below the bar put the next control - Plan's Assignments header, the
+   Calendar's Month/Week toggle - almost touching it, so the two read as one
+   crowded strip. 18px separates the route picker from the content it is
+   picking. Reported on-device. */
+.timer-subtabs{display:flex;gap:0;border:1px solid var(--border2);border-radius:6px;overflow:hidden;max-width:340px;margin:16px auto 18px;}
 .timer-subtab{flex:1;background:transparent;border:none;padding:8px 10px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;color:var(--muted);transition:all 0.1s;border-inline-end:1px solid var(--border2);}
 .timer-subtab:last-child{border-inline-end:none;}
 .timer-subtab.active{background:var(--text);color:var(--bg);}

@@ -12,9 +12,10 @@ import { useTranslation } from 'react-i18next';
 import { COURSE_COLORS } from '../../lib/courseColors.js';
 import { avatarInitials } from '../../lib/avatarInitials.js';
 import {
-  AVATAR_GLYPHS, loadProfile, saveProfile, uploadAvatar, removeAvatar, resolveAvatar,
+  AVATAR_GLYPHS, loadProfile, saveProfile, uploadAvatar, removeAvatar, resolveAvatar, hasAvatarObject,
 } from '../../lib/profile.js';
 import { ACCEPTED_INPUT_TYPES } from '../../lib/imageEncode.js';
+import { AccountAvatar } from '../../lib/avatar.jsx';
 
 export default function ProfileSection({ session, showFlash }) {
   const { t } = useTranslation();
@@ -90,11 +91,10 @@ export default function ProfileSection({ session, showFlash }) {
           className="sv2-avatar sv2-avatar-lg"
           style={kind !== 'image' && resolved.color ? { background: color, color: '#fff', borderColor: color } : undefined}
         >
-          {kind === 'image' && resolved.url
-            ? <img src={resolved.url} alt="" className="sv2-avatar-img" />
-            : kind === 'glyph' && resolved.glyph
-              ? <span aria-hidden="true">{resolved.glyph}</span>
-              : (avatarInitials(session) ?? '·')}
+          <AccountAvatar
+            avatar={{ ...resolved, initials: avatarInitials(session) }}
+            session={session}
+          />
         </div>
         <div className="sv2-profile-name-field">
           <label className="sv2-field-label" htmlFor="sv2-display-name">
@@ -138,7 +138,14 @@ export default function ProfileSection({ session, showFlash }) {
             <button
               className={kind === 'image' ? 'active' : ''}
               disabled={busy}
-              onClick={() => fileRef.current?.click()}
+              onClick={async () => {
+                // If a photo is already uploaded, switching to Photo should just
+                // USE it. Opening the picker unconditionally made an existing
+                // avatar look like it had not saved, which is how it read
+                // on-device.
+                if (await hasAvatarObject()) { await patch({ avatarKind: 'image' }); return; }
+                fileRef.current?.click();
+              }}
             >
               {t('settings.avatarImage')}
             </button>

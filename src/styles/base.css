@@ -72,6 +72,16 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 .topbar-avatar{width:36px;height:36px;min-width:36px;border-radius:50%;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-family:var(--font-display);font-size:14px;font-weight:600;letter-spacing:0.02em;cursor:pointer;display:flex;align-items:center;justify-content:center;text-transform:uppercase;transition:all 0.12s var(--ease-paper,ease);-webkit-tap-highlight-color:transparent;}
 .topbar-avatar:hover{border-color:var(--text);}
 .topbar-avatar.active{background:var(--text);color:var(--bg);border-color:var(--text);}
+/* v1.12 Item 9 - the shared AccountAvatar renders into both the 36px topbar
+   button and the 64px Settings preview, so its two inner elements are styled
+   once, here, rather than per-surface. overflow:hidden on the button is what
+   keeps a square photo inside the circle. */
+.topbar-avatar{overflow:hidden;}
+.avatar-img{width:100%;height:100%;object-fit:cover;display:block;}
+/* line-height:1 because the decorative glyphs carry a lot of descender space in
+   their own metrics: flex centring centres the LINE BOX, not the ink, so they
+   sat visibly below the circle's centre line. Reported on-device. */
+.avatar-glyph{line-height:1;display:block;}
 .topbar-date{font-family:var(--font-mono);font-size:11px;color:var(--muted);}
 .content{padding:var(--shell-gutter);flex:1;max-width:var(--content-max);width:100%;margin:0 auto;}
 /* Opt-out for surfaces that genuinely want the full shell width rather than a
