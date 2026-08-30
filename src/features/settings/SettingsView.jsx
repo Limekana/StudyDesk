@@ -10,6 +10,7 @@ import PeriodHistory from '../grades/PeriodHistory.jsx';
 import * as sync from '../../lib/sync.js';
 import * as outbox from '../../lib/outbox.js';
 import { reconcileUnsynced } from '../../lib/reconcile.js';
+import { clearEntitlement } from '../../lib/entitlement.js';
 import { downloadExport, deleteAccount } from '../../lib/dataRights.js';
 import { useConfirm } from '../../lib/useConfirm.js';
 import { avatarInitials } from '../../lib/avatarInitials.js';
@@ -266,6 +267,10 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
       // queued retry can't replay user A's writes against the next user, and a
       // shared device shows no residue.
       outbox.clear();
+      // v1.12 Item 5 — leaving the previous account's entitlement behind would
+      // hand the next user of a shared device a paid perk. Same reasoning as
+      // every other on-signout local wipe in the suite.
+      clearEntitlement();
       dispatch({ type: 'RESET_AFTER_SIGNOUT' });
       setGuestMode(true);
       window.dispatchEvent(new CustomEvent('studydesk:guest-mode-changed'));
@@ -299,6 +304,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
       await deleteAccount({
         clearLocal: async () => {
           outbox.clear();
+          clearEntitlement();
           dispatch({ type: 'RESET_AFTER_SIGNOUT' });
           for (const k of ['studydesk-v1', 'studydesk-needs-initial-push',
                            'studydesk-onboarded', 'studydesk-grade-mode', 'sd-timer']) {

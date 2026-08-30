@@ -12,6 +12,7 @@ import AuthGate from "./features/auth/AuthGate.jsx";
 import { isGuestMode, setGuestMode } from "./lib/guestMode.js";
 import { scheduleOriginStamp } from "./lib/originMarker.js";
 import { watchAppOpens } from "./lib/appOpens.js";
+import { refreshEntitlement } from "./lib/entitlement.js";
 import ReferralPrompt from "./features/referral/ReferralPrompt.jsx";
 import { inheritFromNexus } from "./lib/suiteSso.js";
 import { hydrateOnboardedFromCloud, markOnboardedCloud } from "./lib/onboardingCloud.js";
@@ -1462,6 +1463,18 @@ export default function App() {
   // auth effect: the trigger is the app being foregrounded, not a session
   // arriving. Guests and same-day repeats are filtered inside recordAppOpen.
   useEffect(() => watchAppOpens(), []);
+
+  // v1.12 Item 5 — supporter entitlement. Keyed on the user id rather than the
+  // session object so a token refresh does not re-ask; `refreshEntitlement`
+  // additionally serves from cache for six hours, so this is close to free on
+  // an ordinary launch. A network failure keeps whatever was cached — losing a
+  // supporter's perk because their train went into a tunnel is the wrong
+  // failure mode, and the module is written that way deliberately.
+  useEffect(() => {
+    const uid = session?.user?.id;
+    if (!uid) return;
+    void refreshEntitlement(uid);
+  }, [session?.user?.id]);
 
   // #26 — Android back button: dismiss modals first, then navigate home, then exit
   useEffect(() => {
