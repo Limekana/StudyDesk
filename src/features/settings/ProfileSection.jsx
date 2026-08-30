@@ -80,7 +80,10 @@ export default function ProfileSection({ session, showFlash }) {
   };
 
   const kind = resolved.kind;
-  const color = resolved.color || COURSE_COLORS[0];
+  // Same rule the topbar uses, derived once here rather than written twice.
+  const tintStyle = kind !== 'image' && resolved.color
+    ? { background: resolved.color, color: '#fff', borderColor: resolved.color }
+    : undefined;
 
   return (
     <div className="sv2-section">
@@ -89,7 +92,7 @@ export default function ProfileSection({ session, showFlash }) {
       <div className="sv2-profile-preview">
         <div
           className="sv2-avatar sv2-avatar-lg"
-          style={kind !== 'image' && resolved.color ? { background: color, color: '#fff', borderColor: color } : undefined}
+          style={tintStyle}
         >
           <AccountAvatar
             avatar={{ ...resolved, initials: avatarInitials(session) }}

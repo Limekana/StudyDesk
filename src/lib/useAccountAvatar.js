@@ -52,5 +52,16 @@ export function useAccountAvatar(session) {
     };
   }, [resolve]);
 
-  return { ...state, initials: avatarInitials(session) };
+  // The tint travels WITH the resolved avatar rather than being re-derived by
+  // each caller. Settings applied it and the topbar did not, so the same avatar
+  // rendered coloured on one screen and plain on another — the second time a
+  // duplicated render rule diverged in this feature.
+  //
+  // Only for glyph/initials: a photo fills the circle, so tinting behind it
+  // would show as a rim of colour around the crop.
+  const tintStyle = state.kind !== 'image' && state.color
+    ? { background: state.color, color: '#fff', borderColor: state.color }
+    : undefined;
+
+  return { ...state, initials: avatarInitials(session), tintStyle };
 }

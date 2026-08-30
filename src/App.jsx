@@ -1645,6 +1645,7 @@ export default function App() {
                 Sign in / sign out now live inside Settings. Guests show "·". */}
             <button
               className={"topbar-avatar"+(state.view==="settings"?" active":"")}
+              style={state.view==="settings"?undefined:accountAvatar.tintStyle}
               onClick={()=>dispatch({type:"SET_VIEW",view:"settings"})}
               title={session?.user?.email ? t('av.chrome.settingsWith', { email: session.user.email }) : t('av.chrome.settings')}
               aria-label={t('av.chrome.openSettings')}>

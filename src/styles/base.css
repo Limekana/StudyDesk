@@ -78,9 +78,14 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
    keeps a square photo inside the circle. */
 .topbar-avatar{overflow:hidden;}
 .avatar-img{width:100%;height:100%;object-fit:cover;display:block;}
-/* line-height:1 because the decorative glyphs carry a lot of descender space in
-   their own metrics: flex centring centres the LINE BOX, not the ink, so they
-   sat visibly below the circle's centre line. Reported on-device. */
+/* Vertically centred at RUNTIME by AccountAvatar, not by a constant here.
+   Two attempts with CSS alone failed and the second made it worse: flex centres
+   the line box, and how far the ink sits from that box's centre depends on
+   WHICH FONT the platform falls back to for these symbols - they are not in
+   Playfair Display. Measured in desktop Chrome the glyphs were already centred
+   to 0.21px, so any constant tuned there is wrong on Android's WebView, which
+   falls back differently. The component measures the font that actually
+   rendered and corrects for it. */
 .avatar-glyph{line-height:1;display:block;}
 .topbar-date{font-family:var(--font-mono);font-size:11px;color:var(--muted);}
 .content{padding:var(--shell-gutter);flex:1;max-width:var(--content-max);width:100%;margin:0 auto;}
