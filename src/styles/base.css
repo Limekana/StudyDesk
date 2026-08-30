@@ -57,7 +57,16 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
    element instead, the two centre against different available widths and the
    page title drifts left of the column it labels — visible from about 1300px
    up, which is exactly the range this milestone adds. */
-.topbar{display:flex;align-items:center;padding:18px 0;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:10;}
+/* v1.12 - clear the display cutout.
+   `StatusBar.overlaysWebView:false` in capacitor.config.json used to keep
+   the WebView below the status bar, but Android 15+ ENFORCES edge-to-edge
+   for apps targeting SDK 35+ and this app targets 36 - so that setting is
+   now a no-op and the topbar draws behind the status bar and the punch-hole
+   camera. Found on an S24 (Android 36), where the timer pill was the first
+   thing tall enough to visibly collide with the cutout.
+   `max()` rather than a bare inset so desktop and any device reporting 0
+   keep the original 18px. */
+.topbar{display:flex;align-items:center;padding:max(18px,env(safe-area-inset-top)) 0 18px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:10;}
 .topbar-inner{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;max-width:var(--content-max);margin:0 auto;padding:0 var(--shell-gutter);}
 .topbar-title{font-family:var(--font-display);font-size:22px;font-weight:500;}
 .topbar-avatar{width:36px;height:36px;min-width:36px;border-radius:50%;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-family:var(--font-display);font-size:14px;font-weight:600;letter-spacing:0.02em;cursor:pointer;display:flex;align-items:center;justify-content:center;text-transform:uppercase;transition:all 0.12s var(--ease-paper,ease);-webkit-tap-highlight-color:transparent;}
@@ -83,7 +92,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
   .main{height:100dvh;overflow-y:auto;padding-bottom:calc(64px + env(safe-area-inset-bottom));}
   /* Same pixels as before the topbar was split into outer/inner — 14px top,
      16px sides, 12px bottom. The phone tier is deliberately unchanged. */
-  .topbar{padding:14px 0 12px;position:sticky;top:0;z-index:10;}
+  .topbar{padding:max(14px,env(safe-area-inset-top)) 0 12px;position:sticky;top:0;z-index:10;}
   .topbar-inner{max-width:100%;padding:0 16px;}
   .topbar-title{font-size:18px;}
   .content{padding:16px 14px;max-width:100%;}

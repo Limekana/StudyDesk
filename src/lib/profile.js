@@ -93,8 +93,26 @@ export async function saveProfile(patch) {
   if (patch.avatarGlyph !== undefined) row.avatar_glyph = patch.avatarGlyph || null;
   if (patch.avatarColor !== undefined) row.avatar_color = patch.avatarColor || null;
 
-  const { error } = await supabase.from('profiles').upsert(row);
+  // UPDATE, not upsert.
+  //
+  // `profiles` carries exactly two policies — select-own and update-own. There
+  // is no INSERT policy, and `.upsert()` compiles to `INSERT … ON CONFLICT`,
+  // which Postgres checks against the INSERT policy *even when the conflict
+  // path resolves to an update*. So the upsert failed with "new row violates
+  // row-level security policy" for every user, every time. Caught on-device.
+  //
+  // Update-only is also the correct shape rather than merely the working one:
+  // a signup trigger owns row creation (593 of 594 accounts have a row), so a
+  // client that could INSERT here would be able to forge a profile.
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(row)
+    .eq('id', uid)
+    .select('id');
   if (error) throw error;
+  // An update that matches nothing is not success. One account in the table has
+  // no profile row, and silently doing nothing would look exactly like saving.
+  if (!data || data.length === 0) throw new Error('no-profile-row');
 
   // The name also lives in auth user_metadata, which is what `avatarInitials`
   // reads across all three apps. Keeping them in step is what stops the avatar
