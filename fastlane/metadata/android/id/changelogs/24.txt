@@ -1,0 +1,5 @@
+Memperbaiki pencatatan sesi belajar yang sudah lewat.
+
+Menyimpannya bisa tidak melakukan apa pun — tanpa sesi, tanpa penjelasan — kalau tanggal atau durasinya belum lengkap. Kini jendelanya menyebutkan kolom mana yang kurang, dan menyimpan begitu kamu mengisinya.
+
+Di aplikasi desktop, masuk akun tidak lagi meninggalkanmu di sebuah halaman web: prosesnya terbuka di peramban lalu mengembalikanmu ke aplikasi.

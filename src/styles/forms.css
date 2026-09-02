@@ -127,6 +127,12 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
 .timer-subtab.active{background:var(--text);color:var(--bg);}
 .modal-title{font-family:var(--font-display);font-size:18px;margin-bottom:20px;}
 .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+/* v1.12.1 — a modal that refuses to save has to say so. Same visual
+   language as `.auth-error`, which is the one place in the app that was
+   already doing this properly. `[aria-invalid]` marks the field the
+   message is about, so the two read as one statement. */
+.modal-error{background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger);padding:10px 12px;border-radius:4px;font-size:12px;margin:2px 0 14px;}
+.modal input[aria-invalid]{border-color:var(--danger);}
 .urgent-banner{background:rgba(192,57,43,0.08);border:1px solid rgba(192,57,43,0.25);border-radius:5px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px;font-size:13px;}
 .urgent-banner strong{color:#c0392b;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;}
 .empty{color:var(--muted2);font-family:var(--font-mono);font-size:11px;padding:20px 0;}

@@ -1,0 +1,5 @@
+Corrige l'enregistrement d'une session d'étude passée.
+
+L'enregistrement pouvait ne rien faire du tout — ni session, ni explication — si la date ou la durée restait incomplète. La fenêtre indique désormais le champ qui manque, et enregistre dès que tu le remplis.
+
+Sur l'app de bureau, la connexion ne te laisse plus bloqué sur une page web : elle s'ouvre dans ton navigateur et te ramène.

@@ -1,0 +1,5 @@
+Fixes logging a past study session.
+
+Saving one could do nothing at all — no session, no explanation — when the date or the length was left incomplete. The dialog now says which field it needs, and saves as soon as you fill it in.
+
+On the desktop app, signing in no longer strands you on a web page: it opens in your browser and hands you back.

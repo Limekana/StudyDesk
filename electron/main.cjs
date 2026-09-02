@@ -28,10 +28,14 @@
 // supabase-js's PKCE flow needs for crypto.subtle.
 //
 // Two consequences worth knowing:
-//   - `studydesk://app/` is the app's web origin now. Any Supabase redirect-URL
-//     allowlist entry for the desktop build must use it — the old random-port
-//     127.0.0.1 URLs could never have been allowlisted, which is why OAuth was
-//     never usable here and email sign-in is the desktop path.
+//   - `studydesk://app/` is the app's web origin now. That is a stable origin
+//     for storage, but it is NOT usable as an OAuth redirect target: Supabase's
+//     allow-list takes http(s) URLs, so a custom scheme can never be entered
+//     there. v1.12 shipped with `OAUTH_REDIRECT_URL` resolving to it anyway,
+//     Supabase fell back to the project's Site URL, and desktop sign-in ended on
+//     the marketing site inside the app's own window. v1.12.1 replaces that with
+//     a fixed-port loopback listener (see `startAuthLoopback` below) and refuses
+//     to let the window leave this origin at all (see `hardenNavigation`).
 //   - The one-time cost of moving origin is that whatever sat in the old
 //     random-port bucket is orphaned. Nothing is lost that wasn't already being
 //     lost on every launch.
@@ -40,14 +44,16 @@
 // provide SPA-fallback routing, and `resolveRequest` below does that directly.
 'use strict';
 
-const { app, BrowserWindow, Menu, Tray, ipcMain, protocol, net, screen } = require('electron');
+const { app, BrowserWindow, Menu, Tray, ipcMain, protocol, net, screen, shell } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
+const http = require('node:http');
 const { pathToFileURL } = require('node:url');
 
 const DIST_DIR = path.join(__dirname, '..', 'dist');
 const ICON_PATH = path.join(__dirname, '..', 'resources', 'icon.ico');
 const WIDGET_PRELOAD = path.join(__dirname, 'widget-preload.cjs');
+const AUTH_PRELOAD = path.join(__dirname, 'auth-preload.cjs');
 
 const SCHEME = 'studydesk';
 const APP_ORIGIN = `${SCHEME}://app`;
@@ -127,6 +133,173 @@ function registerProtocolHandler() {
 
 let mainWindow = null;
 
+// ── Off-origin navigation guard (v1.12.1, P0) ───────────────────────────────
+//
+// Nothing stopped the app's own window from navigating away from
+// `studydesk://app`. Desktop sign-in did exactly that — `window.location.href =
+// <provider url>` in AuthGate — and the redirect chain ended on the marketing
+// site, in the window that used to be the app. There is no back button, no
+// address bar and no menu, so that is a terminal state: the user's only move is
+// to kill the process.
+//
+// A window that IS the application must never be used as a general-purpose
+// browser. Anything that is not this app's own origin is cancelled here and
+// handed to the real browser instead, which turns "the app is gone" into a new
+// tab. That holds for the OAuth redirect, for a mis-built link in the renderer,
+// and for whatever the next one turns out to be — the guard does not need to
+// know why it was asked.
+function isAppUrl(target) {
+  try {
+    const u = new URL(target);
+    return u.protocol === `${SCHEME}:` && u.host === 'app';
+  } catch {
+    return false;
+  }
+}
+
+// Only ever hand http(s) to the OS. `shell.openExternal` will happily launch
+// other registered handlers, and a renderer bug that produced, say, a file:// or
+// a custom-scheme URL should die quietly rather than start something.
+function openExternally(target) {
+  try {
+    const u = new URL(target);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+      log(`refused to open non-http external URL (${u.protocol})`);
+      return false;
+    }
+    void shell.openExternal(target);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function hardenNavigation(win) {
+  const handoff = (event, target) => {
+    if (isAppUrl(target)) return;
+    event.preventDefault();
+    log(`cancelled off-origin navigation: ${target}`);
+    openExternally(target);
+  };
+  // `will-navigate` catches a link click or a location assignment; the
+  // `will-redirect` pair catches a 30x issued part-way through a chain we did
+  // allow. Neither fires for the SPA's own history.pushState routing.
+  win.webContents.on('will-navigate', handoff);
+  win.webContents.on('will-redirect', handoff);
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (isAppUrl(url)) return { action: 'allow' };
+    openExternally(url);
+    return { action: 'deny' };
+  });
+}
+
+// ── Desktop OAuth callback (v1.12.1, P0) ────────────────────────────────────
+//
+// Android has a deep link (`com.studydesk.app://login-callback`) and the web
+// build has its own origin. Desktop had neither, so `OAUTH_REDIRECT_URL`
+// resolved to `studydesk://app/` — a URL Supabase cannot be asked to redirect
+// to — and the provider bounced to the project's Site URL instead.
+//
+// A loopback listener is what RFC 8252 prescribes for a native app, and on
+// Windows it is markedly more reliable than registering a custom URI scheme:
+// scheme registration is a per-machine installer concern that a zip build never
+// performs at all, whereas 127.0.0.1 needs no registration and no elevation.
+//
+// The port list is FIXED rather than `listen(0)`. Supabase matches redirect
+// URLs against an allow-list, so a random port could never be allowlisted —
+// that is precisely the mistake the top-of-file note records the v1.11 shell
+// making with its random-port static server. Five candidates give headroom for
+// a collision while keeping the owner's allow-list entry a short, closed set.
+const AUTH_PORTS = [51837, 51838, 51839, 51840, 51841];
+const AUTH_CALLBACK_PATH = '/callback';
+
+let authRedirectUri = null;
+// Only accept a callback while a sign-in this app started is outstanding. The
+// listener is reachable by anything running as this user, and an unsolicited
+// code is at best noise and at worst an attempt to plant someone else's
+// session. Cheap to gate, so gate it.
+let authPending = false;
+
+const CALLBACK_PAGE = (ok) => `<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StudyDesk</title>
+<style>
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+       background:#f5f2ed;color:#1a1814;font:16px/1.6 system-ui,sans-serif;text-align:center;padding:24px;}
+  h1{font-size:20px;margin:0 0 8px;} p{margin:0;color:#6b6560;font-size:14px;}
+</style></head><body><div>
+  <h1>${ok ? 'Signed in' : 'Sign-in failed'}</h1>
+  <p>${ok ? 'You can close this tab and go back to StudyDesk.' : 'Close this tab and try again from StudyDesk.'}</p>
+</div></body></html>`;
+
+// The provider's error text is deliberately NOT echoed into the page — it is
+// attacker-influenceable and this response is HTML. It goes to the renderer,
+// which renders it as text through React.
+function handleAuthCallback(req, res) {
+  let url = null;
+  try {
+    url = new URL(req.url, 'http://127.0.0.1');
+  } catch {
+    url = null;
+  }
+  if (!url || url.pathname !== AUTH_CALLBACK_PATH) {
+    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Not found');
+    return;
+  }
+
+  const code = url.searchParams.get('code');
+  const error = url.searchParams.get('error_description') || url.searchParams.get('error');
+
+  if (!authPending) {
+    log('discarded an unsolicited auth callback');
+    res.writeHead(409, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('No sign-in is in progress');
+    return;
+  }
+  authPending = false;
+
+  res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+  res.end(CALLBACK_PAGE(Boolean(code) && !error));
+
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    // The renderer holds the PKCE code verifier, so it — not this process —
+    // has to redeem the code.
+    mainWindow.webContents.send('auth:callback', { code: code || null, error: error || null });
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+  } else {
+    log('auth callback arrived with no main window to deliver it to');
+  }
+}
+
+/** Bind the loopback listener, trying each candidate port in turn. Resolves to
+ *  the redirect URI, or null if none of them was free — in which case desktop
+ *  OAuth stays unavailable and email sign-in, which needs no redirect at all,
+ *  still works. A missing listener must never stop the app from starting. */
+function startAuthLoopback() {
+  return new Promise((resolve) => {
+    let i = 0;
+    const server = http.createServer(handleAuthCallback);
+    server.on('error', (err) => {
+      if (err && err.code === 'EADDRINUSE' && i < AUTH_PORTS.length - 1) {
+        i += 1;
+        server.listen(AUTH_PORTS[i], '127.0.0.1');
+        return;
+      }
+      log(`auth loopback could not listen: ${err && err.message}`);
+      resolve(null);
+    });
+    server.on('listening', () => {
+      authRedirectUri = `http://127.0.0.1:${AUTH_PORTS[i]}${AUTH_CALLBACK_PATH}`;
+      log(`auth loopback listening on ${authRedirectUri}`);
+      resolve(authRedirectUri);
+    });
+    server.listen(AUTH_PORTS[i], '127.0.0.1');
+  });
+}
+
 function createWindow() {
   try {
     mainWindow = new BrowserWindow({
@@ -141,11 +314,20 @@ function createWindow() {
       // from, which flashed dark before a cream page on every launch.
       backgroundColor: '#f5f2ed',
       webPreferences: {
+        // The bridge is three functions wide and adds no Node surface: a
+        // sandboxed preload only gets contextBridge and ipcRenderer, which is
+        // all `auth-preload.cjs` uses.
+        preload: AUTH_PRELOAD,
+        additionalArguments: authRedirectUri
+          ? [`--studydesk-auth-redirect=${authRedirectUri}`]
+          : [],
         contextIsolation: true,
         nodeIntegration: false,
         sandbox: true,
       },
     });
+
+    hardenNavigation(mainWindow);
 
     mainWindow.webContents.on('did-fail-load', (_e, code, desc, url) => {
       log(`did-fail-load: code=${code} desc=${desc} url=${url}`);
@@ -249,6 +431,8 @@ function createWidget() {
     },
   });
 
+  hardenNavigation(widgetWindow);
+
   // 'floating' keeps it above ordinary windows without fighting full-screen
   // apps and system UI for the very top of the stack.
   widgetWindow.setAlwaysOnTop(true, 'floating');
@@ -317,10 +501,25 @@ ipcMain.on('widget:close', () => {
   if (widgetWindow && !widgetWindow.isDestroyed()) widgetWindow.close();
 });
 
-app.whenReady().then(() => {
+// Renderer asks for the provider URL to be opened in the real browser. This is
+// the only way a sign-in starts on desktop now, and arming `authPending` here
+// is what makes the loopback listener willing to accept the code that follows.
+ipcMain.handle('auth:begin', (_event, url) => {
+  // https only. `openExternally` tolerates http because ordinary links in the
+  // renderer legitimately are http; an OAuth leg over plain http would not be.
+  if (typeof url !== 'string' || !url.startsWith('https://')) return false;
+  const opened = openExternally(url);
+  if (opened) authPending = true;
+  return opened;
+});
+
+app.whenReady().then(async () => {
   log('app.whenReady resolved');
   registerProtocolHandler();
   log(`serving ${DIST_DIR} at ${APP_ORIGIN}/ (stable origin)`);
+  // Before createWindow: the redirect URI is passed to the renderer as a
+  // preload argument, which is fixed at window-construction time.
+  await startAuthLoopback();
   createWindow();
   createTray();
 });

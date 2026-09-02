@@ -1,0 +1,5 @@
+Corrige o registro de uma sessão de estudo passada.
+
+Salvar podia não fazer nada — nem sessão, nem explicação — quando a data ou a duração ficavam incompletas. A janela agora diz qual campo falta e salva assim que você preenche.
+
+No app de desktop, entrar na conta não deixa mais você preso em uma página da web: abre no seu navegador e te traz de volta.

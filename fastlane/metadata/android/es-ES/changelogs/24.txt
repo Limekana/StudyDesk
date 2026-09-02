@@ -1,0 +1,5 @@
+Corrige el registro de una sesión de estudio pasada.
+
+Guardarla podía no hacer nada — ni sesión ni explicación — si la fecha o la duración quedaban incompletas. El diálogo ahora dice qué campo le falta y guarda en cuanto lo rellenas.
+
+En la app de escritorio, iniciar sesión ya no te deja tirado en una página web: se abre en tu navegador y te devuelve a la app.
