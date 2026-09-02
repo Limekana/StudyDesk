@@ -1,0 +1,5 @@
+Korjaa menneen opiskelujakson kirjaamisen.
+
+Tallennus saattoi olla tekemättä yhtään mitään — ei jaksoa, ei selitystä — jos päivämäärä tai kesto jäi vajaaksi. Ikkuna kertoo nyt, mitä kenttää se kaipaa, ja tallentaa heti kun täytät sen.
+
+Työpöytäsovelluksessa kirjautuminen ei enää jätä sinua verkkosivulle: se avautuu selaimeen ja palauttaa sinut takaisin.

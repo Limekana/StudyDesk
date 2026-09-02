@@ -4,6 +4,7 @@ import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { App as CapApp } from '@capacitor/app';
 import { supabase, OAUTH_REDIRECT_URL } from '../../lib/supabase.js';
+import { desktop } from '../../lib/desktop.js';
 import { inheritFromNexus } from '../../lib/suiteSso.js';
 import { setGuestMode } from '../../lib/guestMode.js';
 import { translateAuthError } from '../../lib/authErrors.js';
@@ -230,6 +231,32 @@ export default function AuthGate() {
     // a clean remove/add of the listener anyway.
   }, [t]);
 
+  // v1.12.1 — the desktop equivalent of the deep-link listener above. The
+  // Electron shell's loopback server receives Supabase's redirect and hands the
+  // code over IPC; the exchange has to happen HERE because the PKCE code
+  // verifier lives in this renderer's storage and nowhere else.
+  useEffect(() => {
+    if (!desktop?.onCallback) return;
+    return desktop.onCallback(async ({ code, error }) => {
+      setInfo('');
+      if (error || !code) {
+        setErr(error || t('auth.errGoogleFailed'));
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      try {
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        if (exchangeError) setErr(translateAuthError(exchangeError, t));
+        // On success onAuthStateChange fires and App.jsx swaps the gate out.
+      } catch (e) {
+        setErr(translateAuthError(e, t, 'auth.errCallback'));
+      } finally {
+        setLoading(false);
+      }
+    });
+  }, [t]);
+
   async function onSubmit(e) {
     e.preventDefault();
     setErr(''); setInfo(''); setLoading(true);
@@ -331,6 +358,16 @@ export default function AuthGate() {
       if (error || !data?.url) throw error ?? new Error(t('auth.errGoogleStart'));
       if (Capacitor.isNativePlatform()) {
         await Browser.open({ url: data.url, presentationStyle: 'fullscreen' });
+      } else if (desktop?.beginOAuth) {
+        // NEVER `window.location.href` on desktop. There is no back button, no
+        // address bar and no menu, so sending the app's own window to a provider
+        // is a one-way trip — it ended on limecore.dev/confirmed and the app was
+        // gone. The system browser owns this leg; the code comes back to the
+        // loopback listener and is redeemed by the effect above.
+        const opened = await desktop.beginOAuth(data.url);
+        if (!opened) throw new Error(t('auth.errGoogleStart'));
+        setInfo(t('auth.desktopBrowser'));
+        setLoading(false);
       } else {
         window.location.href = data.url;
       }

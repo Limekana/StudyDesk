@@ -1,0 +1,5 @@
+Behebt das Eintragen vergangener Lerneinheiten.
+
+Das Speichern konnte gar nichts tun — keine Einheit, keine Erklärung — wenn Datum oder Dauer unvollständig blieben. Der Dialog sagt jetzt, welches Feld er braucht, und speichert, sobald du es ausfüllst.
+
+In der Desktop-App strandest du beim Anmelden nicht mehr auf einer Webseite: Es öffnet sich im Browser und bringt dich zurück.

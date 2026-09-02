@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Preferences } from '@capacitor/preferences';
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
+import { DESKTOP_REDIRECT_URL } from './desktop.js';
 
 // Supabase backend — overridable at build time via Vite env vars so the app
 // can be re-built against a self-hosted Supabase instance without forking
@@ -98,6 +99,15 @@ if (isNative) {
 // — but every origin must ALSO be listed in Supabase's
 // Auth -> URL Configuration -> Redirect URLs, or Supabase silently falls back
 // to the Site URL again and the symptom returns unchanged.
+//
+// DESKTOP is the third case, and v1.12 did not have it. In Electron this file's
+// `isNative` is false (there is no Capacitor bridge) and `window.location.origin`
+// is `studydesk://app` — a custom scheme, which Supabase's redirect allow-list
+// cannot hold, so every desktop sign-in fell back to the Site URL and parked the
+// app's own window on the marketing site with no route back. The desktop shell
+// now listens on a fixed loopback port and passes that URL in; see
+// `electron/main.cjs`. A null means the listener could not bind, in which case
+// the origin fallback below is no worse than what shipped.
 export const OAUTH_REDIRECT_URL = isNative
   ? 'com.studydesk.app://login-callback'
-  : `${window.location.origin}/`;
+  : DESKTOP_REDIRECT_URL || `${window.location.origin}/`;

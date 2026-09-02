@@ -28,6 +28,9 @@ export default function SaveSessionSheet({ pending, courses, onSave, onClose, ca
   // already knows and shows it read-only, exactly as before.
   const editableWhen = pending.allowDateEdit === true;
   const [startedLocal, setStartedLocal] = useState(() => toLocalInput(pending.startedAt));
+  // v1.12.1 — which field, if any, is blocking the save. An i18n key, not a
+  // sentence: this component never holds user-facing prose.
+  const [invalid, setInvalid] = useState(null);
   // v1.3 (BUG-22) — optional focus quality. null = skipped (the default).
   const [focus, setFocus] = useState(null);
   // v1.4 — optional AI debrief. The user types what they covered; the cloud
@@ -48,15 +51,30 @@ export default function SaveSessionSheet({ pending, courses, onSave, onClose, ca
     else setDebriefError(true);
   }
 
+  // Every rejection here has to SAY something. Both guards below used to be a
+  // bare `return`, which is what "Log a Past Session opens the dialog but does
+  // not log" turned out to be: the sheet stayed open, the button did nothing,
+  // and nothing anywhere said why.
+  //
+  // The empty `when` is not a hypothetical. `input[type=datetime-local]` reports
+  // an INCOMPLETE value as the empty string — not a partial one — so the moment
+  // a user clears a segment to retype the month, or backs out of Android's
+  // second (time) picker after choosing a date, `startedLocal` is '' and
+  // `new Date('')` is Invalid Date. The old code returned there, silently, on
+  // the one screen whose entire purpose is entering a date by hand.
+  //
+  // Same shape as the OTP field in AuthGate: let the press land and name the
+  // problem rather than swallowing the tap.
   function submit() {
     const d = parseInt(duration, 10);
-    if (isNaN(d) || d < 1) return;
+    if (!Number.isFinite(d) || d < 1 || d > 1440) { setInvalid('duration'); return; }
     let startedAt = pending.startedAt;
     if (editableWhen) {
-      const parsed = new Date(startedLocal);   // no Z - parsed as local time
-      if (isNaN(parsed.getTime())) return;
+      const parsed = startedLocal ? new Date(startedLocal) : new Date(NaN);   // no Z - parsed as local time
+      if (isNaN(parsed.getTime())) { setInvalid('when'); return; }
       startedAt = parsed.toISOString();
     }
+    setInvalid(null);
     onSave({
       subjectId: subjectId || null,
       durationMinutes: d,
@@ -95,7 +113,14 @@ export default function SaveSessionSheet({ pending, courses, onSave, onClose, ca
         <div className="modal-grid">
           <div className="input-group">
             <div className="input-label">{t('ss.fDuration')}</div>
-            <input type="number" min="1" max="1440" value={duration} onChange={(e) => setDuration(e.target.value)} />
+            <input
+              type="number"
+              min="1"
+              max="1440"
+              value={duration}
+              aria-invalid={invalid === 'duration' || undefined}
+              onChange={(e) => { setDuration(e.target.value); setInvalid(null); }}
+            />
           </div>
           <div className="input-group">
             <div className="input-label">{editableWhen ? t('ss.fWhen') : t('ss.fStarted')}</div>
@@ -105,7 +130,8 @@ export default function SaveSessionSheet({ pending, courses, onSave, onClose, ca
                 value={startedLocal}
                 // A "past session" in the future is a typo, not a record.
                 max={toLocalInput(new Date().toISOString())}
-                onChange={(e) => setStartedLocal(e.target.value)}
+                aria-invalid={invalid === 'when' || undefined}
+                onChange={(e) => { setStartedLocal(e.target.value); setInvalid(null); }}
               />
             ) : (
               <input
@@ -229,6 +255,12 @@ export default function SaveSessionSheet({ pending, courses, onSave, onClose, ca
                 </div>
               </>
             )}
+          </div>
+        )}
+
+        {invalid && (
+          <div className="modal-error" role="alert">
+            {invalid === 'when' ? t('ss.errWhen') : t('ss.errDuration')}
           </div>
         )}
 
