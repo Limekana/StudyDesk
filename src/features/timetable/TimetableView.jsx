@@ -568,7 +568,7 @@ export default function TimetableView({ state, dispatch, session, showFlash }) {
               {unbounded && <div className="tt-warn">{t('tt.warnNoDates')}</div>}
 
               <div className="timer-subtabs" role="tablist" aria-label={t('tt.sections')}>
-                {[['schedule', 'tt.tabSchedule'], ['attendance', 'at.tab']].map(([id, key]) => (
+                {[['schedule', 'tt.tabSchedule'], ['attendance', 'att.tab']].map(([id, key]) => (
                   <button
                     key={id}
                     type="button"

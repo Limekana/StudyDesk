@@ -195,3 +195,8 @@
   margin-bottom:12px;
 }
 .storage-alert-actions{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* v1.13 (#45) — the exam edit affordance. Muted until hover, like the course
+   row's own edit button, so a card full of controls does not shout. */
+.exam-edit-btn{background:none;border:none;color:var(--muted2);cursor:pointer;padding:2px 5px;display:flex;align-items:center;transition:color 0.1s;}
+.exam-edit-btn:hover{color:var(--text);}

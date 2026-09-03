@@ -591,7 +591,9 @@
       "studyStart": "学习开始：",
       "studyFor": "学习：{{label}}",
       "prepareFor": "准备：{{label}}",
-      "topicMore": "（还有 {{n}} 个）"
+      "topicMore": "（还有 {{n}} 个）",
+      "editExam": "编辑考试",
+      "examDate": "考试日期"
     },
     "md": {
       "addAssignment": "添加作业",
@@ -827,29 +829,7 @@
     "openFailed": "无法打开该文件",
     "openFailedMsg": "无法打开该文件——{{msg}}",
     "deleted": "附件已删除",
-    "countTitle": "{{n}} 个附件",
-    "tab": "出勤",
-    "prevWeek": "上一周",
-    "nextWeek": "下一周",
-    "thisWeek": "本周",
-    "noLessons": "没有课",
-    "noData": "暂无数据",
-    "forTerm": "（{{name}}）",
-    "allTime": "总计",
-    "present": "出勤 {{n}}",
-    "absent": "缺勤 {{n}}",
-    "cancelled": "取消 {{n}}",
-    "rescheduled": "改期 {{n}}",
-    "uncountedNote": "取消和改期的课不计入——它们没有发生，因此不在百分比的任何一侧。",
-    "byCourse": "按课程",
-    "unmarked": "未标记",
-    "cycleAria": "{{lesson}} — {{status}}。点按可更改。",
-    "status": {
-      "present": "出勤",
-      "absent": "缺勤",
-      "cancelled": "取消",
-      "rescheduled": "改期"
-    }
+    "countTitle": "{{n}} 个附件"
   },
   "cm": {
     "newTitle": "新建安排",
@@ -991,6 +971,30 @@
       "cors": "浏览器无法从其他站点获取日历。请使用 Android 应用。",
       "http": "服务器返回了错误。",
       "network": "无法连接该地址。"
+    }
+  },
+  "att": {
+    "tab": "出勤",
+    "prevWeek": "上一周",
+    "nextWeek": "下一周",
+    "thisWeek": "本周",
+    "noLessons": "没有课",
+    "noData": "暂无数据",
+    "forTerm": "（{{name}}）",
+    "allTime": "总计",
+    "present": "出勤 {{n}}",
+    "absent": "缺勤 {{n}}",
+    "cancelled": "取消 {{n}}",
+    "rescheduled": "改期 {{n}}",
+    "uncountedNote": "取消和改期的课不计入——它们没有发生，因此不在百分比的任何一侧。",
+    "byCourse": "按课程",
+    "unmarked": "未标记",
+    "cycleAria": "{{lesson}} — {{status}}。点按可更改。",
+    "status": {
+      "present": "出勤",
+      "absent": "缺勤",
+      "cancelled": "取消",
+      "rescheduled": "改期"
     }
   }
 }
