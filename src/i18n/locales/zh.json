@@ -827,5 +827,34 @@
     },
     "dismiss": "以后再说",
     "thanks": "谢谢，这很有帮助。"
+  },
+  "appearance": {
+    "title": "外观",
+    "lighting": "明暗",
+    "character": "风格",
+    "mode": {
+      "light": "浅色",
+      "dark": "深色",
+      "black": "纯黑"
+    },
+    "modeNote": {
+      "light": "米色纸张",
+      "dark": "暖调、不刺眼",
+      "black": "纯黑 · AMOLED"
+    },
+    "theme": {
+      "free": "Studio",
+      "stacks": "Stacks",
+      "slate": "Slate"
+    },
+    "themeNote": {
+      "free": "默认",
+      "stacks": "赞助者",
+      "slate": "赞助者",
+      "locked": "赞助者"
+    },
+    "characterNote": "深色和纯黑属于明暗——它们只是把页面调暗。Stacks 和 Slate 属于风格：一张图书馆借阅台，一块黑板，各有自己的字体、线条与标记。它们不是深色选项，从来都不是。",
+    "lockedNote": "Stacks 与 Slate 面向赞助者开放。深色与纯黑免费，并且会一直免费。",
+    "lightingInThemeNote": "Stacks 与 Slate 自带明暗。切回 Studio 时，你的选择会恢复。"
   }
 }

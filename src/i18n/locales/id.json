@@ -822,5 +822,34 @@
     },
     "dismiss": "Nanti saja",
     "thanks": "Terima kasih — ini membantu."
+  },
+  "appearance": {
+    "title": "Tampilan",
+    "lighting": "Pencahayaan",
+    "character": "Karakter",
+    "mode": {
+      "light": "Terang",
+      "dark": "Gelap",
+      "black": "Hitam"
+    },
+    "modeNote": {
+      "light": "Kertas krem",
+      "dark": "Hangat, tidak menyilaukan",
+      "black": "Hitam pekat · AMOLED"
+    },
+    "theme": {
+      "free": "Studio",
+      "stacks": "Stacks",
+      "slate": "Slate"
+    },
+    "themeNote": {
+      "free": "Bawaan",
+      "stacks": "Pendukung",
+      "slate": "Pendukung",
+      "locked": "Pendukung"
+    },
+    "characterNote": "Gelap dan Hitam adalah pencahayaan — keduanya meredupkan halaman. Stacks dan Slate adalah karakter: meja peminjaman perpustakaan dan papan tulis, masing-masing dengan huruf, garis, dan tandanya sendiri. Keduanya bukan pilihan gelap, dan tidak pernah begitu.",
+    "lockedNote": "Stacks dan Slate terbuka untuk pendukung. Gelap dan Hitam gratis, dan akan tetap begitu.",
+    "lightingInThemeNote": "Stacks dan Slate membawa pencahayaannya sendiri. Pilihanmu kembali saat beralih ke Studio."
   }
 }

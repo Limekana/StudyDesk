@@ -832,5 +832,34 @@
     },
     "dismiss": "Pas maintenant",
     "thanks": "Merci, ça nous aide."
+  },
+  "appearance": {
+    "title": "Apparence",
+    "lighting": "Éclairage",
+    "character": "Caractère",
+    "mode": {
+      "light": "Clair",
+      "dark": "Sombre",
+      "black": "Noir"
+    },
+    "modeNote": {
+      "light": "Papier crème",
+      "dark": "Chaud, sans éblouissement",
+      "black": "Noir absolu · AMOLED"
+    },
+    "theme": {
+      "free": "Studio",
+      "stacks": "Stacks",
+      "slate": "Slate"
+    },
+    "themeNote": {
+      "free": "Par défaut",
+      "stacks": "Soutiens",
+      "slate": "Soutiens",
+      "locked": "Soutiens"
+    },
+    "characterNote": "Sombre et Noir relèvent de l'éclairage — ils baissent la page. Stacks et Slate relèvent du caractère : un bureau de prêt de bibliothèque et un tableau noir, chacun avec sa typographie, ses filets et ses marques. Ce ne sont pas l'option sombre, et ne l'ont jamais été.",
+    "lockedNote": "Stacks et Slate se débloquent pour ceux qui soutiennent l'app. Sombre et Noir sont gratuits, et le resteront.",
+    "lightingInThemeNote": "Stacks et Slate ont leur propre éclairage. Votre choix revient dès que vous repassez à Studio."
   }
 }

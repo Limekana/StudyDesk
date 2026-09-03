@@ -3,6 +3,74 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- Rewritten at runtime from the resolved --bg by applyTheme() in
+         src/lib/theme.js. The literal here is the free light ground, so the
+         very first paint and the OS task-switcher thumbnail agree even before
+         any script runs. -->
+    <meta name="theme-color" content="#f5f2ed" />
+    <script>
+      /* ── Pre-paint theme/mode pass (v1.13) ──────────────────────────────
+         Runs BEFORE the stylesheet paints so a dark-mode user never sees a
+         frame of cream. That flash is not cosmetic: on an AMOLED phone at
+         night a full-brightness cream page for one frame is genuinely
+         unpleasant, and it is the single most common complaint about apps
+         that resolve their theme in React instead of here.
+
+         Deliberately duplicated logic rather than an import: this must be
+         synchronous and inline, and a module import is neither. The two
+         storage keys are the contract between this block and
+         src/lib/theme.js — change them in both places. theme.js owns every
+         change after this point and is otherwise the only writer.
+
+         The entitlement check is a CACHE READ ONLY (see readCachedEntitlement
+         in src/lib/entitlement.js). It cannot hit the network here, so a
+         supporter whose cache has expired gets cream for one paint and their
+         theme back a moment later when syncTheme() runs. That is the correct
+         trade: a paid theme is cosmetic, and blocking first paint on a
+         network round trip to check a cosmetic perk is not.
+
+         Wrapped in try/catch in full: a private-mode browser that throws on
+         localStorage access must still render the app, in cream, rather than
+         a blank page. */
+      (function () {
+        try {
+          var THEMES = ['stacks', 'slate'];
+          var MODES = ['dark', 'black'];
+          var el = document.documentElement;
+
+          var theme = localStorage.getItem('studydesk.theme');
+          if (THEMES.indexOf(theme) === -1) theme = 'free';
+
+          // A paid theme only applies while the cached entitlement window is
+          // open. Mirrors isEntitled(): a lifetime grant outranks the clock.
+          if (theme !== 'free') {
+            var ok = false;
+            try {
+              var rec = JSON.parse(localStorage.getItem('studydesk.entitlement') || 'null');
+              if (rec && typeof rec === 'object') {
+                if (rec.lifetime === true) ok = true;
+                else if (rec.expiresAt) {
+                  var exp = Date.parse(rec.expiresAt);
+                  ok = !isNaN(exp) && exp > Date.now();
+                }
+              }
+            } catch (e) { ok = false; }
+            if (!ok) theme = 'free';
+          }
+
+          if (theme !== 'free') el.dataset.theme = theme;
+
+          // Mode is free and applies to the free theme only — a paid theme
+          // carries its own lighting. Same rule as activeMode() in theme.js.
+          if (theme === 'free') {
+            var mode = localStorage.getItem('studydesk.mode');
+            if (MODES.indexOf(mode) !== -1) el.dataset.mode = mode;
+          }
+        } catch (e) {
+          /* storage unavailable — free light theme, which is the default */
+        }
+      })();
+    </script>
     <link rel="stylesheet" href="/fonts/fonts.css" />
     <title>StudyDesk — an academic tracker for IB and US students</title>
     <meta name="description" content="Grades on the IB 1–7 scale with a one-tap 4.0 conversion. Assignment and exam calendar, a Pomodoro timer that logs to a course. Free, open source, on F-Droid." />

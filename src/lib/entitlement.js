@@ -62,6 +62,17 @@ export function entitlementTier() {
   return isEntitled() ? readCachedEntitlement()?.tier || null : null;
 }
 
+// v1.13 — every cache write announces itself. Entitlement resolves
+// asynchronously after mount, and before this the only way a surface learned
+// its answer had changed was to remount. The Settings screen shows the
+// supporter block and the theme picker at the same time, so "refresh the
+// entitlement" and "the theme rows are still disabled" were visible together.
+//
+// `theme.js` listens for this and re-resolves the theme, which is what makes
+// a supporter's theme switch itself on the moment their entitlement lands
+// rather than on the next cold start.
+export const ENTITLEMENT_CHANGE_EVENT = "studydesk-entitlement-change";
+
 function writeCache(rec) {
   try {
     if (rec) localStorage.setItem(CACHE_KEY, JSON.stringify(rec));
@@ -69,6 +80,11 @@ function writeCache(rec) {
   } catch {
     /* storage unavailable — fall through to the un-entitled default */
   }
+  // Fired even when the write above threw: the in-memory answer may still
+  // have changed, and a listener that re-reads is correct either way.
+  try {
+    window.dispatchEvent(new CustomEvent(ENTITLEMENT_CHANGE_EVENT));
+  } catch { /* SSR / non-window environments */ }
 }
 
 // Called on sign-out. Leaving a previous account's entitlement behind on a

@@ -832,5 +832,34 @@
     },
     "dismiss": "Ahora no",
     "thanks": "Gracias, nos ayuda."
+  },
+  "appearance": {
+    "title": "Apariencia",
+    "lighting": "Iluminación",
+    "character": "Carácter",
+    "mode": {
+      "light": "Claro",
+      "dark": "Oscuro",
+      "black": "Negro"
+    },
+    "modeNote": {
+      "light": "Papel crema",
+      "dark": "Cálido, sin deslumbrar",
+      "black": "Negro puro · AMOLED"
+    },
+    "theme": {
+      "free": "Studio",
+      "stacks": "Stacks",
+      "slate": "Slate"
+    },
+    "themeNote": {
+      "free": "Predeterminado",
+      "stacks": "Mecenas",
+      "slate": "Mecenas",
+      "locked": "Mecenas"
+    },
+    "characterNote": "Oscuro y Negro son iluminación: bajan la página. Stacks y Slate son carácter: un mostrador de préstamo y una pizarra, cada uno con su tipografía, sus reglas y sus marcas. No son la opción oscura, ni lo fueron nunca.",
+    "lockedNote": "Stacks y Slate se desbloquean para quienes apoyan la app. Oscuro y Negro son gratis, y lo seguirán siendo.",
+    "lightingInThemeNote": "Stacks y Slate traen su propia iluminación. Tu elección vuelve cuando cambies a Studio."
   }
 }

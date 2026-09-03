@@ -827,5 +827,34 @@
     },
     "dismiss": "Not now",
     "thanks": "Thanks — that helps."
+  },
+  "appearance": {
+    "title": "Appearance",
+    "lighting": "Lighting",
+    "character": "Character",
+    "mode": {
+      "light": "Light",
+      "dark": "Dark",
+      "black": "Black"
+    },
+    "modeNote": {
+      "light": "Cream paper",
+      "dark": "Warm, low-glare",
+      "black": "True black · AMOLED"
+    },
+    "theme": {
+      "free": "Studio",
+      "stacks": "Stacks",
+      "slate": "Slate"
+    },
+    "themeNote": {
+      "free": "The default",
+      "stacks": "Supporter",
+      "slate": "Supporter",
+      "locked": "Supporters"
+    },
+    "characterNote": "Dark and Black are lighting — they turn the page down. Stacks and Slate are character: a library circulation desk and a chalkboard, each with its own type, rules and marks. They are not the dark option, and never were.",
+    "lockedNote": "Stacks and Slate unlock for supporters. Dark and Black are free, and always will be.",
+    "lightingInThemeNote": "Stacks and Slate bring their own lighting. Your choice here comes back when you switch to Studio."
   }
 }

@@ -14,6 +14,7 @@ import { clearEntitlement } from '../../lib/entitlement.js';
 import { clearAvatarCache } from '../../lib/profile.js';
 import ProfileSection from './ProfileSection.jsx';
 import SupporterBlock from './SupporterBlock.jsx';
+import Appearance from './Appearance.jsx';
 import { downloadExport, deleteAccount } from '../../lib/dataRights.js';
 import { useConfirm } from '../../lib/useConfirm.js';
 import { avatarInitials } from '../../lib/avatarInitials.js';
@@ -431,6 +432,11 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
         {/* ── Profile (v1.12 Item 9) — renders nothing for a guest, who has no
             server-side profile to edit. ── */}
         <ProfileSection session={session} showFlash={showFlash} />
+
+        {/* ── Appearance (v1.13) ──
+            Above Language because it is the setting people come to Settings
+            for, and because the supporter themes need to be seen. ── */}
+        <Appearance />
 
         {/* ── Language ── */}
         <div className="sv2-section">
