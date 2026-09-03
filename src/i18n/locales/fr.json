@@ -294,7 +294,40 @@
       "other": "Autre"
     },
     "discord": "Communauté Discord",
-    "discordSub": "Questions, rapports de bugs et la suite du programme"
+    "discordSub": "Questions, rapports de bugs et la suite du programme",
+    "queueStoppedTitle": "La synchronisation s'est arrêtée",
+    "queueStoppedRetry": "Réessayer",
+    "queueStoppedBody_one": "Une modification n'a pas pu être envoyée après plusieurs tentatives ; la file s'est donc arrêtée plutôt que de réessayer indéfiniment. Rien n'est perdu — elle est toujours sur cet appareil.",
+    "queueStoppedBody_other": "{{count}} modifications n'ont pas pu être envoyées après plusieurs tentatives ; la file s'est donc arrêtée plutôt que de réessayer indéfiniment. Rien n'est perdu — elles sont toujours sur cet appareil.",
+    "queueStoppedWhat": "En attente : {{kinds}}",
+    "queueStoppedSince": "Arrêtée depuis {{when}}",
+    "queueStoppedSignIn": "Connectez-vous pour les envoyer.",
+    "kind": {
+      "upsert_subject": "un cours",
+      "delete_subject": "un cours supprimé",
+      "upsert_grade": "une note",
+      "delete_grade": "une note supprimée",
+      "log_session": "une session d'étude",
+      "update_session": "une modification de session",
+      "delete_session": "une session supprimée",
+      "upsert_assignment": "un devoir",
+      "delete_assignment": "un devoir supprimé",
+      "upsert_exam": "un examen",
+      "delete_exam": "un examen supprimé",
+      "upsert_action": "une tâche",
+      "delete_action": "une tâche supprimée",
+      "upsert_planned": "un bloc planifié",
+      "delete_planned": "un plan supprimé",
+      "upsert_term": "une période",
+      "delete_term": "une période supprimée",
+      "upsert_timetable": "un cours à l'emploi du temps",
+      "delete_timetable": "un cours supprimé",
+      "upsert_commitment": "un engagement",
+      "delete_commitment": "un engagement supprimé",
+      "delete_attachment": "une pièce jointe supprimée",
+      "submit_feedback": "un retour",
+      "record_app_open": "des données d'usage"
+    }
   },
   "sdob": {
     "brand": "Arrête de choisir. Commence à réviser.",
@@ -861,5 +894,14 @@
     "characterNote": "Sombre et Noir relèvent de l'éclairage — ils baissent la page. Stacks et Slate relèvent du caractère : un bureau de prêt de bibliothèque et un tableau noir, chacun avec sa typographie, ses filets et ses marques. Ce ne sont pas l'option sombre, et ne l'ont jamais été.",
     "lockedNote": "Stacks et Slate se débloquent pour ceux qui soutiennent l'app. Sombre et Noir sont gratuits, et le resteront.",
     "lightingInThemeNote": "Stacks et Slate ont leur propre éclairage. Votre choix revient dès que vous repassez à Studio."
+  },
+  "storage": {
+    "title": "Cet appareil n'a plus d'espace",
+    "quotaBody": "StudyDesk n'a pas pu enregistrer vos dernières modifications sur cet appareil — son stockage est plein.",
+    "blockedBody": "StudyDesk n'a pas pu enregistrer vos dernières modifications sur cet appareil — le stockage est indisponible ou bloqué.",
+    "stakes": "Tout ce que vous avez ajouté depuis le dernier enregistrement sera perdu à la fermeture. Exportez maintenant pour le conserver.",
+    "usage": "StudyDesk utilise environ {{ours}} sur les {{total}} stockés par ce site.",
+    "export": "Exporter mes données",
+    "dismiss": "Ignorer"
   }
 }

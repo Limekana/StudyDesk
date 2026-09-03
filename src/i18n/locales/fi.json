@@ -292,7 +292,40 @@
       "other": "Muu"
     },
     "discord": "Discord-yhteisö",
-    "discordSub": "Kysymykset, bugi-ilmoitukset ja mitä on tulossa"
+    "discordSub": "Kysymykset, bugi-ilmoitukset ja mitä on tulossa",
+    "queueStoppedTitle": "Synkronointi pysähtyi",
+    "queueStoppedRetry": "Yritä näitä uudelleen",
+    "queueStoppedBody_one": "Yhtä muutosta ei saatu lähetettyä useasta yrityksestä huolimatta, joten jono pysähtyi sen sijaan että yrittäisi loputtomiin. Mitään ei ole kadonnut — se on yhä tällä laitteella.",
+    "queueStoppedBody_other": "{{count}} muutosta ei saatu lähetettyä useasta yrityksestä huolimatta, joten jono pysähtyi sen sijaan että yrittäisi loputtomiin. Mitään ei ole kadonnut — ne ovat yhä tällä laitteella.",
+    "queueStoppedWhat": "Odottaa: {{kinds}}",
+    "queueStoppedSince": "Pysähtynyt {{when}}",
+    "queueStoppedSignIn": "Kirjaudu sisään lähettääksesi nämä.",
+    "kind": {
+      "upsert_subject": "kurssi",
+      "delete_subject": "poistettu kurssi",
+      "upsert_grade": "arvosana",
+      "delete_grade": "poistettu arvosana",
+      "log_session": "opiskelusessio",
+      "update_session": "session muokkaus",
+      "delete_session": "poistettu sessio",
+      "upsert_assignment": "tehtävä",
+      "delete_assignment": "poistettu tehtävä",
+      "upsert_exam": "koe",
+      "delete_exam": "poistettu koe",
+      "upsert_action": "tehtävälistan kohta",
+      "delete_action": "poistettu kohta",
+      "upsert_planned": "suunniteltu jakso",
+      "delete_planned": "poistettu suunnitelma",
+      "upsert_term": "jakso",
+      "delete_term": "poistettu jakso",
+      "upsert_timetable": "lukujärjestyksen tunti",
+      "delete_timetable": "poistettu tunti",
+      "upsert_commitment": "meno",
+      "delete_commitment": "poistettu meno",
+      "delete_attachment": "poistettu liite",
+      "submit_feedback": "palaute",
+      "record_app_open": "käyttötieto"
+    }
   },
   "sdob": {
     "brand": "Lopeta miettiminen. Aloita opiskelu.",
@@ -856,5 +889,14 @@
     "characterNote": "Tumma ja Musta ovat valaistusta — ne himmentävät sivun. Stacks ja Slate ovat luonnetta: kirjaston lainaustiski ja liitutaulu, kummallakin oma kirjasintyyppi, viivoitus ja merkinnät. Ne eivät ole se tumma vaihtoehto, eivätkä koskaan olleet.",
     "lockedNote": "Stacks ja Slate avautuvat tukijoille. Tumma ja Musta ovat ilmaisia, nyt ja aina.",
     "lightingInThemeNote": "Stacksilla ja Slatella on oma valaistuksensa. Valintasi palaa, kun vaihdat takaisin Studioon."
+  },
+  "storage": {
+    "title": "Laitteen tila on lopussa",
+    "quotaBody": "StudyDesk ei voinut tallentaa viimeisimpiä muutoksiasi tälle laitteelle — tallennustila on täynnä.",
+    "blockedBody": "StudyDesk ei voinut tallentaa viimeisimpiä muutoksiasi tälle laitteelle — tallennustila ei ole käytettävissä.",
+    "stakes": "Kaikki viime tallennuksen jälkeen lisäämäsi katoaa, kun suljet sovelluksen. Vie tiedot nyt säilyttääksesi ne.",
+    "usage": "StudyDesk käyttää noin {{ours}} tämän sivuston tallentamasta {{total}}.",
+    "export": "Vie tietoni",
+    "dismiss": "Sulje"
   }
 }

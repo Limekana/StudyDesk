@@ -292,7 +292,40 @@
       "other": "Sonstiges"
     },
     "discord": "Discord-Community",
-    "discordSub": "Fragen, Fehlerberichte und was als Nächstes kommt"
+    "discordSub": "Fragen, Fehlerberichte und was als Nächstes kommt",
+    "queueStoppedTitle": "Synchronisierung gestoppt",
+    "queueStoppedRetry": "Erneut versuchen",
+    "queueStoppedBody_one": "Eine Änderung konnte nach mehreren Versuchen nicht gesendet werden, daher hat die Warteschlange gestoppt, statt endlos weiterzuversuchen. Nichts ist verloren — sie liegt weiterhin auf diesem Gerät.",
+    "queueStoppedBody_other": "{{count}} Änderungen konnten nach mehreren Versuchen nicht gesendet werden, daher hat die Warteschlange gestoppt, statt endlos weiterzuversuchen. Nichts ist verloren — sie liegen weiterhin auf diesem Gerät.",
+    "queueStoppedWhat": "Wartet: {{kinds}}",
+    "queueStoppedSince": "Gestoppt seit {{when}}",
+    "queueStoppedSignIn": "Melde dich an, um diese zu senden.",
+    "kind": {
+      "upsert_subject": "ein Kurs",
+      "delete_subject": "ein gelöschter Kurs",
+      "upsert_grade": "eine Note",
+      "delete_grade": "eine gelöschte Note",
+      "log_session": "eine Lernsitzung",
+      "update_session": "eine Sitzungsänderung",
+      "delete_session": "eine gelöschte Sitzung",
+      "upsert_assignment": "eine Aufgabe",
+      "delete_assignment": "eine gelöschte Aufgabe",
+      "upsert_exam": "eine Prüfung",
+      "delete_exam": "eine gelöschte Prüfung",
+      "upsert_action": "ein To-do",
+      "delete_action": "ein gelöschtes To-do",
+      "upsert_planned": "ein geplanter Block",
+      "delete_planned": "ein gelöschter Plan",
+      "upsert_term": "ein Zeitraum",
+      "delete_term": "ein gelöschter Zeitraum",
+      "upsert_timetable": "eine Stundenplanstunde",
+      "delete_timetable": "eine gelöschte Stunde",
+      "upsert_commitment": "ein Termin",
+      "delete_commitment": "ein gelöschter Termin",
+      "delete_attachment": "ein gelöschter Anhang",
+      "submit_feedback": "Feedback",
+      "record_app_open": "Nutzungsdaten"
+    }
   },
   "sdob": {
     "brand": "Schluss mit Grübeln. Fang an zu lernen.",
@@ -856,5 +889,14 @@
     "characterNote": "Dunkel und Schwarz sind Beleuchtung — sie dimmen die Seite. Stacks und Slate sind Charakter: eine Bibliotheksausleihe und eine Schultafel, jede mit eigener Schrift, Linierung und Markierung. Sie sind nicht die dunkle Variante und waren es nie.",
     "lockedNote": "Stacks und Slate sind für Unterstützer. Dunkel und Schwarz sind kostenlos und bleiben es.",
     "lightingInThemeNote": "Stacks und Slate bringen ihre eigene Beleuchtung mit. Deine Auswahl kehrt zurück, sobald du wieder zu Studio wechselst."
+  },
+  "storage": {
+    "title": "Auf diesem Gerät ist kein Platz mehr",
+    "quotaBody": "StudyDesk konnte deine letzten Änderungen nicht auf diesem Gerät speichern — der Speicher ist voll.",
+    "blockedBody": "StudyDesk konnte deine letzten Änderungen nicht auf diesem Gerät speichern — der Speicher ist nicht verfügbar oder blockiert.",
+    "stakes": "Alles, was du seit dem letzten Speichern hinzugefügt hast, geht beim Schließen verloren. Exportiere es jetzt, um es zu behalten.",
+    "usage": "StudyDesk belegt etwa {{ours}} von rund {{total}}, die diese Seite speichert.",
+    "export": "Meine Daten exportieren",
+    "dismiss": "Schließen"
   }
 }

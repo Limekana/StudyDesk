@@ -300,7 +300,40 @@
       "other": "أخرى"
     },
     "discord": "مجتمع Discord",
-    "discordSub": "الأسئلة وتقارير الأخطاء وما هو قادم"
+    "discordSub": "الأسئلة وتقارير الأخطاء وما هو قادم",
+    "queueStoppedTitle": "توقفت المزامنة",
+    "queueStoppedRetry": "إعادة المحاولة",
+    "queueStoppedBody_one": "تعذّر إرسال تغيير واحد بعد عدة محاولات، لذا توقفت قائمة الانتظار بدلاً من إعادة المحاولة إلى ما لا نهاية. لم يُفقد شيء — فهو ما زال على هذا الجهاز.",
+    "queueStoppedBody_other": "تعذّر إرسال {{count}} تغييرات بعد عدة محاولات، لذا توقفت قائمة الانتظار بدلاً من إعادة المحاولة إلى ما لا نهاية. لم يُفقد شيء — فهي ما زالت على هذا الجهاز.",
+    "queueStoppedWhat": "في الانتظار: {{kinds}}",
+    "queueStoppedSince": "متوقفة منذ {{when}}",
+    "queueStoppedSignIn": "سجّل الدخول لإرسالها.",
+    "kind": {
+      "upsert_subject": "مقرر",
+      "delete_subject": "مقرر محذوف",
+      "upsert_grade": "درجة",
+      "delete_grade": "درجة محذوفة",
+      "log_session": "جلسة دراسة",
+      "update_session": "تعديل جلسة",
+      "delete_session": "جلسة محذوفة",
+      "upsert_assignment": "واجب",
+      "delete_assignment": "واجب محذوف",
+      "upsert_exam": "اختبار",
+      "delete_exam": "اختبار محذوف",
+      "upsert_action": "مهمة",
+      "delete_action": "مهمة محذوفة",
+      "upsert_planned": "فترة مخططة",
+      "delete_planned": "خطة محذوفة",
+      "upsert_term": "فصل",
+      "delete_term": "فصل محذوف",
+      "upsert_timetable": "حصة في الجدول",
+      "delete_timetable": "حصة محذوفة",
+      "upsert_commitment": "التزام",
+      "delete_commitment": "التزام محذوف",
+      "delete_attachment": "مرفق محذوف",
+      "submit_feedback": "ملاحظات",
+      "record_app_open": "بيانات الاستخدام"
+    }
   },
   "sdob": {
     "brand": "كفى ترددًا. ابدأ الدراسة.",
@@ -876,5 +909,14 @@
     "characterNote": "الداكن والأسود إضاءة — يخفضان سطوع الصفحة. أما Stacks وSlate فطابع: مكتب إعارة في مكتبة، ولوح طباشير، ولكلٍّ حروفه وخطوطه وعلاماته. ليسا الخيار الداكن، ولم يكونا كذلك يوماً.",
     "lockedNote": "يفتح Stacks وSlate للداعمين. الداكن والأسود مجانيان، وسيظلان كذلك.",
     "lightingInThemeNote": "يأتي Stacks وSlate بإضاءتهما الخاصة. يعود اختيارك عند العودة إلى Studio."
+  },
+  "storage": {
+    "title": "لا توجد مساحة كافية على هذا الجهاز",
+    "quotaBody": "تعذّر على StudyDesk حفظ آخر تغييراتك على هذا الجهاز — مساحة التخزين ممتلئة.",
+    "blockedBody": "تعذّر على StudyDesk حفظ آخر تغييراتك على هذا الجهاز — التخزين غير متاح أو محظور.",
+    "stakes": "كل ما أضفته منذ آخر عملية حفظ سيُفقد عند إغلاق التطبيق. صدّر بياناتك الآن للاحتفاظ بها.",
+    "usage": "يستخدم StudyDesk نحو {{ours}} من أصل {{total}} تقريباً يخزّنها هذا الموقع.",
+    "export": "تصدير بياناتي",
+    "dismiss": "إغلاق"
   }
 }

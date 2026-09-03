@@ -294,7 +294,40 @@
       "other": "Otro"
     },
     "discord": "Comunidad de Discord",
-    "discordSub": "Preguntas, informes de errores y lo que viene"
+    "discordSub": "Preguntas, informes de errores y lo que viene",
+    "queueStoppedTitle": "La sincronización se ha detenido",
+    "queueStoppedRetry": "Intentarlo de nuevo",
+    "queueStoppedBody_one": "No se pudo enviar un cambio tras varios intentos, así que la cola se detuvo en lugar de reintentarlo indefinidamente. No se ha perdido nada: sigue en este dispositivo.",
+    "queueStoppedBody_other": "No se pudieron enviar {{count}} cambios tras varios intentos, así que la cola se detuvo en lugar de reintentarlo indefinidamente. No se ha perdido nada: siguen en este dispositivo.",
+    "queueStoppedWhat": "En espera: {{kinds}}",
+    "queueStoppedSince": "Detenida desde {{when}}",
+    "queueStoppedSignIn": "Inicia sesión para enviarlos.",
+    "kind": {
+      "upsert_subject": "una asignatura",
+      "delete_subject": "una asignatura eliminada",
+      "upsert_grade": "una nota",
+      "delete_grade": "una nota eliminada",
+      "log_session": "una sesión de estudio",
+      "update_session": "una edición de sesión",
+      "delete_session": "una sesión eliminada",
+      "upsert_assignment": "una tarea",
+      "delete_assignment": "una tarea eliminada",
+      "upsert_exam": "un examen",
+      "delete_exam": "un examen eliminado",
+      "upsert_action": "un pendiente",
+      "delete_action": "un pendiente eliminado",
+      "upsert_planned": "un bloque planificado",
+      "delete_planned": "un plan eliminado",
+      "upsert_term": "un periodo",
+      "delete_term": "un periodo eliminado",
+      "upsert_timetable": "una clase del horario",
+      "delete_timetable": "una clase eliminada",
+      "upsert_commitment": "un compromiso",
+      "delete_commitment": "un compromiso eliminado",
+      "delete_attachment": "un adjunto eliminado",
+      "submit_feedback": "comentarios",
+      "record_app_open": "datos de uso"
+    }
   },
   "sdob": {
     "brand": "Deja de decidir. Empieza a estudiar.",
@@ -861,5 +894,14 @@
     "characterNote": "Oscuro y Negro son iluminación: bajan la página. Stacks y Slate son carácter: un mostrador de préstamo y una pizarra, cada uno con su tipografía, sus reglas y sus marcas. No son la opción oscura, ni lo fueron nunca.",
     "lockedNote": "Stacks y Slate se desbloquean para quienes apoyan la app. Oscuro y Negro son gratis, y lo seguirán siendo.",
     "lightingInThemeNote": "Stacks y Slate traen su propia iluminación. Tu elección vuelve cuando cambies a Studio."
+  },
+  "storage": {
+    "title": "Este dispositivo se ha quedado sin espacio",
+    "quotaBody": "StudyDesk no pudo guardar tus últimos cambios en este dispositivo: el almacenamiento está lleno.",
+    "blockedBody": "StudyDesk no pudo guardar tus últimos cambios en este dispositivo: el almacenamiento no está disponible o está bloqueado.",
+    "stakes": "Todo lo que hayas añadido desde el último guardado se perderá al cerrar la app. Expórtalo ahora para conservarlo.",
+    "usage": "StudyDesk usa unos {{ours}} de los aproximadamente {{total}} que guarda este sitio.",
+    "export": "Exportar mis datos",
+    "dismiss": "Descartar"
   }
 }

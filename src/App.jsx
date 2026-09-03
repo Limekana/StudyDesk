@@ -13,6 +13,9 @@ import { isGuestMode, setGuestMode } from "./lib/guestMode.js";
 import { scheduleOriginStamp } from "./lib/originMarker.js";
 import { watchAppOpens } from "./lib/appOpens.js";
 import { refreshEntitlement } from "./lib/entitlement.js";
+import { writeJson } from "./lib/localStore.js";
+import { downloadExport } from "./lib/dataRights.js";
+import StorageAlert from "./features/settings/StorageAlert.jsx";
 import TimerPill from "./features/timer/TimerPill.jsx";
 import { useAccountAvatar } from "./lib/useAccountAvatar.js";
 import ReferralPrompt from "./features/referral/ReferralPrompt.jsx";
@@ -870,8 +873,21 @@ export default function App() {
   // is evaluated during render, so up here it referenced the binding before
   // its useState had run.
   const [onboardChecked, setOnboardChecked] = useState(false);
+  // v1.13 Item 1a — THE five-hours bug.
+  //
+  // This write is the app's database, and until now it was
+  // `try { ... } catch {}`. When it failed the app carried on with in-memory
+  // state that would not survive the next cold start: the user kept studying,
+  // the timer kept logging, and everything since the last successful write
+  // vanished at relaunch. Offline, none of it had reached the server either,
+  // so it was gone from every device — which is the report verbatim.
+  //
+  // `writeJson` marks this critical, so a failure raises the app-wide storage
+  // health state that `StorageAlert` renders. See src/lib/localStore.js for
+  // why an app update is not special here: it is simply the relaunch at which
+  // the user finds out.
   useEffect(() => {
-    try { localStorage.setItem("studydesk-v1", JSON.stringify({
+    writeJson("studydesk-v1", {
       courses:state.courses,
       assignments:state.assignments,
       actions:state.actions,
@@ -883,7 +899,7 @@ export default function App() {
       timetableEntries:state.timetableEntries,
       attachments:state.attachments,
       commitments:state.commitments,
-    })); } catch {}
+    }, { critical: true });
   }, [state.courses,state.assignments,state.actions,state.exams,state.grades,state.studySessions,state.plannedSessions,state.academicTerms,state.timetableEntries,state.attachments,state.commitments]);
   // gradeMode is UI-only — persist separately so it doesn't trigger a v1 rewrite on every toggle.
   useEffect(() => {
@@ -1112,6 +1128,22 @@ export default function App() {
   const [newCourseName, setNewCourseName] = useState("");
   const [newCourseColor, setNewCourseColor] = useState(COURSE_COLORS[0]);
   const showFlash = useCallback((msg) => { setFlash(msg); setTimeout(()=>setFlash(null),2200); }, []);
+
+  // v1.13 Item 1a — the escape hatch offered by StorageAlert.
+  //
+  // Reads from `state`, which is IN MEMORY and still correct, rather than
+  // from localStorage, which is the thing that just failed. That is the whole
+  // point of the button: it is the one action that does not depend on
+  // anything currently broken. `downloadExport` builds a blob and hands it to
+  // the browser, touching no persistent storage on the way.
+  const onExportFromAlert = useCallback(() => {
+    try {
+      const name = downloadExport(state, session);
+      showFlash(t('settings.exportDone', { name }));
+    } catch (e) {
+      showFlash(t('settings.exportFailed', { msg: e.message }));
+    }
+  }, [state, session, showFlash, t]);
 
   // ── Auth session ─────────────────────────────────────────────────────────────
   const [session, setSession] = useState(undefined); // undefined = loading; null = signed out; object = signed in
@@ -1667,10 +1699,16 @@ export default function App() {
             shell width rather than a reading measure: the calendar sheet and
             the multi-pane course detail. Everything else keeps the measure. */}
         <div className={"content"+(((state.view==="plan"&&(planSub==="calendar"||planSub==="timetable"))||state.view==="status")?" content-wide":"")}>
+          {/* v1.13 Item 1a — renders nothing unless a critical local write has
+              failed. Inside `.content` so it appears on every route: the
+              window in which the data still exists in memory is the only
+              window in which the user can save it, and they will not
+              necessarily be on Settings when it opens. */}
+          <StorageAlert onExport={onExportFromAlert} />
           {(urgent.length>0||urgentExams.length>0)&&state.view==="plan"&&(
             <div className="urgent-banner"><span>⚠️</span><div>
               <strong>{t('av.chrome.urgent')}</strong> —{" "}
-              {urgentExams.map((e,i)=><span key={e.id} style={{color:"#6d3fa0"}}>{t('av.chrome.examPrefix',{title:e.title})}{i<urgentExams.length-1?", ":""}</span>)}
+              {urgentExams.map((e,i)=><span key={e.id} style={{color:"var(--exam)"}}>{t('av.chrome.examPrefix',{title:e.title})}{i<urgentExams.length-1?", ":""}</span>)}
               {urgent.length>0&&urgentExams.length>0&&", "}
               {urgent.map((a,i)=><span key={a.id}>{a.title}{i<urgent.length-1?", ":""}</span>)}
             </div></div>

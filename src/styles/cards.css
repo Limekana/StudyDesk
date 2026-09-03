@@ -158,3 +158,40 @@
      bar plus the home-indicator inset. */
   .ref-card{bottom:calc(72px + env(safe-area-inset-bottom));inset-inline-end:14px;inset-inline-start:14px;width:auto;}
 }
+
+/* ── Storage alert (v1.13 Item 1a) ──────────────────────────────────────────
+   Shown only when a critical local write has failed, so it is allowed to be
+   louder than anything else on the page — at the moment it appears, it is the
+   most important thing on the screen by a wide margin.
+
+   Uses the danger tokens rather than the warning ones deliberately. This is
+   not "heads up"; it is "your data will not survive closing the app". The
+   tokens resolve per theme, so the panel deepens rather than glows on the
+   dark modes and reads as a rose correction on Slate. */
+.storage-alert{
+  background:var(--danger-soft);
+  border:1px solid var(--danger-soft-border);
+  border-inline-start:3px solid var(--danger);
+  border-radius:5px;
+  padding:14px 16px;
+  margin-bottom:18px;
+}
+.storage-alert-head{
+  font-family:var(--font-mono);
+  font-size:10px;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  color:var(--danger);
+  margin-bottom:8px;
+}
+.storage-alert-body{font-size:13px;line-height:1.55;color:var(--text);margin-bottom:8px;}
+/* The consequence, set apart from the cause. A user who reads one line should
+   read the one that says what they stand to lose. */
+.storage-alert-stakes{font-weight:500;}
+.storage-alert-usage{
+  font-family:var(--font-mono);
+  font-size:10.5px;
+  color:var(--muted);
+  margin-bottom:12px;
+}
+.storage-alert-actions{display:flex;gap:8px;flex-wrap:wrap;}
