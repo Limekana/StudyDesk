@@ -1,7 +1,7 @@
 {
   "name": "studydesk",
   "private": true,
-  "version": "1.12.1",
+  "version": "1.13.0",
   "type": "module",
   "license": "MIT",
   "author": "Limecore Studio",

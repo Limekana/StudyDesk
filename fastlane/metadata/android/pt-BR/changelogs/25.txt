@@ -1,0 +1,21 @@
+Caderno — escreve as tuas notas onde estudas.
+
+As notas ficam agrupadas na sua disciplina, e começar uma com uma sessão de estudo a decorrer associa-a automaticamente a essa disciplina. Negrito, itálico, destaque, títulos, listas e listas de verificação, com atalhos markdown que funcionam no telemóvel: "- " para um marcador, "## " para um título, "[] " para uma caixa. Fotografa uma página manuscrita e ela fica inserida no texto. Podes escrever matemática, química e diagramas simples como texto normal e eles são desenhados enquanto escreves — uma equação química até conta os átomos de cada lado na margem.
+
+Escuro e Preto, grátis.
+
+Dois aspetos novos para toda a gente: Escuro, quente e confortável à noite, e Preto, preto puro para ecrãs OLED.
+
+O teu trabalho está mais seguro.
+
+Se este dispositivo ficar sem espaço, o StudyDesk avisa-te em vez de falhar a gravar em silêncio. As sessões de estudo que nunca chegaram à nuvem são encontradas e enviadas na sincronização seguinte, e uma sincronização parada di-lo agora claramente e oferece nova tentativa.
+
+Horário.
+
+As aulas podem repetir-se de duas em duas semanas. Marca a assiduidade aula a aula e vê a tua percentagem por período e por disciplina — as aulas canceladas não contam contra ti. Também podes escolher o dia em que começa a tua semana.
+
+Subscreve um feed de calendário.
+
+Cola o endereço de calendário privado do teu sistema escolar e os prazos chegam sozinhos. Funciona com Canvas, Moodle, Blackboard, Google Classroom e a maioria dos horários universitários.
+
+Além disso: os exames podem ser editados em vez de apagados e recriados.

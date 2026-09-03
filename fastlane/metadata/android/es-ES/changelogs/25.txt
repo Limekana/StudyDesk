@@ -1,0 +1,21 @@
+Cuaderno: escribe tus apuntes donde estudias.
+
+Los apuntes se agrupan bajo su asignatura, y empezar uno con una sesión de estudio en marcha lo asocia automáticamente a esa asignatura. Negrita, cursiva, resaltado, títulos, listas y listas de tareas, con atajos de markdown que funcionan en el móvil: «- » para una viñeta, «## » para un título, «[] » para una casilla. Fotografía una página manuscrita y queda insertada en el texto. Puedes escribir matemáticas, química y diagramas sencillos como texto normal y se dibujan mientras escribes; una ecuación química incluso cuenta los átomos de cada lado en el margen.
+
+Oscuro y Negro, gratis.
+
+Dos aspectos nuevos para todo el mundo: Oscuro, cálido y cómodo de noche, y Negro, negro puro para pantallas OLED.
+
+Tu trabajo está más seguro.
+
+Si este dispositivo se queda sin espacio, StudyDesk te avisa en vez de fallar en silencio al guardar. Las sesiones de estudio que nunca llegaron a la nube se localizan y se envían en la siguiente sincronización, y una sincronización detenida ahora lo dice claramente y ofrece reintentarlo.
+
+Horario.
+
+Las clases pueden repetirse cada dos semanas. Marca la asistencia clase por clase y consulta tu porcentaje por periodo y por asignatura: las clases canceladas no cuentan en tu contra. También puedes elegir en qué día empieza tu semana.
+
+Suscríbete a una fuente de calendario.
+
+Pega la dirección de calendario privada de tu centro y las fechas de entrega llegan solas. Funciona con Canvas, Moodle, Blackboard, Google Classroom y la mayoría de los horarios universitarios.
+
+Además: los exámenes se pueden editar en lugar de borrarlos y volver a crearlos.
