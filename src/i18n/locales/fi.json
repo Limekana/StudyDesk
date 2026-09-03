@@ -827,5 +827,34 @@
     },
     "dismiss": "Ei nyt",
     "thanks": "Kiitos – tästä on apua."
+  },
+  "appearance": {
+    "title": "Ulkoasu",
+    "lighting": "Valaistus",
+    "character": "Luonne",
+    "mode": {
+      "light": "Vaalea",
+      "dark": "Tumma",
+      "black": "Musta"
+    },
+    "modeNote": {
+      "light": "Kermanvärinen paperi",
+      "dark": "Lämmin, häikäisemätön",
+      "black": "Aito musta · AMOLED"
+    },
+    "theme": {
+      "free": "Studio",
+      "stacks": "Stacks",
+      "slate": "Slate"
+    },
+    "themeNote": {
+      "free": "Oletus",
+      "stacks": "Tukijoille",
+      "slate": "Tukijoille",
+      "locked": "Tukijoille"
+    },
+    "characterNote": "Tumma ja Musta ovat valaistusta — ne himmentävät sivun. Stacks ja Slate ovat luonnetta: kirjaston lainaustiski ja liitutaulu, kummallakin oma kirjasintyyppi, viivoitus ja merkinnät. Ne eivät ole se tumma vaihtoehto, eivätkä koskaan olleet.",
+    "lockedNote": "Stacks ja Slate avautuvat tukijoille. Tumma ja Musta ovat ilmaisia, nyt ja aina.",
+    "lightingInThemeNote": "Stacksilla ja Slatella on oma valaistuksensa. Valintasi palaa, kun vaihdat takaisin Studioon."
   }
 }

@@ -827,5 +827,34 @@
     },
     "dismiss": "Nicht jetzt",
     "thanks": "Danke – das hilft."
+  },
+  "appearance": {
+    "title": "Erscheinungsbild",
+    "lighting": "Beleuchtung",
+    "character": "Charakter",
+    "mode": {
+      "light": "Hell",
+      "dark": "Dunkel",
+      "black": "Schwarz"
+    },
+    "modeNote": {
+      "light": "Cremefarbenes Papier",
+      "dark": "Warm, blendfrei",
+      "black": "Echtes Schwarz · AMOLED"
+    },
+    "theme": {
+      "free": "Studio",
+      "stacks": "Stacks",
+      "slate": "Slate"
+    },
+    "themeNote": {
+      "free": "Standard",
+      "stacks": "Unterstützer",
+      "slate": "Unterstützer",
+      "locked": "Unterstützer"
+    },
+    "characterNote": "Dunkel und Schwarz sind Beleuchtung — sie dimmen die Seite. Stacks und Slate sind Charakter: eine Bibliotheksausleihe und eine Schultafel, jede mit eigener Schrift, Linierung und Markierung. Sie sind nicht die dunkle Variante und waren es nie.",
+    "lockedNote": "Stacks und Slate sind für Unterstützer. Dunkel und Schwarz sind kostenlos und bleiben es.",
+    "lightingInThemeNote": "Stacks und Slate bringen ihre eigene Beleuchtung mit. Deine Auswahl kehrt zurück, sobald du wieder zu Studio wechselst."
   }
 }

@@ -847,5 +847,34 @@
     },
     "dismiss": "ليس الآن",
     "thanks": "شكرًا — هذا يساعدنا."
+  },
+  "appearance": {
+    "title": "المظهر",
+    "lighting": "الإضاءة",
+    "character": "الطابع",
+    "mode": {
+      "light": "فاتح",
+      "dark": "داكن",
+      "black": "أسود"
+    },
+    "modeNote": {
+      "light": "ورق كريمي",
+      "dark": "دافئ وخفيف على العين",
+      "black": "أسود خالص · AMOLED"
+    },
+    "theme": {
+      "free": "Studio",
+      "stacks": "Stacks",
+      "slate": "Slate"
+    },
+    "themeNote": {
+      "free": "الافتراضي",
+      "stacks": "للداعمين",
+      "slate": "للداعمين",
+      "locked": "للداعمين"
+    },
+    "characterNote": "الداكن والأسود إضاءة — يخفضان سطوع الصفحة. أما Stacks وSlate فطابع: مكتب إعارة في مكتبة، ولوح طباشير، ولكلٍّ حروفه وخطوطه وعلاماته. ليسا الخيار الداكن، ولم يكونا كذلك يوماً.",
+    "lockedNote": "يفتح Stacks وSlate للداعمين. الداكن والأسود مجانيان، وسيظلان كذلك.",
+    "lightingInThemeNote": "يأتي Stacks وSlate بإضاءتهما الخاصة. يعود اختيارك عند العودة إلى Studio."
   }
 }

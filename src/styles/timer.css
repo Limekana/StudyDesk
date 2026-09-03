@@ -50,36 +50,36 @@
 @keyframes time-flash{0%{opacity:1;}35%{opacity:0.2;}100%{opacity:1;}}
 
 /* ── Lock In: entry button on the regular timer ── */
-.lockin-enter{margin-top:18px;background:#1a1814;color:#faf8f4;border:1px solid #1a1814;padding:10px 22px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;border-radius:99px;transition:transform 0.1s,opacity 0.1s;}
+.lockin-enter{margin-top:18px;background:var(--lockin-on);color:var(--lockin-ink);border:1px solid var(--lockin-on);padding:10px 22px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;border-radius:99px;transition:transform 0.1s,opacity 0.1s;}
 .lockin-enter:hover{opacity:0.85;transform:scale(1.02);}
 .lockin-enter:active{transform:scale(0.98);}
 
 /* ── Lock In takeover (full-screen, dark, distraction-stripped) ── */
-.lockin-wrap{position:fixed;inset:0;z-index:50;background:radial-gradient(ellipse at center, #1f1c17 0%, #0e0c09 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:40px 20px;color:#faf8f4;animation:lockin-fade 0.3s ease;}
+.lockin-wrap{position:fixed;inset:0;z-index:50;background:radial-gradient(ellipse at center, var(--lockin-1) 0%, var(--lockin-2) 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:40px 20px;color:var(--lockin-ink);animation:lockin-fade 0.3s ease;}
 @keyframes lockin-fade{from{opacity:0;}to{opacity:1;}}
 .lockin-top{position:absolute;top:32px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;}
 .lockin-badge{font-family:var(--font-mono);font-size:10px;letter-spacing:0.35em;color:rgba(250,248,244,0.45);}
 .lockin-task{font-family:var(--font-display);font-size:18px;color:rgba(250,248,244,0.85);max-width:80vw;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .lockin-ring{width:260px;height:260px;margin:0;}
 .lockin-ring .pomo-time{font-size:56px;letter-spacing:-0.02em;}
-.lockin-task-input{background:transparent;border:none;border-bottom:1px solid rgba(250,248,244,0.15);color:#faf8f4;padding:10px 4px;font-family:var(--font-display);font-size:17px;text-align:center;width:min(360px,80vw);outline:none;transition:border-color 0.15s;}
+.lockin-task-input{background:transparent;border:none;border-bottom:1px solid rgba(250,248,244,0.15);color:var(--lockin-ink);padding:10px 4px;font-family:var(--font-display);font-size:17px;text-align:center;width:min(360px,80vw);outline:none;transition:border-color 0.15s;}
 .lockin-task-input:focus{border-bottom-color:rgba(250,248,244,0.45);}
 .lockin-task-input::placeholder{color:rgba(250,248,244,0.3);}
 .lockin-controls{display:flex;justify-content:center;}
-.lockin-btn-main{background:#faf8f4;color:#1a1814;border:none;width:72px;height:72px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.1s,opacity 0.1s;box-shadow:0 4px 24px rgba(0,0,0,0.5);}
+.lockin-btn-main{background:var(--lockin-ink);color:var(--lockin-on);border:none;width:72px;height:72px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.1s,opacity 0.1s;box-shadow:var(--shadow-strong);}
 .lockin-btn-main:hover{opacity:0.9;transform:scale(1.04);}
 .lockin-btn-main:active{transform:scale(0.96);}
 .lockin-presets{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
 .lockin-preset{background:transparent;color:rgba(250,248,244,0.5);border:1px solid rgba(250,248,244,0.2);padding:6px 14px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;border-radius:99px;cursor:pointer;transition:all 0.1s;}
-.lockin-preset.active{background:rgba(250,248,244,0.12);color:#faf8f4;border-color:rgba(250,248,244,0.4);}
+.lockin-preset.active{background:rgba(250,248,244,0.12);color:var(--lockin-ink);border-color:rgba(250,248,244,0.4);}
 .lockin-preset:disabled{opacity:0.3;cursor:not-allowed;}
-.lockin-preset-input{width:62px;text-align:center;color:#faf8f4;border-style:dashed;}
+.lockin-preset-input{width:62px;text-align:center;color:var(--lockin-ink);border-style:dashed;}
 .lockin-preset-input:focus{outline:none;border-style:solid;border-color:rgba(250,248,244,0.6);}
 .lockin-preset-input::-webkit-outer-spin-button,
 .lockin-preset-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
 .lockin-preset-input{-moz-appearance:textfield;appearance:textfield;}
 .lockin-exit{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);background:transparent;border:1px solid rgba(250,248,244,0.18);color:rgba(250,248,244,0.55);padding:9px 22px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;cursor:pointer;border-radius:99px;transition:all 0.15s;}
-.lockin-exit:hover{color:#faf8f4;border-color:rgba(250,248,244,0.45);}
+.lockin-exit:hover{color:var(--lockin-ink);border-color:rgba(250,248,244,0.45);}
 
 /* While locked in, hide the desktop sidebar and mobile tab bar so nothing pulls focus */
 body.locked-in .sidebar,body.locked-in .mobile-tabbar,body.locked-in .topbar{display:none !important;}

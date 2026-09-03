@@ -33,6 +33,14 @@ import { AddAsgnModal, AddExamModal, EditCourseModal } from "./features/plan/Cou
 import TimerView from "./features/timer/TimerView.jsx";
 // Cascade order preserved from the old css+css2+css3+css4+cssOnboard concat.
 import './styles/base.css';
+/* Load order is load-bearing. base.css declares the free light palette on
+   bare :root; modes.css scopes the two free dark palettes on [data-mode];
+   themes.css scopes the two paid palettes on [data-theme]. All three are
+   (0,1,0) or looser, so the LAST matching one wins — which is why a paid
+   theme applied over a remembered dark preference resolves to the paid theme
+   and not a hybrid. See the header comment in modes.css. */
+import './styles/modes.css';
+import './styles/themes.css';
 import './styles/forms.css';
 import './styles/cards.css';
 import './styles/onboarding.css';

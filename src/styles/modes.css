@@ -1,0 +1,269 @@
+/* ── Free-tier dark modes (v1.13) ──────────────────────────────────────────
+   Owner decision, 2026-09-02: plain dark ships FREE. Two levels, and they are
+   genuinely different products rather than one value apart:
+
+     Dark  — warm, low-glare. The cream page lit from behind rather than
+             inverted. Still paper: the grain survives, flipped to light.
+     Black — true #000 for AMOLED, requested by name. Not "Dark, darker":
+             on an OLED panel a #000 pixel is OFF, and anything laid over it
+             (a grain overlay, a 4% rule) turns those pixels back ON and bands
+             visibly in dark rooms. So Black is defined by what it removes.
+
+   ── Why `data-mode` and not a third `data-theme` ─────────────────────────
+   Dark is a LIGHTING condition on the free theme; Stacks and Slate are
+   CHARACTER. Folding them into one attribute would force a "Stacks dark" and
+   a "Slate light" into existence — four more palettes nobody asked for, two
+   of which contradict their own theme (a chalkboard is not light). Two
+   attributes keep the axes independent and let `theme.js` stay the single
+   writer of both.
+
+   Load order — base.css, then this file, then themes.css. Both scopes here
+   are (0,1,0), the same as `[data-theme=...]`, so a paid theme applied over a
+   remembered dark preference wins on source order. That is deliberate: Slate
+   is already dark and has its own greens; letting these tokens leak into it
+   would give it a warm brown ground it explicitly rejects. `theme.js` also
+   drops `data-mode` while a paid theme is active, so this is a belt-and-braces
+   ordering guarantee rather than the mechanism.
+
+   ── Contrast, measured not assumed ───────────────────────────────────────
+   Every text pair below was computed against WCAG 2.1 relative luminance by
+   `scripts/check-contrast.mjs`, which runs in the same gate as lint. Body ink
+   on ground: 13.9:1 Dark / 16.0:1 Black. The tightest text row is `--muted2`
+   at 5.1:1 Dark / 5.9:1 Black. Nothing here is eyeballed.
+
+   The palette is shared with the notebook's `--nb-*` tokens by construction —
+   `--nb-page` IS this file's `--bg` in each mode, so a ruled page and the app
+   around it are the same sheet of paper. Change one, re-check the other. */
+
+/* ══════════════════════════════════════════════════════════════════════════
+   DARK — warm, low-glare
+   ══════════════════════════════════════════════════════════════════════════ */
+
+[data-mode="dark"] {
+  /* Ground and panels. The hue is held at the cream theme's own warmth
+     (~40° hue) rather than sliding to blue-grey, which is what makes this
+     read as the same product with the lights off instead of a generic dark
+     skin. */
+  --bg: #16140f;
+  --surface: #1e1b15;
+  --surface2: #26221a;
+  --border: #332e24;
+  --border2: #47402f;
+
+  --text: #ede7da;          /* warm off-white. Never #fff — see note below. */
+  --muted: #a8a096;
+  --muted2: #938b82;
+
+  /* Status hues, all lifted. The light theme's values are chosen to be dark
+     enough to read ON cream; every one of them is too dark to read on this
+     ground, so each is re-picked rather than reused at an opacity. */
+  --danger: #e08272;
+  --danger-bg: #2a1a16;
+  --danger-border: #5c3029;
+  --danger-on: #16140f;
+  --warning: #e0913f;
+  --warning-bg: #2a2016;
+  --warning-border: #5c452a;
+
+  --success: #6fc396;
+  --info: #7fb2e3;
+  --exam: #b593d6;
+
+  /* Washes DEEPEN rather than brighten — the same rule the notebook's
+     highlight palette states. A 12%-alpha violet over #16140f is a smudge;
+     a dark violet-brown reads as a mark. */
+  --exam-bg: #2a2135;
+  --exam-bg-strong: #332942;
+  --info-bg: #182633;
+  --info-soft: #141e28;
+  --info-soft-border: #2c4358;
+  --success-soft: #16241c;
+  --success-border: #2f5b42;
+  --success-border-weak: #24422f;
+  --danger-soft: #241713;
+  --danger-soft-border: #55302a;
+  --danger-tint: #2a1a16;
+  --danger-tint-border: #5c3029;
+  --danger-strong-border: #6b3a32;
+  --danger-strong-bg: #241713;
+  --confirm-bg: #241715;
+  --confirm-border: #55302a;
+
+  --rule2: #2b271e;
+  --chip-edge: rgba(237, 231, 218, 0.14);
+
+  /* A filled control inverts: warm ink ground, dark glyph. The alternative —
+     keeping the brown ground — puts a #3d2e1e button on a #16140f page at
+     1.4:1 and the button disappears. */
+  --accent: #ede7da;
+  --accent-on: #16140f;
+  --on-solid: #16140f;
+  --focus-ring: #7a7268;
+
+  /* Pomodoro phases. `--phase-focus` is the token whose literal shipped the
+     Slate timer invisible (see base.css); on a dark ground it MUST be the ink
+     and not the page. This is that bug's fix expressed as a value. */
+  --phase-focus: #ede7da;
+  --phase-short: #6fc396;
+  --phase-long: #7fb2e3;
+
+  --selection: #3a3428;
+
+  /* Shadows do almost nothing on a dark ground — a black shadow under a dark
+     card is invisible — so hierarchy moves to the borders above. Kept as a
+     faint value rather than `none` so the elevation is not literally flat
+     where a card overlaps another card. */
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.55);
+  --shadow-strong: 0 4px 24px rgba(0, 0, 0, 0.7);
+
+  /* Lock In was already a dark takeover in every theme. Under Dark it is now
+     nearly the same value as the page behind it, so it is pushed a step down
+     to stay distinguishable as a separate surface. */
+  --lockin-1: #16140f;
+  --lockin-2: #080705;
+  --lockin-ink: #ede7da;
+  --lockin-on: #16140f;
+
+  /* THE PAPER GRAIN — decided deliberately, per the build plan.
+     Kept, not dropped: the grain is the app's signature and a dark surface
+     with no texture is exactly the "generic dark skin" this mode is trying
+     not to be. But a dark-on-dark noise field reads as dirt, so it is
+     INVERTED with `screen` — the same move Slate already makes — and pulled
+     to 4% because a light grain on a dark ground is far more visible per unit
+     of opacity than a dark one on cream. */
+  --grain-opacity: 0.04;
+  --grain-blend: screen;
+  --grain-size: 160px;
+}
+
+/* Why not #fff for --text: a pure-white glyph on a near-black ground is the
+   classic halation complaint — the stroke blooms and long-form reading gets
+   tiring, which matters in an app whose whole purpose is a study session.
+   #ede7da is the cream theme's own paper colour used as ink, which is also
+   why the two modes feel like one family. */
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BLACK — true #000, AMOLED
+   ══════════════════════════════════════════════════════════════════════════ */
+
+[data-mode="black"] {
+  --bg: #000000;
+  --surface: #0c0b08;
+  --surface2: #141210;
+  --border: #2a2620;
+  --border2: #3c372d;
+
+  --text: #ede7da;
+  --muted: #a8a096;
+  --muted2: #938b82;
+
+  --danger: #e08272;
+  --danger-bg: #1e1210;
+  --danger-border: #4e2723;
+  --danger-on: #000000;
+  --warning: #e0913f;
+  --warning-bg: #1e1710;
+  --warning-border: #4e3a22;
+
+  --success: #6fc396;
+  --info: #7fb2e3;
+  --exam: #b593d6;
+
+  --exam-bg: #221b2c;
+  --exam-bg-strong: #2a2136;
+  --info-bg: #121d28;
+  --info-soft: #0d151d;
+  --info-soft-border: #24384a;
+  --success-soft: #101b15;
+  --success-border: #274c37;
+  --success-border-weak: #1d3627;
+  --danger-soft: #1a110e;
+  --danger-soft-border: #4a2a24;
+  --danger-tint: #1e1210;
+  --danger-tint-border: #4e2723;
+  --danger-strong-border: #5c322b;
+  --danger-strong-bg: #1a110e;
+  --confirm-bg: #1a1110;
+  --confirm-border: #4a2a24;
+
+  --rule2: #1f1c17;
+  --chip-edge: rgba(237, 231, 218, 0.16);
+
+  --accent: #ede7da;
+  --accent-on: #000000;
+  --on-solid: #000000;
+  --focus-ring: #6e675e;
+
+  --phase-focus: #ede7da;
+  --phase-short: #6fc396;
+  --phase-long: #7fb2e3;
+
+  --selection: #2e291f;
+
+  --shadow: none;
+  --shadow-md: none;
+  --shadow-strong: none;
+
+  /* Lock In goes all the way to #000 in this mode. A radial gradient between
+     two near-blacks is the exact thing AMOLED banding is worst at — a smooth
+     ramp across values the panel cannot resolve — so both stops are the same
+     colour and the gradient flattens to a solid fill. */
+  --lockin-1: #000000;
+  --lockin-2: #000000;
+  --lockin-ink: #ede7da;
+  --lockin-on: #000000;
+
+  /* The grain is DROPPED, and this is the whole reason Black exists as its
+     own mode rather than a slider position on Dark. The overlay is a fixed
+     full-viewport layer: at any non-zero opacity every #000 pixel on screen
+     becomes non-zero, the panel switches those subpixels on, and the result
+     is a faintly glowing grey field with visible tiling — worse than no
+     texture, and it defeats the power saving that is half the reason someone
+     asks for AMOLED black.
+
+     Set to 0 rather than deleting the rule so the element still exists and
+     `base.css` needs no selector change. */
+  --grain-opacity: 0;
+  --grain-blend: normal;
+}
+
+/* Shadows are `none` in Black: a black shadow on a black ground is not
+   invisible, it is a slightly-lifted black rectangle, which is the banding
+   problem again in a smaller shape. Borders carry every edge instead. */
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SHARED — what the token sweep alone does not reach
+   Both modes, one block. Anything listed here is a place where the light
+   theme encoded "light" in something that is not a colour token.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Native form controls and the date/time pickers inside them are drawn by the
+   platform, not by us. Without this the Android WebView renders a white
+   calendar popup and a black-on-white spinner in the middle of a dark app,
+   and the picker text in `input[type=datetime-local]` — the field the 1.12.1
+   hotfix exists to make usable — comes out near-invisible. */
+:where([data-mode="dark"], [data-mode="black"]) {
+  color-scheme: dark;
+}
+
+/* The calendar/clock indicator glyph in Chromium is a black raster icon with
+   no colour property. `invert()` is the only lever, and it is applied to the
+   indicator alone rather than the input so the typed value is untouched. */
+:where([data-mode="dark"], [data-mode="black"]) ::-webkit-calendar-picker-indicator {
+  filter: invert(1) opacity(0.7);
+}
+
+/* The topbar is sticky over scrolling content and inherits `--bg`, which is
+   now dark — fine. But `env(safe-area-inset-top)` region above it is painted
+   by the system bar, so the Android status bar has to be told to draw light
+   icons or it stays dark-on-dark. That is a native call, not CSS: see
+   `applyStatusBarStyle` in src/lib/theme.js. */
+
+/* Images and photo attachments are user content and must NOT be re-tinted.
+   Stated as an explicit no-op rule because "dim the images in dark mode" is a
+   common reflex, and here the images are photographs of handwritten notes —
+   dimming them makes them harder to read, which is the opposite of the point. */
+:where([data-mode="dark"], [data-mode="black"]) :where(img, video) {
+  filter: none;
+}

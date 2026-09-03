@@ -61,3 +61,71 @@
   font-display: swap;
   src: url('/fonts/dmsans-500.woff2') format('woff2');
 }
+
+/* ── Paid-theme faces (v1.13) ───────────────────────────────────────────────
+   The font FILES landed with the v1.12 theme WIP; these declarations did not,
+   so Stacks and Slate were resolving to the fallback stack in
+   `--font-display`/`--font-mono` and neither theme rendered in its own hand.
+   Self-hosted for the same reason as the faces above: F-Droid builds must not
+   reach a CDN at runtime, and the app is offline-first.
+
+   Weights are exactly the ones the two themes ask for and no more — a
+   supporter theme is not worth a second megabyte. Zilla Slab 400/600/700
+   (body, headings, stamp), Cutive Mono 400 (Stacks' typewriter — it ships one
+   weight), Kalam 400/700 (chalk hand), Anonymous Pro 400/700 (chalk mono). */
+@font-face {
+  font-family: 'Zilla Slab';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/zillaslab-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Zilla Slab';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/zillaslab-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Zilla Slab';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/zillaslab-700.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Cutive Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/cutivemono-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Kalam';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/kalam-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Kalam';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/kalam-700.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Anonymous Pro';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/anonymouspro-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Anonymous Pro';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/anonymouspro-700.woff2') format('woff2');
+}
