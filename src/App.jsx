@@ -388,6 +388,41 @@ function reducer(state, action) {
     case "TOGGLE_ASSIGNMENT": return {...state,assignments:state.assignments.map(a=>a.id===action.id?{...a,done:!a.done,updatedAt:new Date().toISOString()}:a)};
     case "EDIT_ASSIGNMENT":   return {...state,assignments:state.assignments.map(a=>a.id===action.id?{...a,title:action.title,dueDate:action.dueDate,notes:action.notes,updatedAt:new Date().toISOString()}:a)};
     case "DELETE_ASSIGNMENT": return {...state,assignments:state.assignments.filter(a=>a.id!==action.id)};
+    // v1.13 Tier 3 — upsert by id, for the calendar feed.
+    //
+    // ADD_ASSIGNMENT always appends, which is right for a user typing a new
+    // one and wrong for a feed that re-fetches every six hours: the server
+    // upsert converges on the derived id, but local state would grow a
+    // duplicate on every poll until the next pull tidied it up.
+    //
+    // It also takes `assignType` rather than `type`, because the action's own
+    // discriminator is called `type`. A caller spreading a row that carries a
+    // `type` field into an action would silently overwrite the action name —
+    // so this one takes an explicit `row` instead of being spread, which
+    // makes that class of mistake impossible rather than merely documented.
+    case "UPSERT_ASSIGNMENT": {
+      const row = action.row || {};
+      if (!row.id) return state;
+      const now = new Date().toISOString();
+      const i = state.assignments.findIndex(a => a.id === row.id);
+      const next = {
+        id: row.id,
+        courseId: row.courseId ?? null,
+        title: row.title || "",
+        type: row.type || null,
+        dueDate: row.dueDate || null,
+        notes: row.notes || "",
+        // `done` is preserved on an existing row. A student who ticked off an
+        // imported assignment must not have it un-ticked by the next poll —
+        // the feed knows the deadline, not whether they did it.
+        done: i >= 0 ? state.assignments[i].done : false,
+        updatedAt: now,
+      };
+      if (i < 0) return {...state, assignments:[...state.assignments, next]};
+      const copy = [...state.assignments];
+      copy[i] = { ...copy[i], ...next };
+      return {...state, assignments: copy};
+    }
     case "ADD_EXAM":    { const e={id:action.id||newSyncId(),courseId:action.courseId,title:action.title,dueDate:action.dueDate,difficulty:action.difficulty||"medium",notes:action.notes||"",done:false,topics:[],updatedAt:action.updatedAt||new Date().toISOString()}; return {...state,exams:[...state.exams,e]}; }
     case "TOGGLE_EXAM": return {...state,exams:state.exams.map(e=>e.id===action.id?{...e,done:!e.done,updatedAt:new Date().toISOString()}:e)};
     case "DELETE_EXAM": return {...state,exams:state.exams.filter(e=>e.id!==action.id)};

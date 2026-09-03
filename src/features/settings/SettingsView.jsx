@@ -15,6 +15,7 @@ import { clearAvatarCache } from '../../lib/profile.js';
 import ProfileSection from './ProfileSection.jsx';
 import SupporterBlock from './SupporterBlock.jsx';
 import Appearance from './Appearance.jsx';
+import CalendarFeeds from './CalendarFeeds.jsx';
 import { downloadExport, deleteAccount } from '../../lib/dataRights.js';
 import { useConfirm } from '../../lib/useConfirm.js';
 import { avatarInitials } from '../../lib/avatarInitials.js';
@@ -123,6 +124,18 @@ const css = `
    the one string worth copying verbatim into a bug report, and an ellipsis in
    the middle of a Postgres constraint name destroys exactly what makes it
    useful. */
+/* v1.13 Tier 3 — the calendar-feed panel. A disclosure, because the feature
+   has to be invisible until asked for. */
+.sv2-disclosure{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:0;padding:0;cursor:pointer;font:inherit;color:inherit;text-align:start;}
+.sv2-disclosure-chev{font-size:10px;color:var(--muted2);}
+.sv2-disclosure-body{margin-top:12px;}
+.feed-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);}
+.feed-row:last-of-type{border-bottom:none;}
+.feed-row-main{flex:1;min-width:0;}
+.feed-row-name{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+/* Host only, never the path — the path of a feed URL IS the capability. */
+.feed-row-meta{font-family:var(--font-mono);font-size:10px;color:var(--muted2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.feed-row-err{font-family:var(--font-mono);font-size:10.5px;color:var(--danger);line-height:1.5;margin-top:3px;}
 .sv2-stopped-err{margin-top:7px;font-family:var(--font-mono);font-size:10.5px;color:var(--danger);word-break:break-word;line-height:1.5;}
 /* Issue #39 — the OS is blocking notifications, so the toggle below cannot do
    anything. Uses the existing warning tokens rather than danger: nothing is
@@ -633,6 +646,12 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
             {t('settings.syncNote')}
           </div>
         </div>
+
+        {/* ── Calendar feed (v1.13 Tier 3, #44) ──
+             Below the sync block and collapsed by default. Integration policy
+             test 3: invisible when unused — no tab, no nav entry, no empty
+             state anywhere else in the app. ── */}
+        <CalendarFeeds state={state} dispatch={dispatch} session={session} showFlash={showFlash} />
 
         {/* ── Reminders ──
              Onboarding's "Maybe later" now genuinely declines, which makes

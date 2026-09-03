@@ -963,5 +963,34 @@
       "2": "Kysymys — epävarma",
       "3": "Selvä — vahvistettu"
     }
+  },
+  "feed": {
+    "title": "Kalenterisyöte",
+    "subscribe": "Tilaa",
+    "refresh": "Päivitä",
+    "syncing": "Päivitetään…",
+    "remove": "Poista syöte",
+    "urlLabel": "Syötteen osoite",
+    "courseLabel": "Liitä kurssiin",
+    "noCourse": "Ei kurssia",
+    "itemCount_one": "{{count}} kohde",
+    "itemCount_other": "{{count}} kohdetta",
+    "synced": "{{added}} uutta, {{updated}} päivitetty.",
+    "removed_one": "Syöte poistettu, {{n}} kohde poistettu.",
+    "removed_other": "Syöte poistettu, {{n}} kohdetta poistettu.",
+    "help": "Useimmat oppilaitosjärjestelmät julkaisevat yksityisen kalenteriosoitteen, jonka voit tilata — etsi kalenterisivulta \"Calendar feed\", \"Subscribe\" tai .ics-linkki. Toimii Canvasin, Moodlen, Blackboardin, Google Classroomin ja useimpien yliopistojen lukujärjestysten kanssa.",
+    "limits": "Määräpäivät, otsikot ja kuvaukset tulevat automaattisesti. Tehtävätyyppi, pisteet ja palautuksen tila eivät kuulu kalenterisyötteeseen, joten ne eivät näy.",
+    "deviceOnly": "Osoite säilytetään vain tällä laitteella eikä sitä synkronoida — kuka tahansa sen haltija voi lukea kalenterisi. Tuodut päivämäärät synkronoituvat kuten muutkin tehtävät.",
+    "err": {
+      "invalid-url": "Tämä ei näytä verkko-osoitteelta.",
+      "duplicate": "Olet jo tilannut tämän osoitteen.",
+      "not-found": "Osoite ei palauttanut mitään (404). Tarkista, että linkki on täydellinen.",
+      "forbidden": "Palvelin hylkäsi pyynnön. Osoite on ehkä nollattu — kopioi se uudelleen.",
+      "not-a-calendar": "Osoite palautti sivun, ei kalenteria. Kyseessä voi olla kalenterin verkkosivu eikä syötelinkki.",
+      "too-large": "Syöte on liian suuri tuotavaksi.",
+      "cors": "Selain ei voi hakea kalenteria toiselta sivustolta. Käytä tähän Android-sovellusta.",
+      "http": "Palvelin palautti virheen.",
+      "network": "Osoitteeseen ei saatu yhteyttä."
+    }
   }
 }

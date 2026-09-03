@@ -968,5 +968,34 @@
       "2": "Question — incertain",
       "3": "Réglé — confirmé"
     }
+  },
+  "feed": {
+    "title": "Flux de calendrier",
+    "subscribe": "S'abonner",
+    "refresh": "Actualiser",
+    "syncing": "Synchronisation…",
+    "remove": "Supprimer le flux",
+    "urlLabel": "Adresse du flux",
+    "courseLabel": "Classer dans",
+    "noCourse": "Aucun cours",
+    "itemCount_one": "{{count}} élément",
+    "itemCount_other": "{{count}} éléments",
+    "synced": "{{added}} nouveaux, {{updated}} mis à jour.",
+    "removed_one": "Flux supprimé, {{n}} élément supprimé.",
+    "removed_other": "Flux supprimé, {{n}} éléments supprimés.",
+    "help": "La plupart des systèmes scolaires publient une adresse de calendrier privée à laquelle s'abonner — cherchez « Calendar feed », « S'abonner » ou un lien .ics sur votre page de calendrier. Fonctionne avec Canvas, Moodle, Blackboard, Google Classroom et la plupart des emplois du temps universitaires.",
+    "limits": "Les échéances, les titres et les descriptions arrivent tout seuls. Le type de devoir, les points et l'état de remise ne font pas partie d'un flux de calendrier et n'apparaîtront donc pas.",
+    "deviceOnly": "L'adresse reste sur cet appareil et n'est jamais synchronisée — quiconque la possède peut lire votre calendrier. Les dates importées, elles, se synchronisent comme n'importe quel devoir.",
+    "err": {
+      "invalid-url": "Cela ne ressemble pas à une adresse web.",
+      "duplicate": "Vous êtes déjà abonné à cette adresse.",
+      "not-found": "L'adresse n'a rien renvoyé (404). Vérifiez qu'il s'agit du lien complet.",
+      "forbidden": "Le serveur a refusé la requête. L'adresse a peut-être été réinitialisée — copiez-la à nouveau.",
+      "not-a-calendar": "Cette adresse a renvoyé une page, pas un calendrier. C'est peut-être la page web du calendrier plutôt que son lien de flux.",
+      "too-large": "Ce flux est trop volumineux à importer.",
+      "cors": "Un navigateur ne peut pas récupérer un calendrier depuis un autre site. Utilisez l'application Android.",
+      "http": "Le serveur a renvoyé une erreur.",
+      "network": "Impossible d'atteindre cette adresse."
+    }
   }
 }

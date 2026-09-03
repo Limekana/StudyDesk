@@ -968,5 +968,34 @@
       "2": "Dúvida — incerto",
       "3": "Resolvido — confirmado"
     }
+  },
+  "feed": {
+    "title": "Feed de calendário",
+    "subscribe": "Subscrever",
+    "refresh": "Atualizar",
+    "syncing": "A sincronizar…",
+    "remove": "Remover feed",
+    "urlLabel": "Endereço do feed",
+    "courseLabel": "Arquivar em",
+    "noCourse": "Sem disciplina",
+    "itemCount_one": "{{count}} item",
+    "itemCount_other": "{{count}} itens",
+    "synced": "{{added}} novos, {{updated}} atualizados.",
+    "removed_one": "Feed removido, {{n}} item eliminado.",
+    "removed_other": "Feed removido, {{n}} itens eliminados.",
+    "help": "A maioria dos sistemas escolares publica um endereço de calendário privado que podes subscrever — procura \"Calendar feed\", \"Subscrever\" ou um link .ics na página do calendário. Funciona com Canvas, Moodle, Blackboard, Google Classroom e a maioria dos horários universitários.",
+    "limits": "Prazos, títulos e descrições chegam sozinhos. Tipo de trabalho, pontos e estado de entrega não fazem parte de um feed de calendário, por isso não aparecem.",
+    "deviceOnly": "O endereço fica apenas neste dispositivo e nunca é sincronizado — quem o tiver pode ler o teu calendário. As datas importadas sincronizam, como qualquer outro trabalho.",
+    "err": {
+      "invalid-url": "Isso não parece um endereço web.",
+      "duplicate": "Já subscreveste esse endereço.",
+      "not-found": "O endereço não devolveu nada (404). Verifica se é o link completo.",
+      "forbidden": "O servidor recusou o pedido. O endereço pode ter sido reposto — copia-o de novo.",
+      "not-a-calendar": "Esse endereço devolveu uma página, não um calendário. Pode ser a página web do calendário em vez do link do feed.",
+      "too-large": "Esse feed é demasiado grande para importar.",
+      "cors": "Um browser não consegue obter um calendário de outro site. Usa a app Android para isto.",
+      "http": "O servidor devolveu um erro.",
+      "network": "Não foi possível contactar esse endereço."
+    }
   }
 }

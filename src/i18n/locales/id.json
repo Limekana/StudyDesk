@@ -958,5 +958,34 @@
       "2": "Ragu — belum yakin",
       "3": "Beres — terkonfirmasi"
     }
+  },
+  "feed": {
+    "title": "Umpan kalender",
+    "subscribe": "Berlangganan",
+    "refresh": "Segarkan",
+    "syncing": "Menyinkronkan…",
+    "remove": "Hapus umpan",
+    "urlLabel": "Alamat umpan",
+    "courseLabel": "Simpan di",
+    "noCourse": "Tanpa mata pelajaran",
+    "itemCount_one": "{{count}} item",
+    "itemCount_other": "{{count}} item",
+    "synced": "{{added}} baru, {{updated}} diperbarui.",
+    "removed_one": "Umpan dihapus, {{n}} item terhapus.",
+    "removed_other": "Umpan dihapus, {{n}} item terhapus.",
+    "help": "Sebagian besar sistem sekolah menerbitkan alamat kalender pribadi yang bisa kamu langgani — cari \"Calendar feed\", \"Subscribe\", atau tautan .ics di halaman kalendermu. Bekerja dengan Canvas, Moodle, Blackboard, Google Classroom, dan sebagian besar jadwal universitas.",
+    "limits": "Tenggat, judul, dan deskripsi datang dengan sendirinya. Jenis tugas, poin, dan status pengumpulan bukan bagian dari umpan kalender, jadi tidak akan muncul.",
+    "deviceOnly": "Alamat disimpan hanya di perangkat ini dan tidak pernah disinkronkan — siapa pun yang memilikinya bisa membaca kalendermu. Tanggal yang diimpor tetap tersinkron, seperti tugas lainnya.",
+    "err": {
+      "invalid-url": "Itu sepertinya bukan alamat web.",
+      "duplicate": "Kamu sudah berlangganan alamat itu.",
+      "not-found": "Alamat tidak mengembalikan apa pun (404). Pastikan itu tautan umpan lengkap.",
+      "forbidden": "Server menolak permintaan. Alamat mungkin telah direset — salin lagi.",
+      "not-a-calendar": "Alamat itu mengembalikan halaman, bukan kalender. Mungkin itu halaman web kalender, bukan tautan umpannya.",
+      "too-large": "Umpan itu terlalu besar untuk diimpor.",
+      "cors": "Peramban tidak bisa mengambil kalender dari situs lain. Gunakan aplikasi Android untuk ini.",
+      "http": "Server mengembalikan galat.",
+      "network": "Tidak dapat menghubungi alamat itu."
+    }
   }
 }

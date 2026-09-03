@@ -963,5 +963,34 @@
       "2": "存疑 — 不确定",
       "3": "已定 — 确认"
     }
+  },
+  "feed": {
+    "title": "日历订阅",
+    "subscribe": "订阅",
+    "refresh": "刷新",
+    "syncing": "同步中…",
+    "remove": "移除订阅",
+    "urlLabel": "订阅地址",
+    "courseLabel": "归入",
+    "noCourse": "不选课程",
+    "itemCount_one": "{{count}} 项",
+    "itemCount_other": "{{count}} 项",
+    "synced": "新增 {{added}} 项，更新 {{updated}} 项。",
+    "removed_one": "已移除订阅，删除 {{n}} 项。",
+    "removed_other": "已移除订阅，删除 {{n}} 项。",
+    "help": "大多数学校系统会提供一个可订阅的私人日历地址——在日历页面上找 \"Calendar feed\"、\"订阅\" 或 .ics 链接。适用于 Canvas、Moodle、Blackboard、Google Classroom 以及大多数大学课表。",
+    "limits": "截止日期、标题和说明会自动同步过来。作业类型、分数和提交状态不属于日历订阅的内容，因此不会出现。",
+    "deviceOnly": "该地址仅保存在本设备上，从不同步——任何拿到它的人都能读取你的日历。导入的日期会像其他作业一样同步。",
+    "err": {
+      "invalid-url": "这看起来不像一个网址。",
+      "duplicate": "你已经订阅了该地址。",
+      "not-found": "该地址没有返回内容（404）。请确认这是完整的订阅链接。",
+      "forbidden": "服务器拒绝了请求。该地址可能已被重置——请重新复制。",
+      "not-a-calendar": "该地址返回的是网页而不是日历。它可能是日历的网页，而不是订阅链接。",
+      "too-large": "该订阅内容过大，无法导入。",
+      "cors": "浏览器无法从其他站点获取日历。请使用 Android 应用。",
+      "http": "服务器返回了错误。",
+      "network": "无法连接该地址。"
+    }
   }
 }

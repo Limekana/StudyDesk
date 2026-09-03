@@ -968,5 +968,34 @@
       "2": "Duda — inseguro",
       "3": "Resuelto — confirmado"
     }
+  },
+  "feed": {
+    "title": "Fuente de calendario",
+    "subscribe": "Suscribirse",
+    "refresh": "Actualizar",
+    "syncing": "Sincronizando…",
+    "remove": "Eliminar fuente",
+    "urlLabel": "Dirección de la fuente",
+    "courseLabel": "Archivar en",
+    "noCourse": "Sin asignatura",
+    "itemCount_one": "{{count}} elemento",
+    "itemCount_other": "{{count}} elementos",
+    "synced": "{{added}} nuevos, {{updated}} actualizados.",
+    "removed_one": "Fuente eliminada, {{n}} elemento borrado.",
+    "removed_other": "Fuente eliminada, {{n}} elementos borrados.",
+    "help": "La mayoría de los sistemas escolares publican una dirección de calendario privada a la que suscribirse: busca «Calendar feed», «Suscribirse» o un enlace .ics en tu página de calendario. Funciona con Canvas, Moodle, Blackboard, Google Classroom y la mayoría de los horarios universitarios.",
+    "limits": "Las fechas de entrega, los títulos y las descripciones llegan solos. El tipo de tarea, los puntos y el estado de entrega no forman parte de una fuente de calendario, así que no aparecerán.",
+    "deviceOnly": "La dirección se guarda solo en este dispositivo y nunca se sincroniza: cualquiera que la tenga puede leer tu calendario. Las fechas importadas sí se sincronizan, como cualquier otra tarea.",
+    "err": {
+      "invalid-url": "Eso no parece una dirección web.",
+      "duplicate": "Ya estás suscrito a esa dirección.",
+      "not-found": "La dirección no devolvió nada (404). Comprueba que sea el enlace completo.",
+      "forbidden": "El servidor rechazó la petición. Puede que la dirección se haya restablecido: cópiala de nuevo.",
+      "not-a-calendar": "Esa dirección devolvió una página, no un calendario. Puede ser la web del calendario en vez de su enlace de fuente.",
+      "too-large": "Esa fuente es demasiado grande para importarla.",
+      "cors": "Un navegador no puede obtener un calendario de otro sitio. Usa la app de Android para esto.",
+      "http": "El servidor devolvió un error.",
+      "network": "No se pudo acceder a esa dirección."
+    }
   }
 }
