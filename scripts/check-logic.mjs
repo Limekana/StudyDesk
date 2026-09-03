@@ -788,3 +788,182 @@ check('attendance is keyed by (entry, date), so one lesson is one fact', () => {
   assert.equal(statusFor(idx, 'e2', '2026-09-01'), ATTENDANCE.ABSENT);
   assert.equal(statusFor(idx, 'e9', '2026-09-01'), null);
 });
+
+// ── Calendar feed (v1.13 Tier 3, #44) ─────────────────────────────────────
+//
+// The parser reads third-party documents fetched over a network, which is the
+// least trustworthy input this app takes. Every assertion below is a shape a
+// real feed actually produces.
+
+const { parseIcs, parseIcsDate, toFeedItems, mergeFeedItems } =
+  await import('../src/lib/icsParse.js');
+const { normaliseFeedUrl, describeFeedUrl, isDue, POLL_INTERVAL_MS } =
+  await import('../src/lib/calendarFeed.js');
+
+const ICS = (body) => `BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Test//EN\r\n${body}\r\nEND:VCALENDAR\r\n`;
+
+check('a minimal VEVENT parses', () => {
+  const { events } = parseIcs(ICS('BEGIN:VEVENT\r\nUID:abc\r\nSUMMARY:Essay\r\nDTSTART;VALUE=DATE:20260915\r\nEND:VEVENT'));
+  assert.equal(events.length, 1);
+  assert.equal(events[0].uid, 'abc');
+  assert.equal(events[0].summary, 'Essay');
+  assert.equal(events[0].start.iso, '2026-09-15');
+  assert.equal(events[0].start.allDay, true);
+});
+
+check('folded lines are unfolded BEFORE parsing', () => {
+  // Servers fold aggressively. Without unfolding first, a long description
+  // arrives in pieces and every field after it on that line is lost.
+  const folded = 'BEGIN:VEVENT\r\nUID:x\r\nDESCRIPTION:This is a very long descrip\r\n tion that the server folded\r\nDTSTART;VALUE=DATE:20260101\r\nEND:VEVENT';
+  const { events } = parseIcs(ICS(folded));
+  assert.equal(events.length, 1);
+  assert.equal(events[0].description, 'This is a very long description that the server folded');
+});
+
+check('all three line endings are handled', () => {
+  const body = 'BEGIN:VEVENT\nUID:lf\nSUMMARY:LF only\nDTSTART;VALUE=DATE:20260101\nEND:VEVENT';
+  const { events } = parseIcs(`BEGIN:VCALENDAR\n${body}\nEND:VCALENDAR`);
+  assert.equal(events.length, 1, 'an LF-only file must not read as one line');
+});
+
+check('TEXT escapes are reversed, in the right order', () => {
+  const { events } = parseIcs(ICS(
+    'BEGIN:VEVENT\r\nUID:e\r\nSUMMARY:Maths\\, Physics\; and a \\\\ backslash\\nsecond line\r\nDTSTART;VALUE=DATE:20260101\r\nEND:VEVENT',
+  ));
+  assert.equal(events[0].summary, 'Maths, Physics; and a \\ backslash\nsecond line');
+});
+
+check('a colon inside a value does not split the line', () => {
+  const { events } = parseIcs(ICS('BEGIN:VEVENT\r\nUID:u\r\nURL:https://example.org/a:b\r\nDTSTART;VALUE=DATE:20260101\r\nEND:VEVENT'));
+  assert.equal(events[0].url, 'https://example.org/a:b');
+});
+
+check('a VALARM inside a VEVENT does not steal the summary', () => {
+  // Without the nesting guard, the alarm's SUMMARY overwrites the event's and
+  // every item in the feed comes back named "Reminder".
+  const { events } = parseIcs(ICS(
+    'BEGIN:VEVENT\r\nUID:a\r\nSUMMARY:Real title\r\nDTSTART;VALUE=DATE:20260101\r\n' +
+    'BEGIN:VALARM\r\nACTION:DISPLAY\r\nSUMMARY:Reminder\r\nEND:VALARM\r\nEND:VEVENT',
+  ));
+  assert.equal(events[0].summary, 'Real title');
+});
+
+check('a VTIMEZONE block is skipped entirely', () => {
+  const { events } = parseIcs(ICS(
+    'BEGIN:VTIMEZONE\r\nTZID:Europe/Helsinki\r\nBEGIN:STANDARD\r\nDTSTART:19701025T040000\r\nEND:STANDARD\r\nEND:VTIMEZONE\r\n' +
+    'BEGIN:VEVENT\r\nUID:v\r\nSUMMARY:After the timezone\r\nDTSTART;VALUE=DATE:20260101\r\nEND:VEVENT',
+  ));
+  assert.equal(events.length, 1, 'the VTIMEZONE DTSTART must not become an event');
+  assert.equal(events[0].summary, 'After the timezone');
+});
+
+check('one malformed event does not cost the rest of the feed', () => {
+  const { events, errors } = parseIcs(ICS(
+    'BEGIN:VEVENT\r\nSUMMARY:No uid and no date\r\nEND:VEVENT\r\n' +
+    'BEGIN:VEVENT\r\nUID:good\r\nSUMMARY:Fine\r\nDTSTART;VALUE=DATE:20260101\r\nEND:VEVENT',
+  ));
+  assert.equal(events.length, 1);
+  assert.equal(errors, 1);
+});
+
+check('DUE stands in for DTSTART when there is no DTSTART', () => {
+  // Many LMS feeds publish a deadline this way; without it those feeds import
+  // nothing at all.
+  const { events } = parseIcs(ICS('BEGIN:VEVENT\r\nUID:d\r\nSUMMARY:Homework\r\nDUE;VALUE=DATE:20261111\r\nEND:VEVENT'));
+  assert.equal(events[0].start.iso, '2026-11-11');
+});
+
+check('the three date forms are distinguished', () => {
+  assert.deepEqual(parseIcsDate('20260915'), { iso: '2026-09-15', allDay: true });
+  const floating = parseIcsDate('20260915T140000');
+  assert.equal(floating.iso, '2026-09-15');
+  assert.equal(floating.allDay, false);
+  assert.equal(floating.time, '14:00');
+  // A UTC instant converts to the READER's local day, which is what makes a
+  // 23:59 UTC deadline land correctly for a reader east of Greenwich.
+  const utc = parseIcsDate('20260915T120000Z');
+  assert.ok(/^\d{4}-\d{2}-\d{2}$/.test(utc.iso));
+  assert.equal(utc.allDay, false);
+});
+
+check('garbage dates return null rather than a wrong day', () => {
+  assert.equal(parseIcsDate('nonsense'), null);
+  assert.equal(parseIcsDate(''), null);
+});
+
+check('a CANCELLED event is not imported', () => {
+  // Keeping it would put a cancelled exam on a student's calendar.
+  const items = toFeedItems([
+    { uid: 'a', summary: 'Gone', status: 'CANCELLED', start: { iso: '2026-01-01' } },
+    { uid: 'b', summary: 'Live', start: { iso: '2026-01-02' } },
+  ], 'f1');
+  assert.equal(items.length, 1);
+  assert.equal(items[0].uid, 'b');
+});
+
+check('imported items claim NOTHING the format does not carry', () => {
+  // "Due dates arrive on their own", not "the LMS mirrored". No type, no
+  // points, no submission status — inferring any of them is how the feature
+  // starts being read as a full mirror.
+  const [item] = toFeedItems([{ uid: 'a', summary: 'Quiz 3', start: { iso: '2026-01-01' } }], 'f1');
+  assert.equal('points' in item, false);
+  assert.equal('submitted' in item, false);
+  assert.equal(item.title, 'Quiz 3', 'the title is verbatim, not parsed for a type');
+});
+
+check('merge dedupes by UID — the reason re-polling does not duplicate', () => {
+  const first = mergeFeedItems([], [
+    { uid: 'a', title: 'Essay', dueDate: '2026-01-01' },
+    { uid: 'b', title: 'Lab', dueDate: '2026-01-02' },
+  ]);
+  assert.equal(first.items.length, 2);
+  assert.equal(first.added, 2);
+
+  const again = mergeFeedItems(first.items, [
+    { uid: 'a', title: 'Essay', dueDate: '2026-01-01' },
+    { uid: 'b', title: 'Lab', dueDate: '2026-01-02' },
+  ]);
+  assert.equal(again.items.length, 2, 'a second identical poll adds nothing');
+  assert.equal(again.added, 0);
+  assert.equal(again.updated, 0);
+});
+
+check('a changed due date counts as an update, not a duplicate', () => {
+  const before = [{ uid: 'a', title: 'Essay', dueDate: '2026-01-01' }];
+  const after = mergeFeedItems(before, [{ uid: 'a', title: 'Essay', dueDate: '2026-01-08' }]);
+  assert.equal(after.items.length, 1);
+  assert.equal(after.updated, 1);
+  assert.equal(after.items[0].dueDate, '2026-01-08');
+});
+
+check('a UID that vanishes from the feed is reported removed', () => {
+  const before = [{ uid: 'a', title: 'A', dueDate: '2026-01-01' }, { uid: 'b', title: 'B', dueDate: '2026-01-02' }];
+  const after = mergeFeedItems(before, [{ uid: 'a', title: 'A', dueDate: '2026-01-01' }]);
+  assert.equal(after.removed, 1);
+  assert.equal(after.items.length, 1);
+});
+
+check('feed URLs are normalised, and only http(s) survives', () => {
+  assert.ok(normaliseFeedUrl('https://example.org/f.ics'));
+  assert.ok(normaliseFeedUrl('  http://example.org/f.ics  '), 'whitespace is trimmed');
+  // webcal: is what the "Subscribe" button on most calendar pages copies.
+  assert.ok(normaliseFeedUrl('webcal://example.org/f.ics').startsWith('https://'));
+  // A field that later gets fetched must never accept these.
+  assert.equal(normaliseFeedUrl('javascript:alert(1)'), null);
+  assert.equal(normaliseFeedUrl('file:///etc/passwd'), null);
+  assert.equal(normaliseFeedUrl('data:text/calendar,BEGIN'), null);
+  assert.equal(normaliseFeedUrl(''), null);
+  assert.equal(normaliseFeedUrl('not a url'), null);
+});
+
+check('only the HOST is ever shown — the path is the capability', () => {
+  assert.equal(describeFeedUrl('https://school.example.org/feeds/u/9/secret-token.ics'), 'school.example.org');
+});
+
+check('poll cadence: due when never fetched, and after the interval', () => {
+  const now = Date.now();
+  assert.equal(isDue({ lastFetchedAt: null }, now), true);
+  assert.equal(isDue({ lastFetchedAt: 'garbage' }, now), true, 'an unreadable timestamp re-fetches');
+  assert.equal(isDue({ lastFetchedAt: new Date(now - 1000).toISOString() }, now), false);
+  assert.equal(isDue({ lastFetchedAt: new Date(now - POLL_INTERVAL_MS - 1000).toISOString() }, now), true);
+});

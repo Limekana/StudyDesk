@@ -963,5 +963,34 @@
       "2": "Frage — unsicher",
       "3": "Geklärt — bestätigt"
     }
+  },
+  "feed": {
+    "title": "Kalender-Feed",
+    "subscribe": "Abonnieren",
+    "refresh": "Aktualisieren",
+    "syncing": "Wird synchronisiert…",
+    "remove": "Feed entfernen",
+    "urlLabel": "Feed-Adresse",
+    "courseLabel": "Ablegen unter",
+    "noCourse": "Kein Kurs",
+    "itemCount_one": "{{count}} Eintrag",
+    "itemCount_other": "{{count}} Einträge",
+    "synced": "{{added}} neu, {{updated}} aktualisiert.",
+    "removed_one": "Feed entfernt, {{n}} Eintrag gelöscht.",
+    "removed_other": "Feed entfernt, {{n}} Einträge gelöscht.",
+    "help": "Die meisten Schulsysteme veröffentlichen eine private Kalenderadresse zum Abonnieren — suche auf deiner Kalenderseite nach „Calendar feed“, „Abonnieren“ oder einem .ics-Link. Funktioniert mit Canvas, Moodle, Blackboard, Google Classroom und den meisten Uni-Stundenplänen.",
+    "limits": "Fristen, Titel und Beschreibungen kommen von allein. Aufgabentyp, Punkte und Abgabestatus gehören nicht zu einem Kalender-Feed und erscheinen daher nicht.",
+    "deviceOnly": "Die Adresse bleibt nur auf diesem Gerät und wird nie synchronisiert — wer sie hat, kann deinen Kalender lesen. Die importierten Termine synchronisieren sich wie jede andere Aufgabe.",
+    "err": {
+      "invalid-url": "Das sieht nicht nach einer Webadresse aus.",
+      "duplicate": "Diese Adresse hast du bereits abonniert.",
+      "not-found": "Die Adresse lieferte nichts (404). Prüfe, ob es der vollständige Feed-Link ist.",
+      "forbidden": "Der Server hat die Anfrage abgelehnt. Die Adresse wurde vielleicht zurückgesetzt — kopiere sie erneut.",
+      "not-a-calendar": "Diese Adresse lieferte eine Seite, keinen Kalender. Vielleicht ist es die Webseite des Kalenders statt des Feed-Links.",
+      "too-large": "Dieser Feed ist zu groß für den Import.",
+      "cors": "Ein Browser kann keinen Kalender von einer anderen Seite laden. Nutze dafür die Android-App.",
+      "http": "Der Server meldete einen Fehler.",
+      "network": "Diese Adresse war nicht erreichbar."
+    }
   }
 }

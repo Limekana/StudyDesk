@@ -963,5 +963,34 @@
       "2": "Query — unsure",
       "3": "Settled — confirmed"
     }
+  },
+  "feed": {
+    "title": "Calendar feed",
+    "subscribe": "Subscribe",
+    "refresh": "Refresh",
+    "syncing": "Syncing…",
+    "remove": "Remove feed",
+    "urlLabel": "Feed address",
+    "courseLabel": "File under",
+    "noCourse": "No course",
+    "itemCount_one": "{{count}} item",
+    "itemCount_other": "{{count}} items",
+    "synced": "{{added}} new, {{updated}} updated.",
+    "removed_one": "Feed removed, {{n}} item deleted.",
+    "removed_other": "Feed removed, {{n}} items deleted.",
+    "help": "Most school systems publish a private calendar address you can subscribe to — look for \"Calendar feed\", \"Subscribe\" or an .ics link on your calendar page. It works with Canvas, Moodle, Blackboard, Google Classroom and most university timetables.",
+    "limits": "Due dates, titles and descriptions arrive on their own. Assignment type, points and submission status are not part of a calendar feed, so they will not appear.",
+    "deviceOnly": "The address is kept on this device only and never synced — anyone who has it can read your calendar. The imported dates do sync, like any other assignment.",
+    "err": {
+      "invalid-url": "That does not look like a web address.",
+      "duplicate": "You are already subscribed to that address.",
+      "not-found": "The address returned nothing (404). Check it is the full feed link.",
+      "forbidden": "The server refused the request. The address may have been reset — copy it again.",
+      "not-a-calendar": "That address returned a page, not a calendar. It may be the calendar's web page rather than its feed link.",
+      "too-large": "That feed is too large to import.",
+      "cors": "A browser cannot fetch a calendar from another site. Use the Android app for this.",
+      "http": "The server returned an error.",
+      "network": "Could not reach that address."
+    }
   }
 }
