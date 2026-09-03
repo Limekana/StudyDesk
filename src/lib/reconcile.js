@@ -62,6 +62,7 @@ export function findUnsynced(state, remote) {
   const remoteTerms = remoteIds(remote?.academicTerms);
   const remoteTimetable = remoteIds(remote?.timetableEntries);
   const remoteCommitments = remoteIds(remote?.commitments);
+  const remoteNotes = remoteIds(remote?.notes);
 
   const out = [];
 
@@ -279,6 +280,38 @@ export function findUnsynced(state, remote) {
         startTime: cm.startTime,
         endTime: cm.endTime,
         notes: cm.notes,
+      },
+    });
+  }
+
+  // ── v1.13 Item 1b — notebook entries ─────────────────────────────────────
+  //
+  // In from the start rather than added after the first loss report. The
+  // build plan's argument for shipping durability BEFORE the notebook is
+  // exactly this: "Notes are far more precious to a student than session
+  // logs, so putting a notebook on that storage layer means the next
+  // data-loss report is somebody's exam revision rather than their timer
+  // history."
+  //
+  // `course_id` is nullable and `ON DELETE SET NULL`, so an unfiled note and
+  // a note whose course was deleted are both legitimate and neither is a
+  // reason to hold it back. Only a course that is about to exist nowhere is.
+  for (const n of state?.notes || []) {
+    if (!n?.id || n.deletedAt || remoteNotes.has(n.id)) continue;
+    if (n.courseId && !parentWillExist(n.courseId)) continue;
+    out.push({
+      kind: 'upsert_note',
+      payload: {
+        id: n.id,
+        courseId: n.courseId,
+        title: n.title,
+        lessonDate: n.lessonDate,
+        content: n.content,
+        // Deliberately dropped when the session is not on the server: the
+        // note is worth far more than its session link, and an FK to a
+        // session that never synced would fail the whole upsert. The link is
+        // a nicety; the writing is the point.
+        sessionId: n.sessionId && remoteIds(remote?.sessions).has(n.sessionId) ? n.sessionId : null,
       },
     });
   }

@@ -30,7 +30,8 @@
     "plan": "计划",
     "grades": "成绩",
     "timer": "计时器",
-    "stats": "统计"
+    "stats": "统计",
+    "notebook": "笔记本"
   },
   "topbar": {
     "nextUp": "接下来"
@@ -536,7 +537,9 @@
         "open": "打开计时器",
         "openWith": "打开计时器 — {{task}}",
         "aria": "{{label}}，{{time}} — 打开计时器"
-      }
+      },
+      "courseAria": "本次学习的课程",
+      "courseNone": "不选课程"
     },
     "pl": {
       "assignments": "作业",
@@ -898,5 +901,33 @@
     "usage": "StudyDesk 占用约 {{ours}}，本站点共存储约 {{total}}。",
     "export": "导出我的数据",
     "dismiss": "忽略"
+  },
+  "nb": {
+    "treeLabel": "课程与笔记",
+    "scopedToSession": "限定到本次学习",
+    "newNote": "新建笔记",
+    "untitled": "未命名笔记",
+    "unfiled": "未归类",
+    "edited": "编辑于 {{when}}",
+    "savedToSession": "已保存到本次学习",
+    "emptyTitle": "选择一篇笔记，或新建一篇。",
+    "editorLine": "笔记第 {{n}} 行",
+    "formatBar": "格式",
+    "highlightRoles": "高亮颜色",
+    "bold": "加粗",
+    "italic": "斜体",
+    "underline": "下划线",
+    "highlight": "高亮",
+    "h1": "标题 1",
+    "h2": "标题 2",
+    "bullet": "项目符号列表",
+    "numbered": "编号列表",
+    "checklist": "清单",
+    "insertPhoto": "插入照片",
+    "hlRole": {
+      "1": "标记 — 重要",
+      "2": "存疑 — 不确定",
+      "3": "已定 — 确认"
+    }
   }
 }

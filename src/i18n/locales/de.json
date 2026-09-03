@@ -30,7 +30,8 @@
     "plan": "Plan",
     "grades": "Noten",
     "timer": "Timer",
-    "stats": "Statistik"
+    "stats": "Statistik",
+    "notebook": "Notizbuch"
   },
   "topbar": {
     "nextUp": "Als Nächstes"
@@ -536,7 +537,9 @@
         "open": "Timer öffnen",
         "openWith": "Timer öffnen — {{task}}",
         "aria": "{{label}}, {{time}} — Timer öffnen"
-      }
+      },
+      "courseAria": "Kurs für diesen Block",
+      "courseNone": "Kein Kurs"
     },
     "pl": {
       "assignments": "Aufgaben",
@@ -898,5 +901,33 @@
     "usage": "StudyDesk belegt etwa {{ours}} von rund {{total}}, die diese Seite speichert.",
     "export": "Meine Daten exportieren",
     "dismiss": "Schließen"
+  },
+  "nb": {
+    "treeLabel": "Kurse und Notizen",
+    "scopedToSession": "Auf Sitzung begrenzt",
+    "newNote": "Neue Notiz",
+    "untitled": "Unbenannte Notiz",
+    "unfiled": "Nicht zugeordnet",
+    "edited": "Bearbeitet {{when}}",
+    "savedToSession": "In der Sitzung gespeichert",
+    "emptyTitle": "Wähle eine Notiz oder beginne eine neue.",
+    "editorLine": "Notizzeile {{n}}",
+    "formatBar": "Formatierung",
+    "highlightRoles": "Markierungsfarbe",
+    "bold": "Fett",
+    "italic": "Kursiv",
+    "underline": "Unterstrichen",
+    "highlight": "Markieren",
+    "h1": "Überschrift 1",
+    "h2": "Überschrift 2",
+    "bullet": "Aufzählung",
+    "numbered": "Nummerierte Liste",
+    "checklist": "Checkliste",
+    "insertPhoto": "Foto einfügen",
+    "hlRole": {
+      "1": "Merken — wichtig",
+      "2": "Frage — unsicher",
+      "3": "Geklärt — bestätigt"
+    }
   }
 }

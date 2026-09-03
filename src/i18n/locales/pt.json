@@ -84,7 +84,8 @@
     "plan": "Plano",
     "grades": "Notas",
     "timer": "Timer",
-    "stats": "Estatísticas"
+    "stats": "Estatísticas",
+    "notebook": "Caderno"
   },
   "topbar": {
     "nextUp": "A seguir"
@@ -540,7 +541,9 @@
         "open": "Abrir o temporizador",
         "openWith": "Abrir o temporizador — {{task}}",
         "aria": "{{label}}, {{time}} — abrir o temporizador"
-      }
+      },
+      "courseAria": "Disciplina deste bloco",
+      "courseNone": "Sem disciplina"
     },
     "pl": {
       "assignments": "Trabalhos",
@@ -903,5 +906,33 @@
     "usage": "O StudyDesk usa cerca de {{ours}} dos aproximadamente {{total}} guardados por este site.",
     "export": "Exportar os meus dados",
     "dismiss": "Dispensar"
+  },
+  "nb": {
+    "treeLabel": "Disciplinas e notas",
+    "scopedToSession": "Limitado à sessão",
+    "newNote": "Nova nota",
+    "untitled": "Nota sem título",
+    "unfiled": "Sem classificação",
+    "edited": "Editada {{when}}",
+    "savedToSession": "Guardada na sessão",
+    "emptyTitle": "Escolhe uma nota ou começa uma nova.",
+    "editorLine": "Linha {{n}} da nota",
+    "formatBar": "Formatação",
+    "highlightRoles": "Cor de destaque",
+    "bold": "Negrito",
+    "italic": "Itálico",
+    "underline": "Sublinhado",
+    "highlight": "Destacar",
+    "h1": "Título 1",
+    "h2": "Título 2",
+    "bullet": "Lista com marcas",
+    "numbered": "Lista numerada",
+    "checklist": "Lista de verificação",
+    "insertPhoto": "Inserir foto",
+    "hlRole": {
+      "1": "Marca — importante",
+      "2": "Dúvida — incerto",
+      "3": "Resolvido — confirmado"
+    }
   }
 }

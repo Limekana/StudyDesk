@@ -30,7 +30,8 @@
     "plan": "Plan",
     "grades": "Grades",
     "timer": "Timer",
-    "stats": "Stats"
+    "stats": "Stats",
+    "notebook": "Notebook"
   },
   "topbar": {
     "nextUp": "Next Up"
@@ -536,7 +537,9 @@
         "open": "Open the timer",
         "openWith": "Open the timer — {{task}}",
         "aria": "{{label}}, {{time}} — open the timer"
-      }
+      },
+      "courseAria": "Course for this block",
+      "courseNone": "No course"
     },
     "pl": {
       "assignments": "Assignments",
@@ -898,5 +901,33 @@
     "usage": "StudyDesk is using about {{ours}} of roughly {{total}} stored by this site.",
     "export": "Export my data",
     "dismiss": "Dismiss"
+  },
+  "nb": {
+    "treeLabel": "Courses and notes",
+    "scopedToSession": "Scoped to session",
+    "newNote": "New note",
+    "untitled": "Untitled note",
+    "unfiled": "Unfiled",
+    "edited": "Edited {{when}}",
+    "savedToSession": "Saved to session",
+    "emptyTitle": "Pick a note, or start a new one.",
+    "editorLine": "Note line {{n}}",
+    "formatBar": "Formatting",
+    "highlightRoles": "Highlight colour",
+    "bold": "Bold",
+    "italic": "Italic",
+    "underline": "Underline",
+    "highlight": "Highlight",
+    "h1": "Heading 1",
+    "h2": "Heading 2",
+    "bullet": "Bullet list",
+    "numbered": "Numbered list",
+    "checklist": "Checklist",
+    "insertPhoto": "Insert photo",
+    "hlRole": {
+      "1": "Mark — important",
+      "2": "Query — unsure",
+      "3": "Settled — confirmed"
+    }
   }
 }

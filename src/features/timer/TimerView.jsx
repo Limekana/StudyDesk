@@ -119,6 +119,8 @@ export default function TimerView({ state, onTimerComplete }) {
     try {
       localStorage.setItem('sd-timer', JSON.stringify({
         customFocus, phase, secsLeft, running, session, focusDone, task, lockedIn, mode,
+        // v1.13 — read by timerSnapshot for the notebook's session scoping.
+        courseId: courseId || null,
         startedAt: startedAtRef.current,
         secsAtStart: secsAtStartRef.current,
         phaseStartedAt: phaseStartedAtRef.current,
@@ -128,7 +130,7 @@ export default function TimerView({ state, onTimerComplete }) {
       // notice a start or stop on its next one-second tick.
       window.dispatchEvent(new CustomEvent(TIMER_CHANGE_EVENT));
     } catch {}
-  }, [customFocus, phase, secsLeft, running, session, focusDone, task, lockedIn, mode]);
+  }, [customFocus, phase, secsLeft, running, session, focusDone, task, lockedIn, mode, courseId]);
 
   // Background-safe elapsed tracking refs
   const startedAtRef = useRef(null);
@@ -171,6 +173,7 @@ export default function TimerView({ state, onTimerComplete }) {
       onTimerComplete?.({
         durationMinutes: cf,
         task: taskRef.current,
+        subjectId: courseIdRef.current || null,
         startedAt: startedAtIso,
       });
       phaseStartedAtRef.current = null;
@@ -228,6 +231,25 @@ export default function TimerView({ state, onTimerComplete }) {
   }, [running, handlePhaseEnd]);
 
   const courses = Object.values(state.courses).filter(c => !c.deletedAt);
+  // v1.13 Item 1b — WHICH COURSE this block is for, chosen before it starts
+  // rather than after it ends.
+  //
+  // Until now the course was picked at SAVE time only, and the dropdown below
+  // set the free-text `task` from a course NAME — a label, not a link. That
+  // was enough when the only consumer was the saved row. It is not enough for
+  // the notebook, whose §3 says the tree "auto-scopes to the course selected
+  // in the timer": there was no such thing to read.
+  //
+  // Two things fall out of naming it. The notebook can scope, and
+  // SaveSessionSheet can arrive pre-filled instead of asking again for
+  // something the user already said — which is one less field on the sheet
+  // whose two silent `return`s were the 1.12.1 H1 defect.
+  const [courseId, setCourseId] = useState(() => _saved.courseId || '');
+  // Mirrored into a ref for the same reason `taskRef` exists: the completion
+  // callbacks are memoised and reading state directly would either capture a
+  // stale value or force the callback to rebuild on every keystroke.
+  const courseIdRef = useRef(courseId);
+  useEffect(()=>{ courseIdRef.current = courseId; },[courseId]);
   const totalSecs = phase==="focus" ? customFocus*60 : phase==="short" ? SHORT_SECS : LONG_SECS;
   // A count-up has no portion-complete, so the ring cannot honestly show one.
   // It sweeps the current minute instead - true information, and it keeps the
@@ -286,6 +308,7 @@ export default function TimerView({ state, onTimerComplete }) {
     onTimerComplete?.({
       durationMinutes: 30,
       task: '',
+      subjectId: courseIdRef.current || null,
       startedAt: new Date(Date.now() - 60*60*1000).toISOString(),
       allowDateEdit: true,
     });
@@ -352,6 +375,7 @@ export default function TimerView({ state, onTimerComplete }) {
     onTimerComplete?.({
       durationMinutes: Math.max(1, Math.round(elapsedSecs/60)),
       task: taskRef.current,
+      subjectId: courseIdRef.current || null,
       startedAt: startedAtIso,
     });
     phaseStartedAtRef.current = null;
@@ -546,9 +570,26 @@ export default function TimerView({ state, onTimerComplete }) {
     <div className="pomo-task-row">
       <div className="pomo-task-label">{t('av.tm.studying')}</div>
       <input type="text" placeholder={t('av.tm.workingPlaceholder')} value={task} onChange={e=>setTask(e.target.value)} style={{fontSize:14,padding:"10px 12px"}}/>
-      {courses.length>0&&<select aria-label={t('av.tm.quickFillAria')} value="" onChange={e=>setTask(e.target.value)} style={{marginTop:6}}>
-        <option value="">{t('av.tm.quickFillOption')}</option>
-        {courses.map(c=><option key={c.id} value={c.name}>{c.name}</option>)}
+      {/* Selecting a course now RECORDS the course as well as filling the
+          task line. The old control only ever set the task text, so picking
+          "Physics" told the app nothing it could act on. Keeping the
+          task-fill behaviour means nothing regresses for anyone using it as
+          a shortcut for typing. */}
+      {courses.length>0&&<select
+        aria-label={t('av.tm.courseAria')}
+        value={courseId}
+        onChange={e=>{
+          const id = e.target.value;
+          setCourseId(id);
+          const c = courses.find(x=>x.id===id);
+          // Only fill an EMPTY task line. Overwriting "chapter 7 problems"
+          // with "Physics" because the user then picked the course would
+          // destroy the more specific of the two.
+          if (c && !task.trim()) setTask(c.name);
+        }}
+        style={{marginTop:6}}>
+        <option value="">{t('av.tm.courseNone')}</option>
+        {courses.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
       </select>}
     </div>
     <button className="pomo-log-past" onClick={logPastSession}>

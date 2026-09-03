@@ -30,7 +30,8 @@
     "plan": "Plan",
     "grades": "Notas",
     "timer": "Temporizador",
-    "stats": "Estadísticas"
+    "stats": "Estadísticas",
+    "notebook": "Cuaderno"
   },
   "topbar": {
     "nextUp": "A continuación"
@@ -540,7 +541,9 @@
         "open": "Abrir el temporizador",
         "openWith": "Abrir el temporizador — {{task}}",
         "aria": "{{label}}, {{time}} — abrir el temporizador"
-      }
+      },
+      "courseAria": "Asignatura de este bloque",
+      "courseNone": "Sin asignatura"
     },
     "pl": {
       "assignments": "Tareas",
@@ -903,5 +906,33 @@
     "usage": "StudyDesk usa unos {{ours}} de los aproximadamente {{total}} que guarda este sitio.",
     "export": "Exportar mis datos",
     "dismiss": "Descartar"
+  },
+  "nb": {
+    "treeLabel": "Asignaturas y notas",
+    "scopedToSession": "Limitado a la sesión",
+    "newNote": "Nueva nota",
+    "untitled": "Nota sin título",
+    "unfiled": "Sin clasificar",
+    "edited": "Editada {{when}}",
+    "savedToSession": "Guardada en la sesión",
+    "emptyTitle": "Elige una nota o empieza una nueva.",
+    "editorLine": "Línea {{n}} de la nota",
+    "formatBar": "Formato",
+    "highlightRoles": "Color de resaltado",
+    "bold": "Negrita",
+    "italic": "Cursiva",
+    "underline": "Subrayado",
+    "highlight": "Resaltar",
+    "h1": "Título 1",
+    "h2": "Título 2",
+    "bullet": "Lista con viñetas",
+    "numbered": "Lista numerada",
+    "checklist": "Lista de tareas",
+    "insertPhoto": "Insertar foto",
+    "hlRole": {
+      "1": "Marca — importante",
+      "2": "Duda — inseguro",
+      "3": "Resuelto — confirmado"
+    }
   }
 }

@@ -405,6 +405,14 @@ const KIND_DISPATCH = {
   // Non-study blockers — training, clubs, shifts.
   upsert_commitment: (p) => sync.upsertCommitment(p),
   delete_commitment: (p) => sync.deleteCommitment(p.id),
+  // v1.13 Item 1b — the notebook. A note is queued like any other entity;
+  // its ATTACHMENT UPLOAD is not, for the same reason assignment uploads are
+  // not — a File cannot survive the JSON round trip this queue is persisted
+  // through. Only the delete queues.
+  upsert_note: (p) => sync.upsertNote(p),
+  delete_note: (p) => sync.deleteNote(p.id),
+  upsert_note_attachment: (p) => sync.upsertNoteAttachment(p),
+  delete_note_attachment: (p) => sync.deleteNoteAttachment(p),
   // v1.12 Item 0 — one row per user per app per day, written on foreground.
   // Queued rather than pushed directly for two reasons: a cold start can
   // foreground before `adoptSession()` has resolved, and RLS would reject the

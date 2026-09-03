@@ -84,7 +84,8 @@
     "plan": "Rencana",
     "grades": "Nilai",
     "timer": "Timer",
-    "stats": "Statistik"
+    "stats": "Statistik",
+    "notebook": "Buku catatan"
   },
   "topbar": {
     "nextUp": "Berikutnya"
@@ -532,7 +533,9 @@
         "open": "Buka pengatur waktu",
         "openWith": "Buka pengatur waktu — {{task}}",
         "aria": "{{label}}, {{time}} — buka pengatur waktu"
-      }
+      },
+      "courseAria": "Mata pelajaran untuk blok ini",
+      "courseNone": "Tanpa mata pelajaran"
     },
     "pl": {
       "assignments": "Tugas",
@@ -893,5 +896,33 @@
     "usage": "StudyDesk memakai sekitar {{ours}} dari kira-kira {{total}} yang disimpan situs ini.",
     "export": "Ekspor data saya",
     "dismiss": "Tutup"
+  },
+  "nb": {
+    "treeLabel": "Mata pelajaran dan catatan",
+    "scopedToSession": "Dibatasi ke sesi",
+    "newNote": "Catatan baru",
+    "untitled": "Catatan tanpa judul",
+    "unfiled": "Belum dikelompokkan",
+    "edited": "Diedit {{when}}",
+    "savedToSession": "Disimpan ke sesi",
+    "emptyTitle": "Pilih catatan, atau mulai yang baru.",
+    "editorLine": "Baris catatan {{n}}",
+    "formatBar": "Pemformatan",
+    "highlightRoles": "Warna sorotan",
+    "bold": "Tebal",
+    "italic": "Miring",
+    "underline": "Garis bawah",
+    "highlight": "Sorot",
+    "h1": "Judul 1",
+    "h2": "Judul 2",
+    "bullet": "Daftar butir",
+    "numbered": "Daftar bernomor",
+    "checklist": "Daftar centang",
+    "insertPhoto": "Sisipkan foto",
+    "hlRole": {
+      "1": "Tanda — penting",
+      "2": "Ragu — belum yakin",
+      "3": "Beres — terkonfirmasi"
+    }
   }
 }
