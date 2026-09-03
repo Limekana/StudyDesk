@@ -326,7 +326,12 @@
       "delete_attachment": "a deleted attachment",
       "submit_feedback": "feedback",
       "record_app_open": "usage data"
-    }
+    },
+    "weekStartLbl": "Calendar",
+    "weekStart": "Week starts on",
+    "weekStartAuto": "Automatic ({{day}})",
+    "weekStartSaved": "Week start updated.",
+    "weekStartNote": "Automatic follows your language and region. Change it if your timetable starts on a different day."
   },
   "sdob": {
     "brand": "Stop deciding. Start studying.",
@@ -800,7 +805,14 @@
     "lessonDeleted": "Lesson removed",
     "lessonsToday": "{{n}} lessons",
     "addOn": "Add a lesson on {{day}}",
-    "warnNoDates": "This term has no start date, so its lessons won't appear on the calendar. Add one here or on a term above it."
+    "warnNoDates": "This term has no start date, so its lessons won't appear on the calendar. Add one here or on a term above it.",
+    "sections": "Timetable sections",
+    "tabSchedule": "Schedule",
+    "fRepeat": "Repeats",
+    "repeatEvery": "Every week",
+    "repeatOdd": "Week A (odd weeks)",
+    "repeatEven": "Week B (even weeks)",
+    "repeatNote": "Counted from the start of this term, so week 1 of the term is week A."
   },
   "at": {
     "title": "Attachments",
@@ -815,7 +827,29 @@
     "openFailed": "Couldn't open that file",
     "openFailedMsg": "Couldn't open that file — {{msg}}",
     "deleted": "Attachment removed",
-    "countTitle": "{{n}} attached"
+    "countTitle": "{{n}} attached",
+    "tab": "Attendance",
+    "prevWeek": "Previous",
+    "nextWeek": "Next",
+    "thisWeek": "This week",
+    "noLessons": "No lessons",
+    "noData": "No data yet",
+    "forTerm": "in {{name}}",
+    "allTime": "overall",
+    "present": "{{n}} present",
+    "absent": "{{n}} absent",
+    "cancelled": "{{n}} cancelled",
+    "rescheduled": "{{n}} rescheduled",
+    "uncountedNote": "Cancelled and rescheduled lessons are not counted — they did not happen, so they are in neither half of the percentage.",
+    "byCourse": "By course",
+    "unmarked": "not marked",
+    "cycleAria": "{{lesson}} — {{status}}. Tap to change.",
+    "status": {
+      "present": "present",
+      "absent": "absent",
+      "cancelled": "cancelled",
+      "rescheduled": "rescheduled"
+    }
   },
   "cm": {
     "newTitle": "New commitment",

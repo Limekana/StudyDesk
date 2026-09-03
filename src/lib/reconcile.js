@@ -63,6 +63,7 @@ export function findUnsynced(state, remote) {
   const remoteTimetable = remoteIds(remote?.timetableEntries);
   const remoteCommitments = remoteIds(remote?.commitments);
   const remoteNotes = remoteIds(remote?.notes);
+  const remoteAttendance = remoteIds(remote?.attendance);
 
   const out = [];
 
@@ -238,6 +239,7 @@ export function findUnsynced(state, remote) {
         endsAt: te.endsAt,
         room: te.room,
         color: te.color,
+        weekParity: te.weekParity,
       },
     });
   }
@@ -312,6 +314,31 @@ export function findUnsynced(state, remote) {
         // session that never synced would fail the whole upsert. The link is
         // a nicety; the writing is the point.
         sessionId: n.sessionId && remoteIds(remote?.sessions).has(n.sessionId) ? n.sessionId : null,
+      },
+    });
+  }
+
+  // ── v1.13 Tier 2 — attendance (#31) ──────────────────────────────────────
+  //
+  // In from the start, same reasoning as the notebook: a table that can hold
+  // local-only rows gets repaired, rather than waiting for someone to report
+  // that their attendance record vanished.
+  //
+  // The parent is the timetable entry, and it must exist — an attendance row
+  // is meaningless without the lesson it records, and its FK cascades.
+  for (const a of state?.attendance || []) {
+    if (!a?.id || a.deletedAt || remoteAttendance.has(a.id)) continue;
+    if (!a.timetableEntryId) continue;
+    const parentPushed = out.some((o) => o.kind === 'upsert_timetable' && o.payload.id === a.timetableEntryId);
+    if (!remoteTimetable.has(a.timetableEntryId) && !parentPushed) continue;
+    out.push({
+      kind: 'upsert_attendance',
+      payload: {
+        id: a.id,
+        timetableEntryId: a.timetableEntryId,
+        date: a.date,
+        status: a.status,
+        note: a.note,
       },
     });
   }

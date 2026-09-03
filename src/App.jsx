@@ -289,6 +289,9 @@ const INITIAL = {
   // unrelated local-only field (see mergeSubject) — they never meet, because
   // one lives on `state.notes` and the other on `state.courses[id].notes`.
   notes:[], noteAttachments:[],
+  // v1.13 Tier 2 (#31) — one row per lesson per date. The percentage is never
+  // stored; see src/lib/attendance.js.
+  attendance:[],
   gradeMode:"ib",                  // 'ib' | 'us' | 'custom' — persisted locally
   customScale:DEFAULT_CUSTOM_SCALE, // bounds for gradeMode 'custom' (SD-F4)
   aiEnabled:false,                 // AI debrief opt-in — device-level, persisted locally
@@ -499,6 +502,10 @@ function reducer(state, action) {
         endsAt: action.endsAt,
         room: action.room || "",
         color: action.color || null,
+        // v1.13 — null is "every week". Only 1 and 2 are meaningful; anything
+        // else normalises to null here rather than being stored and having to
+        // be defended against at every read.
+        weekParity: action.weekParity === 1 || action.weekParity === 2 ? action.weekParity : null,
         updatedAt: action.updatedAt || new Date().toISOString(),
       };
       return { ...state, timetableEntries: [...(state.timetableEntries || []), e] };
@@ -513,6 +520,9 @@ function reducer(state, action) {
         endsAt: action.endsAt ?? e.endsAt,
         room: action.room !== undefined ? (action.room || "") : e.room,
         color: action.color !== undefined ? (action.color || null) : e.color,
+        weekParity: action.weekParity !== undefined
+          ? (action.weekParity === 1 || action.weekParity === 2 ? action.weekParity : null)
+          : (e.weekParity ?? null),
         updatedAt: new Date().toISOString(),
       })};
     case "DELETE_TT_ENTRY":
@@ -644,6 +654,45 @@ function reducer(state, action) {
           : n
       ));
       return { ...state, notes };
+    }
+
+    // ── v1.13 Tier 2 — attendance (#31) ──
+    // Keyed by (entryId, date), not by id: marking the same lesson twice is
+    // one fact being corrected, not two records. The reducer enforces that
+    // locally so the local list matches what the server's unique index will
+    // hold, rather than diverging until the next pull.
+    case "SET_ATTENDANCE": {
+      const rows = state.attendance || [];
+      const i = rows.findIndex((r) => (
+        !r.deletedAt && r.timetableEntryId === action.timetableEntryId && r.date === action.date
+      ));
+      const now = new Date().toISOString();
+      // A null status means "unmark" — the cycle returns to unmarked, and an
+      // unmarked lesson must leave NO row, or it would sit in the denominator
+      // as a status the summariser does not recognise.
+      if (action.status == null) {
+        if (i < 0) return state;
+        const next = [...rows];
+        next[i] = { ...next[i], deletedAt: now, updatedAt: now };
+        return { ...state, attendance: next };
+      }
+      if (i >= 0) {
+        const next = [...rows];
+        next[i] = { ...next[i], status: action.status, note: action.note ?? next[i].note ?? null, updatedAt: now };
+        return { ...state, attendance: next };
+      }
+      return {
+        ...state,
+        attendance: [...rows, {
+          id: action.id || newSyncId(),
+          timetableEntryId: action.timetableEntryId,
+          date: action.date,
+          status: action.status,
+          note: action.note ?? null,
+          updatedAt: now,
+          deletedAt: null,
+        }],
+      };
     }
 
     // ── Sync: bulk merge from Supabase pull (LWW logic in merge.js) ──
@@ -897,6 +946,7 @@ export default function App() {
         commitments: Array.isArray(saved.commitments) ? saved.commitments : [],
         notes: Array.isArray(saved.notes) ? saved.notes : [],
         noteAttachments: Array.isArray(saved.noteAttachments) ? saved.noteAttachments : [],
+        attendance: Array.isArray(saved.attendance) ? saved.attendance : [],
         activeCourse: migratedActiveCourse,
         gradeMode,
         customScale,
@@ -949,8 +999,9 @@ export default function App() {
       commitments:state.commitments,
       notes:state.notes,
       noteAttachments:state.noteAttachments,
+      attendance:state.attendance,
     }, { critical: true });
-  }, [state.courses,state.assignments,state.actions,state.exams,state.grades,state.studySessions,state.plannedSessions,state.academicTerms,state.timetableEntries,state.attachments,state.commitments,state.notes,state.noteAttachments]);
+  }, [state.courses,state.assignments,state.actions,state.exams,state.grades,state.studySessions,state.plannedSessions,state.academicTerms,state.timetableEntries,state.attachments,state.commitments,state.notes,state.noteAttachments,state.attendance]);
   // gradeMode is UI-only — persist separately so it doesn't trigger a v1 rewrite on every toggle.
   useEffect(() => {
     try { localStorage.setItem("studydesk-grade-mode", state.gradeMode); } catch {}

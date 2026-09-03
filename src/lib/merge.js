@@ -223,6 +223,10 @@ function mergeTimetableEntry(localE, remoteRow) {
     endsAt: remoteRow.ends_at,
     room: remoteRow.room || '',
     color: remoteRow.color || null,
+    // v1.13 — `?? null` rather than `|| null`: 0 is not a valid parity, but
+    // reading it through `||` would be a silent coercion waiting for the day
+    // someone adds a third value.
+    weekParity: remoteRow.week_parity ?? null,
     updatedAt: remoteRow.updated_at || null,
     deletedAt: remoteRow.deleted_at || null,
   };
@@ -274,6 +278,21 @@ function mergeCommitment(localC, remoteRow) {
  * @param {object} state Current reducer state.
  * @param {{subjects:Array, grades:Array, sessions:Array, assignments:Array, exams:Array, actions:Array}} remote
  */
+function mergeAttendance(localRow, remoteRow) {
+  const remote = {
+    id: remoteRow.id,
+    timetableEntryId: remoteRow.timetable_entry_id,
+    date: remoteRow.date,
+    status: remoteRow.status,
+    note: remoteRow.note ?? null,
+    updatedAt: remoteRow.updated_at || null,
+    deletedAt: remoteRow.deleted_at || null,
+  };
+  if (!localRow) return remote;
+  if (newer(remote.updatedAt, localRow.updatedAt)) return remote;
+  return localRow;
+}
+
 function mergeNote(localNote, remoteRow) {
   const remote = {
     id: remoteRow.id,
@@ -383,10 +402,11 @@ export function applyRemotePull(state, remote) {
   // deleted note back on somebody's screen.
   const notes = mergeList(state.notes, remote.notes, mergeNote);
   const noteAttachments = mergeList(state.noteAttachments, remote.noteAttachments, mergeNoteAttachment);
+  const attendance = mergeList(state.attendance, remote.attendance, mergeAttendance);
 
   return {
     ...state,
-    courses, grades, studySessions, assignments, exams, actions, notes, noteAttachments,
+    courses, grades, studySessions, assignments, exams, actions, notes, noteAttachments, attendance,
     plannedSessions, academicTerms, timetableEntries, attachments, commitments,
   };
 }

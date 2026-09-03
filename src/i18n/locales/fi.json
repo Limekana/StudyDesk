@@ -326,7 +326,12 @@
       "delete_attachment": "poistettu liite",
       "submit_feedback": "palaute",
       "record_app_open": "käyttötieto"
-    }
+    },
+    "weekStartLbl": "Kalenteri",
+    "weekStart": "Viikko alkaa",
+    "weekStartAuto": "Automaattinen ({{day}})",
+    "weekStartSaved": "Viikon alku päivitetty.",
+    "weekStartNote": "Automaattinen seuraa kieltäsi ja aluettasi. Vaihda, jos lukujärjestyksesi alkaa eri päivänä."
   },
   "sdob": {
     "brand": "Lopeta miettiminen. Aloita opiskelu.",
@@ -800,7 +805,14 @@
     "lessonDeleted": "Oppitunti poistettu",
     "lessonsToday": "{{n}} oppituntia",
     "addOn": "Lisää oppitunti päivälle {{day}}",
-    "warnNoDates": "Tällä jaksolla ei ole alkamispäivää, joten sen oppitunnit eivät näy kalenterissa. Lisää päivä tähän tai ylemmälle tasolle."
+    "warnNoDates": "Tällä jaksolla ei ole alkamispäivää, joten sen oppitunnit eivät näy kalenterissa. Lisää päivä tähän tai ylemmälle tasolle.",
+    "sections": "Lukujärjestyksen osiot",
+    "tabSchedule": "Aikataulu",
+    "fRepeat": "Toistuu",
+    "repeatEvery": "Joka viikko",
+    "repeatOdd": "Viikko A (parittomat)",
+    "repeatEven": "Viikko B (parilliset)",
+    "repeatNote": "Lasketaan tämän jakson alusta, joten jakson viikko 1 on viikko A."
   },
   "at": {
     "title": "Liitteet",
@@ -815,7 +827,29 @@
     "openFailed": "Tiedostoa ei voitu avata",
     "openFailedMsg": "Tiedostoa ei voitu avata — {{msg}}",
     "deleted": "Liite poistettu",
-    "countTitle": "{{n}} liitettä"
+    "countTitle": "{{n}} liitettä",
+    "tab": "Läsnäolo",
+    "prevWeek": "Edellinen",
+    "nextWeek": "Seuraava",
+    "thisWeek": "Tämä viikko",
+    "noLessons": "Ei tunteja",
+    "noData": "Ei vielä tietoja",
+    "forTerm": "jaksossa {{name}}",
+    "allTime": "kaikkiaan",
+    "present": "{{n}} läsnä",
+    "absent": "{{n}} poissa",
+    "cancelled": "{{n}} peruttu",
+    "rescheduled": "{{n}} siirretty",
+    "uncountedNote": "Peruttuja ja siirrettyjä tunteja ei lasketa — niitä ei pidetty, joten ne eivät ole prosenttiluvun kummallakaan puolella.",
+    "byCourse": "Kursseittain",
+    "unmarked": "ei merkitty",
+    "cycleAria": "{{lesson}} — {{status}}. Napauta vaihtaaksesi.",
+    "status": {
+      "present": "läsnä",
+      "absent": "poissa",
+      "cancelled": "peruttu",
+      "rescheduled": "siirretty"
+    }
   },
   "cm": {
     "newTitle": "Uusi meno",

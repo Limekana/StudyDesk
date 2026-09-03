@@ -328,7 +328,12 @@
       "delete_attachment": "un adjunto eliminado",
       "submit_feedback": "comentarios",
       "record_app_open": "datos de uso"
-    }
+    },
+    "weekStartLbl": "Calendario",
+    "weekStart": "La semana empieza el",
+    "weekStartAuto": "Automático ({{day}})",
+    "weekStartSaved": "Inicio de semana actualizado.",
+    "weekStartNote": "Automático sigue tu idioma y región. Cámbialo si tu horario empieza otro día."
   },
   "sdob": {
     "brand": "Deja de decidir. Empieza a estudiar.",
@@ -805,7 +810,14 @@
     "lessonDeleted": "Clase eliminada",
     "lessonsToday": "{{n}} clases",
     "addOn": "Añadir una clase el {{day}}",
-    "warnNoDates": "Este periodo no tiene fecha de inicio, así que sus clases no aparecerán en el calendario. Añádela aquí o en un nivel superior."
+    "warnNoDates": "Este periodo no tiene fecha de inicio, así que sus clases no aparecerán en el calendario. Añádela aquí o en un nivel superior.",
+    "sections": "Secciones del horario",
+    "tabSchedule": "Horario",
+    "fRepeat": "Se repite",
+    "repeatEvery": "Cada semana",
+    "repeatOdd": "Semana A (impares)",
+    "repeatEven": "Semana B (pares)",
+    "repeatNote": "Se cuenta desde el inicio de este periodo, así que la semana 1 del periodo es la semana A."
   },
   "at": {
     "title": "Adjuntos",
@@ -820,7 +832,29 @@
     "openFailed": "No se pudo abrir el archivo",
     "openFailedMsg": "No se pudo abrir el archivo: {{msg}}",
     "deleted": "Adjunto eliminado",
-    "countTitle": "{{n}} adjuntos"
+    "countTitle": "{{n}} adjuntos",
+    "tab": "Asistencia",
+    "prevWeek": "Anterior",
+    "nextWeek": "Siguiente",
+    "thisWeek": "Esta semana",
+    "noLessons": "Sin clases",
+    "noData": "Sin datos todavía",
+    "forTerm": "en {{name}}",
+    "allTime": "en total",
+    "present": "{{n}} presente",
+    "absent": "{{n}} ausente",
+    "cancelled": "{{n}} cancelada",
+    "rescheduled": "{{n}} reprogramada",
+    "uncountedNote": "Las clases canceladas y reprogramadas no cuentan: no ocurrieron, así que no están en ninguna mitad del porcentaje.",
+    "byCourse": "Por asignatura",
+    "unmarked": "sin marcar",
+    "cycleAria": "{{lesson}} — {{status}}. Toca para cambiar.",
+    "status": {
+      "present": "presente",
+      "absent": "ausente",
+      "cancelled": "cancelada",
+      "rescheduled": "reprogramada"
+    }
   },
   "cm": {
     "newTitle": "Nuevo compromiso",
