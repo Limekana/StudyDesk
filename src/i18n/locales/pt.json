@@ -29,6 +29,7 @@
     "errGoogleStart": "Não foi possível iniciar o login com o Google",
     "errGoogleFailed": "Falha no login com o Google",
     "desktopBrowser": "Conclua o login no seu navegador e volte para cá.",
+    "errDesktopNoListener": "O login no computador está indisponível nesta inicialização. Reinicie o StudyDesk ou entre com e-mail abaixo.",
     "errCallback": "Falha no retorno do login",
     "errGeneric": "Falha na autenticação",
     "errInvalidCredentials": "E-mail ou senha incorretos.",

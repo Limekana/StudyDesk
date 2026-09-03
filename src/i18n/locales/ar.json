@@ -29,6 +29,7 @@
     "errGoogleStart": "تعذّر بدء تسجيل الدخول عبر Google",
     "errGoogleFailed": "فشل تسجيل الدخول عبر Google",
     "desktopBrowser": "أكمل تسجيل الدخول في المتصفح ثم عد إلى هنا.",
+    "errDesktopNoListener": "تسجيل الدخول من سطح المكتب غير متاح في هذه الجلسة. أعد تشغيل StudyDesk أو سجّل الدخول بالبريد الإلكتروني أدناه.",
     "errCallback": "فشل استدعاء العودة لتسجيل الدخول",
     "errGeneric": "فشل المصادقة",
     "errInvalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة.",

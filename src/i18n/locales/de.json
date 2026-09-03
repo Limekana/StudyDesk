@@ -105,6 +105,7 @@
     "errGoogleStart": "Google-Anmeldung konnte nicht gestartet werden",
     "errGoogleFailed": "Google-Anmeldung fehlgeschlagen",
     "desktopBrowser": "Schließe die Anmeldung im Browser ab und komm dann hierher zurück.",
+    "errDesktopNoListener": "Die Desktop-Anmeldung ist bei diesem Start nicht verfügbar. Starte StudyDesk neu oder melde dich unten per E-Mail an.",
     "errCallback": "Anmelde-Rückruf fehlgeschlagen",
     "errGeneric": "Authentifizierung fehlgeschlagen",
     "errInvalidCredentials": "E-Mail oder Passwort ist falsch.",

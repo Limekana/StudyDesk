@@ -106,6 +106,7 @@
     "errGoogleStart": "No se pudo iniciar el acceso con Google",
     "errGoogleFailed": "Error al iniciar sesión con Google",
     "desktopBrowser": "Termina de iniciar sesión en tu navegador y vuelve aquí.",
+    "errDesktopNoListener": "El inicio de sesión de escritorio no está disponible en este arranque. Reinicia StudyDesk o inicia sesión con correo abajo.",
     "errCallback": "Error en la respuesta de inicio de sesión",
     "errGeneric": "Error de autenticación",
     "errInvalidCredentials": "Correo o contraseña incorrectos.",

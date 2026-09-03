@@ -105,6 +105,7 @@
     "errGoogleStart": "Failed to start Google sign-in",
     "errGoogleFailed": "Google sign-in failed",
     "desktopBrowser": "Finish signing in in your browser, then come back here.",
+    "errDesktopNoListener": "Desktop sign-in is unavailable this launch. Restart StudyDesk, or sign in with email below.",
     "errCallback": "Sign-in callback failed",
     "errGeneric": "Authentication failed",
     "errInvalidCredentials": "Incorrect email or password.",
