@@ -292,7 +292,40 @@
       "other": "Other"
     },
     "discord": "Discord community",
-    "discordSub": "Questions, bug reports, and what's coming next"
+    "discordSub": "Questions, bug reports, and what's coming next",
+    "queueStoppedTitle": "Sync has stopped",
+    "queueStoppedRetry": "Try these again",
+    "queueStoppedBody_one": "One change could not be sent after several tries, so the queue stopped rather than retrying it forever. Nothing has been lost — it is still on this device.",
+    "queueStoppedBody_other": "{{count}} changes could not be sent after several tries, so the queue stopped rather than retrying them forever. Nothing has been lost — they are still on this device.",
+    "queueStoppedWhat": "Waiting: {{kinds}}",
+    "queueStoppedSince": "Stopped since {{when}}",
+    "queueStoppedSignIn": "Sign in to send these.",
+    "kind": {
+      "upsert_subject": "a course",
+      "delete_subject": "a deleted course",
+      "upsert_grade": "a grade",
+      "delete_grade": "a deleted grade",
+      "log_session": "a study session",
+      "update_session": "a session edit",
+      "delete_session": "a deleted session",
+      "upsert_assignment": "an assignment",
+      "delete_assignment": "a deleted assignment",
+      "upsert_exam": "an exam",
+      "delete_exam": "a deleted exam",
+      "upsert_action": "a to-do",
+      "delete_action": "a deleted to-do",
+      "upsert_planned": "a planned block",
+      "delete_planned": "a deleted plan",
+      "upsert_term": "a term",
+      "delete_term": "a deleted term",
+      "upsert_timetable": "a timetable lesson",
+      "delete_timetable": "a deleted lesson",
+      "upsert_commitment": "a commitment",
+      "delete_commitment": "a deleted commitment",
+      "delete_attachment": "a deleted attachment",
+      "submit_feedback": "feedback",
+      "record_app_open": "usage data"
+    }
   },
   "sdob": {
     "brand": "Stop deciding. Start studying.",
@@ -856,5 +889,14 @@
     "characterNote": "Dark and Black are lighting — they turn the page down. Stacks and Slate are character: a library circulation desk and a chalkboard, each with its own type, rules and marks. They are not the dark option, and never were.",
     "lockedNote": "Stacks and Slate unlock for supporters. Dark and Black are free, and always will be.",
     "lightingInThemeNote": "Stacks and Slate bring their own lighting. Your choice here comes back when you switch to Studio."
+  },
+  "storage": {
+    "title": "This device is out of space",
+    "quotaBody": "StudyDesk could not save your latest changes to this device — its storage is full.",
+    "blockedBody": "StudyDesk could not save your latest changes to this device — storage is unavailable or blocked.",
+    "stakes": "Everything you have added since the app last saved will be lost when you close it. Export now to keep it.",
+    "usage": "StudyDesk is using about {{ours}} of roughly {{total}} stored by this site.",
+    "export": "Export my data",
+    "dismiss": "Dismiss"
   }
 }

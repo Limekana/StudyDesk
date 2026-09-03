@@ -290,7 +290,40 @@
       "other": "Lainnya"
     },
     "discord": "Komunitas Discord",
-    "discordSub": "Pertanyaan, laporan bug, dan rencana berikutnya"
+    "discordSub": "Pertanyaan, laporan bug, dan rencana berikutnya",
+    "queueStoppedTitle": "Sinkronisasi berhenti",
+    "queueStoppedRetry": "Coba lagi",
+    "queueStoppedBody_one": "Satu perubahan gagal dikirim setelah beberapa percobaan, jadi antrean berhenti daripada mencoba terus-menerus. Tidak ada yang hilang — masih tersimpan di perangkat ini.",
+    "queueStoppedBody_other": "{{count}} perubahan gagal dikirim setelah beberapa percobaan, jadi antrean berhenti daripada mencoba terus-menerus. Tidak ada yang hilang — semuanya masih tersimpan di perangkat ini.",
+    "queueStoppedWhat": "Menunggu: {{kinds}}",
+    "queueStoppedSince": "Berhenti sejak {{when}}",
+    "queueStoppedSignIn": "Masuk untuk mengirimnya.",
+    "kind": {
+      "upsert_subject": "satu mata pelajaran",
+      "delete_subject": "mata pelajaran terhapus",
+      "upsert_grade": "satu nilai",
+      "delete_grade": "nilai terhapus",
+      "log_session": "satu sesi belajar",
+      "update_session": "suntingan sesi",
+      "delete_session": "sesi terhapus",
+      "upsert_assignment": "satu tugas",
+      "delete_assignment": "tugas terhapus",
+      "upsert_exam": "satu ujian",
+      "delete_exam": "ujian terhapus",
+      "upsert_action": "satu to-do",
+      "delete_action": "to-do terhapus",
+      "upsert_planned": "satu blok rencana",
+      "delete_planned": "rencana terhapus",
+      "upsert_term": "satu periode",
+      "delete_term": "periode terhapus",
+      "upsert_timetable": "satu pelajaran di jadwal",
+      "delete_timetable": "pelajaran terhapus",
+      "upsert_commitment": "satu komitmen",
+      "delete_commitment": "komitmen terhapus",
+      "delete_attachment": "lampiran terhapus",
+      "submit_feedback": "masukan",
+      "record_app_open": "data penggunaan"
+    }
   },
   "sdob": {
     "brand": "Berhenti menimbang. Mulai belajar.",
@@ -851,5 +884,14 @@
     "characterNote": "Gelap dan Hitam adalah pencahayaan — keduanya meredupkan halaman. Stacks dan Slate adalah karakter: meja peminjaman perpustakaan dan papan tulis, masing-masing dengan huruf, garis, dan tandanya sendiri. Keduanya bukan pilihan gelap, dan tidak pernah begitu.",
     "lockedNote": "Stacks dan Slate terbuka untuk pendukung. Gelap dan Hitam gratis, dan akan tetap begitu.",
     "lightingInThemeNote": "Stacks dan Slate membawa pencahayaannya sendiri. Pilihanmu kembali saat beralih ke Studio."
+  },
+  "storage": {
+    "title": "Ruang penyimpanan perangkat habis",
+    "quotaBody": "StudyDesk tidak dapat menyimpan perubahan terbaru di perangkat ini — penyimpanannya penuh.",
+    "blockedBody": "StudyDesk tidak dapat menyimpan perubahan terbaru di perangkat ini — penyimpanan tidak tersedia atau diblokir.",
+    "stakes": "Semua yang kamu tambahkan sejak penyimpanan terakhir akan hilang saat aplikasi ditutup. Ekspor sekarang untuk menyimpannya.",
+    "usage": "StudyDesk memakai sekitar {{ours}} dari kira-kira {{total}} yang disimpan situs ini.",
+    "export": "Ekspor data saya",
+    "dismiss": "Tutup"
   }
 }

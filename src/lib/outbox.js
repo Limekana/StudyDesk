@@ -42,6 +42,7 @@
 // the next mutation triggers another drain). We never silently drop.
 
 import * as sync from './sync.js';
+import { writeJson } from './localStore.js';
 
 const STORAGE_KEY = 'studydesk-outbox';
 const META_KEY = 'studydesk-outbox-meta'; // { lastSuccessAt }
@@ -62,12 +63,20 @@ function loadItems() {
 }
 
 function saveItems(items) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  } catch (e) {
-    // Quota-exceeded is unrecoverable for the outbox — log and continue.
-    // The next mutation will overwrite + try again with whatever fits.
-    console.error('[outbox] storage write failed:', e);
+  // v1.13 Item 1a. This used to be a console.error and a shrug, with the
+  // comment "quota-exceeded is unrecoverable for the outbox". That is true as
+  // far as it goes and it buried the more important half: the outbox shares
+  // one origin quota with `studydesk-v1`, so an outbox that cannot be written
+  // is a strong signal that the STATE SNAPSHOT is about to fail too — and
+  // that one is the user's data.
+  //
+  // An offline stretch is what inflates this file, and an offline user is
+  // exactly the person whose rows exist nowhere else. Routing through
+  // `writeJson({critical: true})` means the first of the two writes to hit
+  // the ceiling raises the alarm, rather than each failing quietly in turn.
+  const { ok, error } = writeJson(STORAGE_KEY, items, { critical: true });
+  if (!ok) {
+    console.error('[outbox] storage write failed:', error);
   }
   // v1.3.1 — invalidate the cached snapshot so the next getStatus() rebuild
   // reflects this write. Without this, useSyncExternalStore subscribers
@@ -89,9 +98,10 @@ function loadMeta() {
 }
 
 function saveMeta(meta) {
-  try {
-    localStorage.setItem(META_KEY, JSON.stringify(meta));
-  } catch { /* see saveItems */ }
+  // Bookkeeping, not user data — a lost `lastSuccessAt` costs a wrong
+  // timestamp in Settings and nothing else, so this one stays non-critical
+  // and must never raise the alarm on its own.
+  writeJson(META_KEY, meta);
   // v1.3.1 — same cache-invalidation as saveItems.
   cachedStatus = null;
 }
@@ -296,6 +306,18 @@ export function getStatus() {
     // drains, retried only when the user explicitly asks. Surfaced as a
     // needs-attention count rather than left to rotate invisibly.
     stuck: items.filter((i) => i.quarantined).length,
+    // v1.13 Item 1a — the count alone said "something is stuck" and nothing
+    // about WHAT, which is not enough to act on and not enough to report.
+    // These two answer "what stopped, and since when", so Settings can say it
+    // in words and a user can tell us something useful when they write in.
+    //
+    // Kinds are de-duplicated: five failing exams are one problem, and a list
+    // that repeats a kind five times reads as five.
+    stuckKinds: Array.from(new Set(items.filter((i) => i.quarantined).map((i) => i.kind))),
+    stuckSince: items
+      .filter((i) => i.quarantined)
+      .map((i) => i.createdAt)
+      .sort()[0] || null,
   };
   return cachedStatus;
 }

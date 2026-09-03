@@ -110,6 +110,18 @@ const css = `
 .sv2-signin{background:var(--text);color:var(--bg);border:none;padding:10px 18px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:6px;font-weight:500;}
 .sv2-signin:hover{opacity:0.88;}
 .sv2-note{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.55;}
+/* v1.13 Item 1a — the stopped-queue panel. Danger rather than warning: a
+   quarantined item is terminal until the user acts, and the whole reason this
+   panel exists is that the previous treatment read as "in progress". */
+.sv2-stopped{margin-top:14px;padding:13px 14px;border:1px solid var(--danger-soft-border);border-inline-start:3px solid var(--danger);background:var(--danger-soft);border-radius:7px;}
+.sv2-stopped-head{font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--danger);margin-bottom:7px;}
+.sv2-stopped-body{font-size:12.5px;line-height:1.55;color:var(--text);margin-bottom:6px;}
+.sv2-stopped-meta{font-family:var(--font-mono);font-size:10.5px;color:var(--muted);line-height:1.5;}
+/* The raw server error. Monospace and wrapped rather than truncated: it is
+   the one string worth copying verbatim into a bug report, and an ellipsis in
+   the middle of a Postgres constraint name destroys exactly what makes it
+   useful. */
+.sv2-stopped-err{margin-top:7px;font-family:var(--font-mono);font-size:10.5px;color:var(--danger);word-break:break-word;line-height:1.5;}
 /* Issue #39 — the OS is blocking notifications, so the toggle below cannot do
    anything. Uses the existing warning tokens rather than danger: nothing is
    broken or destructive, the user simply has to grant something. Warm amber
@@ -408,7 +420,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
             <div className="sv2-hero-info">
               <div className="sv2-hero-name">{session ? userEmail : t('settings.guest')}</div>
               <div className="sv2-hero-status">
-                <span className="sv2-dot" style={{ background: session ? '#2e7d52' : 'var(--muted2)' }} />
+                <span className="sv2-dot" style={{ background: session ? 'var(--success)' : 'var(--muted2)' }} />
                 {session ? t('settings.signedInProvider', { provider }) : t('settings.localOnly')}
               </div>
             </div>
@@ -474,10 +486,10 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
             <span className="sv2-row-label">{t('settings.pendingQueue')}</span>
             <span className="sv2-row-value">
               {outboxStatus.pending === 0 ? (
-                <><span className="sv2-dot" style={{ background: '#2e7d52' }} />{t('settings.allSynced')}</>
+                <><span className="sv2-dot" style={{ background: 'var(--success)' }} />{t('settings.allSynced')}</>
               ) : (
                 <>
-                  <span className="sv2-dot" style={{ background: outboxStatus.stuck > 0 ? 'var(--danger)' : '#d4860a' }} />
+                  <span className="sv2-dot" style={{ background: outboxStatus.stuck > 0 ? 'var(--danger)' : 'var(--warning)' }} />
                   {t('settings.pendingCount', { count: outboxStatus.pending })}{outboxStatus.stuck > 0 && ` ${t('settings.stuck', { count: outboxStatus.stuck })}`}
                 </>
               )}
@@ -499,12 +511,56 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
               <span className="sv2-row-value" style={{ color: 'var(--danger)', fontSize: 11 }}>{outboxStatus.lastError}</span>
             </div>
           )}
+          {/* ── v1.13 Item 1a — a queue that has stopped says so ──
+              v1.12 added quarantine so a poison item stops burning retries,
+              which was right, and then reported it as a parenthetical after
+              the pending count. "3 pending (1 stuck)" is a number, not a
+              statement: it does not say the queue has STOPPED, does not say
+              what stopped it, and reads as progress.
+
+              Quarantine is a terminal state until the user intervenes, so it
+              gets its own panel with the thing that stopped, when it stopped,
+              and the button that clears it. The ordinary "Retry now" is not
+              enough on its own — it is the same control for two very
+              different situations, and a user watching "3 pending" tick down
+              has no reason to press anything. ── */}
+          {outboxStatus.stuck > 0 && (
+            <div className="sv2-stopped" role="status">
+              <div className="sv2-stopped-head">{t('settings.queueStoppedTitle')}</div>
+              <p className="sv2-stopped-body">
+                {t('settings.queueStoppedBody', { count: outboxStatus.stuck })}
+              </p>
+              {outboxStatus.stuckKinds?.length > 0 && (
+                <div className="sv2-stopped-meta">
+                  {t('settings.queueStoppedWhat', {
+                    kinds: outboxStatus.stuckKinds.map((k) => t(`settings.kind.${k}`, k)).join(', '),
+                  })}
+                </div>
+              )}
+              {outboxStatus.stuckSince && (
+                <div className="sv2-stopped-meta">
+                  {t('settings.queueStoppedSince', { when: fmtTime(outboxStatus.stuckSince, t, lang) })}
+                </div>
+              )}
+              {outboxStatus.lastError && (
+                <div className="sv2-stopped-err">{outboxStatus.lastError}</div>
+              )}
+              <div className="sv2-action">
+                <button className="btn" onClick={onRetryNow} disabled={draining || !session}>
+                  {draining ? t('settings.retrying') : t('settings.queueStoppedRetry')}
+                </button>
+              </div>
+              {/* Nothing here can be retried without a session, and a button
+                  that cannot work is worse than one that explains itself. */}
+              {!session && <div className="sv2-stopped-meta">{t('settings.queueStoppedSignIn')}</div>}
+            </div>
+          )}
           {session && (
             <div className="sv2-action">
               <button className="btn-outline" onClick={onPullNow} disabled={pulling}>
                 {pulling ? t('settings.pulling') : t('settings.pullLatest')}
               </button>
-              {outboxStatus.pending > 0 && (
+              {outboxStatus.pending > 0 && outboxStatus.stuck === 0 && (
                 <button className="btn-outline" onClick={onRetryNow} disabled={draining}>
                   {draining ? t('settings.retrying') : t('settings.retryNow')}
                 </button>

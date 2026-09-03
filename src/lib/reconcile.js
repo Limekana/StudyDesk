@@ -55,6 +55,13 @@ export function findUnsynced(state, remote) {
   const remoteExams = remoteIds(remote?.exams);
   const remoteAssignments = remoteIds(remote?.assignments);
   const remoteGrades = remoteIds(remote?.grades);
+  // v1.13 Item 1a — see the study-session block below for why these were
+  // missing and why that mattered more than the four above.
+  const remoteSessions = remoteIds(remote?.sessions);
+  const remotePlanned = remoteIds(remote?.plannedSessions);
+  const remoteTerms = remoteIds(remote?.academicTerms);
+  const remoteTimetable = remoteIds(remote?.timetableEntries);
+  const remoteCommitments = remoteIds(remote?.commitments);
 
   const out = [];
 
@@ -136,6 +143,146 @@ export function findUnsynced(state, remote) {
     });
   }
 
+  // ── v1.13 Item 1a — study sessions ───────────────────────────────────────
+  //
+  // **This table was excluded from the v1.12 repair, and it is the one the
+  // reported loss was in.**
+  //
+  // The v1.12 note said the remaining tables "either carry ON DELETE SET NULL
+  // (so they cannot produce the FK failure) or have no reported loss." Both
+  // halves are about issue #38, which is a FOREIGN KEY failure — and reasoning
+  // from that symptom is what excluded study_sessions, because a nullable
+  // subject_id genuinely cannot produce it.
+  //
+  // But the module's own header already gives the wider justification:
+  // converging on STATE rather than replaying EVENTS repairs any loss that
+  // leaves a row local-only, whatever caused it. Judged against that, the
+  // exclusion had it backwards. Sessions cannot throw the FK error, so nothing
+  // ever surfaced them as stuck; they simply stayed local and silent — and
+  // there WAS a reported loss:
+  //
+  //   > "Offline sessions never synced; an app update then destroyed them.
+  //      Five hours of logged study, gone from every device."   (`1cab0fb7`)
+  //
+  // Same account, five days later, reported that manual logging saved nothing
+  // either (the 1.12.1 H1 hotfix). One person, failed twice through the same
+  // gap, and this half of it was still open.
+  //
+  // A session with no course is legitimate — the timer can run unassigned —
+  // so "no parent" and "parent missing" are different answers here and only
+  // the second is a reason to hold the row back.
+  for (const ss of state?.studySessions || []) {
+    if (!ss?.id || ss.deletedAt || remoteSessions.has(ss.id)) continue;
+    const linked = ss.subjectId ?? ss.courseId ?? null;
+    if (linked && !parentWillExist(linked)) continue;
+    out.push({
+      kind: 'log_session',
+      payload: {
+        id: ss.id,
+        subjectId: linked,
+        startedAt: ss.startedAt,
+        durationMinutes: ss.durationMinutes,
+        notes: ss.notes,
+        focusRating: ss.focusRating,
+        aiDebriefRaw: ss.aiDebriefRaw,
+        aiSubjectCovered: ss.aiSubjectCovered,
+        aiComprehension: ss.aiComprehension,
+        aiConfusionFlags: ss.aiConfusionFlags,
+        aiSessionSummary: ss.aiSessionSummary,
+      },
+    });
+  }
+
+  // ── The term tree, and what hangs off it ─────────────────────────────────
+  //
+  // Terms are their own parent chain (a jakso hangs off a semester hangs off a
+  // school year), so a term whose PARENT term is also local-only has to go in
+  // the same batch or its FK fails for real. `upsert_term` is rank 0 in the
+  // outbox and reconcile emits in array order, so ordering holds as long as
+  // the local list is itself ordered parent-first — which the term editor
+  // guarantees, since a child cannot be created before its parent exists.
+  const pushedTerms = new Set();
+  for (const tm of state?.academicTerms || []) {
+    if (!tm?.id || tm.deletedAt || remoteTerms.has(tm.id)) continue;
+    pushedTerms.add(tm.id);
+    out.push({
+      kind: 'upsert_term',
+      payload: {
+        id: tm.id,
+        parentId: tm.parentId,
+        level: tm.level,
+        name: tm.name,
+        startsOn: tm.startsOn,
+        endsOn: tm.endsOn,
+        position: tm.position,
+      },
+    });
+  }
+  const termWillExist = (id) => !id || remoteTerms.has(id) || pushedTerms.has(id);
+
+  for (const te of state?.timetableEntries || []) {
+    if (!te?.id || te.deletedAt || remoteTimetable.has(te.id)) continue;
+    // Two parents, and both have to hold.
+    if (!termWillExist(te.termId)) continue;
+    if (te.subjectId && !parentWillExist(te.subjectId)) continue;
+    out.push({
+      kind: 'upsert_timetable',
+      payload: {
+        id: te.id,
+        termId: te.termId,
+        subjectId: te.subjectId,
+        title: te.title,
+        weekday: te.weekday,
+        startsAt: te.startsAt,
+        endsAt: te.endsAt,
+        room: te.room,
+        color: te.color,
+      },
+    });
+  }
+
+  // Planned blocks are intentions, not evidence — they must never become a
+  // study_sessions row (NEXUS_V19_BUILD_PLAN Item 14a). Pushing them through
+  // their own kind keeps that separation: `upsert_planned` writes
+  // planned_sessions and touches nothing else.
+  for (const ps of state?.plannedSessions || []) {
+    if (!ps?.id || ps.deletedAt || remotePlanned.has(ps.id)) continue;
+    if (ps.subjectId && !parentWillExist(ps.subjectId)) continue;
+    out.push({
+      kind: 'upsert_planned',
+      payload: {
+        id: ps.id,
+        subjectId: ps.subjectId,
+        startsAt: ps.startsAt,
+        durationMinutes: ps.durationMinutes,
+        title: ps.title,
+        notes: ps.notes,
+        fulfilledBy: ps.fulfilledBy,
+        dismissedAt: ps.dismissedAt,
+      },
+    });
+  }
+
+  // Commitments have no parent at all — training, clubs, shifts are not
+  // attached to a course — so there is no guard to apply.
+  for (const cm of state?.commitments || []) {
+    if (!cm?.id || cm.deletedAt || remoteCommitments.has(cm.id)) continue;
+    out.push({
+      kind: 'upsert_commitment',
+      payload: {
+        id: cm.id,
+        title: cm.title,
+        color: cm.color,
+        weekday: cm.weekday,
+        startsOn: cm.startsOn,
+        endsOn: cm.endsOn,
+        startTime: cm.startTime,
+        endTime: cm.endTime,
+        notes: cm.notes,
+      },
+    });
+  }
+
   return out;
 }
 
@@ -143,12 +290,23 @@ export function findUnsynced(state, remote) {
  * Enqueue everything `findUnsynced` turns up. Returns the number queued so the
  * caller can report it.
  *
- * Deliberately scoped to the four tables in the `subjects` foreign-key family
- * — the ones issue #38 names. `planned_sessions`, `academic_terms`,
- * `timetable_entries`, `study_actions`, `commitments` and `study_sessions` are
- * exposed to the same dropped-write defect and are NOT repaired here; they
- * either carry `ON DELETE SET NULL` (so they cannot produce the FK failure) or
- * have no reported loss. Adding a kind is a block of the same shape above.
+ * v1.13 Item 1a widened this from the four `subjects` foreign-key tables that
+ * issue #38 named to every table that can hold a local-only row:
+ * `study_sessions`, `academic_terms`, `timetable_entries`, `planned_sessions`
+ * and `commitments` are now repaired too.
+ *
+ * The narrower scope was chosen because #38 presents as a FOREIGN KEY error,
+ * and the excluded tables cannot throw one. That is true and it is the wrong
+ * test: a row that fails loudly at least gets noticed, while a row that stays
+ * local-only in silence is the shape that lost somebody five hours of study.
+ *
+ * `study_actions` remains out, and this one IS deliberate: only manual to-dos
+ * live in `state.actions`, the Actions view derives its suggestions at render
+ * time, and `applyRemotePull` already removes actions by tombstone rather than
+ * keeping them — so a local-only action is a to-do the user can see and
+ * re-create, not silent loss of recorded work. Attachments are out for the
+ * reason `KIND_DISPATCH` gives: a File cannot survive the queue's JSON round
+ * trip, so an upload has to be online and reports its own failure.
  */
 export function reconcileUnsynced(state, remote, outbox) {
   const items = findUnsynced(state, remote);
