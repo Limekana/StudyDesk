@@ -324,7 +324,12 @@
       "delete_attachment": "lampiran terhapus",
       "submit_feedback": "masukan",
       "record_app_open": "data penggunaan"
-    }
+    },
+    "weekStartLbl": "Kalender",
+    "weekStart": "Minggu dimulai",
+    "weekStartAuto": "Otomatis ({{day}})",
+    "weekStartSaved": "Awal minggu diperbarui.",
+    "weekStartNote": "Otomatis mengikuti bahasa dan wilayahmu. Ubah jika jadwalmu mulai di hari lain."
   },
   "sdob": {
     "brand": "Berhenti menimbang. Mulai belajar.",
@@ -795,7 +800,14 @@
     "lessonDeleted": "Pelajaran dihapus",
     "lessonsToday": "{{n}} pelajaran",
     "addOn": "Tambah pelajaran pada {{day}}",
-    "warnNoDates": "Periode ini tidak punya tanggal mulai, jadi pelajarannya tidak muncul di kalender. Tambahkan di sini atau di tingkat di atasnya."
+    "warnNoDates": "Periode ini tidak punya tanggal mulai, jadi pelajarannya tidak muncul di kalender. Tambahkan di sini atau di tingkat di atasnya.",
+    "sections": "Bagian jadwal",
+    "tabSchedule": "Jadwal",
+    "fRepeat": "Berulang",
+    "repeatEvery": "Setiap minggu",
+    "repeatOdd": "Minggu A (ganjil)",
+    "repeatEven": "Minggu B (genap)",
+    "repeatNote": "Dihitung dari awal periode ini, jadi minggu 1 periode adalah minggu A."
   },
   "at": {
     "title": "Lampiran",
@@ -810,7 +822,29 @@
     "openFailed": "Tidak bisa membuka berkas itu",
     "openFailedMsg": "Tidak bisa membuka berkas itu — {{msg}}",
     "deleted": "Lampiran dihapus",
-    "countTitle": "{{n}} lampiran"
+    "countTitle": "{{n}} lampiran",
+    "tab": "Kehadiran",
+    "prevWeek": "Sebelumnya",
+    "nextWeek": "Berikutnya",
+    "thisWeek": "Minggu ini",
+    "noLessons": "Tidak ada pelajaran",
+    "noData": "Belum ada data",
+    "forTerm": "di {{name}}",
+    "allTime": "keseluruhan",
+    "present": "{{n}} hadir",
+    "absent": "{{n}} absen",
+    "cancelled": "{{n}} dibatalkan",
+    "rescheduled": "{{n}} dijadwal ulang",
+    "uncountedNote": "Pelajaran yang dibatalkan dan dijadwal ulang tidak dihitung — pelajaran itu tidak terjadi, jadi tidak masuk ke sisi mana pun dari persentase.",
+    "byCourse": "Per mata pelajaran",
+    "unmarked": "belum ditandai",
+    "cycleAria": "{{lesson}} — {{status}}. Ketuk untuk mengubah.",
+    "status": {
+      "present": "hadir",
+      "absent": "absen",
+      "cancelled": "dibatalkan",
+      "rescheduled": "dijadwal ulang"
+    }
   },
   "cm": {
     "newTitle": "Agenda baru",

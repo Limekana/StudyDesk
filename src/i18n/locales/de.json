@@ -326,7 +326,12 @@
       "delete_attachment": "ein gelöschter Anhang",
       "submit_feedback": "Feedback",
       "record_app_open": "Nutzungsdaten"
-    }
+    },
+    "weekStartLbl": "Kalender",
+    "weekStart": "Woche beginnt am",
+    "weekStartAuto": "Automatisch ({{day}})",
+    "weekStartSaved": "Wochenbeginn aktualisiert.",
+    "weekStartNote": "Automatisch richtet sich nach Sprache und Region. Ändere es, wenn dein Stundenplan an einem anderen Tag beginnt."
   },
   "sdob": {
     "brand": "Schluss mit Grübeln. Fang an zu lernen.",
@@ -800,7 +805,14 @@
     "lessonDeleted": "Stunde entfernt",
     "lessonsToday": "{{n}} Stunden",
     "addOn": "Stunde am {{day}} hinzufügen",
-    "warnNoDates": "Dieser Zeitraum hat kein Startdatum, daher erscheinen seine Stunden nicht im Kalender. Ergänze es hier oder eine Ebene darüber."
+    "warnNoDates": "Dieser Zeitraum hat kein Startdatum, daher erscheinen seine Stunden nicht im Kalender. Ergänze es hier oder eine Ebene darüber.",
+    "sections": "Stundenplan-Bereiche",
+    "tabSchedule": "Stundenplan",
+    "fRepeat": "Wiederholt sich",
+    "repeatEvery": "Jede Woche",
+    "repeatOdd": "Woche A (ungerade)",
+    "repeatEven": "Woche B (gerade)",
+    "repeatNote": "Gezählt ab Beginn dieses Zeitraums — Woche 1 des Zeitraums ist Woche A."
   },
   "at": {
     "title": "Anhänge",
@@ -815,7 +827,29 @@
     "openFailed": "Datei konnte nicht geöffnet werden",
     "openFailedMsg": "Datei konnte nicht geöffnet werden — {{msg}}",
     "deleted": "Anhang entfernt",
-    "countTitle": "{{n}} Anhänge"
+    "countTitle": "{{n}} Anhänge",
+    "tab": "Anwesenheit",
+    "prevWeek": "Zurück",
+    "nextWeek": "Weiter",
+    "thisWeek": "Diese Woche",
+    "noLessons": "Keine Stunden",
+    "noData": "Noch keine Daten",
+    "forTerm": "in {{name}}",
+    "allTime": "insgesamt",
+    "present": "{{n}} anwesend",
+    "absent": "{{n}} gefehlt",
+    "cancelled": "{{n}} entfallen",
+    "rescheduled": "{{n}} verlegt",
+    "uncountedNote": "Entfallene und verlegte Stunden zählen nicht — sie haben nicht stattgefunden und stehen daher in keiner Hälfte des Prozentsatzes.",
+    "byCourse": "Nach Kurs",
+    "unmarked": "nicht markiert",
+    "cycleAria": "{{lesson}} — {{status}}. Zum Ändern tippen.",
+    "status": {
+      "present": "anwesend",
+      "absent": "gefehlt",
+      "cancelled": "entfallen",
+      "rescheduled": "verlegt"
+    }
   },
   "cm": {
     "newTitle": "Neuer Termin",

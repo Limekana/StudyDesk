@@ -328,7 +328,12 @@
       "delete_attachment": "une pièce jointe supprimée",
       "submit_feedback": "un retour",
       "record_app_open": "des données d'usage"
-    }
+    },
+    "weekStartLbl": "Calendrier",
+    "weekStart": "La semaine commence le",
+    "weekStartAuto": "Automatique ({{day}})",
+    "weekStartSaved": "Début de semaine mis à jour.",
+    "weekStartNote": "Automatique suit votre langue et votre région. Changez-le si votre emploi du temps commence un autre jour."
   },
   "sdob": {
     "brand": "Arrête de choisir. Commence à réviser.",
@@ -805,7 +810,14 @@
     "lessonDeleted": "Cours supprimé",
     "lessonsToday": "{{n}} cours",
     "addOn": "Ajouter un cours le {{day}}",
-    "warnNoDates": "Cette période n'a pas de date de début, ses cours n'apparaîtront donc pas dans le calendrier. Ajoutez-en une ici ou à un niveau supérieur."
+    "warnNoDates": "Cette période n'a pas de date de début, ses cours n'apparaîtront donc pas dans le calendrier. Ajoutez-en une ici ou à un niveau supérieur.",
+    "sections": "Sections de l'emploi du temps",
+    "tabSchedule": "Horaire",
+    "fRepeat": "Répétition",
+    "repeatEvery": "Chaque semaine",
+    "repeatOdd": "Semaine A (impaires)",
+    "repeatEven": "Semaine B (paires)",
+    "repeatNote": "Compté depuis le début de cette période : la semaine 1 de la période est la semaine A."
   },
   "at": {
     "title": "Pièces jointes",
@@ -820,7 +832,29 @@
     "openFailed": "Impossible d'ouvrir ce fichier",
     "openFailedMsg": "Impossible d'ouvrir ce fichier — {{msg}}",
     "deleted": "Pièce jointe supprimée",
-    "countTitle": "{{n}} pièces jointes"
+    "countTitle": "{{n}} pièces jointes",
+    "tab": "Présence",
+    "prevWeek": "Précédente",
+    "nextWeek": "Suivante",
+    "thisWeek": "Cette semaine",
+    "noLessons": "Aucun cours",
+    "noData": "Pas encore de données",
+    "forTerm": "en {{name}}",
+    "allTime": "au total",
+    "present": "{{n}} présent",
+    "absent": "{{n}} absent",
+    "cancelled": "{{n}} annulé",
+    "rescheduled": "{{n}} reporté",
+    "uncountedNote": "Les cours annulés et reportés ne sont pas comptés — ils n'ont pas eu lieu, donc ils ne figurent dans aucune moitié du pourcentage.",
+    "byCourse": "Par cours",
+    "unmarked": "non marqué",
+    "cycleAria": "{{lesson}} — {{status}}. Touchez pour changer.",
+    "status": {
+      "present": "présent",
+      "absent": "absent",
+      "cancelled": "annulé",
+      "rescheduled": "reporté"
+    }
   },
   "cm": {
     "newTitle": "Nouvel engagement",

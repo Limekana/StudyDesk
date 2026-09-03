@@ -470,7 +470,7 @@ export async function deleteTerm({ id, descendantIds = [] }) {
   if (error) throw error;
 }
 
-export async function upsertTimetableEntry({ id, termId, subjectId, title, weekday, startsAt, endsAt, room, color }) {
+export async function upsertTimetableEntry({ id, termId, subjectId, title, weekday, startsAt, endsAt, room, color, weekParity }) {
   if (!termId) throw new Error('termId is required (a lesson must belong to a term)');
   const userId = await currentUserId();
   const { error } = await supabase.from('timetable_entries').upsert({
@@ -487,6 +487,9 @@ export async function upsertTimetableEntry({ id, termId, subjectId, title, weekd
     ends_at: endsAt,
     room: (room || '').trim() || null,
     color: color || null,
+    // v1.13 — null means every week, which is what every pre-v1.13 row
+    // already means, so no backfill and no special case on read.
+    week_parity: weekParity === 1 || weekParity === 2 ? weekParity : null,
     updated_at: nowISO(),
   });
   if (error) throw error;
@@ -661,6 +664,37 @@ export async function deleteAttachment({ id, storagePath }) {
 
 // ── pull (full sync) ─────────────────────────────────────────────────────────
 
+// ── Lesson attendance (v1.13 Tier 2, issue #31) ─────────────────────────────
+
+export async function upsertAttendance({ id, timetableEntryId, date, status, note }) {
+  const userId = await currentUserId();
+  // `onConflict` on the natural key, not the surrogate id. Two devices marking
+  // the same lesson generate different uuids for the same FACT, and without
+  // this they would both insert and the lesson would be counted twice in the
+  // percentage. The partial unique index in the migration is what makes this
+  // resolvable.
+  const { error } = await supabase.from('lesson_attendance').upsert({
+    id,
+    user_id: userId,
+    timetable_entry_id: timetableEntryId,
+    date,
+    status,
+    note: note || null,
+    updated_at: nowISO(),
+  }, { onConflict: 'user_id,timetable_entry_id,date' });
+  if (error) throw error;
+  return id;
+}
+
+export async function deleteAttendance(id) {
+  const { error } = await supabase
+    .from('lesson_attendance')
+    .update({ deleted_at: nowISO(), updated_at: nowISO() })
+    .eq('id', id);
+  if (error) throw error;
+  return id;
+}
+
 // ── Notebook (v1.13 Item 1b) ────────────────────────────────────────────────
 
 /**
@@ -740,7 +774,7 @@ export async function pullAllStudyData() {
   const [
     subjectsRes, gradesRes, sessionsRes, assignmentsRes, examsRes, actionsRes,
     plannedRes, termsRes, timetableRes, attachmentsRes, commitmentsRes,
-    notesRes, noteAttRes,
+    notesRes, noteAttRes, attendanceRes,
   ] = await Promise.all([
     supabase.from('subjects').select('*'),
     supabase.from('grades').select('*'),
@@ -755,6 +789,7 @@ export async function pullAllStudyData() {
     supabase.from('commitments').select('*'),
     supabase.from('notebook_entries').select('*'),
     supabase.from('notebook_attachments').select('*'),
+    supabase.from('lesson_attendance').select('*'),
   ]);
   if (subjectsRes.error) throw subjectsRes.error;
   if (gradesRes.error) throw gradesRes.error;
@@ -785,6 +820,8 @@ export async function pullAllStudyData() {
   };
   if (notesRes.error && !missingTable(notesRes)) throw notesRes.error;
   if (noteAttRes.error && !missingTable(noteAttRes)) throw noteAttRes.error;
+  // Same tolerance, same window, same reasoning as the notebook tables above.
+  if (attendanceRes.error && !missingTable(attendanceRes)) throw attendanceRes.error;
   return {
     subjects: subjectsRes.data || [],
     grades: gradesRes.data || [],
@@ -799,6 +836,7 @@ export async function pullAllStudyData() {
     commitments: commitmentsRes.data || [],
     notes: notesRes.data || [],
     noteAttachments: noteAttRes.data || [],
+    attendance: attendanceRes.data || [],
   };
 }
 

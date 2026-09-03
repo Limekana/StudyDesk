@@ -12,6 +12,12 @@
 // both are testable without a browser.
 
 import assert from 'node:assert/strict';
+import { register } from 'node:module';
+
+// Teaches Node the directory imports Vite already understands, so the
+// assertions run against the app's REAL modules rather than a copy. See
+// scripts/resolve-dir-imports.mjs.
+register('./resolve-dir-imports.mjs', import.meta.url);
 
 let passed = 0;
 function check(name, fn) {
@@ -643,4 +649,142 @@ check('renderDiagram returns null for anything that is not one of the three', ()
   assert.equal(renderDiagram('just words'), null);
   assert.ok(renderDiagram('a -> b'));
   assert.ok(renderDiagram('graph: peak'));
+});
+
+// ── Timetable: alternating weeks and attendance (v1.13 Tier 2) ────────────
+
+const { weekParityOf, entryRunsOnParity, WEEK_ODD, WEEK_EVEN } =
+  await import('../src/lib/timetable.js');
+const {
+  ATTENDANCE, summarise, summariseByCourse, nextStatus, indexAttendance, statusFor,
+} = await import('../src/lib/attendance.js');
+
+check('parity counts from the TERM start, and week 1 is odd', () => {
+  // Term starts Monday 2026-08-31. Weeks run Mon-Sun.
+  const start = '2026-08-31';
+  assert.equal(weekParityOf('2026-08-31', start, 1), WEEK_ODD, 'day one is week A');
+  assert.equal(weekParityOf('2026-09-06', start, 1), WEEK_ODD, 'still week 1 on the Sunday');
+  assert.equal(weekParityOf('2026-09-07', start, 1), WEEK_EVEN, 'the next Monday flips');
+  assert.equal(weekParityOf('2026-09-13', start, 1), WEEK_EVEN);
+  assert.equal(weekParityOf('2026-09-14', start, 1), WEEK_ODD, 'and back again');
+});
+
+check('parity changes only at a week boundary, not mid-week', () => {
+  // A term starting mid-week must still have its first Mon-Sun block as
+  // week 1, or the parity would flip two days in.
+  const start = '2026-09-02'; // a Wednesday
+  const week1 = ['2026-09-02', '2026-09-03', '2026-09-04', '2026-09-05', '2026-09-06'];
+  for (const d of week1) assert.equal(weekParityOf(d, start, 1), WEEK_ODD, `${d} should be week A`);
+  assert.equal(weekParityOf('2026-09-07', start, 1), WEEK_EVEN);
+});
+
+check('parity respects the user week start', () => {
+  // Same dates, Sunday-first. The boundary moves with the week.
+  const start = '2026-08-31';
+  assert.equal(weekParityOf('2026-09-05', start, 0), WEEK_ODD, 'Saturday is still week 1');
+  assert.equal(weekParityOf('2026-09-06', start, 0), WEEK_EVEN, 'Sunday starts week 2');
+});
+
+check('parity survives a DST transition', () => {
+  // Europe/Helsinki moves on 2026-10-25. Computed from local midnights rather
+  // than raw timestamp arithmetic, so the hour does not accumulate into a
+  // day across a long term.
+  const start = '2026-08-31';
+  const before = weekParityOf('2026-10-19', start, 1);
+  const after = weekParityOf('2026-10-26', start, 1);
+  assert.notEqual(before, after, 'consecutive weeks must still alternate');
+});
+
+check('an unparseable date never hides a lesson', () => {
+  // A lesson hidden because a date failed to parse is a lesson the student
+  // misses. Null parity means "show it".
+  assert.equal(weekParityOf('not-a-date', '2026-08-31', 1), null);
+  assert.equal(entryRunsOnParity({ weekParity: WEEK_ODD }, null), true);
+});
+
+check('a null parity entry runs every week', () => {
+  assert.equal(entryRunsOnParity({ weekParity: null }, WEEK_ODD), true);
+  assert.equal(entryRunsOnParity({ weekParity: null }, WEEK_EVEN), true);
+  assert.equal(entryRunsOnParity({}, WEEK_EVEN), true, 'a pre-v1.13 row has no field at all');
+});
+
+check('an odd-week entry runs on odd weeks only', () => {
+  assert.equal(entryRunsOnParity({ weekParity: WEEK_ODD }, WEEK_ODD), true);
+  assert.equal(entryRunsOnParity({ weekParity: WEEK_ODD }, WEEK_EVEN), false);
+});
+
+check('CANCELLED is not an absence — the whole subtlety of #31', () => {
+  const rows = [
+    { status: ATTENDANCE.PRESENT }, { status: ATTENDANCE.PRESENT },
+    { status: ATTENDANCE.ABSENT },
+    { status: ATTENDANCE.CANCELLED }, { status: ATTENDANCE.CANCELLED },
+    { status: ATTENDANCE.RESCHEDULED },
+  ];
+  const s = summarise(rows);
+  assert.equal(s.counted, 3, 'only present + absent are in the denominator');
+  assert.equal(Math.round(s.percent), 67);
+  assert.equal(s.cancelled, 2, 'still reported, just not counted');
+});
+
+check('nothing recorded is NULL percent, not zero', () => {
+  // "0%" would be a false statement about a student who has marked nothing.
+  assert.equal(summarise([]).percent, null);
+  assert.equal(summarise([{ status: ATTENDANCE.CANCELLED }]).percent, null,
+    'cancelled-only is still no data');
+});
+
+check('a perfect record is 100 and a blank one is 0', () => {
+  assert.equal(summarise([{ status: ATTENDANCE.PRESENT }]).percent, 100);
+  assert.equal(summarise([{ status: ATTENDANCE.ABSENT }]).percent, 0);
+});
+
+check('a soft-deleted row is not counted', () => {
+  const s = summarise([{ status: ATTENDANCE.PRESENT }, { status: ATTENDANCE.ABSENT, deletedAt: 'x' }]);
+  assert.equal(s.counted, 1);
+  assert.equal(s.percent, 100);
+});
+
+check('an unknown status from a newer build is ignored, not counted', () => {
+  const s = summarise([{ status: ATTENDANCE.PRESENT }, { status: 'excused' }]);
+  assert.equal(s.counted, 1);
+});
+
+check('per-course summary sorts worst first, with no-data last', () => {
+  const entries = new Map([
+    ['e1', { id: 'e1', subjectId: 'physics' }],
+    ['e2', { id: 'e2', subjectId: 'maths' }],
+    ['e3', { id: 'e3', subjectId: 'art' }],
+  ]);
+  const rows = [
+    { timetableEntryId: 'e1', status: ATTENDANCE.ABSENT },
+    { timetableEntryId: 'e1', status: ATTENDANCE.PRESENT },
+    { timetableEntryId: 'e2', status: ATTENDANCE.PRESENT },
+    { timetableEntryId: 'e3', status: ATTENDANCE.CANCELLED },
+  ];
+  const out = summariseByCourse(rows, entries);
+  assert.equal(out[0].courseId, 'physics', '50% comes first');
+  assert.equal(out[1].courseId, 'maths', 'then 100%');
+  assert.equal(out[2].courseId, 'art', 'no data sorts last, not as 0%');
+  assert.equal(out[2].percent, null);
+});
+
+check('the status cycle returns to unmarked', () => {
+  let s = null;
+  const seen = [];
+  for (let i = 0; i < 5; i++) { s = nextStatus(s); seen.push(s); }
+  assert.deepEqual(seen, [
+    ATTENDANCE.PRESENT, ATTENDANCE.ABSENT, ATTENDANCE.CANCELLED, ATTENDANCE.RESCHEDULED, null,
+  ], 'present first — by far the most common answer, so the common case is one tap');
+});
+
+check('attendance is keyed by (entry, date), so one lesson is one fact', () => {
+  const idx = indexAttendance([
+    { timetableEntryId: 'e1', date: '2026-09-01', status: ATTENDANCE.PRESENT },
+    { timetableEntryId: 'e1', date: '2026-09-08', status: ATTENDANCE.ABSENT },
+    { timetableEntryId: 'e2', date: '2026-09-01', status: ATTENDANCE.ABSENT },
+  ]);
+  assert.equal(statusFor(idx, 'e1', '2026-09-01'), ATTENDANCE.PRESENT);
+  assert.equal(statusFor(idx, 'e1', '2026-09-08'), ATTENDANCE.ABSENT);
+  assert.equal(statusFor(idx, 'e2', '2026-09-01'), ATTENDANCE.ABSENT);
+  assert.equal(statusFor(idx, 'e9', '2026-09-01'), null);
 });

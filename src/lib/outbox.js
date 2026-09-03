@@ -405,6 +405,9 @@ const KIND_DISPATCH = {
   // Non-study blockers — training, clubs, shifts.
   upsert_commitment: (p) => sync.upsertCommitment(p),
   delete_commitment: (p) => sync.deleteCommitment(p.id),
+  // v1.13 Tier 2 — lesson attendance (#31).
+  upsert_attendance: (p) => sync.upsertAttendance(p),
+  delete_attendance: (p) => sync.deleteAttendance(p.id),
   // v1.13 Item 1b — the notebook. A note is queued like any other entity;
   // its ATTACHMENT UPLOAD is not, for the same reason assignment uploads are
   // not — a File cannot survive the JSON round trip this queue is persisted

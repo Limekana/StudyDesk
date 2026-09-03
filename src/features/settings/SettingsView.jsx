@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore } from 'react';
 import { webNotifyPermission, requestWebNotifyPermission, webNotifySupported } from '../../lib/webNotify.js';
 import { Capacitor } from '@capacitor/core';
 import { useTranslation } from 'react-i18next';
@@ -20,6 +20,8 @@ import { useConfirm } from '../../lib/useConfirm.js';
 import { avatarInitials } from '../../lib/avatarInitials.js';
 import { focusCapabilities, ensureNotificationPermission } from '../../lib/focusMode.js';
 import { scaleFor, normalizeScale, describeScale } from '../../lib/gradeScale.js';
+import { preferredWeekStart, setPreferredWeekStart, resolveWeekStart, weekdayLabels } from '../../lib/calendar.js';
+import { formatLocale } from '../../lib/dates.js';
 import { GuestAvatar } from '../../lib/avatar.jsx';
 import pkg from '../../../package.json';
 
@@ -268,6 +270,32 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
     }
   }, [showFlash, t]);
 
+  // v1.13 — week start. Only three options are offered, not seven: Monday
+  // (ISO 8601 and most of Europe), Saturday (much of the Middle East) and
+  // Sunday (US, Canada, Brazil, India, Indonesia, Japan). A timetable that
+  // starts on Wednesday is not a thing anyone has, and seven options would
+  // make the real three harder to find.
+  const [weekStartPref, setWeekStartPref] = useState(() => preferredWeekStart());
+  const settingsLocale = formatLocale();
+  const dayNames = useMemo(
+    // Index by real getDay() value, so `dayNames[6]` is Saturday whatever the
+    // user's week starts on.
+    () => weekdayLabels(0, settingsLocale),
+    [settingsLocale],
+  );
+  // What "Automatic" resolves to right now, named — so the option says what
+  // it will do rather than making the user try it to find out.
+  const autoDayName = useMemo(() => {
+    const prev = weekStartPref;
+    // `resolveWeekStart` consults the override first, so it has to be asked
+    // what the LOCALE alone would say. Temporarily clearing it is the honest
+    // way to get that without duplicating the CLDR logic here.
+    setPreferredWeekStart(null);
+    const auto = resolveWeekStart(settingsLocale);
+    setPreferredWeekStart(prev);
+    return dayNames[auto];
+  }, [settingsLocale, dayNames, weekStartPref]);
+
   const subjects = Object.values(state.courses || {}).filter((c) => !c.deletedAt);
   const grades = (state.grades || []).filter((g) => !g.deletedAt);
   const sessions = (state.studySessions || []).filter((s) => !s.deletedAt);
@@ -465,6 +493,40 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* ── Week start (v1.13 Tier 2) ──
+             The locale answer is already correct — `resolveWeekStart` reads
+             CLDR via Intl.Locale.weekInfo, so ar-EG gets Saturday and en-GB
+             Monday. This exists because the report behind it is not a locale
+             bug: it is a person whose locale genuinely says Sunday who wants
+             Monday anyway. Their timetable starts on Monday; their region's
+             average does not. ── */}
+        <div className="sv2-section">
+          <div className="sv2-section-title">{t('settings.weekStartLbl')}</div>
+          <div className="sv2-row">
+            <span className="sv2-row-label">{t('settings.weekStart')}</span>
+            <span className="sv2-row-value">
+              <select
+                value={weekStartPref === null ? 'auto' : String(weekStartPref)}
+                onChange={(e) => {
+                  const v = e.target.value === 'auto' ? null : Number(e.target.value);
+                  setPreferredWeekStart(v);
+                  setWeekStartPref(v);
+                  // The grids read `resolveWeekStart` at render, so nothing
+                  // needs to be pushed — but they will not re-render on their
+                  // own, because a localStorage write is invisible to React.
+                  showFlash(t('settings.weekStartSaved'));
+                }}
+              >
+                <option value="auto">{t('settings.weekStartAuto', { day: autoDayName })}</option>
+                {[1, 6, 0].map((d) => (
+                  <option key={d} value={d}>{dayNames[d]}</option>
+                ))}
+              </select>
+            </span>
+          </div>
+          <div className="sv2-note">{t('settings.weekStartNote')}</div>
         </div>
 
         {/* ── Cloud sync ── */}

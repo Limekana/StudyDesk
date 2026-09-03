@@ -326,7 +326,12 @@
       "delete_attachment": "已删除的附件",
       "submit_feedback": "反馈",
       "record_app_open": "使用数据"
-    }
+    },
+    "weekStartLbl": "日历",
+    "weekStart": "每周开始于",
+    "weekStartAuto": "自动（{{day}}）",
+    "weekStartSaved": "每周起始日已更新。",
+    "weekStartNote": "自动会跟随你的语言和地区。如果你的课表从其他日子开始，可以更改。"
   },
   "sdob": {
     "brand": "别再纠结，开始学习。",
@@ -800,7 +805,14 @@
     "lessonDeleted": "课程已删除",
     "lessonsToday": "{{n}} 节课",
     "addOn": "在{{day}}添加课程",
-    "warnNoDates": "该学段没有开始日期，其课程不会显示在日历中。请在此处或上一级补上日期。"
+    "warnNoDates": "该学段没有开始日期，其课程不会显示在日历中。请在此处或上一级补上日期。",
+    "sections": "课表分区",
+    "tabSchedule": "课表",
+    "fRepeat": "重复",
+    "repeatEvery": "每周",
+    "repeatOdd": "A 周（单周）",
+    "repeatEven": "B 周（双周）",
+    "repeatNote": "从本学期开始计算，因此本学期第 1 周即 A 周。"
   },
   "at": {
     "title": "附件",
@@ -815,7 +827,29 @@
     "openFailed": "无法打开该文件",
     "openFailedMsg": "无法打开该文件——{{msg}}",
     "deleted": "附件已删除",
-    "countTitle": "{{n}} 个附件"
+    "countTitle": "{{n}} 个附件",
+    "tab": "出勤",
+    "prevWeek": "上一周",
+    "nextWeek": "下一周",
+    "thisWeek": "本周",
+    "noLessons": "没有课",
+    "noData": "暂无数据",
+    "forTerm": "（{{name}}）",
+    "allTime": "总计",
+    "present": "出勤 {{n}}",
+    "absent": "缺勤 {{n}}",
+    "cancelled": "取消 {{n}}",
+    "rescheduled": "改期 {{n}}",
+    "uncountedNote": "取消和改期的课不计入——它们没有发生，因此不在百分比的任何一侧。",
+    "byCourse": "按课程",
+    "unmarked": "未标记",
+    "cycleAria": "{{lesson}} — {{status}}。点按可更改。",
+    "status": {
+      "present": "出勤",
+      "absent": "缺勤",
+      "cancelled": "取消",
+      "rescheduled": "改期"
+    }
   },
   "cm": {
     "newTitle": "新建安排",
