@@ -29,6 +29,7 @@
     "errGoogleStart": "Tidak dapat memulai proses masuk dengan Google",
     "errGoogleFailed": "Gagal masuk dengan Google",
     "desktopBrowser": "Selesaikan proses masuk di peramban, lalu kembali ke sini.",
+    "errDesktopNoListener": "Masuk lewat desktop tidak tersedia pada peluncuran ini. Mulai ulang StudyDesk, atau masuk dengan email di bawah.",
     "errCallback": "Callback proses masuk gagal",
     "errGeneric": "Autentikasi gagal",
     "errInvalidCredentials": "Email atau kata sandi salah.",

@@ -4,7 +4,7 @@ import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { App as CapApp } from '@capacitor/app';
 import { supabase, OAUTH_REDIRECT_URL } from '../../lib/supabase.js';
-import { desktop } from '../../lib/desktop.js';
+import { desktop, DESKTOP_REDIRECT_URL } from '../../lib/desktop.js';
 import { inheritFromNexus } from '../../lib/suiteSso.js';
 import { setGuestMode } from '../../lib/guestMode.js';
 import { translateAuthError } from '../../lib/authErrors.js';
@@ -346,7 +346,30 @@ export default function AuthGate() {
   }
 
   async function onGoogle() {
-    setErr(''); setInfo(''); setLoading(true);
+    setErr(''); setInfo('');
+    // Desktop with no loopback listener: every candidate port was taken at
+    // launch, so DESKTOP_REDIRECT_URL is null and OAUTH_REDIRECT_URL has fallen
+    // back to `${window.location.origin}/` — on desktop that is
+    // `studydesk://app/`, the exact value this release exists to stop sending
+    // to Supabase. Left alone the round trip still LOOKS like it works: the
+    // browser opens, Google authenticates, Supabase rejects a redirect target
+    // it cannot hold in its allow-list and falls back to the Site URL, and the
+    // user lands on limecore.dev/confirmed with no session and no error — while
+    // this screen sits on the "finish in your browser" notice waiting for a
+    // callback that can never arrive. `hardenNavigation` means the window is no
+    // longer hijacked, so it is a dead end rather than a brick, but a dead end
+    // with nothing attached to explain it.
+    //
+    // Refuse up front and name the remedy. Five ports must be simultaneously
+    // occupied for this to fire, so it is narrow by construction — and email
+    // sign-in needs no redirect, so the user still has a way in.
+    //
+    // Ported from NCC, where this gap was caught first.
+    if (desktop && !DESKTOP_REDIRECT_URL) {
+      setErr(t('auth.errDesktopNoListener'));
+      return;
+    }
+    setLoading(true);
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',

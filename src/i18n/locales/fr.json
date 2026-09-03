@@ -106,6 +106,7 @@
     "errGoogleStart": "Impossible de démarrer la connexion Google",
     "errGoogleFailed": "Échec de la connexion Google",
     "desktopBrowser": "Terminez la connexion dans votre navigateur, puis revenez ici.",
+    "errDesktopNoListener": "La connexion sur ordinateur est indisponible pour ce lancement. Redémarrez StudyDesk ou connectez-vous par e-mail ci-dessous.",
     "errCallback": "Échec du rappel de connexion",
     "errGeneric": "Échec de l'authentification",
     "errInvalidCredentials": "E-mail ou mot de passe incorrect.",

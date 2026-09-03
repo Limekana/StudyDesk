@@ -29,6 +29,7 @@
     "errGoogleStart": "Google साइन-इन शुरू नहीं हो सका",
     "errGoogleFailed": "Google साइन-इन विफल",
     "desktopBrowser": "अपने ब्राउज़र में साइन-इन पूरा करें, फिर यहाँ लौटें।",
+    "errDesktopNoListener": "इस बार डेस्कटॉप साइन-इन उपलब्ध नहीं है। StudyDesk को पुनः प्रारंभ करें, या नीचे ईमेल से साइन इन करें।",
     "errCallback": "साइन-इन कॉलबैक विफल",
     "errGeneric": "प्रमाणीकरण विफल",
     "errInvalidCredentials": "ईमेल या पासवर्ड ग़लत है।",

@@ -105,6 +105,7 @@
     "errGoogleStart": "Google-kirjautumisen aloitus epäonnistui",
     "errGoogleFailed": "Google-kirjautuminen epäonnistui",
     "desktopBrowser": "Viimeistele kirjautuminen selaimessa ja palaa tänne.",
+    "errDesktopNoListener": "Työpöytäkirjautuminen ei ole käytettävissä tällä käynnistyskerralla. Käynnistä StudyDesk uudelleen tai kirjaudu sähköpostilla alta.",
     "errCallback": "Kirjautumisen paluukutsu epäonnistui",
     "errGeneric": "Todennus epäonnistui",
     "errInvalidCredentials": "Väärä sähköposti tai salasana.",
