@@ -21,7 +21,12 @@ export default function SaveSessionSheet({ pending, courses, onSave, onClose, ca
   const { t } = useTranslation();
   // Focus labels are looked up per-rating via t('ss.focus{n}') (1–5); index 0 is unused.
   const focusLabel = (n) => (n >= 1 && n <= 5 ? t(`ss.focus${n}`) : '');
-  const [subjectId, setSubjectId] = useState('');
+  // v1.13 Item 1b — pre-filled from the course chosen on the timer before the
+  // block started. Previously always blank, so a user who had already said
+  // "Physics" was asked again at the one moment they least want a form: the
+  // sheet whose two silent `return`s were the 1.12.1 H1 defect. Still fully
+  // editable — the pre-fill is a default, not a decision.
+  const [subjectId, setSubjectId] = useState(pending?.subjectId || '');
   const [duration, setDuration] = useState(String(pending.durationMinutes));
   const [notes, setNotes] = useState(pending.task || '');
   // 2d - a manually logged session needs its own when; a timer-driven one

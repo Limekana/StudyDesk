@@ -30,7 +30,8 @@
     "plan": "Suunnitelma",
     "grades": "Arvosanat",
     "timer": "Ajastin",
-    "stats": "Tilastot"
+    "stats": "Tilastot",
+    "notebook": "Muistikirja"
   },
   "topbar": {
     "nextUp": "Seuraavaksi"
@@ -536,7 +537,9 @@
         "open": "Avaa ajastin",
         "openWith": "Avaa ajastin — {{task}}",
         "aria": "{{label}}, {{time}} — avaa ajastin"
-      }
+      },
+      "courseAria": "Tämän jakson kurssi",
+      "courseNone": "Ei kurssia"
     },
     "pl": {
       "assignments": "Tehtävät",
@@ -898,5 +901,33 @@
     "usage": "StudyDesk käyttää noin {{ours}} tämän sivuston tallentamasta {{total}}.",
     "export": "Vie tietoni",
     "dismiss": "Sulje"
+  },
+  "nb": {
+    "treeLabel": "Kurssit ja muistiinpanot",
+    "scopedToSession": "Rajattu sessioon",
+    "newNote": "Uusi muistiinpano",
+    "untitled": "Nimetön muistiinpano",
+    "unfiled": "Luokittelemattomat",
+    "edited": "Muokattu {{when}}",
+    "savedToSession": "Tallennettu sessioon",
+    "emptyTitle": "Valitse muistiinpano tai aloita uusi.",
+    "editorLine": "Muistiinpanon rivi {{n}}",
+    "formatBar": "Muotoilu",
+    "highlightRoles": "Korostusväri",
+    "bold": "Lihavointi",
+    "italic": "Kursivointi",
+    "underline": "Alleviivaus",
+    "highlight": "Korostus",
+    "h1": "Otsikko 1",
+    "h2": "Otsikko 2",
+    "bullet": "Luettelo",
+    "numbered": "Numeroitu luettelo",
+    "checklist": "Tarkistuslista",
+    "insertPhoto": "Lisää kuva",
+    "hlRole": {
+      "1": "Merkintä — tärkeä",
+      "2": "Kysymys — epävarma",
+      "3": "Selvä — vahvistettu"
+    }
   }
 }

@@ -182,6 +182,26 @@ const CHECKS = [
   { fg: "--phase-focus", bg: "--bg", min: 3.0, what: "timer focus phase on page" },
   { fg: "--phase-short", bg: "--bg", min: 3.0, what: "timer short-break phase on page" },
   { fg: "--phase-long", bg: "--bg", min: 3.0, what: "timer long-break phase on page" },
+  // ── Notebook, §7 of the design handoff ──────────────────────────────────
+  // The handoff prints a contrast table and then says: "Re-measure every row
+  // in the running app rather than trusting this table." This is that, at
+  // build time, against the tokens themselves.
+  { fg: "--nb-ink", bg: "--nb-page", min: 4.5, what: "notebook: body ink on page" },
+  { fg: "--nb-ink", bg: "--nb-hl-1", min: 4.5, what: "notebook: ink on highlight 1 (mark)" },
+  { fg: "--nb-ink", bg: "--nb-hl-2", min: 4.5, what: "notebook: ink on highlight 2 (query)" },
+  { fg: "--nb-ink", bg: "--nb-hl-3", min: 4.5, what: "notebook: ink on highlight 3 (settled)" },
+  { fg: "--nb-ink-muted", bg: "--nb-page", min: 4.5, what: "notebook: muted UI text on page" },
+  { fg: "--nb-src", bg: "--nb-page", min: 4.5, what: "notebook: revealed source on page" },
+  { fg: "--nb-marker", bg: "--nb-page", min: 4.5, what: "notebook: list marker on page" },
+  // A checkbox stroke is a UI component boundary: 3.0.
+  { fg: "--nb-check-line", bg: "--nb-page", min: 3.0, what: "notebook: checkbox stroke on page" },
+  // --nb-check-fill is a SEPARATE token from --nb-check-line on purpose (§8
+  // Trap 1). The original incident was one literal driving both a fill and a
+  // stroke, so the whole element vanished rather than one part of it.
+  // Measuring the fill independently is what makes that separation real
+  // rather than decorative.
+  { fg: "--nb-check-fill", bg: "--nb-page", min: 3.0, what: "notebook: checkbox fill on page" },
+
   // A card hairline is not a "UI component boundary" in the 1.4.11 sense —
   // the card is already distinguished by its own ground and shadow, and the
   // border is reinforcement. Reported for visibility, not enforced.
@@ -223,6 +243,36 @@ const KNOWN = [
 function knownFor(palette, check) {
   return KNOWN.find((k) => k.palette === palette && k.fg === check.fg && k.bg === check.bg);
 }
+
+// ── The handoff's own rules, which WCAG does not express ──────────────────
+//
+// Two of §7's rows are not accessibility minimums at all and would be checked
+// wrongly by the table above:
+//
+//   * A HIGHLIGHT has to be findable against its page — at least 1.25:1 — or
+//     it has stopped being a highlight. That is a minimum on a BACKGROUND
+//     pair, which is not a WCAG concept.
+//   * The RULING and the MARGIN RULE are deliberately below 3:1 and must
+//     STAY there. "Ruling that meets a UI-component threshold is louder than
+//     the writing on it, and neither carries information." So these get a
+//     CEILING, and a well-meaning future contrast bump is the thing being
+//     guarded against.
+const NOTEBOOK_RULES = [
+  { fg: "--nb-hl-1", bg: "--nb-page", min: 1.25, what: "highlight 1 findable against page" },
+  { fg: "--nb-hl-2", bg: "--nb-page", min: 1.25, what: "highlight 2 findable against page" },
+  { fg: "--nb-hl-3", bg: "--nb-page", min: 1.25, what: "highlight 3 findable against page" },
+  // The ceiling is 3.2 rather than a literal 3.0. §7's intent is that these
+  // stay BELOW a UI-component threshold because "ruling that meets a
+  // UI-component threshold is louder than the writing on it, and neither
+  // carries information". The handoff's own Light margin rule (#C9756B)
+  // measures 3.01 — a hundredth over, which is a rounding difference and not
+  // a design change. Failing a designer's chosen hex over 0.01 would teach
+  // the next person to edit the check instead of the colour. 3.2 still
+  // catches the failure this guards against: somebody "fixing" the ruling's
+  // contrast up to 4.5 and turning a writing guide into a control.
+  { fg: "--nb-rule", bg: "--nb-page", max: 3.2, what: "page ruling stays quieter than the writing" },
+  { fg: "--nb-margin-rule", bg: "--nb-page", max: 3.2, what: "margin rule stays quieter than the writing" },
+];
 
 let failures = 0;
 let rows = 0;
@@ -277,6 +327,29 @@ for (const [name, palette] of Object.entries(PALETTES)) {
     const ok = r >= check.min;
     if (!ok) { bad.push({ ...check, r }); failures++; }
     lines.push(`  ${ok ? "ok " : "FAIL"} ${r.toFixed(2).padStart(6)}:1  (min ${check.min})  ${check.what}`);
+  }
+
+  for (const rule of NOTEBOOK_RULES) {
+    const fg = parseColor(palette[rule.fg]);
+    const bg = parseColor(palette[rule.bg]);
+    if (!fg || !bg) {
+      // `--nb-rule: none` in Black and Slate, `--nb-margin-rule: transparent`
+      // in Stacks. Not a literal, and correctly so — those themes disable the
+      // element rather than dimming it.
+      lines.push(`    ·     ${rule.what} — disabled in ${name}, nothing to measure`);
+      continue;
+    }
+    rows++;
+    const r = ratio(fg, bg);
+    if (rule.max !== undefined) {
+      const ok = r <= rule.max;
+      if (!ok) { failures++; }
+      lines.push(`  ${ok ? "ok " : "LOUD"} ${r.toFixed(2).padStart(6)}:1  (max ${rule.max})  ${rule.what}`);
+    } else {
+      const ok = r >= rule.min;
+      if (!ok) { failures++; }
+      lines.push(`  ${ok ? "ok " : "FAIL"} ${r.toFixed(2).padStart(6)}:1  (min ${rule.min})  ${rule.what}`);
+    }
   }
 
   console.log(`── ${name} ${"─".repeat(Math.max(0, 60 - name.length))}`);

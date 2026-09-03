@@ -135,6 +135,29 @@
   --grain-opacity: 0.04;
   --grain-blend: screen;
   --grain-size: 160px;
+
+  /* ── Notebook (v1.13 §6) — the page lit from behind rather than inverted.
+     The ruling stops being a printed line and becomes a faint warm light one
+     at 7%; anything stronger reads as a scratch on a dark ground. */
+  --nb-page:#16140F;
+  --nb-rule:rgba(237,231,218,.07);
+  --nb-margin-rule:#7A4A42;
+  --nb-current-line:none;
+  --nb-ink:#EDE7DA;
+  --nb-ink-muted:#938B82;
+  --nb-caret:#EDE7DA;
+  --nb-marker:#938B82;
+  --nb-check-line:#A8A096;
+  --nb-check-fill:#A8A096;
+  /* Highlights DEEPEN. On a dark ground marking something means making it
+     darker — this is what stops the yellow becoming a glowing scar. */
+  --nb-hl-1:#4A3F1C;
+  --nb-hl-2:#5C2E29;
+  --nb-hl-3:#26492F;
+  --nb-photo-border:#47402F;
+  --nb-bar-bg:#1E1B15;
+  --nb-bar-rule:#332E24;
+  --nb-src:#938B82;
 }
 
 /* Why not #fff for --text: a pure-white glyph on a near-black ground is the
@@ -226,6 +249,28 @@
      `base.css` needs no selector change. */
   --grain-opacity: 0;
   --grain-blend: normal;
+
+  /* ── Notebook (v1.13 §6) — no full-page ruling at all.
+     A ruling at ANY visible alpha lifts #000 off true black and bands on
+     AMOLED. Only the margin rule survives, plus a rule under the current
+     line, which does the writing-guide job the ruling existed for. */
+  --nb-page:#000000;
+  --nb-rule:none;
+  --nb-margin-rule:#5E3A34;
+  --nb-current-line:rgba(237,231,218,.045);
+  --nb-ink:#EDE7DA;
+  --nb-ink-muted:#938B82;
+  --nb-caret:#EDE7DA;
+  --nb-marker:#938B82;
+  --nb-check-line:#A8A096;
+  --nb-check-fill:#A8A096;
+  --nb-hl-1:#3D3417;
+  --nb-hl-2:#4E2723;
+  --nb-hl-3:#1E3B26;
+  --nb-photo-border:#3C372D;
+  --nb-bar-bg:#0C0B08;
+  --nb-bar-rule:#2A2620;
+  --nb-src:#938B82;
 }
 
 /* Shadows are `none` in Black: a black shadow on a black ground is not

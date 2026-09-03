@@ -28,6 +28,8 @@ import { applyRemotePull } from "./lib/merge.js";
 import GradesView from "./features/grades/GradesView.jsx";
 import SessionsView from "./features/sessions/SessionsView.jsx";
 import SaveSessionSheet from "./features/sessions/SaveSessionSheet.jsx";
+import NotebookView from "./features/notebook/NotebookView.jsx";
+import "./styles/notebook.css";
 import { isGradeMode, normalizeScale, DEFAULT_CUSTOM_SCALE } from "./lib/gradeScale.js";
 import CoursePicker from "./lib/CoursePicker.jsx";
 import { ASSIGN_TYPES, OTHER_ASSIGN_TYPE } from "./lib/assignTypes.js";
@@ -52,7 +54,7 @@ import './styles/onboarding.css';
 import './styles/print.css';
 import './styles/desktop.css';
 import { COURSE_COLORS } from "./lib/courseColors.js";
-import { NotebookPen, CalendarDays, Award, Timer, PanelLeftClose, PanelLeftOpen, Paperclip } from "lucide-react";
+import { NotebookPen, CalendarDays, Award, Timer, PanelLeftClose, PanelLeftOpen, Paperclip, BookOpen } from "lucide-react";
 import { GuestAvatar, AccountAvatar } from "./lib/avatar.jsx";
 import { useShellTier, useSidebarRail } from "./lib/useShell.js";
 import { startPlanReminderLoop, webNotifySupported } from "./lib/webNotify.js";
@@ -281,6 +283,12 @@ const INITIAL = {
   // Non-study blockers — training, clubs, shifts. Time that is NOT available
   // for study, and never counted as study anywhere.
   commitments:[],
+  // v1.13 Item 1b — the notebook. `notes` is the entries; `noteAttachments`
+  // mirrors `attachments`. Named `notes` at the top level and NOT reused for
+  // the per-course `notes` array on a course row, which is an older,
+  // unrelated local-only field (see mergeSubject) — they never meet, because
+  // one lives on `state.notes` and the other on `state.courses[id].notes`.
+  notes:[], noteAttachments:[],
   gradeMode:"ib",                  // 'ib' | 'us' | 'custom' — persisted locally
   customScale:DEFAULT_CUSTOM_SCALE, // bounds for gradeMode 'custom' (SD-F4)
   aiEnabled:false,                 // AI debrief opt-in — device-level, persisted locally
@@ -600,6 +608,44 @@ function reducer(state, action) {
     }
     case "SET_NOTIF_ENABLED": return {...state,notifEnabled:!!action.on};
 
+    // ── v1.13 Item 1b — notebook ──
+    // The content field is the ONLY thing that changes on nearly every
+    // keystroke, so UPDATE_NOTE patches rather than replacing: a full-row
+    // action would make every edit carry the whole note through the reducer
+    // and into the persist effect's dependency comparison.
+    case "ADD_NOTE": {
+      const n = {
+        id: action.note.id || newSyncId(),
+        courseId: action.note.courseId ?? null,
+        title: action.note.title ?? '',
+        lessonDate: action.note.lessonDate ?? null,
+        content: action.note.content ?? '',
+        sessionId: action.note.sessionId ?? null,
+        updatedAt: new Date().toISOString(),
+        deletedAt: null,
+      };
+      return { ...state, notes: [...(state.notes || []), n] };
+    }
+    case "UPDATE_NOTE": {
+      const notes = (state.notes || []).map((n) => (
+        n.id === action.id
+          ? { ...n, ...action.patch, updatedAt: new Date().toISOString() }
+          : n
+      ));
+      return { ...state, notes };
+    }
+    // Soft delete locally too, so the tombstone reaches the outbox and then
+    // other devices. A splice here would make the note reappear on the next
+    // pull, which is the resurrection bug reconcile.js guards against.
+    case "DELETE_NOTE": {
+      const notes = (state.notes || []).map((n) => (
+        n.id === action.id
+          ? { ...n, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+          : n
+      ));
+      return { ...state, notes };
+    }
+
     // ── Sync: bulk merge from Supabase pull (LWW logic in merge.js) ──
     case "MERGE_REMOTE":   return applyRemotePull(state, action.remote);
 
@@ -849,6 +895,8 @@ export default function App() {
         timetableEntries: Array.isArray(saved.timetableEntries) ? saved.timetableEntries : [],
         attachments: Array.isArray(saved.attachments) ? saved.attachments : [],
         commitments: Array.isArray(saved.commitments) ? saved.commitments : [],
+        notes: Array.isArray(saved.notes) ? saved.notes : [],
+        noteAttachments: Array.isArray(saved.noteAttachments) ? saved.noteAttachments : [],
         activeCourse: migratedActiveCourse,
         gradeMode,
         customScale,
@@ -899,8 +947,10 @@ export default function App() {
       timetableEntries:state.timetableEntries,
       attachments:state.attachments,
       commitments:state.commitments,
+      notes:state.notes,
+      noteAttachments:state.noteAttachments,
     }, { critical: true });
-  }, [state.courses,state.assignments,state.actions,state.exams,state.grades,state.studySessions,state.plannedSessions,state.academicTerms,state.timetableEntries,state.attachments,state.commitments]);
+  }, [state.courses,state.assignments,state.actions,state.exams,state.grades,state.studySessions,state.plannedSessions,state.academicTerms,state.timetableEntries,state.attachments,state.commitments,state.notes,state.noteAttachments]);
   // gradeMode is UI-only — persist separately so it doesn't trigger a v1 rewrite on every toggle.
   useEffect(() => {
     try { localStorage.setItem("studydesk-grade-mode", state.gradeMode); } catch {}
@@ -1136,6 +1186,67 @@ export default function App() {
   // point of the button: it is the one action that does not depend on
   // anything currently broken. `downloadExport` builds a blob and hands it to
   // the browser, touching no persistent storage on the way.
+  // ── v1.13 Item 1b — pushing note edits ──────────────────────────────────
+  //
+  // A note changes on every keystroke, so it CANNOT be enqueued the way an
+  // assignment is. Enqueueing per change would put hundreds of items in a
+  // queue that persists to localStorage on every write — which is the exact
+  // pressure that Item 1a identifies as the cause of the five-hours loss.
+  //
+  // So: debounce, and enqueue at most one item per note per idle window. The
+  // outbox de-duplicates nothing, but `upsert_note` carries the whole note as
+  // a snapshot, so a later item simply supersedes an earlier one under LWW —
+  // which makes a stale queued copy harmless rather than a lost edit.
+  //
+  // The 1500ms window matches the realtime pull's own coalescing constant, so
+  // the two do not fight: an edit settles, pushes, and the echo arrives after
+  // the queue has already drained it.
+  const noteTimers = useRef(new Map());
+  useEffect(() => {
+    if (!session) return undefined;
+    const timers = noteTimers.current;
+    for (const n of state.notes || []) {
+      if (n.deletedAt) continue;
+      const prev = timers.get(n.id);
+      if (prev?.updatedAt === n.updatedAt) continue;
+      if (prev?.handle) clearTimeout(prev.handle);
+      const handle = setTimeout(() => {
+        outbox.enqueue("upsert_note", {
+          id: n.id,
+          courseId: n.courseId,
+          title: n.title,
+          lessonDate: n.lessonDate,
+          content: n.content,
+          sessionId: n.sessionId,
+        });
+        const cur = timers.get(n.id);
+        if (cur) timers.set(n.id, { updatedAt: cur.updatedAt, handle: 0 });
+      }, 1500);
+      timers.set(n.id, { updatedAt: n.updatedAt, handle });
+    }
+    return undefined;
+  }, [state.notes, session]);
+
+  // Flush pending note pushes on unmount and on backgrounding. Without this,
+  // closing the app 500ms after the last keystroke drops that edit from the
+  // queue — it would still be in local state and would be repaired by
+  // reconcile on the next pull, but a whole pull cycle later than it needs to
+  // be, and only if the user signs in again on that device.
+  useEffect(() => {
+    const flush = () => {
+      for (const [, rec] of noteTimers.current) {
+        if (rec.handle) clearTimeout(rec.handle);
+      }
+      noteTimers.current.clear();
+    };
+    const onHide = () => { if (document.visibilityState === "hidden") flush(); };
+    document.addEventListener("visibilitychange", onHide);
+    return () => {
+      document.removeEventListener("visibilitychange", onHide);
+      flush();
+    };
+  }, []);
+
   const onExportFromAlert = useCallback(() => {
     try {
       const name = downloadExport(state, session);
@@ -1579,6 +1690,22 @@ export default function App() {
     // v1.3 — Timer now hosts Log + Stats as sub-tabs (see TimerView), so they
     // no longer take their own bottom-bar slots — keeps the nav uncrowded.
     {id:"timer",    label:t('nav.timer'),  Icon:Timer},
+    // v1.13 Item 1b — Notebook. `railOnly` keeps it OUT of the mobile bottom
+    // bar and in the desktop sidebar, which is a deliberate departure from
+    // §10's "a nav entry for Notebook" and is worth stating plainly.
+    //
+    // The bottom bar is four tabs because v1.9 Item 6 sized it that way
+    // against the longest label the app ships — Spanish "Temporizador", 12
+    // characters, needing ~65px of the ~90px each tab gets on a 360px screen.
+    // A fifth tab drops that to 72px and the longest label no longer fits.
+    // The same constraint is why Log and Stats became Timer sub-tabs in v1.3
+    // and why the Plan calendar became a sub-tab in v1.9, both documented in
+    // this file — so this follows the app's own established answer rather
+    // than inventing one.
+    //
+    // On mobile the notebook is a Timer sub-tab instead, which is where §3
+    // wants it anyway: "one tap from a running timer, no search."
+    {id:"notebook", label:t('nav.notebook'), Icon:BookOpen, railOnly:true},
     // v1.3.1 — Settings is no longer a nav tab; it opens from the top-right
     // profile avatar (matches NCC/LimeLog). Still a valid `state.view`.
   ];
@@ -1771,7 +1898,7 @@ export default function App() {
           {state.view==="timer"   &&(
             <>
               <div className="timer-subtabs" role="tablist" aria-label="Timer sections">
-                {[["timer","av.tm.timerTab"],["log","av.tm.logTab"],["stats","av.tm.statsTab"]].map(([id,key])=>(
+                {[["timer","av.tm.timerTab"],["notes","nav.notebook"],["log","av.tm.logTab"],["stats","av.tm.statsTab"]].map(([id,key])=>(
                   <button key={id} type="button" role="tab" aria-selected={timerSub===id}
                     className={"timer-subtab"+(timerSub===id?" active":"")}
                     onClick={()=>setTimerSub(id)}>{t(key)}</button>
@@ -1781,8 +1908,19 @@ export default function App() {
                 {timerSub==="timer" &&<TimerView   state={state} dispatch={dispatch} session={session} showFlash={showFlash} onTimerComplete={(payload)=>setPendingSession(payload)}/>}
                 {timerSub==="log"   &&<SessionsView state={state} dispatch={dispatch} showFlash={showFlash} session={session}/>}
                 {timerSub==="stats" &&<StatsView    state={state}/>}
+                {/* The mobile home for the notebook. Same component as the
+                    desktop route below — one implementation, two entry
+                    points, so the two cannot drift. */}
+                {timerSub==="notes" &&<NotebookView state={state} dispatch={dispatch} onOpenTimer={()=>setTimerSub("timer")}/>}
               </div>
             </>
+          )}
+          {state.view==="notebook"&&(
+            <NotebookView
+              state={state}
+              dispatch={dispatch}
+              onOpenTimer={()=>{ setTimerSub("timer"); dispatch({type:"SET_VIEW",view:"timer"}); }}
+            />
           )}
           {state.view==="settings"&&<SettingsView state={state} dispatch={dispatch} showFlash={showFlash} session={session}/>}
           </div>
@@ -1791,7 +1929,7 @@ export default function App() {
 
       {/* ── Mobile: collapsible course strip + bottom tab bar ── */}
       <nav className="mobile-tabbar">
-        {views.map(v=><div key={v.id} role="button" tabIndex={0} className={"mobile-tab"+(state.view===v.id?" active":"")}
+        {views.filter(v=>!v.railOnly).map(v=><div key={v.id} role="button" tabIndex={0} className={"mobile-tab"+(state.view===v.id?" active":"")}
           onClick={()=>dispatch({type:"SET_VIEW",view:v.id})}
           onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&dispatch({type:"SET_VIEW",view:v.id})}>
           <v.Icon size={20} strokeWidth={1.75} aria-hidden="true"/>

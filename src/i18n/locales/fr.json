@@ -30,7 +30,8 @@
     "plan": "Plan",
     "grades": "Notes",
     "timer": "Minuteur",
-    "stats": "Stats"
+    "stats": "Stats",
+    "notebook": "Carnet"
   },
   "topbar": {
     "nextUp": "À suivre"
@@ -540,7 +541,9 @@
         "open": "Ouvrir le minuteur",
         "openWith": "Ouvrir le minuteur — {{task}}",
         "aria": "{{label}}, {{time}} — ouvrir le minuteur"
-      }
+      },
+      "courseAria": "Cours pour ce bloc",
+      "courseNone": "Aucun cours"
     },
     "pl": {
       "assignments": "Devoirs",
@@ -903,5 +906,33 @@
     "usage": "StudyDesk utilise environ {{ours}} sur les {{total}} stockés par ce site.",
     "export": "Exporter mes données",
     "dismiss": "Ignorer"
+  },
+  "nb": {
+    "treeLabel": "Cours et notes",
+    "scopedToSession": "Limité à la session",
+    "newNote": "Nouvelle note",
+    "untitled": "Note sans titre",
+    "unfiled": "Non classées",
+    "edited": "Modifiée {{when}}",
+    "savedToSession": "Enregistrée dans la session",
+    "emptyTitle": "Choisissez une note, ou commencez-en une.",
+    "editorLine": "Ligne {{n}} de la note",
+    "formatBar": "Mise en forme",
+    "highlightRoles": "Couleur de surlignage",
+    "bold": "Gras",
+    "italic": "Italique",
+    "underline": "Souligné",
+    "highlight": "Surligner",
+    "h1": "Titre 1",
+    "h2": "Titre 2",
+    "bullet": "Liste à puces",
+    "numbered": "Liste numérotée",
+    "checklist": "Liste de contrôle",
+    "insertPhoto": "Insérer une photo",
+    "hlRole": {
+      "1": "Repère — important",
+      "2": "Question — incertain",
+      "3": "Réglé — confirmé"
+    }
   }
 }

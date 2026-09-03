@@ -85,6 +85,37 @@
   --exam-bg-strong: #e3daee;
   --phase-short: #1f5c3b;
   --phase-long: #17538d;
+
+  /* ── Notebook (v1.13 §6) — a note is a catalogue card.
+     The theme's existing 34px spine gutter REPLACES the margin rule outright
+     and carries the note's call number vertically, so --nb-margin-rule is
+     transparent rather than a colour: the gutter is already doing that job
+     and two verticals 10px apart is a mistake, not a design. */
+  --nb-page:#F6F1E4;
+  --nb-rule:#E2D8BE;
+  --nb-margin-rule:transparent;
+  --nb-margin-w:34px;
+  --nb-text-x:48px;
+  --nb-current-line:none;
+  --nb-ink:#221F19;
+  --nb-ink-muted:#6E6656;
+  --nb-caret:#2A4034;
+  --nb-marker:#6E6656;
+  --nb-check-line:#2A4034;
+  --nb-check-fill:#2A4034;
+  --nb-hl-1:#DCCEE8;
+  --nb-hl-2:#EFD2CC;
+  /* Nudged from #CFDDD2, which measured 1.249 against card stock and so
+     failed the handoff's own findability floor of 1.25 by a rounding error.
+     #C7D6CA measures 1.34 — the number §7 prints for this row. */
+  --nb-hl-3:#C7D6CA;
+  --nb-photo-border:#C6B78F;
+  --nb-bar-bg:#EFE7D2;
+  --nb-bar-rule:#2A4034;
+  --nb-font-body:'Zilla Slab',Georgia,serif;
+  --nb-font-head:'Zilla Slab',Georgia,serif;
+  --nb-font-meta:'Cutive Mono',ui-monospace,monospace;
+  --nb-src:#6E6656;
   /* Radius 0, one value, no exceptions - expressed as a re-point of
      the free tier's scale rather than a sweep. */
   --r-sm: 0; --r-md: 0; --r-lg: 0; --r-pill: 0;
@@ -226,6 +257,41 @@
   --lockin-2: #0f1512;
   --lockin-ink: #efebdf;
   --lockin-on: #1d2622;
+
+  /* ── Notebook (v1.13 §6) — a board is not ruled.
+     No page ruling at all; one chalk baseline under the current line, plus a
+     chalk vertical for the margin. The margin offsets to 32px and the text to
+     46px because the chalk vertical is 2px and skewed, so the optical edge
+     sits where a 1px rule would not. */
+  --nb-page:#1D2622;
+  --nb-rule:none;
+  --nb-margin-rule:rgba(201,210,203,.22);
+  --nb-margin-w:32px;
+  --nb-text-x:46px;
+  --nb-current-line:rgba(201,210,203,.28);
+  --nb-ink:#EFEBDF;
+  /* §7 prints 5.6:1 here; #7C8A82 measures 4.30 against the board, below AA.
+     Same correction as Light — lifted to the value the app's own --muted2
+     already uses in this theme, 5.17. */
+  --nb-ink-muted:#8b9890;
+  --nb-caret:#EFEBDF;
+  --nb-marker:#C9D2CB;
+  --nb-check-line:#C9D2CB;
+  --nb-check-fill:#C9D2CB;
+  --nb-hl-1:#4A4225;
+  --nb-hl-2:#5A3636;
+  --nb-hl-3:#3A4640;
+  --nb-photo-border:#4E5C55;
+  /* The board has no panels, so the bar sits directly on the slate with only
+     a hairline above it. The theme's own rule, not an exception to it. */
+  --nb-bar-bg:transparent;
+  --nb-bar-rule:#2C3A34;
+  --nb-font-body:'Kalam',cursive;
+  --nb-font-head:'Kalam',cursive;
+  --nb-font-meta:'Anonymous Pro',ui-monospace,monospace;
+  --nb-size-body:16px;
+  --nb-src:#8b9890;
+  --nb-stroke-w:2px;
   /* One radius value. Nothing in this theme has a corner except the
      hand-drawn checkbox and the chalk rule caps, so 2px everywhere
      is indistinguishable from 2px in those two places alone. */
@@ -808,4 +874,32 @@ html[data-theme="stacks"] .btn-outline {
   --phase-focus: #efebdf;   /* chalk — matches the play button and time picker */
   --phase-short: #e3c46a;   /* yellow chalk */
   --phase-long: #7c8a82;    /* dust */
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Notebook geometry, desktop tier — the two paid themes
+   Here rather than in notebook.css because these are theme facts, and
+   notebook.css carries no theme selector by design (§8, §10). A single
+   `:root` override at this breakpoint would flatten both of the departures
+   below, which is exactly the bug this split prevents.
+   ══════════════════════════════════════════════════════════════════════════ */
+@media(min-width:769px){
+  /* Stacks pins the gutter at 34px in BOTH form factors. It is not a margin
+     that scales with the measure — it is the theme's existing spine, carrying
+     the note's call number vertically, and a spine that changes width between
+     a phone and a laptop stops reading as one physical object. */
+  [data-theme="stacks"]{
+    --nb-margin-w:34px;
+    --nb-text-x:48px;
+  }
+  /* Slate sits 2px inboard of the default at every breakpoint. §1: "Slate
+     offsets its margin to 32px and its text to 46px because the chalk
+     vertical is 2px and skewed" — those are the phone numbers, 2px under the
+     free theme's 34/48, so the desktop pair is the same 2px under 44/60. The
+     optical edge of a skewed 2px chalk line is where a 1px printed rule would
+     not be, and the offset is what puts them in the same place. */
+  [data-theme="slate"]{
+    --nb-margin-w:42px;
+    --nb-text-x:58px;
+  }
 }

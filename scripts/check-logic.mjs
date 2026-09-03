@@ -287,3 +287,360 @@ check('a value that cannot be serialised reports as itself, not as quota', () =>
 });
 
 console.log(`\n${passed} assertions passed.`);
+
+// ── Notebook (v1.13 Item 1b) ──────────────────────────────────────────────
+//
+// The pure half of the notebook: the document model, the inline marks, the
+// input rules, and the three §11 renderers. All total functions, all
+// assertable without a DOM.
+//
+// The highlight-role assertions are the ones that matter most. §8 Trap 2
+// calls a stored hex "the one decision here that is unrecoverable later" —
+// it strands a light-mode yellow on a black page forever. These check that
+// the format cannot express one.
+
+const { BLOCK, parse, serialize, numbering, excerpt } = await import('../src/features/notebook/model.js');
+const { renderInline, toggleMark, clearMarks, plainText, MARK } = await import('../src/features/notebook/inline.js');
+const { matchBlockRule, applyBlockRule, undoBlockRule, enterBehaviour, indentBehaviour, backspaceAtStart } =
+  await import('../src/features/notebook/inputRules.js');
+const { parseMaths, flatten } = await import('../src/features/notebook/render/maths.js');
+const { renderChem, parseEquation, tokeniseSpecies } = await import('../src/features/notebook/render/chem.js');
+const { parseChain, parseAxes, parseTree, renderDiagram } = await import('../src/features/notebook/render/diagram.js');
+
+// ── model ──
+
+check('every block type round-trips through parse/serialize', () => {
+  const src = [
+    '# Heading one',
+    '## Heading two',
+    'plain paragraph',
+    '- a bullet',
+    '\t- a nested bullet',
+    '1. first',
+    '7. seventh',
+    '[ ] unchecked',
+    '[x] checked',
+    '![abc123] IMG_2213',
+  ].join('\n');
+  assert.equal(serialize(parse(src)), src, 'round trip must be lossless');
+});
+
+check('an unparseable line is a paragraph containing the literal text', () => {
+  // There is no such thing as an unopenable note — that is the point of
+  // storing source rather than a block tree.
+  const weird = '}}}{{{ <<< \\frac not closed';
+  const blocks = parse(weird);
+  assert.equal(blocks.length, 1);
+  assert.equal(blocks[0].type, BLOCK.P);
+  assert.equal(blocks[0].text, weird);
+});
+
+check('`- [ ] x` is a checklist item, not a bullet starting with a bracket', () => {
+  const [b] = parse('- [ ] buy paper');
+  assert.equal(b.type, BLOCK.CHECK);
+  assert.equal(b.checked, false);
+  assert.equal(b.text, 'buy paper');
+});
+
+check('ordered-list numbering is computed, not stored', () => {
+  // Deleting the second of five must renumber the rest rather than leave a
+  // gap — which is the whole reason people expect a list type.
+  const blocks = parse(['1. a', '1. b', '1. c'].join('\n'));
+  const n = numbering(blocks);
+  assert.deepEqual([n.get(0), n.get(1), n.get(2)], [1, 2, 3]);
+});
+
+check('an explicit start seeds the run — `7. ` starts at seven', () => {
+  const blocks = parse(['7. a', '1. b'].join('\n'));
+  const n = numbering(blocks);
+  assert.deepEqual([n.get(0), n.get(1)], [7, 8]);
+});
+
+check('a non-list block breaks the run and restarts numbering', () => {
+  const blocks = parse(['1. a', 'prose', '1. b'].join('\n'));
+  const n = numbering(blocks);
+  assert.deepEqual([n.get(0), n.get(2)], [1, 1]);
+});
+
+check('excerpt strips markers and marks for the tree row', () => {
+  assert.equal(excerpt('## **Bold** ==marked== title'), 'Bold marked title');
+});
+
+// ── inline marks, and Trap 2 ──
+
+check('a highlight stores its ROLE, never a colour', () => {
+  const one = renderInline('a ==mark== b');
+  const marked = one.find((t) => t.marks.includes(MARK.HL));
+  assert.ok(marked);
+  assert.equal(marked.role, 1);
+  // The decisive assertion: nothing in a token carries a colour, and the
+  // grammar has no production that could put one there.
+  for (const tok of one) {
+    assert.equal('color' in tok, false);
+    assert.equal('hex' in tok, false);
+  }
+});
+
+check('roles 2 and 3 parse and keep their identity', () => {
+  assert.equal(renderInline('=2=unsure=2=').find((t) => t.role)?.role, 2);
+  assert.equal(renderInline('=3=settled=3=').find((t) => t.role)?.role, 3);
+});
+
+check('no syntax exists that can store a hex as a highlight', () => {
+  // A user typing a colour gets literal text, not a coloured highlight.
+  const tokens = renderInline('==#EDD98A==');
+  assert.equal(tokens.length, 1);
+  assert.equal(tokens[0].text, '#EDD98A');
+  assert.equal(tokens[0].role, 1, 'still role 1 — the hex is just content');
+});
+
+check('marks nest and both survive', () => {
+  const t = renderInline('**bold *and italic* here**');
+  const both = t.find((x) => x.marks.includes(MARK.BOLD) && x.marks.includes(MARK.ITALIC));
+  assert.ok(both, 'expected a token carrying both marks');
+  assert.equal(both.text, 'and italic');
+});
+
+check('`**` before `*`, and `=2=` before `==`', () => {
+  assert.equal(renderInline('**x**')[0].marks[0], MARK.BOLD);
+  assert.equal(renderInline('=2=x=2=')[0].role, 2);
+});
+
+check('an empty delimiter pair is literal text, not an empty mark', () => {
+  // A maths note contains runs of asterisks; `****` is four characters.
+  assert.equal(plainText('****'), '****');
+});
+
+check('toggling a mark twice restores the original exactly', () => {
+  const src = 'hello world';
+  const on = toggleMark(src, 0, 5, MARK.BOLD);
+  assert.equal(on.source, '**hello** world');
+  const off = toggleMark(on.source, on.start, on.end, MARK.BOLD);
+  assert.equal(off.source, src, 'Ctrl+B twice must be a no-op');
+});
+
+check('toggling with nothing selected leaves the caret between the markers', () => {
+  const r = toggleMark('ab', 1, 1, MARK.BOLD);
+  assert.equal(r.source, 'a****b');
+  assert.equal(r.start, 3);
+  assert.equal(r.end, 3);
+});
+
+check('clear formatting strips character marks and leaves the text', () => {
+  const r = clearMarks('**a** and ==b==', 0, 15);
+  assert.equal(r.source, 'a and b');
+});
+
+// ── input rules ──
+
+const P = (text) => ({ type: BLOCK.P, text, indent: 0, checked: false });
+
+check('a rule fires only at the start of an empty block', () => {
+  assert.ok(matchBlockRule(P('- '), 2), 'should fire at the start');
+  assert.equal(matchBlockRule(P('There are 2 cases, 1. '), 22), null,
+    'must NOT fire mid-sentence — this is the one that ruins prose');
+});
+
+check('every documented rule fires', () => {
+  assert.equal(matchBlockRule(P('# '), 2).type, BLOCK.H1);
+  assert.equal(matchBlockRule(P('## '), 3).type, BLOCK.H2);
+  assert.equal(matchBlockRule(P('- '), 2).type, BLOCK.BULLET);
+  assert.equal(matchBlockRule(P('* '), 2).type, BLOCK.BULLET);
+  assert.equal(matchBlockRule(P('+ '), 2).type, BLOCK.BULLET);
+  assert.equal(matchBlockRule(P('1. '), 3).type, BLOCK.NUMBER);
+  assert.equal(matchBlockRule(P('[] '), 3).type, BLOCK.CHECK);
+  assert.equal(matchBlockRule(P('[ ] '), 4).type, BLOCK.CHECK);
+  assert.equal(matchBlockRule(P('[x] '), 4).checked, true, '`[x] ` starts CHECKED');
+});
+
+check('any digit starts an ordered list at that number', () => {
+  assert.equal(matchBlockRule(P('3. '), 3).start, 3);
+});
+
+check('backspace after a rule restores the LITERAL characters', () => {
+  // §5: "the escape hatch people reach for without being told; without it,
+  // input rules feel like a trap."
+  const m = matchBlockRule(P('- '), 2);
+  const applied = applyBlockRule(P('- '), m);
+  assert.equal(applied.type, BLOCK.BULLET);
+  assert.equal(applied.text, '');
+  const undone = undoBlockRule(applied, m.undo);
+  assert.equal(undone.type, BLOCK.P);
+  assert.equal(undone.text, '- ', 'the exact characters typed, restored');
+});
+
+check('Enter on an empty list item exits the list', () => {
+  assert.equal(enterBehaviour({ type: BLOCK.BULLET, text: '', indent: 0 }).action, 'exit');
+});
+
+check('Enter on an empty NESTED item outdents first, then exits', () => {
+  assert.equal(enterBehaviour({ type: BLOCK.BULLET, text: '', indent: 1 }).action, 'outdent');
+});
+
+check('Enter after a heading starts body text, never another heading', () => {
+  assert.equal(enterBehaviour({ type: BLOCK.H1, text: 'Title', indent: 0 }).type, BLOCK.P);
+});
+
+check('a new checklist item is never pre-checked', () => {
+  // Inheriting `checked` would silently mark work done that nobody did.
+  assert.equal(enterBehaviour({ type: BLOCK.CHECK, text: 'x', indent: 0, checked: true }).checked, false);
+});
+
+check('nesting is capped at two levels', () => {
+  const lvl0 = { type: BLOCK.BULLET, text: 'a', indent: 0 };
+  assert.equal(indentBehaviour(lvl0, false).indent, 1);
+  assert.equal(indentBehaviour({ ...lvl0, indent: 1 }, false), null, 'no third level');
+  assert.equal(indentBehaviour(lvl0, true), null, 'cannot outdent past zero');
+});
+
+check('Tab does nothing in a paragraph', () => {
+  assert.equal(indentBehaviour(P('text'), false), null);
+});
+
+check('backspace at start degrades in three steps, never one', () => {
+  assert.equal(backspaceAtStart({ type: BLOCK.BULLET, text: 'a', indent: 1 }).action, 'outdent');
+  assert.equal(backspaceAtStart({ type: BLOCK.BULLET, text: 'a', indent: 0 }).action, 'plain');
+  assert.equal(backspaceAtStart(P('a')).action, 'merge');
+});
+
+// ── §11 maths ──
+
+check('the maths subset is constrained AT THE PARSER', () => {
+  // §11: "Constrain the subset at the parser, not in documentation, or it
+  // grows into the out-of-scope list on its own."
+  assert.equal(parseMaths('\\begin{align} x \\end{align}'), null, 'not in the grammar');
+  assert.equal(parseMaths('\\includegraphics{x}'), null);
+  assert.ok(parseMaths('\\alpha'), 'allow-listed commands do render');
+});
+
+check('superscripts, subscripts and braces', () => {
+  assert.equal(flatten(parseMaths('x^2')), 'x²');
+  assert.equal(flatten(parseMaths('x_i')), 'xᵢ');
+  assert.equal(flatten(parseMaths('x^{n+1}')), 'xⁿ⁺¹');
+});
+
+check('a character with no Unicode superscript fails the span, losing nothing', () => {
+  // Rendering `x^{α}` as `xα` would silently change what the note says.
+  assert.equal(parseMaths('x^{\\alpha}'), null);
+});
+
+check('fractions stay structured so the renderer can draw a real rule', () => {
+  const nodes = parseMaths('\\frac{a}{b}');
+  assert.equal(nodes[0].t, 'frac');
+  assert.equal(flatten(nodes), '(a/b)');
+});
+
+check('greek and operators render as Unicode', () => {
+  assert.equal(flatten(parseMaths('\\alpha\\beta\\Delta')), 'αβΔ');
+  assert.equal(flatten(parseMaths('\\int\\sum\\infty')), '∫∑∞');
+});
+
+// ── §11 chemistry ──
+
+check('digits after an element subscript automatically', () => {
+  const r = renderChem('H2O');
+  assert.equal(r.kind, 'species');
+  assert.equal(r.tokens.map((t) => t.text).join(''), 'H₂O');
+});
+
+check('a balanced equation is reported balanced', () => {
+  const r = parseEquation('2H2 + O2 -> 2H2O');
+  assert.equal(r.balanced, true);
+  assert.deepEqual(r.tally.map((t) => [t.symbol, t.have, t.need]), [['H', 4, 4], ['O', 2, 2]]);
+});
+
+check('an unbalanced equation marks the offending column', () => {
+  const r = parseEquation('H2 + O2 -> H2O');
+  assert.equal(r.balanced, false);
+  const o = r.tally.find((t) => t.symbol === 'O');
+  assert.equal(o.ok, false);
+  assert.equal(o.have, 2);
+  assert.equal(o.need, 1);
+});
+
+check('group multipliers are counted — the case hand-tallying gets wrong', () => {
+  const r = parseEquation('Ca(OH)2 + 2HCl -> CaCl2 + 2H2O');
+  assert.equal(r.balanced, true);
+  assert.equal(r.tally.find((t) => t.symbol === 'O').have, 2);
+  assert.equal(r.tally.find((t) => t.symbol === 'H').have, 4);
+});
+
+check('two-letter symbols win over one-letter ones', () => {
+  // `Co` is cobalt, not carbon + oxygen; `Cl` is chlorine, not carbon + l.
+  assert.deepEqual(tokeniseSpecies('Co').map((t) => t.text), ['Co']);
+  assert.deepEqual(tokeniseSpecies('CO').map((t) => t.text), ['C', 'O']);
+});
+
+check('state labels are never subscripted', () => {
+  const r = renderChem('2H2O(l) -> 2H2(g) + O2(g)');
+  assert.equal(r.balanced, true);
+  const states = r.sides.left[0].tokens.filter((t) => t.kind === 'state');
+  assert.equal(states[0].text, '(l)', 'roman, unchanged');
+});
+
+check('charge is tallied as its own row', () => {
+  const r = parseEquation('Fe2+ + Ag+ -> Fe3+ + Ag');
+  const q = r.tally.find((t) => t.isCharge);
+  assert.ok(q, 'an ionic equation must tally charge');
+  assert.equal(q.have, 3);
+  assert.equal(q.need, 3);
+});
+
+check('equilibrium arrows are recognised', () => {
+  assert.equal(parseEquation('N2 + 3H2 <-> 2NH3').arrow, '⇌');
+  assert.equal(parseEquation('N2 + 3H2 -> 2NH3').arrow, '→');
+});
+
+check('ordinary prose is NOT chemistry', () => {
+  // `In` is indium and also the word "in". Returning null is what stops the
+  // renderer firing on a sentence.
+  assert.equal(renderChem('just some words'), null);
+  assert.equal(renderChem('In the beginning'), null);
+});
+
+// ── §11 diagrams ──
+
+check('a chain needs at least two nodes', () => {
+  assert.equal(parseChain('a -> b -> c').nodes.length, 3);
+  assert.equal(parseChain('a ->'), null, 'one node is a word with an arrow, not a chain');
+});
+
+check('a trailing arrow closes the chain into a cycle', () => {
+  assert.equal(parseChain('a -> b -> c ->').cycle, true);
+  assert.equal(parseChain('a -> b -> c').cycle, false);
+});
+
+check('axes carry a SHAPE, never data', () => {
+  const g = parseAxes('graph: x=t y=v, up-curve');
+  assert.equal(g.shape, 'up-curve');
+  assert.equal(g.x, 't');
+  assert.equal(g.y, 'v');
+  assert.ok(Array.isArray(g.points) && g.points.length > 1);
+});
+
+check('an unrecognised shape returns null rather than guessing', () => {
+  // Guessing which curve somebody meant is worse than not drawing it.
+  assert.equal(parseAxes('graph: x=t y=v, wiggly'), null);
+});
+
+check('plateau flattens the tail without being a seventh shape', () => {
+  const plain = parseAxes('graph: s-curve');
+  const flat = parseAxes('graph: s-curve, plateau');
+  assert.equal(flat.plateau, true);
+  const lastPlain = plain.points[plain.points.length - 1][1];
+  const lastFlat = flat.points[flat.points.length - 1][1];
+  assert.ok(lastFlat <= lastPlain, 'the tail should be flattened, not raised');
+});
+
+check('a tree is two levels, and deeper indentation joins the level above', () => {
+  const tr = parseTree(['tree:', '  Mammals', '    Cats', '      Persian']);
+  assert.equal(tr.roots.length, 1);
+  assert.equal(tr.roots[0].label, 'Mammals');
+  assert.equal(tr.roots[0].children.length, 2, 'the third level joins the second');
+});
+
+check('renderDiagram returns null for anything that is not one of the three', () => {
+  assert.equal(renderDiagram('just words'), null);
+  assert.ok(renderDiagram('a -> b'));
+  assert.ok(renderDiagram('graph: peak'));
+});

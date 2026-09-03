@@ -45,7 +45,8 @@ function readRaw() {
  *
  * @returns {null | {
  *   mode: 'timer'|'stopwatch', phase: 'focus'|'short'|'long',
- *   task: string|null, secs: number, display: string, isBreak: boolean
+ *   task: string|null, courseId: string|null, sessionId: string|null,
+ *   secs: number, display: string, isBreak: boolean
  * }}
  */
 export function readTimerSnapshot(now = Date.now()) {
@@ -72,6 +73,15 @@ export function readTimerSnapshot(now = Date.now()) {
     phase,
     isBreak: phase !== 'focus',
     task: typeof rec.task === 'string' && rec.task.trim() ? rec.task.trim() : null,
+    // v1.13 Item 1b — the course this block is for, when one was chosen. Null
+    // is the normal case for a user who never picks one, and every consumer
+    // has to treat it as "no scope" rather than as an error.
+    courseId: typeof rec.courseId === 'string' && rec.courseId ? rec.courseId : null,
+    // The id of the study_sessions row this block will become, when it is
+    // saved. Undefined until then — a running block has no row yet, so a note
+    // written now records null and stays unlinked rather than pointing at an
+    // id that may never exist.
+    sessionId: typeof rec.sessionId === 'string' && rec.sessionId ? rec.sessionId : null,
     secs,
     display: formatClock(secs),
   };

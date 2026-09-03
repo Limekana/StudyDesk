@@ -78,6 +78,74 @@ h1,h2,h3,h4,h5,h6{font-weight:inherit;font-size:inherit;}
   --grain-size:128px;
   --grain-blend:normal;
 }
+
+/* ── Notebook tokens (v1.13 Item 1b) ───────────────────────────────────────
+   Values are the design handoff's §6 and §11 tables, verbatim. Declared once
+   per theme scope, `--nb-` prefixed, and additive: no existing token changes
+   value and no existing selector is edited, which is what acceptance check 10
+   ("pre-existing Light views pixel-identical") depends on.
+
+   `--nb-page` is deliberately the same colour as the app's own `--bg` in each
+   palette. The notebook is not a panel sitting on the app; it is the same
+   sheet of paper. Change one and re-check the other.
+
+   Where a pair like `34/44px` appears in the handoff, the token holds the
+   PHONE value and notebook.css overrides it at the desktop breakpoint — a
+   custom property cannot carry two values, and putting the desktop number
+   here would make the phone the exception.
+
+   --nb-rule: none in Black and Slate is how those themes disable full-page
+   ruling with no selector change (§1). The gradient still evaluates; it just
+   paints nothing. */
+:root{
+  --nb-page:#f5f2ed;
+  --nb-rule:#E4DCCF;
+  --nb-rule-h:28px;
+  --nb-margin-rule:#C9756B;
+  --nb-margin-w:34px;
+  --nb-text-x:48px;
+  --nb-current-line:none;
+  --nb-ink:#1a1814;
+  /* §7 prints 5.4:1 for "muted UI text on page" in Light. The hex it gives
+     for it, #7a7570, actually measures 4.08:1 against #f5f2ed — below AA.
+     The handoff anticipates exactly this ("Re-measure every row in the
+     running app rather than trusting this table"), so the RULE wins over the
+     value and the token moves to the app's own --muted, which measures 5.14
+     and is the nearest existing ink in the palette. Same correction in Slate.
+     This is a NEW token, so nothing pre-existing moves and the pixel-freeze
+     on shipped Light views is untouched. */
+  --nb-ink-muted:#6b6560;
+  --nb-caret:#1a1814;
+  --nb-marker:#6b6560;
+  --nb-check-line:#6b6560;
+  --nb-check-fill:#6b6560;
+  --nb-hl-1:#EDD98A;
+  --nb-hl-2:#EFC5C0;
+  --nb-hl-3:#C9DCC4;
+  --nb-photo-border:#cfc8bc;
+  --nb-bar-bg:#faf8f4;
+  --nb-bar-rule:#e0d9cf;
+  --nb-font-body:'DM Sans',sans-serif;
+  --nb-font-head:'Playfair Display',serif;
+  --nb-font-meta:'DM Mono',monospace;
+  --nb-size-body:15px;
+  /* §11 */
+  --nb-src:#6b6560;
+  --nb-stroke-w:1px;
+}
+
+/* Notebook geometry, desktop tier. The handoff's §1 table gives phone/desktop
+   pairs; a custom property cannot hold two values, so the phone number is the
+   token and this is its other half. Applies to the free palettes (light, dark
+   and black share one geometry — lighting does not move a margin); Stacks and
+   Slate declare their own in themes.css. */
+@media(min-width:769px){
+  :root{
+    --nb-margin-w:44px;
+    --nb-text-x:60px;
+    --nb-rule-top:20px;
+  }
+}
 /* ── Shell tokens (v1.9 Item 14, Phase 1) ──────────────────────────────────
    The three-tier desktop shell is driven entirely by these three values, so a
    later desktop surface sizes itself against the same rhythm instead of
