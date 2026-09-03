@@ -586,7 +586,9 @@
       "studyStart": "Mulai belajar:",
       "studyFor": "Belajar untuk {{label}}",
       "prepareFor": "Persiapan untuk {{label}}",
-      "topicMore": " (+{{n}} lagi)"
+      "topicMore": " (+{{n}} lagi)",
+      "editExam": "Edit ujian",
+      "examDate": "Tanggal ujian"
     },
     "md": {
       "addAssignment": "Tambah tugas",
@@ -822,29 +824,7 @@
     "openFailed": "Tidak bisa membuka berkas itu",
     "openFailedMsg": "Tidak bisa membuka berkas itu — {{msg}}",
     "deleted": "Lampiran dihapus",
-    "countTitle": "{{n}} lampiran",
-    "tab": "Kehadiran",
-    "prevWeek": "Sebelumnya",
-    "nextWeek": "Berikutnya",
-    "thisWeek": "Minggu ini",
-    "noLessons": "Tidak ada pelajaran",
-    "noData": "Belum ada data",
-    "forTerm": "di {{name}}",
-    "allTime": "keseluruhan",
-    "present": "{{n}} hadir",
-    "absent": "{{n}} absen",
-    "cancelled": "{{n}} dibatalkan",
-    "rescheduled": "{{n}} dijadwal ulang",
-    "uncountedNote": "Pelajaran yang dibatalkan dan dijadwal ulang tidak dihitung — pelajaran itu tidak terjadi, jadi tidak masuk ke sisi mana pun dari persentase.",
-    "byCourse": "Per mata pelajaran",
-    "unmarked": "belum ditandai",
-    "cycleAria": "{{lesson}} — {{status}}. Ketuk untuk mengubah.",
-    "status": {
-      "present": "hadir",
-      "absent": "absen",
-      "cancelled": "dibatalkan",
-      "rescheduled": "dijadwal ulang"
-    }
+    "countTitle": "{{n}} lampiran"
   },
   "cm": {
     "newTitle": "Agenda baru",
@@ -986,6 +966,30 @@
       "cors": "Peramban tidak bisa mengambil kalender dari situs lain. Gunakan aplikasi Android untuk ini.",
       "http": "Server mengembalikan galat.",
       "network": "Tidak dapat menghubungi alamat itu."
+    }
+  },
+  "att": {
+    "tab": "Kehadiran",
+    "prevWeek": "Sebelumnya",
+    "nextWeek": "Berikutnya",
+    "thisWeek": "Minggu ini",
+    "noLessons": "Tidak ada pelajaran",
+    "noData": "Belum ada data",
+    "forTerm": "di {{name}}",
+    "allTime": "keseluruhan",
+    "present": "{{n}} hadir",
+    "absent": "{{n}} absen",
+    "cancelled": "{{n}} dibatalkan",
+    "rescheduled": "{{n}} dijadwal ulang",
+    "uncountedNote": "Pelajaran yang dibatalkan dan dijadwal ulang tidak dihitung — pelajaran itu tidak terjadi, jadi tidak masuk ke sisi mana pun dari persentase.",
+    "byCourse": "Per mata pelajaran",
+    "unmarked": "belum ditandai",
+    "cycleAria": "{{lesson}} — {{status}}. Ketuk untuk mengubah.",
+    "status": {
+      "present": "hadir",
+      "absent": "absen",
+      "cancelled": "dibatalkan",
+      "rescheduled": "dijadwal ulang"
     }
   }
 }

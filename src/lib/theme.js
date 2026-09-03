@@ -181,11 +181,35 @@ function applyAppearanceChrome(dark) {
   }
 
   import("@capacitor/status-bar")
-    .then(({ StatusBar, Style }) => {
+    .then(async ({ StatusBar, Style }) => {
       // `Style.Dark` means "dark CONTENT" in some plugin versions and "dark
       // BACKGROUND" in others, which has burned this before. Capacitor 8's
-      // contract is: Style.Dark = light text for a dark background.
-      return StatusBar.setStyle({ style: dark ? Style.Dark : Style.Light });
+      // documented contract is: Style.Dark = LIGHT TEXT for a dark background.
+      // Verified against the installed plugin's own definitions.d.ts.
+      await StatusBar.setStyle({ style: dark ? Style.Dark : Style.Light });
+
+      // The BAR ITSELF, for Android 14 and below.
+      //
+      // Both halves are needed because the app spans two regimes. minSdk is
+      // 24 and targetSdk is 36:
+      //   * Android 15+ ENFORCES edge-to-edge for SDK 35+ targets, so the
+      //     WebView draws under the bar, `--bg` shows through it, and only
+      //     the icon colour above matters. `setBackgroundColor` is a no-op.
+      //   * Android 14 and below honour `statusBarColor`, which the app theme
+      //     hardcodes to #F5F2ED in styles.xml. That is the right FIRST PAINT
+      //     for the default light theme and completely wrong once the user
+      //     picks Dark — a cream strip above a #16140f app.
+      //
+      // A literal is deliberately not repeated here: the value is read from
+      // the resolved `--bg`, so the bar and the page cannot drift apart.
+      try {
+        const bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();
+        // The plugin wants #rrggbb. A token that resolved to a keyword or an
+        // rgb() — which none currently do, but which a future theme might —
+        // is skipped rather than passed through to a native call that would
+        // throw.
+        if (/^#[0-9a-f]{6}$/i.test(bg)) await StatusBar.setBackgroundColor({ color: bg });
+      } catch { /* pre-paint, or Android 15+ where this is a no-op anyway */ }
     })
     .catch(() => { /* web, Electron, or plugin not installed */ });
 }

@@ -42,7 +42,7 @@ function pct(value, t) {
   // `null` is "nothing recorded", NOT zero. A student who has marked nothing
   // has not attended 0% of their lessons, and "0%" is a false statement about
   // them in the one place they might screenshot it.
-  if (value === null) return t('at.noData');
+  if (value === null) return t('att.noData');
   return `${Math.round(value)}%`;
 }
 
@@ -124,7 +124,7 @@ export default function Attendance({ state, dispatch, session, term }) {
     <div className="at-wrap">
       <div className="at-head">
         <button className="btn-outline btn-sm" onClick={() => setAnchor(addDays(weekFrom, -7))}>
-          {t('at.prevWeek')}
+          {t('att.prevWeek')}
         </button>
         <div className="at-range">
           {parseLocalDate(weekFrom).toLocaleDateString(locale, { day: 'numeric', month: 'short' })}
@@ -132,10 +132,10 @@ export default function Attendance({ state, dispatch, session, term }) {
           {parseLocalDate(days[6]).toLocaleDateString(locale, { day: 'numeric', month: 'short' })}
         </div>
         <button className="btn-outline btn-sm" onClick={() => setAnchor(addDays(weekFrom, 7))}>
-          {t('at.nextWeek')}
+          {t('att.nextWeek')}
         </button>
         <button className="btn-outline btn-sm" onClick={() => setAnchor(today)}>
-          {t('at.thisWeek')}
+          {t('att.thisWeek')}
         </button>
       </div>
 
@@ -144,24 +144,24 @@ export default function Attendance({ state, dispatch, session, term }) {
         <div className="at-summary-main">
           <div className="at-pct">{pct(termSummary.percent, t)}</div>
           <div className="at-pct-lbl">
-            {term ? t('at.forTerm', { name: term.name }) : t('at.allTime')}
+            {term ? t('att.forTerm', { name: term.name }) : t('att.allTime')}
           </div>
         </div>
         <div className="at-counts">
-          <span>{t('at.present', { n: termSummary.present })}</span>
-          <span>{t('at.absent', { n: termSummary.absent })}</span>
+          <span>{t('att.present', { n: termSummary.present })}</span>
+          <span>{t('att.absent', { n: termSummary.absent })}</span>
           {/* Shown, and shown as NOT counted. A student who sees "3 cancelled"
               next to a percentage that ignores them learns the rule from the
               interface instead of having to be told it. */}
           {termSummary.cancelled > 0 && (
-            <span className="at-uncounted">{t('at.cancelled', { n: termSummary.cancelled })}</span>
+            <span className="at-uncounted">{t('att.cancelled', { n: termSummary.cancelled })}</span>
           )}
           {termSummary.rescheduled > 0 && (
-            <span className="at-uncounted">{t('at.rescheduled', { n: termSummary.rescheduled })}</span>
+            <span className="at-uncounted">{t('att.rescheduled', { n: termSummary.rescheduled })}</span>
           )}
         </div>
         {(termSummary.cancelled > 0 || termSummary.rescheduled > 0) && (
-          <div className="at-note">{t('at.uncountedNote')}</div>
+          <div className="at-note">{t('att.uncountedNote')}</div>
         )}
       </div>
 
@@ -173,7 +173,7 @@ export default function Attendance({ state, dispatch, session, term }) {
               <span className="at-day-dow">{labels[i]}</span>
               <span className="at-day-num">{parseLocalDate(iso).getDate()}</span>
             </div>
-            {lessons.length === 0 && <div className="at-day-empty">{t('at.noLessons')}</div>}
+            {lessons.length === 0 && <div className="at-day-empty">{t('att.noLessons')}</div>}
             {lessons.map((l) => {
               const status = statusFor(index, l.id, iso);
               return (
@@ -184,9 +184,9 @@ export default function Attendance({ state, dispatch, session, term }) {
                   onClick={() => cycle(l.id, iso)}
                   // The cycle is not discoverable from the glyph alone, so the
                   // label says both what it is and what pressing does.
-                  aria-label={t('at.cycleAria', {
+                  aria-label={t('att.cycleAria', {
                     lesson: l.title || t('tt.noCourse'),
-                    status: status ? t(`at.status.${status}`) : t('at.unmarked'),
+                    status: status ? t(`att.status.${status}`) : t('att.unmarked'),
                   })}
                 >
                   <span className="at-lesson-pip" style={{ background: l.color || 'var(--border2)' }} aria-hidden="true" />
@@ -205,7 +205,7 @@ export default function Attendance({ state, dispatch, session, term }) {
           actually behind in". Worst first. */}
       {courseSummary.length > 0 && (
         <div className="at-courses">
-          <div className="at-courses-title">{t('at.byCourse')}</div>
+          <div className="at-courses-title">{t('att.byCourse')}</div>
           {courseSummary.map((c) => {
             const course = c.courseId ? state.courses?.[c.courseId] : null;
             return (

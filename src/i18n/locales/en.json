@@ -591,7 +591,9 @@
       "studyStart": "Study start:",
       "studyFor": "Study for {{label}}",
       "prepareFor": "Prepare for {{label}}",
-      "topicMore": " (+{{n}} more)"
+      "topicMore": " (+{{n}} more)",
+      "editExam": "Edit exam",
+      "examDate": "Exam date"
     },
     "md": {
       "addAssignment": "Add Assignment",
@@ -827,29 +829,7 @@
     "openFailed": "Couldn't open that file",
     "openFailedMsg": "Couldn't open that file — {{msg}}",
     "deleted": "Attachment removed",
-    "countTitle": "{{n}} attached",
-    "tab": "Attendance",
-    "prevWeek": "Previous",
-    "nextWeek": "Next",
-    "thisWeek": "This week",
-    "noLessons": "No lessons",
-    "noData": "No data yet",
-    "forTerm": "in {{name}}",
-    "allTime": "overall",
-    "present": "{{n}} present",
-    "absent": "{{n}} absent",
-    "cancelled": "{{n}} cancelled",
-    "rescheduled": "{{n}} rescheduled",
-    "uncountedNote": "Cancelled and rescheduled lessons are not counted — they did not happen, so they are in neither half of the percentage.",
-    "byCourse": "By course",
-    "unmarked": "not marked",
-    "cycleAria": "{{lesson}} — {{status}}. Tap to change.",
-    "status": {
-      "present": "present",
-      "absent": "absent",
-      "cancelled": "cancelled",
-      "rescheduled": "rescheduled"
-    }
+    "countTitle": "{{n}} attached"
   },
   "cm": {
     "newTitle": "New commitment",
@@ -991,6 +971,30 @@
       "cors": "A browser cannot fetch a calendar from another site. Use the Android app for this.",
       "http": "The server returned an error.",
       "network": "Could not reach that address."
+    }
+  },
+  "att": {
+    "tab": "Attendance",
+    "prevWeek": "Previous",
+    "nextWeek": "Next",
+    "thisWeek": "This week",
+    "noLessons": "No lessons",
+    "noData": "No data yet",
+    "forTerm": "in {{name}}",
+    "allTime": "overall",
+    "present": "{{n}} present",
+    "absent": "{{n}} absent",
+    "cancelled": "{{n}} cancelled",
+    "rescheduled": "{{n}} rescheduled",
+    "uncountedNote": "Cancelled and rescheduled lessons are not counted — they did not happen, so they are in neither half of the percentage.",
+    "byCourse": "By course",
+    "unmarked": "not marked",
+    "cycleAria": "{{lesson}} — {{status}}. Tap to change.",
+    "status": {
+      "present": "present",
+      "absent": "absent",
+      "cancelled": "cancelled",
+      "rescheduled": "rescheduled"
     }
   }
 }

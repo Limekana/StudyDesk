@@ -596,7 +596,9 @@
       "studyStart": "Inicio del estudio:",
       "studyFor": "Estudiar: {{label}}",
       "prepareFor": "Preparar: {{label}}",
-      "topicMore": " (+{{n}} más)"
+      "topicMore": " (+{{n}} más)",
+      "editExam": "Editar examen",
+      "examDate": "Fecha del examen"
     },
     "md": {
       "addAssignment": "Añadir tarea",
@@ -832,29 +834,7 @@
     "openFailed": "No se pudo abrir el archivo",
     "openFailedMsg": "No se pudo abrir el archivo: {{msg}}",
     "deleted": "Adjunto eliminado",
-    "countTitle": "{{n}} adjuntos",
-    "tab": "Asistencia",
-    "prevWeek": "Anterior",
-    "nextWeek": "Siguiente",
-    "thisWeek": "Esta semana",
-    "noLessons": "Sin clases",
-    "noData": "Sin datos todavía",
-    "forTerm": "en {{name}}",
-    "allTime": "en total",
-    "present": "{{n}} presente",
-    "absent": "{{n}} ausente",
-    "cancelled": "{{n}} cancelada",
-    "rescheduled": "{{n}} reprogramada",
-    "uncountedNote": "Las clases canceladas y reprogramadas no cuentan: no ocurrieron, así que no están en ninguna mitad del porcentaje.",
-    "byCourse": "Por asignatura",
-    "unmarked": "sin marcar",
-    "cycleAria": "{{lesson}} — {{status}}. Toca para cambiar.",
-    "status": {
-      "present": "presente",
-      "absent": "ausente",
-      "cancelled": "cancelada",
-      "rescheduled": "reprogramada"
-    }
+    "countTitle": "{{n}} adjuntos"
   },
   "cm": {
     "newTitle": "Nuevo compromiso",
@@ -996,6 +976,30 @@
       "cors": "Un navegador no puede obtener un calendario de otro sitio. Usa la app de Android para esto.",
       "http": "El servidor devolvió un error.",
       "network": "No se pudo acceder a esa dirección."
+    }
+  },
+  "att": {
+    "tab": "Asistencia",
+    "prevWeek": "Anterior",
+    "nextWeek": "Siguiente",
+    "thisWeek": "Esta semana",
+    "noLessons": "Sin clases",
+    "noData": "Sin datos todavía",
+    "forTerm": "en {{name}}",
+    "allTime": "en total",
+    "present": "{{n}} presente",
+    "absent": "{{n}} ausente",
+    "cancelled": "{{n}} cancelada",
+    "rescheduled": "{{n}} reprogramada",
+    "uncountedNote": "Las clases canceladas y reprogramadas no cuentan: no ocurrieron, así que no están en ninguna mitad del porcentaje.",
+    "byCourse": "Por asignatura",
+    "unmarked": "sin marcar",
+    "cycleAria": "{{lesson}} — {{status}}. Toca para cambiar.",
+    "status": {
+      "present": "presente",
+      "absent": "ausente",
+      "cancelled": "cancelada",
+      "rescheduled": "reprogramada"
     }
   }
 }

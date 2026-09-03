@@ -591,7 +591,9 @@
       "studyStart": "Lernbeginn:",
       "studyFor": "Lernen: {{label}}",
       "prepareFor": "Vorbereiten: {{label}}",
-      "topicMore": " (+{{n}} mehr)"
+      "topicMore": " (+{{n}} mehr)",
+      "editExam": "Prüfung bearbeiten",
+      "examDate": "Prüfungsdatum"
     },
     "md": {
       "addAssignment": "Aufgabe hinzufügen",
@@ -827,29 +829,7 @@
     "openFailed": "Datei konnte nicht geöffnet werden",
     "openFailedMsg": "Datei konnte nicht geöffnet werden — {{msg}}",
     "deleted": "Anhang entfernt",
-    "countTitle": "{{n}} Anhänge",
-    "tab": "Anwesenheit",
-    "prevWeek": "Zurück",
-    "nextWeek": "Weiter",
-    "thisWeek": "Diese Woche",
-    "noLessons": "Keine Stunden",
-    "noData": "Noch keine Daten",
-    "forTerm": "in {{name}}",
-    "allTime": "insgesamt",
-    "present": "{{n}} anwesend",
-    "absent": "{{n}} gefehlt",
-    "cancelled": "{{n}} entfallen",
-    "rescheduled": "{{n}} verlegt",
-    "uncountedNote": "Entfallene und verlegte Stunden zählen nicht — sie haben nicht stattgefunden und stehen daher in keiner Hälfte des Prozentsatzes.",
-    "byCourse": "Nach Kurs",
-    "unmarked": "nicht markiert",
-    "cycleAria": "{{lesson}} — {{status}}. Zum Ändern tippen.",
-    "status": {
-      "present": "anwesend",
-      "absent": "gefehlt",
-      "cancelled": "entfallen",
-      "rescheduled": "verlegt"
-    }
+    "countTitle": "{{n}} Anhänge"
   },
   "cm": {
     "newTitle": "Neuer Termin",
@@ -991,6 +971,30 @@
       "cors": "Ein Browser kann keinen Kalender von einer anderen Seite laden. Nutze dafür die Android-App.",
       "http": "Der Server meldete einen Fehler.",
       "network": "Diese Adresse war nicht erreichbar."
+    }
+  },
+  "att": {
+    "tab": "Anwesenheit",
+    "prevWeek": "Zurück",
+    "nextWeek": "Weiter",
+    "thisWeek": "Diese Woche",
+    "noLessons": "Keine Stunden",
+    "noData": "Noch keine Daten",
+    "forTerm": "in {{name}}",
+    "allTime": "insgesamt",
+    "present": "{{n}} anwesend",
+    "absent": "{{n}} gefehlt",
+    "cancelled": "{{n}} entfallen",
+    "rescheduled": "{{n}} verlegt",
+    "uncountedNote": "Entfallene und verlegte Stunden zählen nicht — sie haben nicht stattgefunden und stehen daher in keiner Hälfte des Prozentsatzes.",
+    "byCourse": "Nach Kurs",
+    "unmarked": "nicht markiert",
+    "cycleAria": "{{lesson}} — {{status}}. Zum Ändern tippen.",
+    "status": {
+      "present": "anwesend",
+      "absent": "gefehlt",
+      "cancelled": "entfallen",
+      "rescheduled": "verlegt"
     }
   }
 }

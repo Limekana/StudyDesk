@@ -596,7 +596,9 @@
       "studyStart": "Début des révisions :",
       "studyFor": "Réviser : {{label}}",
       "prepareFor": "Préparer : {{label}}",
-      "topicMore": " (+{{n}} de plus)"
+      "topicMore": " (+{{n}} de plus)",
+      "editExam": "Modifier l'examen",
+      "examDate": "Date de l'examen"
     },
     "md": {
       "addAssignment": "Ajouter un devoir",
@@ -832,29 +834,7 @@
     "openFailed": "Impossible d'ouvrir ce fichier",
     "openFailedMsg": "Impossible d'ouvrir ce fichier — {{msg}}",
     "deleted": "Pièce jointe supprimée",
-    "countTitle": "{{n}} pièces jointes",
-    "tab": "Présence",
-    "prevWeek": "Précédente",
-    "nextWeek": "Suivante",
-    "thisWeek": "Cette semaine",
-    "noLessons": "Aucun cours",
-    "noData": "Pas encore de données",
-    "forTerm": "en {{name}}",
-    "allTime": "au total",
-    "present": "{{n}} présent",
-    "absent": "{{n}} absent",
-    "cancelled": "{{n}} annulé",
-    "rescheduled": "{{n}} reporté",
-    "uncountedNote": "Les cours annulés et reportés ne sont pas comptés — ils n'ont pas eu lieu, donc ils ne figurent dans aucune moitié du pourcentage.",
-    "byCourse": "Par cours",
-    "unmarked": "non marqué",
-    "cycleAria": "{{lesson}} — {{status}}. Touchez pour changer.",
-    "status": {
-      "present": "présent",
-      "absent": "absent",
-      "cancelled": "annulé",
-      "rescheduled": "reporté"
-    }
+    "countTitle": "{{n}} pièces jointes"
   },
   "cm": {
     "newTitle": "Nouvel engagement",
@@ -996,6 +976,30 @@
       "cors": "Un navigateur ne peut pas récupérer un calendrier depuis un autre site. Utilisez l'application Android.",
       "http": "Le serveur a renvoyé une erreur.",
       "network": "Impossible d'atteindre cette adresse."
+    }
+  },
+  "att": {
+    "tab": "Présence",
+    "prevWeek": "Précédente",
+    "nextWeek": "Suivante",
+    "thisWeek": "Cette semaine",
+    "noLessons": "Aucun cours",
+    "noData": "Pas encore de données",
+    "forTerm": "en {{name}}",
+    "allTime": "au total",
+    "present": "{{n}} présent",
+    "absent": "{{n}} absent",
+    "cancelled": "{{n}} annulé",
+    "rescheduled": "{{n}} reporté",
+    "uncountedNote": "Les cours annulés et reportés ne sont pas comptés — ils n'ont pas eu lieu, donc ils ne figurent dans aucune moitié du pourcentage.",
+    "byCourse": "Par cours",
+    "unmarked": "non marqué",
+    "cycleAria": "{{lesson}} — {{status}}. Touchez pour changer.",
+    "status": {
+      "present": "présent",
+      "absent": "absent",
+      "cancelled": "annulé",
+      "rescheduled": "reporté"
     }
   }
 }

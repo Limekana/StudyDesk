@@ -591,7 +591,9 @@
       "studyStart": "Opiskelu alkaa:",
       "studyFor": "Opiskele: {{label}}",
       "prepareFor": "Valmistaudu: {{label}}",
-      "topicMore": " (+{{n}} lisää)"
+      "topicMore": " (+{{n}} lisää)",
+      "editExam": "Muokkaa koetta",
+      "examDate": "Kokeen päivä"
     },
     "md": {
       "addAssignment": "Lisää tehtävä",
@@ -827,29 +829,7 @@
     "openFailed": "Tiedostoa ei voitu avata",
     "openFailedMsg": "Tiedostoa ei voitu avata — {{msg}}",
     "deleted": "Liite poistettu",
-    "countTitle": "{{n}} liitettä",
-    "tab": "Läsnäolo",
-    "prevWeek": "Edellinen",
-    "nextWeek": "Seuraava",
-    "thisWeek": "Tämä viikko",
-    "noLessons": "Ei tunteja",
-    "noData": "Ei vielä tietoja",
-    "forTerm": "jaksossa {{name}}",
-    "allTime": "kaikkiaan",
-    "present": "{{n}} läsnä",
-    "absent": "{{n}} poissa",
-    "cancelled": "{{n}} peruttu",
-    "rescheduled": "{{n}} siirretty",
-    "uncountedNote": "Peruttuja ja siirrettyjä tunteja ei lasketa — niitä ei pidetty, joten ne eivät ole prosenttiluvun kummallakaan puolella.",
-    "byCourse": "Kursseittain",
-    "unmarked": "ei merkitty",
-    "cycleAria": "{{lesson}} — {{status}}. Napauta vaihtaaksesi.",
-    "status": {
-      "present": "läsnä",
-      "absent": "poissa",
-      "cancelled": "peruttu",
-      "rescheduled": "siirretty"
-    }
+    "countTitle": "{{n}} liitettä"
   },
   "cm": {
     "newTitle": "Uusi meno",
@@ -991,6 +971,30 @@
       "cors": "Selain ei voi hakea kalenteria toiselta sivustolta. Käytä tähän Android-sovellusta.",
       "http": "Palvelin palautti virheen.",
       "network": "Osoitteeseen ei saatu yhteyttä."
+    }
+  },
+  "att": {
+    "tab": "Läsnäolo",
+    "prevWeek": "Edellinen",
+    "nextWeek": "Seuraava",
+    "thisWeek": "Tämä viikko",
+    "noLessons": "Ei tunteja",
+    "noData": "Ei vielä tietoja",
+    "forTerm": "jaksossa {{name}}",
+    "allTime": "kaikkiaan",
+    "present": "{{n}} läsnä",
+    "absent": "{{n}} poissa",
+    "cancelled": "{{n}} peruttu",
+    "rescheduled": "{{n}} siirretty",
+    "uncountedNote": "Peruttuja ja siirrettyjä tunteja ei lasketa — niitä ei pidetty, joten ne eivät ole prosenttiluvun kummallakaan puolella.",
+    "byCourse": "Kursseittain",
+    "unmarked": "ei merkitty",
+    "cycleAria": "{{lesson}} — {{status}}. Napauta vaihtaaksesi.",
+    "status": {
+      "present": "läsnä",
+      "absent": "poissa",
+      "cancelled": "peruttu",
+      "rescheduled": "siirretty"
     }
   }
 }

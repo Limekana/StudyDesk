@@ -611,7 +611,9 @@
       "studyStart": "بداية الدراسة:",
       "studyFor": "ادرس لـ {{label}}",
       "prepareFor": "استعدّ لـ {{label}}",
-      "topicMore": " (+{{n}} أخرى)"
+      "topicMore": " (+{{n}} أخرى)",
+      "editExam": "تعديل الاختبار",
+      "examDate": "تاريخ الاختبار"
     },
     "md": {
       "addAssignment": "إضافة واجب",
@@ -847,29 +849,7 @@
     "openFailed": "تعذّر فتح الملف",
     "openFailedMsg": "تعذّر فتح الملف — {{msg}}",
     "deleted": "تم حذف المرفق",
-    "countTitle": "{{n}} مرفقات",
-    "tab": "الحضور",
-    "prevWeek": "السابق",
-    "nextWeek": "التالي",
-    "thisWeek": "هذا الأسبوع",
-    "noLessons": "لا توجد حصص",
-    "noData": "لا توجد بيانات بعد",
-    "forTerm": "في {{name}}",
-    "allTime": "الإجمالي",
-    "present": "{{n}} حضور",
-    "absent": "{{n}} غياب",
-    "cancelled": "{{n}} ملغاة",
-    "rescheduled": "{{n}} مؤجلة",
-    "uncountedNote": "الحصص الملغاة والمؤجلة لا تُحتسب — فهي لم تحدث، ولذلك لا تدخل في أي من طرفي النسبة.",
-    "byCourse": "حسب المقرر",
-    "unmarked": "غير محدَّد",
-    "cycleAria": "{{lesson}} — {{status}}. اضغط للتغيير.",
-    "status": {
-      "present": "حضور",
-      "absent": "غياب",
-      "cancelled": "ملغاة",
-      "rescheduled": "مؤجلة"
-    }
+    "countTitle": "{{n}} مرفقات"
   },
   "cm": {
     "newTitle": "التزام جديد",
@@ -1011,6 +991,30 @@
       "cors": "لا يستطيع المتصفح جلب تقويم من موقع آخر. استخدم تطبيق أندرويد لذلك.",
       "http": "أرجع الخادم خطأً.",
       "network": "تعذّر الوصول إلى هذا العنوان."
+    }
+  },
+  "att": {
+    "tab": "الحضور",
+    "prevWeek": "السابق",
+    "nextWeek": "التالي",
+    "thisWeek": "هذا الأسبوع",
+    "noLessons": "لا توجد حصص",
+    "noData": "لا توجد بيانات بعد",
+    "forTerm": "في {{name}}",
+    "allTime": "الإجمالي",
+    "present": "{{n}} حضور",
+    "absent": "{{n}} غياب",
+    "cancelled": "{{n}} ملغاة",
+    "rescheduled": "{{n}} مؤجلة",
+    "uncountedNote": "الحصص الملغاة والمؤجلة لا تُحتسب — فهي لم تحدث، ولذلك لا تدخل في أي من طرفي النسبة.",
+    "byCourse": "حسب المقرر",
+    "unmarked": "غير محدَّد",
+    "cycleAria": "{{lesson}} — {{status}}. اضغط للتغيير.",
+    "status": {
+      "present": "حضور",
+      "absent": "غياب",
+      "cancelled": "ملغاة",
+      "rescheduled": "مؤجلة"
     }
   }
 }
