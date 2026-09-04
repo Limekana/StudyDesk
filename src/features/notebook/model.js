@@ -159,6 +159,44 @@ export function serialize(blocks) {
  * renumbers the rest instead of leaving a gap — which is the entire reason
  * people expect ordered lists to be a list type and not typed digits.
  */
+/** Splice a possibly-multi-line draft into the block list at `focus`.
+ *
+ *  Returns `null` when `text` is a single line — the caller keeps its ordinary
+ *  single-block path. Otherwise returns the new block list and the index the
+ *  caret should land on (the end of what was pasted, where the user expects to
+ *  keep typing).
+ *
+ *  ── Why this is a shared function and not inline (v1.13 review, blocker E) ──
+ *
+ *  The textarea holds ONE block, so the only way `draft` acquires a newline is
+ *  a paste. The previous round added the split at the commit boundary, which
+ *  correctly covered blur, Escape and the arrow-out routes — but `parse(draft)[0]`,
+ *  "keep only the first line", remained at six other exits, and every one of
+ *  them wrote its truncation back to the note:
+ *
+ *      Enter · Tab · Backspace-at-start · block shortcut · toggleCheck ·
+ *      the format bar's block button
+ *
+ *  The last is the worst: on Android the format bar is the primary way to set a
+ *  block type, so paste-then-tap-bullet silently destroyed everything after
+ *  line one. Six call sites cannot each be trusted to remember; one function
+ *  they all reach can.
+ *
+ *  NoteEditor normalises in `onInput`, so `draft` never holds a multi-line
+ *  value long enough for those six to see one. This function is what it
+ *  normalises with, and `commitDraft` keeps calling it as a backstop for any
+ *  route that reaches a commit without passing through `onInput`. */
+export function spliceDraft(blocks, focus, text) {
+  const parsed = parse(text);
+  if (parsed.length <= 1) return null;
+  const rebuilt = parsed.map((b, i) => ({ ...b, id: focus + i }));
+  const next = [...blocks];
+  next.splice(focus, 1, ...rebuilt);
+  // Ids are positional in this model, so everything after the splice has to be
+  // renumbered or a later `next[focus]` writes to the wrong block.
+  return { blocks: next.map((b, i) => ({ ...b, id: i })), focus: focus + rebuilt.length - 1 };
+}
+
 export function numbering(blocks) {
   const out = new Map();
   const counters = [];

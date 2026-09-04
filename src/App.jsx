@@ -721,13 +721,29 @@ function reducer(state, action) {
     // hold, rather than diverging until the next pull.
     case "SET_ATTENDANCE": {
       const rows = state.attendance || [];
+      // Matched on the NATURAL KEY, and deliberately including soft-deleted
+      // rows. The server's identity for an attendance fact is
+      // (user, timetable_entry, date) — see the unique index in
+      // supabase/migrations/20260904_lesson_attendance_natural_key.sql — and it
+      // is total, so the database cannot represent a cleared row and a live row
+      // for the same lesson at once.
+      //
+      // This used to skip `deletedAt` rows, so clearing a mark and re-marking
+      // it appended a SECOND local row with a fresh uuid for a fact the server
+      // stores once. The two identities then disagreed at every layer: the
+      // percentage double-counted until the next pull, and the merge layer had
+      // to reconcile a pair the server could never send back.
+      //
+      // Reviving the existing row instead is exactly what `upsertAttendance`
+      // does on the server with `deleted_at: null`. One lesson on one date is
+      // one row, on both sides.
       const i = rows.findIndex((r) => (
-        !r.deletedAt && r.timetableEntryId === action.timetableEntryId && r.date === action.date
+        r.timetableEntryId === action.timetableEntryId && r.date === action.date
       ));
       const now = new Date().toISOString();
       // A null status means "unmark" — the cycle returns to unmarked, and an
-      // unmarked lesson must leave NO row, or it would sit in the denominator
-      // as a status the summariser does not recognise.
+      // unmarked lesson must leave NO live row, or it would sit in the
+      // denominator as a status the summariser does not recognise.
       if (action.status == null) {
         if (i < 0) return state;
         const next = [...rows];
@@ -736,12 +752,25 @@ function reducer(state, action) {
       }
       if (i >= 0) {
         const next = [...rows];
-        next[i] = { ...next[i], status: action.status, note: action.note ?? next[i].note ?? null, updatedAt: now };
+        next[i] = {
+          ...next[i],
+          status: action.status,
+          note: action.note ?? next[i].note ?? null,
+          // Revive: without this, re-marking a cleared lesson would update a
+          // row that `indexAttendance` still filters out as deleted.
+          deletedAt: null,
+          updatedAt: now,
+        };
         return { ...state, attendance: next };
       }
       return {
         ...state,
         attendance: [...rows, {
+          // `action.id` is supplied by the caller so the id enqueued to the
+          // outbox is the same one this reducer stores. Attendance.jsx used to
+          // read its id back from a memoised pre-dispatch index, which is empty
+          // for a new mark — it enqueued `id: undefined` while this minted a
+          // different uuid.
           id: action.id || newSyncId(),
           timetableEntryId: action.timetableEntryId,
           date: action.date,
@@ -1370,9 +1399,17 @@ export default function App() {
       noteTimers.current.clear();
     };
     const onHide = () => { if (document.visibilityState === "hidden") flush(); };
+    // `pagehide` as well as `visibilitychange`. iOS WKWebView does not reliably
+    // deliver `visibilitychange` when the OS terminates a backgrounded app, and
+    // this flush is the last thing standing between a debounced note edit and
+    // losing it. `pagehide` fires on that path, and flushing twice is free —
+    // `flush` clears the timer map, and `enqueue` coalesces on the note id.
+    const onPageHide = () => flush();
     document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("pagehide", onPageHide);
     return () => {
       document.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("pagehide", onPageHide);
       flush();
     };
   }, []);

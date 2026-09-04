@@ -278,6 +278,54 @@ function mergeCommitment(localC, remoteRow) {
  * @param {object} state Current reducer state.
  * @param {{subjects:Array, grades:Array, sessions:Array, assignments:Array, exams:Array, actions:Array}} remote
  */
+// Attendance is merged on the NATURAL KEY, not on `id`, and it is the only
+// list that is.
+//
+// v1.13 review, blocker A4. The server's identity for an attendance fact is
+// (user_id, timetable_entry_id, date) — a total unique index, see
+// supabase/migrations/20260904_lesson_attendance_natural_key.sql. The client's
+// uuid is only a local handle until the first successful push, and two devices
+// marking the same lesson offline mint different ones for the same fact.
+//
+// Keying the merge on `id` therefore kept BOTH: device A's local `A1` survived
+// as a local-only row while the server's row arrived under whatever id was
+// inserted first, and the lesson was counted twice in the percentage — the
+// exact duplicate the natural key exists to prevent. Reconcile then saw local
+// `A1` missing remotely and re-enqueued it, which (while `id` was still in the
+// upsert payload) flipped the server row's primary key back. Permanent
+// cross-device ping-pong.
+//
+// The rule here: the server is the authority on identity. A remote row REPLACES
+// whatever local row shares its natural key, adopting the remote id, whatever
+// the local id was. LWW on `updated_at` still decides the CONTENT; this only
+// decides which row is which.
+//
+// Local-only rows — marked offline, never pushed — have no remote counterpart
+// and are preserved untouched, which is what keeps an offline mark alive until
+// the outbox drains.
+function attendanceNaturalKey(row) {
+  return `${row.timetableEntryId ?? row.timetable_entry_id}::${row.date}`;
+}
+
+export function mergeAttendanceList(localList, remoteRows) {
+  const byKey = new Map();
+  for (const row of localList || []) {
+    if (row) byKey.set(attendanceNaturalKey(row), row);
+  }
+  for (const remoteRow of remoteRows || []) {
+    const key = attendanceNaturalKey(remoteRow);
+    if (remoteRow.deleted_at) {
+      // A cleared lesson. Drop it whatever the local id was — including the
+      // case where the local row carries a different uuid for the same fact,
+      // which is precisely what keying on `id` failed to do.
+      byKey.delete(key);
+      continue;
+    }
+    byKey.set(key, mergeAttendance(byKey.get(key), remoteRow));
+  }
+  return Array.from(byKey.values());
+}
+
 function mergeAttendance(localRow, remoteRow) {
   const remote = {
     id: remoteRow.id,
@@ -290,7 +338,11 @@ function mergeAttendance(localRow, remoteRow) {
   };
   if (!localRow) return remote;
   if (newer(remote.updatedAt, localRow.updatedAt)) return remote;
-  return localRow;
+  // The local row's CONTENT wins on LWW, but the remote id still wins on
+  // identity. Keeping the local uuid here would leave this device pushing
+  // under an id the server does not use, and the next pull would hand back a
+  // row that no longer matches anything locally.
+  return localRow.id === remote.id ? localRow : { ...localRow, id: remote.id };
 }
 
 function mergeNote(localNote, remoteRow) {
@@ -402,7 +454,7 @@ export function applyRemotePull(state, remote) {
   // deleted note back on somebody's screen.
   const notes = mergeList(state.notes, remote.notes, mergeNote);
   const noteAttachments = mergeList(state.noteAttachments, remote.noteAttachments, mergeNoteAttachment);
-  const attendance = mergeList(state.attendance, remote.attendance, mergeAttendance);
+  const attendance = mergeAttendanceList(state.attendance, remote.attendance);
 
   return {
     ...state,

@@ -249,11 +249,14 @@ export function toFeedItems(events, feedId) {
   let repeating = 0;
   for (const e of events) {
     if (!e.start?.iso) continue;
-    if (e.rrule) repeating++;
+    // Counted BELOW the CANCELLED filter, not above it. A cancelled repeating
+    // event is not imported, so counting it here made the "N repeating events"
+    // line the user reads overstate what actually landed.
     // CANCELLED events are published as tombstones by most systems. Keeping
     // them would put a cancelled exam on a student's calendar, which is worse
     // than not importing it.
     if (e.status === 'CANCELLED') continue;
+    if (e.rrule) repeating++;
     out.push({
       feedId,
       uid: e.uid,

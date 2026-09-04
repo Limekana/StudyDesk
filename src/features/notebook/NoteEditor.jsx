@@ -9,7 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Block from './Block.jsx';
 import FormatBar from './FormatBar.jsx';
-import { BLOCK, parse, serialize, serializeBlock, numbering } from './model.js';
+import { BLOCK, parse, serialize, serializeBlock, numbering, spliceDraft } from './model.js';
 import { MARK, toggleMark, clearMarks } from './inline.js';
 import {
   matchBlockRule, applyBlockRule, undoBlockRule,
@@ -146,16 +146,18 @@ export default function NoteEditor({
     // in a paste handler covers every route text can arrive by, including
     // Android keyboards that insert clipboard content without firing a
     // `paste` event this component can read.
-    const parsed = parse(text);
-    if (parsed.length > 1) {
-      const rebuilt = parsed.map((b, i) => ({ ...b, id: focus + i }));
-      next.splice(focus, 1, ...rebuilt);
+    // Backstop. `onInput` normalises a multi-line draft the moment it arrives,
+    // so by the time any commit runs `text` is single-line — but a commit
+    // reached by a route that never passed through `onInput` must not be the
+    // one place that truncates.
+    const split = spliceDraft(blocks, focus, text);
+    if (split) {
       // Land the caret at the end of what was pasted, which is where the
       // user expects to keep typing.
-      commit(next, nextFocus === -1 ? -1 : focus + rebuilt.length - 1);
+      commit(split.blocks, nextFocus === -1 ? -1 : split.focus);
       return;
     }
-    next[focus] = { ...parsed[0], id: focus };
+    next[focus] = { ...parse(text)[0], id: focus };
     commit(next, nextFocus);
   }, [blocks, focus, commit]);
 
@@ -168,6 +170,33 @@ export default function NoteEditor({
   const onInput = useCallback((e) => {
     const text = e.target.value;
     const caret = e.target.selectionStart;
+
+    // ── Multi-line normalisation (v1.13 review, blocker E) ─────────────────
+    //
+    // A newline can only reach a one-block textarea by paste, and this is the
+    // one place every route that inserts text arrives — including Android IME
+    // clipboard insertion, which does not fire a `paste` event this component
+    // can read, and voice input.
+    //
+    // Splitting HERE rather than at each exit is what makes the fix total.
+    // Six other handlers reduce the draft with `parse(draft)[0]` — Enter, Tab,
+    // Backspace-at-start, the block shortcut, toggleCheck, and the format
+    // bar's block button — and each one wrote its truncation back to the note.
+    // Rather than teach all six to split, `draft` is never allowed to hold a
+    // multi-line value in the first place, so there is nothing for them to
+    // truncate. The commit in `commitDraft` stays as a backstop.
+    //
+    // Committing immediately is also better than waiting for blur: the pasted
+    // text becomes real blocks the user can see and edit at once.
+    const split = spliceDraft(blocks, focus, text);
+    if (split) {
+      commit(split.blocks, split.focus);
+      // Not setDraft(text) — the focus change re-syncs the draft to the last
+      // pasted block, which is where the caret now is.
+      pendingUndo.current = null;
+      return;
+    }
+
     setDraft(text);
 
     // Input rules fire on the character that completes them — never on a
@@ -188,7 +217,7 @@ export default function NoteEditor({
     // is dropped — otherwise typing a list item and then Backspacing to the
     // start of it would surprise them by dissolving the bullet they wanted.
     pendingUndo.current = null;
-  }, [blocks, focus, onChange]);
+  }, [blocks, focus, onChange, commit]);
 
   // ── Keys ────────────────────────────────────────────────────────────────
 
