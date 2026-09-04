@@ -21,10 +21,20 @@ install. `npm run build` has been a CI step since `44071f5`; it passes on
 
 ## `npm run check:dist-fresh`
 
-Asserts `dist/` exists, has an entry point, and that its oldest output is newer
+Asserts `dist/` exists, has an entry point, and that its NEWEST output is newer
 than the newest tracked source file. Wired into `cap:sync` and `electron:build`
 between the build and the packaging step, so the stale-`dist` chain cannot run to
 completion, and into CI after the build gate.
+
+Newest, not oldest, and the distinction is the whole reason `9208be8` exists:
+Vite's `publicDir` copy preserves the SOURCE mtime on files it copies verbatim,
+so `public/vite.svg` lands in `dist/` carrying the timestamp from whenever that
+asset was first committed. The oldest file in `dist/` is therefore permanently
+ancient on any checkout more than a few minutes old, and the gate false-failed
+on the release machine while passing in CI only because a fresh clone stamps
+every file with roughly the same `now`. The newest output is written on every
+successful build and stays put when a build fails, which is exactly the signal
+this gate needs.
 
 **Amendment for `fdroid/FDROID_RELEASE_CHECKLIST.md` Section B** (that file lives
 in the `limecore` repo, not this one, so it has to be applied there by hand). The
