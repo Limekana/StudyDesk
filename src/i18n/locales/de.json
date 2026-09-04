@@ -961,7 +961,7 @@
     "removed_one": "Feed entfernt, {{n}} Eintrag gelöscht.",
     "removed_other": "Feed entfernt, {{n}} Einträge gelöscht.",
     "help": "Die meisten Schulsysteme veröffentlichen eine private Kalenderadresse zum Abonnieren — suche auf deiner Kalenderseite nach „Calendar feed“, „Abonnieren“ oder einem .ics-Link. Funktioniert mit Canvas, Moodle, Blackboard, Google Classroom und den meisten Uni-Stundenplänen.",
-    "limits": "Fristen, Titel und Beschreibungen kommen von allein. Aufgabentyp, Punkte und Abgabestatus gehören nicht zu einem Kalender-Feed und erscheinen daher nicht.",
+    "limits": "Fälligkeitsdaten, Titel und Beschreibungen kommen von selbst. Aufgabentyp, Punkte und Abgabestatus gehören nicht zu einem Kalender-Feed und erscheinen daher nicht. Wiederkehrende Termine — etwa eine wöchentliche Vorlesung — werden vorerst als einzelnes Datum importiert, nicht als ganzes Semester.",
     "deviceOnly": "Die Adresse bleibt nur auf diesem Gerät und wird nie synchronisiert — wer sie hat, kann deinen Kalender lesen. Die importierten Termine synchronisieren sich wie jede andere Aufgabe.",
     "err": {
       "invalid-url": "Das sieht nicht nach einer Webadresse aus.",
@@ -973,7 +973,9 @@
       "cors": "Ein Browser kann keinen Kalender von einer anderen Seite laden. Nutze dafür die Android-App.",
       "http": "Der Server meldete einen Fehler.",
       "network": "Diese Adresse war nicht erreichbar."
-    }
+    },
+    "repeatingNote": "{{count}} wiederkehrender Termin als einzelnes Datum importiert",
+    "repeatingNote_other": "{{count}} wiederkehrende Termine als je ein einzelnes Datum importiert"
   },
   "att": {
     "tab": "Anwesenheit",

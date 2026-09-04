@@ -482,6 +482,7 @@ export default function NoteEditor({
           swatchesOpen={swatches}
           onSwatches={setSwatches}
           onAction={applyFromBar}
+          canInsertPhoto={typeof onInsertPhoto === 'function'}
         />
       )}
     </div>

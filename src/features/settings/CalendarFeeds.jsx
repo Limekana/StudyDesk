@@ -100,6 +100,7 @@ export default function CalendarFeeds({ state, dispatch, session, showFlash }) {
         lastFetchedAt: new Date().toISOString(),
         lastError: null,
         itemCount: counts.total,
+        repeating: res.repeating || 0,
         label: feed.label || res.name || null,
       });
       setFeeds(loadFeeds());
@@ -190,6 +191,13 @@ export default function CalendarFeeds({ state, dispatch, session, showFlash }) {
                 </div>
                 {feed.lastError && (
                   <div className="feed-row-err">{t(`feed.err.${feed.lastError}`, t('feed.err.network'))}</div>
+                )}
+                {/* Repeating events import as one occurrence. Said on the row
+                    rather than buried in help text, because the student who
+                    needs to know is the one looking at a term of lectures
+                    that arrived as a single date. */}
+                {feed.repeating > 0 && (
+                  <div className="feed-row-note">{t('feed.repeatingNote', { count: feed.repeating })}</div>
                 )}
               </div>
               <button

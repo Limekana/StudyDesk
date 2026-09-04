@@ -211,7 +211,11 @@ export async function refreshFeed(feed) {
     }
 
     const { events, name, errors } = parseIcs(text);
-    return { ok: true, items: toFeedItems(events, feed.id), name, errors };
+    const items = toFeedItems(events, feed.id);
+    // Surfaced so the UI can say that repeating events came in as a single
+    // occurrence. See `toFeedItems` — silently importing one lecture from a
+    // term of them is the failure this number exists to prevent.
+    return { ok: true, items, name, errors, repeating: items.repeating || 0 };
   } catch (e) {
     return { ok: false, code: e?.code || 'network' };
   }

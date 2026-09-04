@@ -59,7 +59,7 @@ function Btn({ label, on, onPress, aria }) {
   );
 }
 
-export default function FormatBar({ activeType, swatchesOpen, onSwatches, onAction }) {
+export default function FormatBar({ activeType, swatchesOpen, onSwatches, onAction, canInsertPhoto = false }) {
   const { t } = useTranslation();
   const timer = useRef(0);
   const longFired = useRef(false);
@@ -135,7 +135,13 @@ export default function FormatBar({ activeType, swatchesOpen, onSwatches, onActi
 
         <span className="nb-bar-sep" aria-hidden="true" />
 
-        <Btn label="＋" aria={t('nb.insertPhoto')} onPress={() => onAction('photo')} />
+        {/* Only when a host actually wired the callback. Photo insertion is
+            not built yet, and NotebookView passes no `onInsertPhoto`, so this
+            rendered a button that did nothing at all — the worst kind of
+            affordance. It comes back by itself the day the prop is passed. */}
+        {canInsertPhoto && (
+          <Btn label="＋" aria={t('nb.insertPhoto')} onPress={() => onAction('photo')} />
+        )}
       </div>
     </>
   );

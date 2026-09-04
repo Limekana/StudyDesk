@@ -966,7 +966,7 @@
     "removed_one": "Feed removido, {{n}} item eliminado.",
     "removed_other": "Feed removido, {{n}} itens eliminados.",
     "help": "A maioria dos sistemas escolares publica um endereço de calendário privado que podes subscrever — procura \"Calendar feed\", \"Subscrever\" ou um link .ics na página do calendário. Funciona com Canvas, Moodle, Blackboard, Google Classroom e a maioria dos horários universitários.",
-    "limits": "Prazos, títulos e descrições chegam sozinhos. Tipo de trabalho, pontos e estado de entrega não fazem parte de um feed de calendário, por isso não aparecem.",
+    "limits": "Prazos, títulos e descrições chegam sozinhos. Tipo de tarefa, pontos e status de entrega não fazem parte de um feed de calendário, então não aparecerão. Eventos repetidos — uma aula semanal, por exemplo — são importados por enquanto como uma única data, não como o semestre inteiro.",
     "deviceOnly": "O endereço fica apenas neste dispositivo e nunca é sincronizado — quem o tiver pode ler o teu calendário. As datas importadas sincronizam, como qualquer outro trabalho.",
     "err": {
       "invalid-url": "Isso não parece um endereço web.",
@@ -978,7 +978,9 @@
       "cors": "Um browser não consegue obter um calendário de outro site. Usa a app Android para isto.",
       "http": "O servidor devolveu um erro.",
       "network": "Não foi possível contactar esse endereço."
-    }
+    },
+    "repeatingNote": "{{count}} evento repetido importado como uma única data",
+    "repeatingNote_other": "{{count}} eventos repetidos importados como uma única data cada"
   },
   "att": {
     "tab": "Assiduidade",

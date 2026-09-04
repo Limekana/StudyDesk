@@ -1034,3 +1034,41 @@ check('payloads with no row id still enqueue, one per call', () => {
   outbox.enqueue('record_app_open', { app: 'studydesk', date: '2026-09-05' });
   assert.equal(queued().length, 2, 'kinds without an id keep the old append behaviour');
 });
+
+// ── icsParse.js — repeating events are counted, never silently dropped ────
+
+check('an RRULE event is imported once and reported as repeating', () => {
+  const ics = [
+    'BEGIN:VCALENDAR',
+    'BEGIN:VEVENT',
+    'UID:lecture-1',
+    'SUMMARY:Analysis I',
+    'DTSTART:20260907T100000Z',
+    'RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=12',
+    'END:VEVENT',
+    'BEGIN:VEVENT',
+    'UID:essay-1',
+    'SUMMARY:Essay due',
+    'DTSTART:20260918T235900Z',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\r\n');
+  const { events } = parseIcs(ics);
+  const items = toFeedItems(events, 'feed-1');
+  assert.equal(items.length, 2, 'the first occurrence is still imported');
+  assert.equal(items.repeating, 1, 'and the term of lectures behind it is reported');
+  assert.equal(items[0].repeats, true);
+  assert.equal(items[1].repeats, false, 'a one-off is not marked repeating');
+});
+
+check('the repeating count does not disturb the items array', () => {
+  const { events } = parseIcs(
+    'BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:a\r\nDTSTART:20260907\r\nEND:VEVENT\r\nEND:VCALENDAR',
+  );
+  const items = toFeedItems(events, 'f');
+  // Non-enumerable on purpose: every existing caller spreads, maps or measures
+  // this array and must be entirely unaffected by the new field.
+  assert.deepEqual(Object.keys(items), ['0']);
+  assert.equal([...items].length, 1);
+  assert.equal(JSON.parse(JSON.stringify(items)).length, 1);
+});

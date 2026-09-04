@@ -348,3 +348,17 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 @media(prefers-reduced-motion:reduce){
   .sidebar{transition:none;}
 }
+
+/* Calendar-feed rows. The error and the note need to read as what they are —
+   an unstyled error message is just a sentence, and the whole point of giving
+   every failure code its own sentence was that the user can act on it. */
+.feed-row-err {
+  color: var(--danger);
+  font-size: 0.85em;
+  margin-top: 2px;
+}
+.feed-row-note {
+  color: var(--muted);
+  font-size: 0.85em;
+  margin-top: 2px;
+}

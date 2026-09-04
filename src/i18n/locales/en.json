@@ -961,7 +961,7 @@
     "removed_one": "Feed removed, {{n}} item deleted.",
     "removed_other": "Feed removed, {{n}} items deleted.",
     "help": "Most school systems publish a private calendar address you can subscribe to — look for \"Calendar feed\", \"Subscribe\" or an .ics link on your calendar page. It works with Canvas, Moodle, Blackboard, Google Classroom and most university timetables.",
-    "limits": "Due dates, titles and descriptions arrive on their own. Assignment type, points and submission status are not part of a calendar feed, so they will not appear.",
+    "limits": "Due dates, titles and descriptions arrive on their own. Assignment type, points and submission status are not part of a calendar feed, so they will not appear. Repeating events — a weekly lecture, say — import as a single date for now, not the whole term.",
     "deviceOnly": "The address is kept on this device only and never synced — anyone who has it can read your calendar. The imported dates do sync, like any other assignment.",
     "err": {
       "invalid-url": "That does not look like a web address.",
@@ -973,7 +973,9 @@
       "cors": "A browser cannot fetch a calendar from another site. Use the Android app for this.",
       "http": "The server returned an error.",
       "network": "Could not reach that address."
-    }
+    },
+    "repeatingNote": "{{count}} repeating event imported as a single date",
+    "repeatingNote_other": "{{count}} repeating events imported as a single date each"
   },
   "att": {
     "tab": "Attendance",

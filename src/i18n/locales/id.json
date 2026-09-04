@@ -956,7 +956,7 @@
     "removed_one": "Umpan dihapus, {{n}} item terhapus.",
     "removed_other": "Umpan dihapus, {{n}} item terhapus.",
     "help": "Sebagian besar sistem sekolah menerbitkan alamat kalender pribadi yang bisa kamu langgani — cari \"Calendar feed\", \"Subscribe\", atau tautan .ics di halaman kalendermu. Bekerja dengan Canvas, Moodle, Blackboard, Google Classroom, dan sebagian besar jadwal universitas.",
-    "limits": "Tenggat, judul, dan deskripsi datang dengan sendirinya. Jenis tugas, poin, dan status pengumpulan bukan bagian dari umpan kalender, jadi tidak akan muncul.",
+    "limits": "Tenggat, judul, dan deskripsi datang sendiri. Jenis tugas, poin, dan status pengumpulan bukan bagian dari umpan kalender, jadi tidak akan muncul. Acara berulang — misalnya kuliah mingguan — untuk saat ini diimpor sebagai satu tanggal, bukan satu semester penuh.",
     "deviceOnly": "Alamat disimpan hanya di perangkat ini dan tidak pernah disinkronkan — siapa pun yang memilikinya bisa membaca kalendermu. Tanggal yang diimpor tetap tersinkron, seperti tugas lainnya.",
     "err": {
       "invalid-url": "Itu sepertinya bukan alamat web.",
@@ -968,7 +968,9 @@
       "cors": "Peramban tidak bisa mengambil kalender dari situs lain. Gunakan aplikasi Android untuk ini.",
       "http": "Server mengembalikan galat.",
       "network": "Tidak dapat menghubungi alamat itu."
-    }
+    },
+    "repeatingNote": "{{count}} acara berulang diimpor sebagai satu tanggal",
+    "repeatingNote_other": "{{count}} acara berulang diimpor sebagai satu tanggal masing-masing"
   },
   "att": {
     "tab": "Kehadiran",

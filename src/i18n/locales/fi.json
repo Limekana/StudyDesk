@@ -961,7 +961,7 @@
     "removed_one": "Syöte poistettu, {{n}} kohde poistettu.",
     "removed_other": "Syöte poistettu, {{n}} kohdetta poistettu.",
     "help": "Useimmat oppilaitosjärjestelmät julkaisevat yksityisen kalenteriosoitteen, jonka voit tilata — etsi kalenterisivulta \"Calendar feed\", \"Subscribe\" tai .ics-linkki. Toimii Canvasin, Moodlen, Blackboardin, Google Classroomin ja useimpien yliopistojen lukujärjestysten kanssa.",
-    "limits": "Määräpäivät, otsikot ja kuvaukset tulevat automaattisesti. Tehtävätyyppi, pisteet ja palautuksen tila eivät kuulu kalenterisyötteeseen, joten ne eivät näy.",
+    "limits": "Eräpäivät, otsikot ja kuvaukset saapuvat itsestään. Tehtävätyyppi, pisteet ja palautuksen tila eivät kuulu kalenterisyötteeseen, joten ne eivät näy. Toistuvat tapahtumat — esimerkiksi viikoittainen luento — tuodaan toistaiseksi yhtenä päivänä, ei koko jaksona.",
     "deviceOnly": "Osoite säilytetään vain tällä laitteella eikä sitä synkronoida — kuka tahansa sen haltija voi lukea kalenterisi. Tuodut päivämäärät synkronoituvat kuten muutkin tehtävät.",
     "err": {
       "invalid-url": "Tämä ei näytä verkko-osoitteelta.",
@@ -973,7 +973,9 @@
       "cors": "Selain ei voi hakea kalenteria toiselta sivustolta. Käytä tähän Android-sovellusta.",
       "http": "Palvelin palautti virheen.",
       "network": "Osoitteeseen ei saatu yhteyttä."
-    }
+    },
+    "repeatingNote": "{{count}} toistuva tapahtuma tuotiin yhtenä päivänä",
+    "repeatingNote_other": "{{count}} toistuvaa tapahtumaa tuotiin kukin yhtenä päivänä"
   },
   "att": {
     "tab": "Läsnäolo",

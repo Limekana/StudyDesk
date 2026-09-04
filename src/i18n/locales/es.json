@@ -966,7 +966,7 @@
     "removed_one": "Fuente eliminada, {{n}} elemento borrado.",
     "removed_other": "Fuente eliminada, {{n}} elementos borrados.",
     "help": "La mayoría de los sistemas escolares publican una dirección de calendario privada a la que suscribirse: busca «Calendar feed», «Suscribirse» o un enlace .ics en tu página de calendario. Funciona con Canvas, Moodle, Blackboard, Google Classroom y la mayoría de los horarios universitarios.",
-    "limits": "Las fechas de entrega, los títulos y las descripciones llegan solos. El tipo de tarea, los puntos y el estado de entrega no forman parte de una fuente de calendario, así que no aparecerán.",
+    "limits": "Las fechas de entrega, los títulos y las descripciones llegan solos. El tipo de tarea, los puntos y el estado de entrega no forman parte de un calendario, así que no aparecerán. Los eventos que se repiten — una clase semanal, por ejemplo — se importan por ahora como una sola fecha, no como el curso entero.",
     "deviceOnly": "La dirección se guarda solo en este dispositivo y nunca se sincroniza: cualquiera que la tenga puede leer tu calendario. Las fechas importadas sí se sincronizan, como cualquier otra tarea.",
     "err": {
       "invalid-url": "Eso no parece una dirección web.",
@@ -978,7 +978,9 @@
       "cors": "Un navegador no puede obtener un calendario de otro sitio. Usa la app de Android para esto.",
       "http": "El servidor devolvió un error.",
       "network": "No se pudo acceder a esa dirección."
-    }
+    },
+    "repeatingNote": "{{count}} evento repetido importado como una sola fecha",
+    "repeatingNote_other": "{{count}} eventos repetidos importados como una sola fecha cada uno"
   },
   "att": {
     "tab": "Asistencia",

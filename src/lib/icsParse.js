@@ -215,6 +215,9 @@ export function parseIcs(text) {
       // there is no DTSTART is what makes those feeds work at all.
       case 'DUE': if (!current.start) current.start = parseIcsDate(value, params); break;
       case 'STATUS': current.status = value.trim().toUpperCase(); break;
+      // Recorded, not expanded. See `toFeedItems` for why the count matters
+      // more than the value does right now.
+      case 'RRULE': current.rrule = value.trim(); break;
       case 'LAST-MODIFIED': current.lastModified = value.trim(); break;
       default: break;
     }
@@ -226,15 +229,27 @@ export function parseIcs(text) {
 /**
  * Feed events → the shape this app stores.
  *
- * Deliberately conservative about what it claims. Every field here is
- * something ICS actually carries; nothing is inferred. In particular there is
- * no `type` and no `points` — the build plan is explicit that promising those
- * is how "due dates arrive on their own" gets mistaken for a full mirror.
+ * ── Repeating events are COUNTED, not silently dropped ──────────────────
+ *
+ * v1.13 review. `RRULE` is not expanded: a subscribed university timetable
+ * is mostly weekly lectures, and importing the first occurrence of each while
+ * discarding the term is the worst available outcome — the student sees one
+ * lecture, concludes the feature is broken, and has no way to tell that
+ * anything was left out.
+ *
+ * Expanding a recurrence properly means INTERVAL, BYDAY, COUNT/UNTIL, EXDATE
+ * and per-occurrence overrides, which is a feature rather than a fix and is
+ * not going into a release-blocker pass. What goes in now is honesty: the
+ * first occurrence is still imported, because a real deadline is better than
+ * nothing, and `repeating` carries how many events had a rule so the UI can
+ * say so plainly instead of the help text implying full support.
  */
 export function toFeedItems(events, feedId) {
   const out = [];
+  let repeating = 0;
   for (const e of events) {
     if (!e.start?.iso) continue;
+    if (e.rrule) repeating++;
     // CANCELLED events are published as tombstones by most systems. Keeping
     // them would put a cancelled exam on a student's calendar, which is worse
     // than not importing it.
@@ -249,8 +264,13 @@ export function toFeedItems(events, feedId) {
       notes: (e.description || '').trim() || null,
       location: (e.location || '').trim() || null,
       url: e.url || null,
+      repeats: !!e.rrule,
     });
   }
+  // Non-enumerable so the array still behaves exactly like an array of items
+  // everywhere it is spread, mapped or measured — callers that do not care
+  // about recurrence are entirely unaffected.
+  Object.defineProperty(out, 'repeating', { value: repeating, enumerable: false });
   return out;
 }
 
