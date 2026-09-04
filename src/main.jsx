@@ -18,7 +18,3 @@ createRoot(document.getElementById('root')).render(
     </ConfirmProvider>
   </StrictMode>,
 )
-
-// TEMPORARY — deliberate build break to prove the CI build gate fails the job.
-// Reverted in the immediately following commit. See PR description.
-import "./this-module-does-not-exist.js";
