@@ -937,7 +937,9 @@
       "1": "Tanda — penting",
       "2": "Ragu — belum yakin",
       "3": "Beres — terkonfirmasi"
-    }
+    },
+    "delete": "Hapus catatan",
+    "confirmDelete": "Hapus catatan ini? Tindakan ini tidak bisa dibatalkan."
   },
   "feed": {
     "title": "Umpan kalender",

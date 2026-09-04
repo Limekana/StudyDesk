@@ -942,7 +942,9 @@
       "1": "Merkintä — tärkeä",
       "2": "Kysymys — epävarma",
       "3": "Selvä — vahvistettu"
-    }
+    },
+    "delete": "Poista muistiinpano",
+    "confirmDelete": "Poistetaanko tämä muistiinpano? Tätä ei voi kumota."
   },
   "feed": {
     "title": "Kalenterisyöte",

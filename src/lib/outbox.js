@@ -47,6 +47,9 @@ import { writeJson } from './localStore.js';
 const STORAGE_KEY = 'studydesk-outbox';
 const META_KEY = 'studydesk-outbox-meta'; // { lastSuccessAt }
 const MAX_ATTEMPTS = 5;
+
+// The item `drain` is currently awaiting, if any. See `enqueue`.
+let inFlightId = null;
 const CHANGE_EVENT = 'studydesk-outbox-change';
 
 // ── Storage helpers ────────────────────────────────────────────────────────
@@ -122,12 +125,69 @@ function makeId() {
  *  @param {string} kind  One of the keys in KIND_DISPATCH below.
  *  @param {object} payload  Operation-specific args; matches the sync.js fn signature.
  */
+/**
+ * The identity of the FACT an item represents — not the identity of the item.
+ *
+ * `${kind}::${payload.id}` for anything row-shaped, which is every kind
+ * reconcile can produce. Kinds without a row id (`record_app_open`,
+ * `archive_semester`) return null and are appended as before; both are
+ * bounded by other means.
+ */
+function identityOf(kind, payload) {
+  const id = payload?.id;
+  return typeof id === 'string' && id ? `${kind}::${id}` : null;
+}
+
+/**
+ * Queue one mutation.
+ *
+ * ── Why this COALESCES rather than always appending ──────────────────────
+ *
+ * v1.13 review, blocker 1. `reconcileUnsynced` runs on every pull, and
+ * `sync.startRealtime(doPull)` makes pull the realtime handler too — so it
+ * runs on every remote change, not just at launch. It re-enqueues any row it
+ * finds locally but not remotely.
+ *
+ * A row that can never push is exactly such a row, permanently. It burns its
+ * five attempts, quarantines, and is then re-manufactured as a BRAND NEW item
+ * by the next pull, forever. The queue grows without bound in the same
+ * localStorage origin as the state blob — which is the durability failure
+ * this very release exists to fix. v1.12 had the shape for four tables;
+ * Item 1a widened reconcile to ten, so the leak widened with it.
+ *
+ * Coalescing on the fact's identity bounds the queue at one item per row per
+ * kind, whatever reconcile does. It is safe because every upsert here carries
+ * a SNAPSHOT rather than a patch — that contract is stated on the kinds
+ * themselves — so replacing a pending payload with a newer one loses nothing
+ * and is strictly more correct than pushing the stale copy first.
+ *
+ * `attempts` and `quarantined` are deliberately PRESERVED across a coalesce.
+ * Refreshing the payload must not silently revive a stuck item and re-fail
+ * it; the row stays quarantined, stays counted by `getStatus`, and carries
+ * the newest data for when the user presses Retry.
+ *
+ * The one item never coalesced onto is the one currently in flight: `drain`
+ * removes it by item id on success, so replacing its payload mid-await would
+ * drop the newer edit with no path back.
+ */
 export function enqueue(kind, payload) {
   if (!KIND_DISPATCH[kind]) {
     console.error('[outbox] unknown kind:', kind);
     return;
   }
   const items = loadItems();
+  const key = identityOf(kind, payload);
+  if (key) {
+    const at = items.findIndex(
+      (it) => it.id !== inFlightId && identityOf(it.kind, it.payload) === key,
+    );
+    if (at !== -1) {
+      items[at] = { ...items[at], payload };
+      saveItems(items);
+      void drain();
+      return;
+    }
+  }
   items.push({
     id: makeId(),
     createdAt: new Date().toISOString(),
@@ -243,6 +303,10 @@ export async function drain(opts = {}) {
       }
 
       try {
+        // Marked in flight so a concurrent `enqueue` appends instead of
+        // replacing this item's payload — the success path below removes it
+        // by id, which would take a newer edit with it.
+        inFlightId = id;
         await handler(item.payload);
         saveItems(loadItems().filter((i) => i.id !== id));
         saveMeta({ ...loadMeta(), lastSuccessAt: new Date().toISOString() });
@@ -260,6 +324,8 @@ export async function drain(opts = {}) {
             : i
         )));
         if (!firstError) { firstError = errMsg; firstErrorKind = item.kind; }
+      } finally {
+        inFlightId = null;
       }
     }
 

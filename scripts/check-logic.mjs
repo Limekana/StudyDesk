@@ -967,3 +967,70 @@ check('poll cadence: due when never fetched, and after the interval', () => {
   assert.equal(isDue({ lastFetchedAt: new Date(now - 1000).toISOString() }, now), false);
   assert.equal(isDue({ lastFetchedAt: new Date(now - POLL_INTERVAL_MS - 1000).toISOString() }, now), true);
 });
+
+// ── outbox.js — the queue must not grow without bound ─────────────────────
+//
+// v1.13 review, blocker 1. `reconcileUnsynced` runs on every pull, and pull is
+// also the realtime handler, so a row that can never push was re-enqueued as a
+// brand new item forever — unbounded growth in the same origin quota as the
+// state blob, which is the durability failure this release exists to fix.
+//
+// These lock the coalescing that bounds it. `drain` is never called here: the
+// assertions are about what `enqueue` puts in storage, and drain needs network.
+
+// Node 22 exposes `navigator` as a getter-only global, so it is redefined
+// rather than assigned. Offline keeps `enqueue`'s fire-and-forget drain a
+// no-op — these assertions are about what lands in storage, not the network.
+Object.defineProperty(globalThis, 'navigator', {
+  value: { onLine: false }, configurable: true, writable: true,
+});
+const obStore = makeStorage();
+globalThis.localStorage = obStore.store;
+
+const outbox = await import('../src/lib/outbox.js');
+
+const queued = () => JSON.parse(obStore.map.get('studydesk-outbox') || '[]');
+
+check('re-enqueueing the same row coalesces instead of appending', () => {
+  outbox.clear();
+  for (let i = 0; i < 50; i++) {
+    outbox.enqueue('upsert_note', { id: 'note-1', content: `draft ${i}` });
+  }
+  const items = queued();
+  assert.equal(items.length, 1, '50 pulls must leave one item, not fifty');
+  assert.equal(items[0].payload.content, 'draft 49', 'the newest snapshot wins');
+});
+
+check('different rows and different kinds stay separate items', () => {
+  outbox.clear();
+  outbox.enqueue('upsert_note', { id: 'a', content: 'x' });
+  outbox.enqueue('upsert_note', { id: 'b', content: 'y' });
+  // Same row, different fact: an edit and a tombstone are not interchangeable
+  // and must both survive, in order.
+  outbox.enqueue('delete_note', { id: 'a' });
+  assert.equal(queued().length, 3);
+});
+
+check('coalescing preserves quarantine rather than reviving a stuck row', () => {
+  outbox.clear();
+  outbox.enqueue('upsert_attendance', { id: 'att-1', status: 'present' });
+  // Simulate the row having burned its attempts, as a 42P10 would have done.
+  const items = queued();
+  items[0].attempts = 5;
+  items[0].quarantined = true;
+  obStore.map.set('studydesk-outbox', JSON.stringify(items));
+
+  outbox.enqueue('upsert_attendance', { id: 'att-1', status: 'absent' });
+  const after = queued();
+  assert.equal(after.length, 1, 'a quarantined row must not spawn a duplicate');
+  assert.equal(after[0].quarantined, true, 'refreshing the payload must not revive it');
+  assert.equal(after[0].attempts, 5, 'the failure budget is not reset behind the user');
+  assert.equal(after[0].payload.status, 'absent', 'but it carries the newest data for Retry');
+});
+
+check('payloads with no row id still enqueue, one per call', () => {
+  outbox.clear();
+  outbox.enqueue('record_app_open', { app: 'studydesk', date: '2026-09-04' });
+  outbox.enqueue('record_app_open', { app: 'studydesk', date: '2026-09-05' });
+  assert.equal(queued().length, 2, 'kinds without an id keep the old append behaviour');
+});

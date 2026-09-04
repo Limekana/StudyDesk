@@ -599,3 +599,21 @@
 @media (prefers-reduced-motion: reduce) {
   .nb-bar, .nb-swatches { transition: none; }
 }
+
+/* Delete, in the note header. Sized to the 44px touch target the rest of the
+   app uses; muted until pressed, because a destructive control that draws the
+   eye on every note is a control people learn to avoid rather than trust. */
+.nb-head-delete {
+  border: 0;
+  background: none;
+  color: var(--nb-ink-muted);
+  font-size: 1.4rem;
+  line-height: 1;
+  min-width: 44px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.nb-head-delete:hover,
+.nb-head-delete:focus-visible {
+  color: var(--danger);
+}

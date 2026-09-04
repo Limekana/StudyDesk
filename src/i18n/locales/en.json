@@ -942,7 +942,9 @@
       "1": "Mark — important",
       "2": "Query — unsure",
       "3": "Settled — confirmed"
-    }
+    },
+    "delete": "Delete note",
+    "confirmDelete": "Delete this note? This cannot be undone."
   },
   "feed": {
     "title": "Calendar feed",

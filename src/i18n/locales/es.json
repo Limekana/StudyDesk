@@ -947,7 +947,9 @@
       "1": "Marca — importante",
       "2": "Duda — inseguro",
       "3": "Resuelto — confirmado"
-    }
+    },
+    "delete": "Eliminar nota",
+    "confirmDelete": "¿Eliminar esta nota? No se puede deshacer."
   },
   "feed": {
     "title": "Fuente de calendario",

@@ -947,7 +947,9 @@
       "1": "Repère — important",
       "2": "Question — incertain",
       "3": "Réglé — confirmé"
-    }
+    },
+    "delete": "Supprimer la note",
+    "confirmDelete": "Supprimer cette note ? Cette action est irréversible."
   },
   "feed": {
     "title": "Flux de calendrier",
