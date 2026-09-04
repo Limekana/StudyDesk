@@ -136,8 +136,26 @@ export default function NoteEditor({
     // `parse` on a single line gives the block back with its type re-derived
     // from the markers, which is what makes typing `## ` at the front of an
     // existing line work without a special case.
-    const [reparsed] = parse(text);
-    next[focus] = { ...reparsed, id: focus };
+    //
+    // ── Multi-line commits (v1.13 review, blocker 6) ────────────────────
+    //
+    // This took `parse(text)[0]` and dropped everything after it. The
+    // textarea holds ONE block, so the only way it acquires a newline is a
+    // paste — and pasting three pages of lecture notes silently kept the
+    // first line and threw the rest away on blur. Splitting here rather than
+    // in a paste handler covers every route text can arrive by, including
+    // Android keyboards that insert clipboard content without firing a
+    // `paste` event this component can read.
+    const parsed = parse(text);
+    if (parsed.length > 1) {
+      const rebuilt = parsed.map((b, i) => ({ ...b, id: focus + i }));
+      next.splice(focus, 1, ...rebuilt);
+      // Land the caret at the end of what was pasted, which is where the
+      // user expects to keep typing.
+      commit(next, nextFocus === -1 ? -1 : focus + rebuilt.length - 1);
+      return;
+    }
+    next[focus] = { ...parsed[0], id: focus };
     commit(next, nextFocus);
   }, [blocks, focus, commit]);
 
@@ -206,7 +224,11 @@ export default function NoteEditor({
         requestAnimationFrame(() => el.setSelectionRange(r.start, r.end));
       } else if (sc.kind === 'block') {
         const next = [...blocks];
-        const cur = { ...next[focus], id: focus };
+        // Same fix as the format bar's `block` branch — this path had the
+        // identical stale-block bug, reached by Ctrl+Shift+8 rather than by
+        // tapping. See the comment there.
+        const [live] = parse(draft);
+        const cur = { ...live, id: focus };
         // Pressing the same block shortcut twice returns to a paragraph, which
         // is what every editor does and what people try first to undo it.
         const type = cur.type === sc.type ? BLOCK.P : sc.type;
@@ -222,7 +244,10 @@ export default function NoteEditor({
         requestAnimationFrame(() => el.setSelectionRange(caret, caret));
       } else if (sc.kind === 'toggleCheck') {
         const next = [...blocks];
-        const cur = { ...next[focus], id: focus };
+        // And here — Ctrl+Enter on a checklist item would have dropped
+        // whatever had been typed into it since the last commit.
+        const [live] = parse(draft);
+        const cur = { ...live, id: focus };
         if (cur.type === BLOCK.CHECK) {
           next[focus] = { ...cur, checked: !cur.checked };
           setDraft(serializeBlock(next[focus]));
@@ -375,7 +400,16 @@ export default function NoteEditor({
     }
     if (action === 'block') {
       const next = [...blocks];
-      const cur = { ...next[focus], id: focus };
+      // From `draft`, NOT from `blocks`. v1.13 review, blocker 5.
+      //
+      // `blocks` is `parse(value)` — the COMMITTED note. Everything typed
+      // since the last commit lives only in `draft`, so reading the block out
+      // of `blocks` here discarded it, and the `setDraft` below then wiped it
+      // from the textarea as well. Type a line, tap `•`, and the line was
+      // gone with no undo. On Android this bar is the only way to set a block
+      // type, so it was the primary path, not an edge case.
+      const [live] = parse(draft);
+      const cur = { ...live, id: focus };
       next[focus] = { ...cur, type: cur.type === arg ? BLOCK.P : arg, checked: false };
       setDraft(serializeBlock(next[focus]));
       onChange(serialize(next));

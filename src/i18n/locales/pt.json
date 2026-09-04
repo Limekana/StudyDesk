@@ -947,7 +947,9 @@
       "1": "Marca — importante",
       "2": "Dúvida — incerto",
       "3": "Resolvido — confirmado"
-    }
+    },
+    "delete": "Excluir nota",
+    "confirmDelete": "Excluir esta nota? Não é possível desfazer."
   },
   "feed": {
     "title": "Feed de calendário",

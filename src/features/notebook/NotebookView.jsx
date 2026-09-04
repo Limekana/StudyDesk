@@ -37,7 +37,7 @@ function newId() {
   });
 }
 
-export default function NotebookView({ state, dispatch, onOpenTimer }) {
+export default function NotebookView({ state, dispatch, onDeleteNote, onOpenTimer }) {
   const { t } = useTranslation();
 
   const courses = useMemo(
@@ -159,6 +159,22 @@ export default function NotebookView({ state, dispatch, onOpenTimer }) {
             <span className="nb-head-meta">{t('nb.savedToSession')}</span>
           )}
           <span className="nb-head-spacer" />
+          {/* Delete. Confirmed, because a note is the one thing in this app
+              with no undo — the editor's history is per-block and does not
+              survive the note being unmounted. */}
+          {active && onDeleteNote && (
+            <button
+              type="button"
+              className="nb-head-delete"
+              onClick={() => {
+                if (window.confirm(t('nb.confirmDelete'))) onDeleteNote(active.id);
+              }}
+              aria-label={t('nb.delete')}
+              title={t('nb.delete')}
+            >
+              ×
+            </button>
+          )}
           {/* The corner pill. The EXISTING component at its existing size,
               mounted in a new position — not restyled, so the timer surface it
               came from is unaffected (§3 rule 2, §10 point 3). */}

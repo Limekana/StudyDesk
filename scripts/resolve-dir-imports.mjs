@@ -42,7 +42,25 @@ export async function resolve(specifier, context, nextResolve) {
   }
 }
 
+// `src/lib/supabase.js` reads `import.meta.env` at module scope, which Vite
+// defines and Node does not. It is transitively imported by `outbox.js`, whose
+// QUEUE behaviour the assertions do test — the network client is not the thing
+// under test, and instantiating it under Node would only prove Vite compiles.
+//
+// So it is replaced with an inert stub, and only it. Everything else still
+// loads the app's real source, which is the whole point of this hook: a test
+// that quietly substitutes the module it is checking proves nothing.
+const SUPABASE_STUB = `
+  const chain = new Proxy(() => chain, { get: () => chain, apply: () => chain });
+  export const supabase = chain;
+  export const isConfigured = false;
+  export default chain;
+`;
+
 export async function load(url, context, nextLoad) {
+  if (url.endsWith('/src/lib/supabase.js')) {
+    return { format: 'module', shortCircuit: true, source: SUPABASE_STUB };
+  }
   // Bundlers import JSON without an attribute; Node requires one. Supplying
   // it here keeps the app's import statements as a bundler expects them.
   if (url.endsWith('.json') && context.importAttributes?.type !== 'json') {

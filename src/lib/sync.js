@@ -671,8 +671,24 @@ export async function upsertAttendance({ id, timetableEntryId, date, status, not
   // `onConflict` on the natural key, not the surrogate id. Two devices marking
   // the same lesson generate different uuids for the same FACT, and without
   // this they would both insert and the lesson would be counted twice in the
-  // percentage. The partial unique index in the migration is what makes this
-  // resolvable.
+  // percentage.
+  //
+  // ── The index this infers against must NOT be partial ──────────────────
+  //
+  // v1.13 review, blocker 2. The migration originally created this unique
+  // index as `WHERE deleted_at is null`, so that clearing a mark did not
+  // block re-marking the lesson later. Postgres cannot infer a PARTIAL index
+  // from a bare column list — the conflict target has to repeat the index's
+  // WHERE clause, which PostgREST's `onConflict` cannot express. The result
+  // was `42P10: there is no unique or exclusion constraint matching the ON
+  // CONFLICT specification` on the FIRST attendance mark, for every user,
+  // permanently.
+  //
+  // The index is now unconditional (`v113_lesson_attendance_full_unique_idx`)
+  // and the un-delete is done here instead: one lesson on one date is ONE row
+  // forever, and re-marking a cleared lesson revives that row rather than
+  // inserting a second one. That is a better model than the partial index
+  // was reaching for — two rows for the same fact could never be right.
   const { error } = await supabase.from('lesson_attendance').upsert({
     id,
     user_id: userId,
@@ -680,6 +696,9 @@ export async function upsertAttendance({ id, timetableEntryId, date, status, not
     date,
     status,
     note: note || null,
+    // Explicit, not omitted: this is what makes re-marking a previously
+    // cleared lesson work now that the row is reused rather than replaced.
+    deleted_at: null,
     updated_at: nowISO(),
   }, { onConflict: 'user_id,timetable_entry_id,date' });
   if (error) throw error;

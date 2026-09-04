@@ -942,7 +942,9 @@
       "1": "Merken — wichtig",
       "2": "Frage — unsicher",
       "3": "Geklärt — bestätigt"
-    }
+    },
+    "delete": "Notiz löschen",
+    "confirmDelete": "Diese Notiz löschen? Das lässt sich nicht rückgängig machen."
   },
   "feed": {
     "title": "Kalender-Feed",

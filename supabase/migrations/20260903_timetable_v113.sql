@@ -84,11 +84,25 @@ create table if not exists public.lesson_attendance (
 -- The identity of the fact. The same lesson on the same day is ONE record
 -- whatever device wrote it, so two devices marking the same lesson converge
 -- under LWW instead of producing a duplicate that would count twice in the
--- percentage. Partial, so a soft-deleted row does not block re-marking the
--- lesson later.
-create unique index if not exists lesson_attendance_entry_date_uidx
-  on public.lesson_attendance (user_id, timetable_entry_id, date)
-  where deleted_at is null;
+-- percentage.
+--
+-- ── This was PARTIAL and it was a bug (v1.13 review, blocker 2) ──────────
+--
+-- It shipped as `where deleted_at is null`, reasoning that a soft-deleted row
+-- should not block re-marking the lesson later. Postgres cannot infer a
+-- partial index from a bare column list, and PostgREST's `onConflict` sends
+-- only a column list — so `upsertAttendance` raised 42P10 on the FIRST mark,
+-- for every user, permanently. Combined with the outbox growth in blocker 1
+-- it regressed the exact durability failure this release is named for.
+--
+-- Unconditional now (applied separately as
+-- `v113_lesson_attendance_full_unique_idx`, with the partial one dropped).
+-- One lesson on one date is ONE row forever; clearing a mark soft-deletes it
+-- and re-marking revives the same row, with the client sending
+-- `deleted_at: null`. That is the better model regardless of the inference
+-- problem: two rows for one fact could never have been correct.
+create unique index if not exists lesson_attendance_entry_date_full_uidx
+  on public.lesson_attendance (user_id, timetable_entry_id, date);
 
 create index if not exists lesson_attendance_user_updated_idx on public.lesson_attendance (user_id, updated_at);
 create index if not exists lesson_attendance_date_idx         on public.lesson_attendance (user_id, date);
