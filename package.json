@@ -18,12 +18,14 @@
     "check:contrast": "node scripts/check-contrast.mjs",
     "check:logic": "node scripts/check-logic.mjs",
     "check:notebook-colours": "node scripts/check-notebook-colours.mjs",
+    "check:native-plugins": "node scripts/check-native-plugins.mjs",
+    "check:dist-fresh": "node scripts/check-dist-fresh.mjs",
     "build": "vite build",
     "lint": "node scripts/check-ime.mjs && node scripts/check-contrast.mjs && node scripts/check-notebook-colours.mjs && node scripts/check-logic.mjs && eslint . --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "cap:sync": "npm run build && cap sync android",
+    "cap:sync": "npm run build && npm run check:dist-fresh && cap sync android",
     "electron:dev": "electron .",
-    "electron:build": "npm run build && node electron/build.cjs --win && npm run electron:zip",
+    "electron:build": "npm run build && npm run check:dist-fresh && node electron/build.cjs --win && npm run electron:zip",
     "electron:zip": "node electron/package-zip.cjs"
   },
   "dependencies": {

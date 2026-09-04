@@ -38,8 +38,31 @@ jobs:
       - name: IME guard
         run: node scripts/check-ime.mjs
 
+      # The v1.13 incident that motivates the two steps below: `vite build`
+      # failed on the dev machine, dist/ kept its two-day-old contents, `cap
+      # sync` copied that stale dist/ into the APK, and `assembleRelease`
+      # succeeded. The result was a 4,305,085-byte APK labelled 1.13.0 that
+      # was 8 bytes different from v1.12.1 and contained none of the v1.13
+      # code. The stale-asset gate passed it, because that gate diffs the APK
+      # against dist/ and never asks whether dist/ is fresh.
+      #
+      # CI was green throughout and CI was not wrong: it runs `npm ci`, so it
+      # never reproduces a stale node_modules. What CI was missing is the two
+      # checks after this one.
       - name: Build gate
         run: npm run build
+
+      - name: Dist freshness gate
+        run: npm run check:dist-fresh
+
+      # A native Capacitor plugin can be in package.json, in package-lock.json,
+      # resolvable by Rollup, and still absent from the generated Gradle files
+      # if nobody ran `cap sync` — in which case it is not in the APK at all and
+      # every gate above stays green. `@capacitor/status-bar` shipped that way
+      # in v1.13: theme.js imported it, the build passed, and restyling the
+      # Android status bar was a silent no-op on device.
+      - name: Native plugin registration
+        run: npm run check:native-plugins
 
       # There is no TypeScript here by design, so lint is the only static
       # check this app has.
