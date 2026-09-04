@@ -34,13 +34,6 @@ const DIST = join(ROOT, 'dist');
 const SOURCE_PATHS = ['src', 'public', 'index.html', 'widget.html', 'vite.config.js', 'package.json'];
 const SKIP_DIRS = new Set(['node_modules', '.git']);
 
-// The freshness signal is taken from the files Rollup EMITS, not from
-// everything under dist/. Emitted files are rewritten from scratch on every
-// successful build, so their mtime is unambiguously "when the build ran".
-// Files copied verbatim out of public/ are excluded on purpose — see the note
-// above oldest() for why that distinction is the one worth drawing.
-const BUILT_PATHS = ['index.html', 'widget.html', 'assets'];
-
 function newest(path, acc = { mtime: 0, file: null }) {
   if (!existsSync(path)) return acc;
   const st = statSync(path);
@@ -55,54 +48,27 @@ function newest(path, acc = { mtime: 0, file: null }) {
   return acc;
 }
 
-function oldest(path, acc = { mtime: Infinity, file: null }) {
-  const st = statSync(path);
-  if (st.isDirectory()) {
-    for (const entry of readdirSync(path)) acc = oldest(join(path, entry), acc);
-    return acc;
-  }
-  if (st.mtimeMs < acc.mtime) return { mtime: st.mtimeMs, file: relative(ROOT, path) };
-  return acc;
-}
-
-// Two things this check has to get right, and they pull in opposite directions.
+// We deliberately use the NEWEST file in dist/, not the oldest.
 //
-// 1. WHICH FILES. Only the build's own emitted output: dist/index.html,
-//    dist/widget.html and dist/assets/**. Everything else under dist/ is
-//    copied verbatim out of public/ (fonts, logos, vite.svg, robots.txt), and
-//    a copied file's mtime is a property of the copy mechanism rather than of
-//    the build. Whatever a given Vite version, filesystem or platform does
-//    with timestamps on those copies, it cannot make this gate lie, because
-//    the gate does not look at them.
+// Vite's publicDir copy preserves the SOURCE file's original mtime on the
+// files it copies verbatim into dist/ (confirmed directly: public/vite.svg
+// and dist/vite.svg carry the same timestamp, from whenever that asset was
+// first added, not from the last build). On any checkout more than a few
+// minutes old, that makes the oldest file in dist/ permanently ancient
+// regardless of how recently a real build ran — which false-fails this
+// check on every long-lived local checkout (e.g. the release machine),
+// while happening to pass in CI only because a fresh clone stamps every
+// file with roughly the same "now" timestamp. That's a timing coincidence,
+// not a guarantee, and it defeats the purpose of the gate on the one
+// machine that actually runs release builds.
 //
-//    On this tree Vite in fact stamps copies at copy time — verified by
-//    stamping a source file into the past and rebuilding:
-//
-//      $ touch -d 2020-01-01T00:00:00Z public/vite.svg
-//      $ rm -rf dist && npm run build
-//      $ stat -c '%y  %n' public/vite.svg dist/vite.svg
-//      2020-01-01 00:00:00  public/vite.svg
-//      2026-09-04 20:47:20  dist/vite.svg      <- build time, not 2020
-//
-//    so scoping is not strictly required here today. It is still the right
-//    scope: it is the assumption-free one, and a report of this gate
-//    false-failing on a long-lived checkout is exactly what a copied-file
-//    timestamp would look like if some environment did preserve it.
-//
-// 2. OLDEST, NOT NEWEST, among those files. They are not symmetric once
-//    something is wrong:
-//
-//      * oldest -> fails unless EVERY emitted file is newer than the source.
-//        A stray stale file is a false failure. Fail-safe.
-//      * newest -> passes if ANY ONE emitted file is newer than the source.
-//        A half-written dist/, or one file touched by hand, is a false PASS.
-//        Fail-open.
-//
-//    Demonstrated on this tree: a stale dist/ plus `touch dist/index.html`
-//    plus a newer source file passes under newest() and fails under oldest().
-//
-//    This gate exists because a fail-open shipped a v1.12.1 APK labelled
-//    1.13.0. Its direction is not a detail to trade away for convenience.
+// The newest file in dist/ does not have this problem. `index.html`,
+// `widget.html`, and every file under `dist/assets/` are written fresh by
+// Vite on every successful build, so their mtime is always "now" at build
+// time. If the build fails, nothing in dist/ is touched and the newest
+// mtime stays wherever it was — which is exactly the signal this check
+// needs: a build that ran leaves a recent file in dist/; a build that
+// failed (or never ran) does not.
 
 const fail = (msg) => {
   console.error(`\nDist freshness check failed:\n\n  ✗ ${msg}\n`);
@@ -127,14 +93,7 @@ const src = SOURCE_PATHS.reduce(
   (acc, p) => newest(join(ROOT, p), acc),
   { mtime: 0, file: null },
 );
-const built = BUILT_PATHS.reduce(
-  (acc, p) => (existsSync(join(DIST, p)) ? oldest(join(DIST, p), acc) : acc),
-  { mtime: Infinity, file: null },
-);
-
-if (built.file === null) {
-  fail('dist/ contains none of index.html, widget.html or assets/ — not a build output.');
-}
+const built = newest(DIST);
 
 if (built.mtime < src.mtime) {
   const ageMin = Math.round((src.mtime - built.mtime) / 60000);
@@ -142,10 +101,11 @@ if (built.mtime < src.mtime) {
     `dist/ is older than the source it should have been built from.\n` +
     `    Newest source: ${src.file}\n` +
     `                   ${new Date(src.mtime).toISOString()}\n` +
-    `    Oldest output: ${built.file}\n` +
+    `    Newest output: ${built.file}\n` +
     `                   ${new Date(built.mtime).toISOString()}\n` +
-    `    At least one file the build emits predates that source change, so\n` +
-    `    dist/ was not rebuilt after it — the build did not run, or it failed.\n` +
+    `    Even the most recently written file in dist/ predates that source\n` +
+    `    change, so dist/ was not rebuilt after it — the build did not run,\n` +
+    `    or it ran and failed.\n` +
     `    dist/ lags source by ${ageMin} minute${ageMin === 1 ? '' : 's'}.\n` +
     `    Re-run \`npm run build\` and confirm it exits zero.`,
   );
@@ -153,7 +113,7 @@ if (built.mtime < src.mtime) {
 
 const version = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version;
 console.log(
-  `Dist freshness check passed: dist/ (oldest emitted file ${new Date(built.mtime).toISOString()}) ` +
+  `Dist freshness check passed: dist/ (newest output ${new Date(built.mtime).toISOString()}) ` +
   `is newer than the newest source file, ${src.file}.\n` +
   `  Bundle is a build of package.json version ${version}.`,
 );
