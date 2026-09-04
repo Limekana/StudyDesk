@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore } from 'react';
 import { webNotifyPermission, requestWebNotifyPermission, webNotifySupported } from '../../lib/webNotify.js';
 import { Capacitor } from '@capacitor/core';
 import { useTranslation } from 'react-i18next';
@@ -14,11 +14,15 @@ import { clearEntitlement } from '../../lib/entitlement.js';
 import { clearAvatarCache } from '../../lib/profile.js';
 import ProfileSection from './ProfileSection.jsx';
 import SupporterBlock from './SupporterBlock.jsx';
+import Appearance from './Appearance.jsx';
+import CalendarFeeds from './CalendarFeeds.jsx';
 import { downloadExport, deleteAccount } from '../../lib/dataRights.js';
 import { useConfirm } from '../../lib/useConfirm.js';
 import { avatarInitials } from '../../lib/avatarInitials.js';
 import { focusCapabilities, ensureNotificationPermission } from '../../lib/focusMode.js';
 import { scaleFor, normalizeScale, describeScale } from '../../lib/gradeScale.js';
+import { preferredWeekStart, setPreferredWeekStart, resolveWeekStart, weekdayLabels } from '../../lib/calendar.js';
+import { formatLocale } from '../../lib/dates.js';
 import { GuestAvatar } from '../../lib/avatar.jsx';
 import pkg from '../../../package.json';
 
@@ -109,6 +113,30 @@ const css = `
 .sv2-signin{background:var(--text);color:var(--bg);border:none;padding:10px 18px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:6px;font-weight:500;}
 .sv2-signin:hover{opacity:0.88;}
 .sv2-note{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.55;}
+/* v1.13 Item 1a — the stopped-queue panel. Danger rather than warning: a
+   quarantined item is terminal until the user acts, and the whole reason this
+   panel exists is that the previous treatment read as "in progress". */
+.sv2-stopped{margin-top:14px;padding:13px 14px;border:1px solid var(--danger-soft-border);border-inline-start:3px solid var(--danger);background:var(--danger-soft);border-radius:7px;}
+.sv2-stopped-head{font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--danger);margin-bottom:7px;}
+.sv2-stopped-body{font-size:12.5px;line-height:1.55;color:var(--text);margin-bottom:6px;}
+.sv2-stopped-meta{font-family:var(--font-mono);font-size:10.5px;color:var(--muted);line-height:1.5;}
+/* The raw server error. Monospace and wrapped rather than truncated: it is
+   the one string worth copying verbatim into a bug report, and an ellipsis in
+   the middle of a Postgres constraint name destroys exactly what makes it
+   useful. */
+/* v1.13 Tier 3 — the calendar-feed panel. A disclosure, because the feature
+   has to be invisible until asked for. */
+.sv2-disclosure{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:0;padding:0;cursor:pointer;font:inherit;color:inherit;text-align:start;}
+.sv2-disclosure-chev{font-size:10px;color:var(--muted2);}
+.sv2-disclosure-body{margin-top:12px;}
+.feed-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);}
+.feed-row:last-of-type{border-bottom:none;}
+.feed-row-main{flex:1;min-width:0;}
+.feed-row-name{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+/* Host only, never the path — the path of a feed URL IS the capability. */
+.feed-row-meta{font-family:var(--font-mono);font-size:10px;color:var(--muted2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.feed-row-err{font-family:var(--font-mono);font-size:10.5px;color:var(--danger);line-height:1.5;margin-top:3px;}
+.sv2-stopped-err{margin-top:7px;font-family:var(--font-mono);font-size:10.5px;color:var(--danger);word-break:break-word;line-height:1.5;}
 /* Issue #39 — the OS is blocking notifications, so the toggle below cannot do
    anything. Uses the existing warning tokens rather than danger: nothing is
    broken or destructive, the user simply has to grant something. Warm amber
@@ -254,6 +282,32 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
       setDraining(false);
     }
   }, [showFlash, t]);
+
+  // v1.13 — week start. Only three options are offered, not seven: Monday
+  // (ISO 8601 and most of Europe), Saturday (much of the Middle East) and
+  // Sunday (US, Canada, Brazil, India, Indonesia, Japan). A timetable that
+  // starts on Wednesday is not a thing anyone has, and seven options would
+  // make the real three harder to find.
+  const [weekStartPref, setWeekStartPref] = useState(() => preferredWeekStart());
+  const settingsLocale = formatLocale();
+  const dayNames = useMemo(
+    // Index by real getDay() value, so `dayNames[6]` is Saturday whatever the
+    // user's week starts on.
+    () => weekdayLabels(0, settingsLocale),
+    [settingsLocale],
+  );
+  // What "Automatic" resolves to right now, named — so the option says what
+  // it will do rather than making the user try it to find out.
+  const autoDayName = useMemo(() => {
+    const prev = weekStartPref;
+    // `resolveWeekStart` consults the override first, so it has to be asked
+    // what the LOCALE alone would say. Temporarily clearing it is the honest
+    // way to get that without duplicating the CLDR logic here.
+    setPreferredWeekStart(null);
+    const auto = resolveWeekStart(settingsLocale);
+    setPreferredWeekStart(prev);
+    return dayNames[auto];
+  }, [settingsLocale, dayNames, weekStartPref]);
 
   const subjects = Object.values(state.courses || {}).filter((c) => !c.deletedAt);
   const grades = (state.grades || []).filter((g) => !g.deletedAt);
@@ -407,7 +461,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
             <div className="sv2-hero-info">
               <div className="sv2-hero-name">{session ? userEmail : t('settings.guest')}</div>
               <div className="sv2-hero-status">
-                <span className="sv2-dot" style={{ background: session ? '#2e7d52' : 'var(--muted2)' }} />
+                <span className="sv2-dot" style={{ background: session ? 'var(--success)' : 'var(--muted2)' }} />
                 {session ? t('settings.signedInProvider', { provider }) : t('settings.localOnly')}
               </div>
             </div>
@@ -432,6 +486,11 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
             server-side profile to edit. ── */}
         <ProfileSection session={session} showFlash={showFlash} />
 
+        {/* ── Appearance (v1.13) ──
+            Above Language because it is the setting people come to Settings
+            for, and because the supporter themes need to be seen. ── */}
+        <Appearance />
+
         {/* ── Language ── */}
         <div className="sv2-section">
           <div className="sv2-section-title">{t('settings.language')}</div>
@@ -447,6 +506,40 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* ── Week start (v1.13 Tier 2) ──
+             The locale answer is already correct — `resolveWeekStart` reads
+             CLDR via Intl.Locale.weekInfo, so ar-EG gets Saturday and en-GB
+             Monday. This exists because the report behind it is not a locale
+             bug: it is a person whose locale genuinely says Sunday who wants
+             Monday anyway. Their timetable starts on Monday; their region's
+             average does not. ── */}
+        <div className="sv2-section">
+          <div className="sv2-section-title">{t('settings.weekStartLbl')}</div>
+          <div className="sv2-row">
+            <span className="sv2-row-label">{t('settings.weekStart')}</span>
+            <span className="sv2-row-value">
+              <select
+                value={weekStartPref === null ? 'auto' : String(weekStartPref)}
+                onChange={(e) => {
+                  const v = e.target.value === 'auto' ? null : Number(e.target.value);
+                  setPreferredWeekStart(v);
+                  setWeekStartPref(v);
+                  // The grids read `resolveWeekStart` at render, so nothing
+                  // needs to be pushed — but they will not re-render on their
+                  // own, because a localStorage write is invisible to React.
+                  showFlash(t('settings.weekStartSaved'));
+                }}
+              >
+                <option value="auto">{t('settings.weekStartAuto', { day: autoDayName })}</option>
+                {[1, 6, 0].map((d) => (
+                  <option key={d} value={d}>{dayNames[d]}</option>
+                ))}
+              </select>
+            </span>
+          </div>
+          <div className="sv2-note">{t('settings.weekStartNote')}</div>
         </div>
 
         {/* ── Cloud sync ── */}
@@ -468,10 +561,10 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
             <span className="sv2-row-label">{t('settings.pendingQueue')}</span>
             <span className="sv2-row-value">
               {outboxStatus.pending === 0 ? (
-                <><span className="sv2-dot" style={{ background: '#2e7d52' }} />{t('settings.allSynced')}</>
+                <><span className="sv2-dot" style={{ background: 'var(--success)' }} />{t('settings.allSynced')}</>
               ) : (
                 <>
-                  <span className="sv2-dot" style={{ background: outboxStatus.stuck > 0 ? 'var(--danger)' : '#d4860a' }} />
+                  <span className="sv2-dot" style={{ background: outboxStatus.stuck > 0 ? 'var(--danger)' : 'var(--warning)' }} />
                   {t('settings.pendingCount', { count: outboxStatus.pending })}{outboxStatus.stuck > 0 && ` ${t('settings.stuck', { count: outboxStatus.stuck })}`}
                 </>
               )}
@@ -493,12 +586,56 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
               <span className="sv2-row-value" style={{ color: 'var(--danger)', fontSize: 11 }}>{outboxStatus.lastError}</span>
             </div>
           )}
+          {/* ── v1.13 Item 1a — a queue that has stopped says so ──
+              v1.12 added quarantine so a poison item stops burning retries,
+              which was right, and then reported it as a parenthetical after
+              the pending count. "3 pending (1 stuck)" is a number, not a
+              statement: it does not say the queue has STOPPED, does not say
+              what stopped it, and reads as progress.
+
+              Quarantine is a terminal state until the user intervenes, so it
+              gets its own panel with the thing that stopped, when it stopped,
+              and the button that clears it. The ordinary "Retry now" is not
+              enough on its own — it is the same control for two very
+              different situations, and a user watching "3 pending" tick down
+              has no reason to press anything. ── */}
+          {outboxStatus.stuck > 0 && (
+            <div className="sv2-stopped" role="status">
+              <div className="sv2-stopped-head">{t('settings.queueStoppedTitle')}</div>
+              <p className="sv2-stopped-body">
+                {t('settings.queueStoppedBody', { count: outboxStatus.stuck })}
+              </p>
+              {outboxStatus.stuckKinds?.length > 0 && (
+                <div className="sv2-stopped-meta">
+                  {t('settings.queueStoppedWhat', {
+                    kinds: outboxStatus.stuckKinds.map((k) => t(`settings.kind.${k}`, k)).join(', '),
+                  })}
+                </div>
+              )}
+              {outboxStatus.stuckSince && (
+                <div className="sv2-stopped-meta">
+                  {t('settings.queueStoppedSince', { when: fmtTime(outboxStatus.stuckSince, t, lang) })}
+                </div>
+              )}
+              {outboxStatus.lastError && (
+                <div className="sv2-stopped-err">{outboxStatus.lastError}</div>
+              )}
+              <div className="sv2-action">
+                <button className="btn" onClick={onRetryNow} disabled={draining || !session}>
+                  {draining ? t('settings.retrying') : t('settings.queueStoppedRetry')}
+                </button>
+              </div>
+              {/* Nothing here can be retried without a session, and a button
+                  that cannot work is worse than one that explains itself. */}
+              {!session && <div className="sv2-stopped-meta">{t('settings.queueStoppedSignIn')}</div>}
+            </div>
+          )}
           {session && (
             <div className="sv2-action">
               <button className="btn-outline" onClick={onPullNow} disabled={pulling}>
                 {pulling ? t('settings.pulling') : t('settings.pullLatest')}
               </button>
-              {outboxStatus.pending > 0 && (
+              {outboxStatus.pending > 0 && outboxStatus.stuck === 0 && (
                 <button className="btn-outline" onClick={onRetryNow} disabled={draining}>
                   {draining ? t('settings.retrying') : t('settings.retryNow')}
                 </button>
@@ -509,6 +646,12 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
             {t('settings.syncNote')}
           </div>
         </div>
+
+        {/* ── Calendar feed (v1.13 Tier 3, #44) ──
+             Below the sync block and collapsed by default. Integration policy
+             test 3: invisible when unused — no tab, no nav entry, no empty
+             state anywhere else in the app. ── */}
+        <CalendarFeeds state={state} dispatch={dispatch} session={session} showFlash={showFlash} />
 
         {/* ── Reminders ──
              Onboarding's "Maybe later" now genuinely declines, which makes

@@ -29,6 +29,7 @@
     "errGoogleStart": "Tidak dapat memulai proses masuk dengan Google",
     "errGoogleFailed": "Gagal masuk dengan Google",
     "desktopBrowser": "Selesaikan proses masuk di peramban, lalu kembali ke sini.",
+    "errDesktopNoListener": "Masuk lewat desktop tidak tersedia pada peluncuran ini. Mulai ulang StudyDesk, atau masuk dengan email di bawah.",
     "errCallback": "Callback proses masuk gagal",
     "errGeneric": "Autentikasi gagal",
     "errInvalidCredentials": "Email atau kata sandi salah.",
@@ -83,7 +84,8 @@
     "plan": "Rencana",
     "grades": "Nilai",
     "timer": "Timer",
-    "stats": "Statistik"
+    "stats": "Statistik",
+    "notebook": "Buku catatan"
   },
   "topbar": {
     "nextUp": "Berikutnya"
@@ -289,7 +291,45 @@
       "other": "Lainnya"
     },
     "discord": "Komunitas Discord",
-    "discordSub": "Pertanyaan, laporan bug, dan rencana berikutnya"
+    "discordSub": "Pertanyaan, laporan bug, dan rencana berikutnya",
+    "queueStoppedTitle": "Sinkronisasi berhenti",
+    "queueStoppedRetry": "Coba lagi",
+    "queueStoppedBody_one": "Satu perubahan gagal dikirim setelah beberapa percobaan, jadi antrean berhenti daripada mencoba terus-menerus. Tidak ada yang hilang — masih tersimpan di perangkat ini.",
+    "queueStoppedBody_other": "{{count}} perubahan gagal dikirim setelah beberapa percobaan, jadi antrean berhenti daripada mencoba terus-menerus. Tidak ada yang hilang — semuanya masih tersimpan di perangkat ini.",
+    "queueStoppedWhat": "Menunggu: {{kinds}}",
+    "queueStoppedSince": "Berhenti sejak {{when}}",
+    "queueStoppedSignIn": "Masuk untuk mengirimnya.",
+    "kind": {
+      "upsert_subject": "satu mata pelajaran",
+      "delete_subject": "mata pelajaran terhapus",
+      "upsert_grade": "satu nilai",
+      "delete_grade": "nilai terhapus",
+      "log_session": "satu sesi belajar",
+      "update_session": "suntingan sesi",
+      "delete_session": "sesi terhapus",
+      "upsert_assignment": "satu tugas",
+      "delete_assignment": "tugas terhapus",
+      "upsert_exam": "satu ujian",
+      "delete_exam": "ujian terhapus",
+      "upsert_action": "satu to-do",
+      "delete_action": "to-do terhapus",
+      "upsert_planned": "satu blok rencana",
+      "delete_planned": "rencana terhapus",
+      "upsert_term": "satu periode",
+      "delete_term": "periode terhapus",
+      "upsert_timetable": "satu pelajaran di jadwal",
+      "delete_timetable": "pelajaran terhapus",
+      "upsert_commitment": "satu komitmen",
+      "delete_commitment": "komitmen terhapus",
+      "delete_attachment": "lampiran terhapus",
+      "submit_feedback": "masukan",
+      "record_app_open": "data penggunaan"
+    },
+    "weekStartLbl": "Kalender",
+    "weekStart": "Minggu dimulai",
+    "weekStartAuto": "Otomatis ({{day}})",
+    "weekStartSaved": "Awal minggu diperbarui.",
+    "weekStartNote": "Otomatis mengikuti bahasa dan wilayahmu. Ubah jika jadwalmu mulai di hari lain."
   },
   "sdob": {
     "brand": "Berhenti menimbang. Mulai belajar.",
@@ -498,7 +538,9 @@
         "open": "Buka pengatur waktu",
         "openWith": "Buka pengatur waktu — {{task}}",
         "aria": "{{label}}, {{time}} — buka pengatur waktu"
-      }
+      },
+      "courseAria": "Mata pelajaran untuk blok ini",
+      "courseNone": "Tanpa mata pelajaran"
     },
     "pl": {
       "assignments": "Tugas",
@@ -544,7 +586,9 @@
       "studyStart": "Mulai belajar:",
       "studyFor": "Belajar untuk {{label}}",
       "prepareFor": "Persiapan untuk {{label}}",
-      "topicMore": " (+{{n}} lagi)"
+      "topicMore": " (+{{n}} lagi)",
+      "editExam": "Edit ujian",
+      "examDate": "Tanggal ujian"
     },
     "md": {
       "addAssignment": "Tambah tugas",
@@ -758,7 +802,14 @@
     "lessonDeleted": "Pelajaran dihapus",
     "lessonsToday": "{{n}} pelajaran",
     "addOn": "Tambah pelajaran pada {{day}}",
-    "warnNoDates": "Periode ini tidak punya tanggal mulai, jadi pelajarannya tidak muncul di kalender. Tambahkan di sini atau di tingkat di atasnya."
+    "warnNoDates": "Periode ini tidak punya tanggal mulai, jadi pelajarannya tidak muncul di kalender. Tambahkan di sini atau di tingkat di atasnya.",
+    "sections": "Bagian jadwal",
+    "tabSchedule": "Jadwal",
+    "fRepeat": "Berulang",
+    "repeatEvery": "Setiap minggu",
+    "repeatOdd": "Minggu A (ganjil)",
+    "repeatEven": "Minggu B (genap)",
+    "repeatNote": "Dihitung dari awal periode ini, jadi minggu 1 periode adalah minggu A."
   },
   "at": {
     "title": "Lampiran",
@@ -821,5 +872,128 @@
     },
     "dismiss": "Nanti saja",
     "thanks": "Terima kasih — ini membantu."
+  },
+  "appearance": {
+    "title": "Tampilan",
+    "lighting": "Pencahayaan",
+    "character": "Karakter",
+    "mode": {
+      "light": "Terang",
+      "dark": "Gelap",
+      "black": "Hitam"
+    },
+    "modeNote": {
+      "light": "Kertas krem",
+      "dark": "Hangat, tidak menyilaukan",
+      "black": "Hitam pekat · AMOLED"
+    },
+    "theme": {
+      "free": "Studio",
+      "stacks": "Stacks",
+      "slate": "Slate"
+    },
+    "themeNote": {
+      "free": "Bawaan",
+      "stacks": "Pendukung",
+      "slate": "Pendukung",
+      "locked": "Pendukung"
+    },
+    "characterNote": "Gelap dan Hitam adalah pencahayaan — keduanya meredupkan halaman. Stacks dan Slate adalah karakter: meja peminjaman perpustakaan dan papan tulis, masing-masing dengan huruf, garis, dan tandanya sendiri. Keduanya bukan pilihan gelap, dan tidak pernah begitu.",
+    "lockedNote": "Stacks dan Slate terbuka untuk pendukung. Gelap dan Hitam gratis, dan akan tetap begitu.",
+    "lightingInThemeNote": "Stacks dan Slate membawa pencahayaannya sendiri. Pilihanmu kembali saat beralih ke Studio."
+  },
+  "storage": {
+    "title": "Ruang penyimpanan perangkat habis",
+    "quotaBody": "StudyDesk tidak dapat menyimpan perubahan terbaru di perangkat ini — penyimpanannya penuh.",
+    "blockedBody": "StudyDesk tidak dapat menyimpan perubahan terbaru di perangkat ini — penyimpanan tidak tersedia atau diblokir.",
+    "stakes": "Semua yang kamu tambahkan sejak penyimpanan terakhir akan hilang saat aplikasi ditutup. Ekspor sekarang untuk menyimpannya.",
+    "usage": "StudyDesk memakai sekitar {{ours}} dari kira-kira {{total}} yang disimpan situs ini.",
+    "export": "Ekspor data saya",
+    "dismiss": "Tutup"
+  },
+  "nb": {
+    "treeLabel": "Mata pelajaran dan catatan",
+    "scopedToSession": "Dibatasi ke sesi",
+    "newNote": "Catatan baru",
+    "untitled": "Catatan tanpa judul",
+    "unfiled": "Belum dikelompokkan",
+    "edited": "Diedit {{when}}",
+    "savedToSession": "Disimpan ke sesi",
+    "emptyTitle": "Pilih catatan, atau mulai yang baru.",
+    "editorLine": "Baris catatan {{n}}",
+    "formatBar": "Pemformatan",
+    "highlightRoles": "Warna sorotan",
+    "bold": "Tebal",
+    "italic": "Miring",
+    "underline": "Garis bawah",
+    "highlight": "Sorot",
+    "h1": "Judul 1",
+    "h2": "Judul 2",
+    "bullet": "Daftar butir",
+    "numbered": "Daftar bernomor",
+    "checklist": "Daftar centang",
+    "insertPhoto": "Sisipkan foto",
+    "hlRole": {
+      "1": "Tanda — penting",
+      "2": "Ragu — belum yakin",
+      "3": "Beres — terkonfirmasi"
+    },
+    "delete": "Hapus catatan",
+    "confirmDelete": "Hapus catatan ini? Tindakan ini tidak bisa dibatalkan."
+  },
+  "feed": {
+    "title": "Umpan kalender",
+    "subscribe": "Berlangganan",
+    "refresh": "Segarkan",
+    "syncing": "Menyinkronkan…",
+    "remove": "Hapus umpan",
+    "urlLabel": "Alamat umpan",
+    "courseLabel": "Simpan di",
+    "noCourse": "Tanpa mata pelajaran",
+    "itemCount_one": "{{count}} item",
+    "itemCount_other": "{{count}} item",
+    "synced": "{{added}} baru, {{updated}} diperbarui.",
+    "removed_one": "Umpan dihapus, {{n}} item terhapus.",
+    "removed_other": "Umpan dihapus, {{n}} item terhapus.",
+    "help": "Sebagian besar sistem sekolah menerbitkan alamat kalender pribadi yang bisa kamu langgani — cari \"Calendar feed\", \"Subscribe\", atau tautan .ics di halaman kalendermu. Bekerja dengan Canvas, Moodle, Blackboard, Google Classroom, dan sebagian besar jadwal universitas.",
+    "limits": "Tenggat, judul, dan deskripsi datang sendiri. Jenis tugas, poin, dan status pengumpulan bukan bagian dari umpan kalender, jadi tidak akan muncul. Acara berulang — misalnya kuliah mingguan — untuk saat ini diimpor sebagai satu tanggal, bukan satu semester penuh.",
+    "deviceOnly": "Alamat disimpan hanya di perangkat ini dan tidak pernah disinkronkan — siapa pun yang memilikinya bisa membaca kalendermu. Tanggal yang diimpor tetap tersinkron, seperti tugas lainnya.",
+    "err": {
+      "invalid-url": "Itu sepertinya bukan alamat web.",
+      "duplicate": "Kamu sudah berlangganan alamat itu.",
+      "not-found": "Alamat tidak mengembalikan apa pun (404). Pastikan itu tautan umpan lengkap.",
+      "forbidden": "Server menolak permintaan. Alamat mungkin telah direset — salin lagi.",
+      "not-a-calendar": "Alamat itu mengembalikan halaman, bukan kalender. Mungkin itu halaman web kalender, bukan tautan umpannya.",
+      "too-large": "Umpan itu terlalu besar untuk diimpor.",
+      "cors": "Peramban tidak bisa mengambil kalender dari situs lain. Gunakan aplikasi Android untuk ini.",
+      "http": "Server mengembalikan galat.",
+      "network": "Tidak dapat menghubungi alamat itu."
+    },
+    "repeatingNote": "{{count}} acara berulang diimpor sebagai satu tanggal",
+    "repeatingNote_other": "{{count}} acara berulang diimpor sebagai satu tanggal masing-masing"
+  },
+  "att": {
+    "tab": "Kehadiran",
+    "prevWeek": "Sebelumnya",
+    "nextWeek": "Berikutnya",
+    "thisWeek": "Minggu ini",
+    "noLessons": "Tidak ada pelajaran",
+    "noData": "Belum ada data",
+    "forTerm": "di {{name}}",
+    "allTime": "keseluruhan",
+    "present": "{{n}} hadir",
+    "absent": "{{n}} absen",
+    "cancelled": "{{n}} dibatalkan",
+    "rescheduled": "{{n}} dijadwal ulang",
+    "uncountedNote": "Pelajaran yang dibatalkan dan dijadwal ulang tidak dihitung — pelajaran itu tidak terjadi, jadi tidak masuk ke sisi mana pun dari persentase.",
+    "byCourse": "Per mata pelajaran",
+    "unmarked": "belum ditandai",
+    "cycleAria": "{{lesson}} — {{status}}. Ketuk untuk mengubah.",
+    "status": {
+      "present": "hadir",
+      "absent": "absen",
+      "cancelled": "dibatalkan",
+      "rescheduled": "dijadwal ulang"
+    }
   }
 }

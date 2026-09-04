@@ -30,7 +30,8 @@
     "plan": "计划",
     "grades": "成绩",
     "timer": "计时器",
-    "stats": "统计"
+    "stats": "统计",
+    "notebook": "笔记本"
   },
   "topbar": {
     "nextUp": "接下来"
@@ -105,6 +106,7 @@
     "errGoogleStart": "无法启动 Google 登录",
     "errGoogleFailed": "Google 登录失败",
     "desktopBrowser": "请在浏览器中完成登录，然后回到这里。",
+    "errDesktopNoListener": "本次启动无法使用桌面登录。请重启 StudyDesk，或在下方使用邮箱登录。",
     "errCallback": "登录回调失败",
     "errGeneric": "身份验证失败",
     "errInvalidCredentials": "邮箱或密码不正确。",
@@ -291,7 +293,45 @@
       "other": "其他"
     },
     "discord": "Discord 社区",
-    "discordSub": "提问、报告问题，了解后续计划"
+    "discordSub": "提问、报告问题，了解后续计划",
+    "queueStoppedTitle": "同步已停止",
+    "queueStoppedRetry": "重新尝试",
+    "queueStoppedBody_one": "有 1 项更改多次尝试后仍未能发送，队列已停止，而不是无休止地重试。没有任何内容丢失——它仍在本设备上。",
+    "queueStoppedBody_other": "有 {{count}} 项更改多次尝试后仍未能发送，队列已停止，而不是无休止地重试。没有任何内容丢失——它们仍在本设备上。",
+    "queueStoppedWhat": "等待中：{{kinds}}",
+    "queueStoppedSince": "自 {{when}} 起停止",
+    "queueStoppedSignIn": "登录后即可发送。",
+    "kind": {
+      "upsert_subject": "一门课程",
+      "delete_subject": "已删除的课程",
+      "upsert_grade": "一个成绩",
+      "delete_grade": "已删除的成绩",
+      "log_session": "一次学习记录",
+      "update_session": "一次记录修改",
+      "delete_session": "已删除的记录",
+      "upsert_assignment": "一项作业",
+      "delete_assignment": "已删除的作业",
+      "upsert_exam": "一场考试",
+      "delete_exam": "已删除的考试",
+      "upsert_action": "一项待办",
+      "delete_action": "已删除的待办",
+      "upsert_planned": "一个学习计划",
+      "delete_planned": "已删除的计划",
+      "upsert_term": "一个学期",
+      "delete_term": "已删除的学期",
+      "upsert_timetable": "课表中的一节课",
+      "delete_timetable": "已删除的课",
+      "upsert_commitment": "一项安排",
+      "delete_commitment": "已删除的安排",
+      "delete_attachment": "已删除的附件",
+      "submit_feedback": "反馈",
+      "record_app_open": "使用数据"
+    },
+    "weekStartLbl": "日历",
+    "weekStart": "每周开始于",
+    "weekStartAuto": "自动（{{day}}）",
+    "weekStartSaved": "每周起始日已更新。",
+    "weekStartNote": "自动会跟随你的语言和地区。如果你的课表从其他日子开始，可以更改。"
   },
   "sdob": {
     "brand": "别再纠结，开始学习。",
@@ -502,7 +542,9 @@
         "open": "打开计时器",
         "openWith": "打开计时器 — {{task}}",
         "aria": "{{label}}，{{time}} — 打开计时器"
-      }
+      },
+      "courseAria": "本次学习的课程",
+      "courseNone": "不选课程"
     },
     "pl": {
       "assignments": "作业",
@@ -549,7 +591,9 @@
       "studyStart": "学习开始：",
       "studyFor": "学习：{{label}}",
       "prepareFor": "准备：{{label}}",
-      "topicMore": "（还有 {{n}} 个）"
+      "topicMore": "（还有 {{n}} 个）",
+      "editExam": "编辑考试",
+      "examDate": "考试日期"
     },
     "md": {
       "addAssignment": "添加作业",
@@ -763,7 +807,14 @@
     "lessonDeleted": "课程已删除",
     "lessonsToday": "{{n}} 节课",
     "addOn": "在{{day}}添加课程",
-    "warnNoDates": "该学段没有开始日期，其课程不会显示在日历中。请在此处或上一级补上日期。"
+    "warnNoDates": "该学段没有开始日期，其课程不会显示在日历中。请在此处或上一级补上日期。",
+    "sections": "课表分区",
+    "tabSchedule": "课表",
+    "fRepeat": "重复",
+    "repeatEvery": "每周",
+    "repeatOdd": "A 周（单周）",
+    "repeatEven": "B 周（双周）",
+    "repeatNote": "从本学期开始计算，因此本学期第 1 周即 A 周。"
   },
   "at": {
     "title": "附件",
@@ -826,5 +877,128 @@
     },
     "dismiss": "以后再说",
     "thanks": "谢谢，这很有帮助。"
+  },
+  "appearance": {
+    "title": "外观",
+    "lighting": "明暗",
+    "character": "风格",
+    "mode": {
+      "light": "浅色",
+      "dark": "深色",
+      "black": "纯黑"
+    },
+    "modeNote": {
+      "light": "米色纸张",
+      "dark": "暖调、不刺眼",
+      "black": "纯黑 · AMOLED"
+    },
+    "theme": {
+      "free": "Studio",
+      "stacks": "Stacks",
+      "slate": "Slate"
+    },
+    "themeNote": {
+      "free": "默认",
+      "stacks": "赞助者",
+      "slate": "赞助者",
+      "locked": "赞助者"
+    },
+    "characterNote": "深色和纯黑属于明暗——它们只是把页面调暗。Stacks 和 Slate 属于风格：一张图书馆借阅台，一块黑板，各有自己的字体、线条与标记。它们不是深色选项，从来都不是。",
+    "lockedNote": "Stacks 与 Slate 面向赞助者开放。深色与纯黑免费，并且会一直免费。",
+    "lightingInThemeNote": "Stacks 与 Slate 自带明暗。切回 Studio 时，你的选择会恢复。"
+  },
+  "storage": {
+    "title": "此设备存储空间已满",
+    "quotaBody": "StudyDesk 无法将你最新的更改保存到此设备——存储空间已满。",
+    "blockedBody": "StudyDesk 无法将你最新的更改保存到此设备——存储不可用或被阻止。",
+    "stakes": "自上次保存以来添加的所有内容都会在关闭应用时丢失。立即导出以保留它们。",
+    "usage": "StudyDesk 占用约 {{ours}}，本站点共存储约 {{total}}。",
+    "export": "导出我的数据",
+    "dismiss": "忽略"
+  },
+  "nb": {
+    "treeLabel": "课程与笔记",
+    "scopedToSession": "限定到本次学习",
+    "newNote": "新建笔记",
+    "untitled": "未命名笔记",
+    "unfiled": "未归类",
+    "edited": "编辑于 {{when}}",
+    "savedToSession": "已保存到本次学习",
+    "emptyTitle": "选择一篇笔记，或新建一篇。",
+    "editorLine": "笔记第 {{n}} 行",
+    "formatBar": "格式",
+    "highlightRoles": "高亮颜色",
+    "bold": "加粗",
+    "italic": "斜体",
+    "underline": "下划线",
+    "highlight": "高亮",
+    "h1": "标题 1",
+    "h2": "标题 2",
+    "bullet": "项目符号列表",
+    "numbered": "编号列表",
+    "checklist": "清单",
+    "insertPhoto": "插入照片",
+    "hlRole": {
+      "1": "标记 — 重要",
+      "2": "存疑 — 不确定",
+      "3": "已定 — 确认"
+    },
+    "delete": "删除笔记",
+    "confirmDelete": "删除这条笔记？此操作无法撤销。"
+  },
+  "feed": {
+    "title": "日历订阅",
+    "subscribe": "订阅",
+    "refresh": "刷新",
+    "syncing": "同步中…",
+    "remove": "移除订阅",
+    "urlLabel": "订阅地址",
+    "courseLabel": "归入",
+    "noCourse": "不选课程",
+    "itemCount_one": "{{count}} 项",
+    "itemCount_other": "{{count}} 项",
+    "synced": "新增 {{added}} 项，更新 {{updated}} 项。",
+    "removed_one": "已移除订阅，删除 {{n}} 项。",
+    "removed_other": "已移除订阅，删除 {{n}} 项。",
+    "help": "大多数学校系统会提供一个可订阅的私人日历地址——在日历页面上找 \"Calendar feed\"、\"订阅\" 或 .ics 链接。适用于 Canvas、Moodle、Blackboard、Google Classroom 以及大多数大学课表。",
+    "limits": "截止日期、标题和描述会自动到达。作业类型、分数和提交状态不属于日历订阅内容，因此不会显示。重复事件——例如每周一次的讲座——目前只会导入为单个日期，而不是整个学期。",
+    "deviceOnly": "该地址仅保存在本设备上，从不同步——任何拿到它的人都能读取你的日历。导入的日期会像其他作业一样同步。",
+    "err": {
+      "invalid-url": "这看起来不像一个网址。",
+      "duplicate": "你已经订阅了该地址。",
+      "not-found": "该地址没有返回内容（404）。请确认这是完整的订阅链接。",
+      "forbidden": "服务器拒绝了请求。该地址可能已被重置——请重新复制。",
+      "not-a-calendar": "该地址返回的是网页而不是日历。它可能是日历的网页，而不是订阅链接。",
+      "too-large": "该订阅内容过大，无法导入。",
+      "cors": "浏览器无法从其他站点获取日历。请使用 Android 应用。",
+      "http": "服务器返回了错误。",
+      "network": "无法连接该地址。"
+    },
+    "repeatingNote": "{{count}} 个重复事件仅导入为单个日期",
+    "repeatingNote_other": "{{count}} 个重复事件各仅导入为单个日期"
+  },
+  "att": {
+    "tab": "出勤",
+    "prevWeek": "上一周",
+    "nextWeek": "下一周",
+    "thisWeek": "本周",
+    "noLessons": "没有课",
+    "noData": "暂无数据",
+    "forTerm": "（{{name}}）",
+    "allTime": "总计",
+    "present": "出勤 {{n}}",
+    "absent": "缺勤 {{n}}",
+    "cancelled": "取消 {{n}}",
+    "rescheduled": "改期 {{n}}",
+    "uncountedNote": "取消和改期的课不计入——它们没有发生，因此不在百分比的任何一侧。",
+    "byCourse": "按课程",
+    "unmarked": "未标记",
+    "cycleAria": "{{lesson}} — {{status}}。点按可更改。",
+    "status": {
+      "present": "出勤",
+      "absent": "缺勤",
+      "cancelled": "取消",
+      "rescheduled": "改期"
+    }
   }
 }

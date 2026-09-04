@@ -1,0 +1,21 @@
+Carnet — prenez vos notes là où vous étudiez.
+
+Les notes se rangent sous leur cours, et en commencer une pendant une session d'étude la rattache automatiquement à ce cours. Gras, italique, surlignage, titres, listes et listes à cocher, avec des raccourcis markdown qui marchent au téléphone : « - » pour une puce, « ## » pour un titre, « [] » pour une case. Photographiez une page manuscrite et elle s'insère dans le texte. Vous pouvez taper des maths, de la chimie et des schémas simples comme du texte ordinaire : ils se dessinent au fil de la frappe, et une équation chimique compte même les atomes de chaque côté dans la marge.
+
+Sombre et Noir, gratuits.
+
+Deux nouvelles apparences pour tout le monde : Sombre, chaude et douce le soir, et Noir, un noir absolu pour les écrans OLED.
+
+Votre travail est mieux protégé.
+
+Si cet appareil manque d'espace, StudyDesk vous le dit au lieu d'échouer silencieusement. Les sessions d'étude qui n'ont jamais atteint le cloud sont retrouvées et envoyées à la synchronisation suivante, et une synchronisation arrêtée le dit clairement et propose de réessayer.
+
+Emploi du temps.
+
+Les cours peuvent revenir une semaine sur deux. Marquez votre présence cours par cours et voyez votre pourcentage par période et par matière — les cours annulés ne vous pénalisent pas. Vous pouvez aussi choisir le jour où commence votre semaine.
+
+Abonnez-vous à un flux de calendrier.
+
+Collez l'adresse de calendrier privée de votre établissement et vos échéances arrivent toutes seules. Fonctionne avec Canvas, Moodle, Blackboard, Google Classroom et la plupart des emplois du temps universitaires.
+
+Et aussi : les examens peuvent être modifiés au lieu d'être supprimés puis recréés.

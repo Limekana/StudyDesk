@@ -1,0 +1,619 @@
+/* ── The notebook page ──────────────────────────────────────────────────────
+   Design handoff §1–§4, §11.
+
+   TWO RULES GOVERN THIS WHOLE FILE, and both are checked in CI:
+
+     1. **No colour literal appears anywhere in it.** Not a hex, not an
+        rgba(). `npm run check:notebook-colours` greps this file and
+        src/features/notebook/ and fails on either. §8 Trap 1: the highlight
+        swatches, the checkbox stroke, the caret and the margin rule are the
+        four places a literal would be taken if nobody stopped it, and the
+        original `phaseColor` incident was exactly one literal that a theme
+        could not reach.
+
+     2. **No `[data-theme]` or `[data-mode]` selector appears in it either.**
+        Every theme difference is expressed as a token value in base.css,
+        modes.css or themes.css. If a rule here needs to know which theme it
+        is in, the token set is wrong — that is the signal, not an excuse for
+        a selector.
+
+   The payoff is §1's hardest requirement, met with no branching at all:
+   `--nb-rule: none` in Black and Slate disables full-page ruling, because a
+   repeating-linear-gradient whose colour is `none` paints nothing. Same
+   declaration, five outcomes.
+
+   ── The 28px baseline grid ──────────────────────────────────────────────
+   Every block type takes a line box that is a multiple of 28px — body 28,
+   H2 28, H1 56. That is what keeps text sitting ON the ruling rather than
+   near it, and it is why headings use fixed line boxes rather than
+   proportional leading. Acceptance check 3 measures this. */
+
+.nb {
+  display: flex;
+  min-height: 100%;
+  background: var(--nb-page);
+  color: var(--nb-ink);
+  font-family: var(--nb-font-body);
+  font-size: var(--nb-size-body);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE PAGE
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.nb-page-wrap {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  background: var(--nb-page);
+}
+
+/* The ruling. `background-position` pushes the first rule down by the top
+   offset so it lands under the title rather than through it. `local` so the
+   ruling scrolls WITH the text — a fixed ruling that stays put while the
+   words move is the single most obvious way to make ruled paper look wrong. */
+.nb-page {
+  position: relative;
+  margin: 0 auto;
+  padding: 20px 0 40vh 0;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 calc(var(--nb-rule-h) - 1px),
+    var(--nb-rule) calc(var(--nb-rule-h) - 1px) var(--nb-rule-h)
+  );
+  background-position: 0 var(--nb-rule-top, 14px);
+  background-attachment: local;
+  caret-color: var(--nb-caret);
+}
+
+/* 40vh of trailing padding is not decoration: it lets the last line of a long
+   note scroll up clear of a raised keyboard, which is the difference between
+   writing comfortably at the end of a page and typing into the bottom 20px of
+   the screen. */
+
+/* The margin rule. A pseudo-element rather than a border so Stacks can set it
+   transparent and let its own spine gutter do the job, without this file
+   knowing that Stacks exists. */
+.nb-page::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: var(--nb-margin-w);
+  width: 1px;
+  background: var(--nb-margin-rule);
+  pointer-events: none;
+}
+
+/* The current-line rule. Black and Slate set --nb-current-line to a real
+   value and get a writing guide under the caret; everywhere else it is
+   `none` and this paints nothing. That is the whole mechanism by which the
+   two unruled themes still guide the hand. */
+.nb-block.is-focused::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--nb-current-line);
+  pointer-events: none;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BLOCKS
+   The text column starts at --nb-text-x and NEVER moves. Markers, numbers and
+   checkboxes hang back into the gutter, which is the reason the gutter exists
+   (§1) — so a bulleted line and a plain line share the same left edge and the
+   page reads as one column rather than as ragged indentation.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.nb-block {
+  position: relative;
+  padding-inline-start: var(--nb-text-x);
+  padding-inline-end: 14px;
+  line-height: var(--nb-rule-h);
+  min-height: var(--nb-rule-h);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Nesting moves the whole unit — marker and text together — by one step, so
+   the marker stays in its own gutter relative to the text it belongs to. */
+.nb-block[data-indent='1'] { padding-inline-start: calc(var(--nb-text-x) + 22px); }
+
+.nb-h1 {
+  font-family: var(--nb-font-head);
+  font-size: 26px;
+  /* Two rule-heights, not proportional leading. A heading that takes 1.4×
+     line-height knocks every line after it off the grid for the rest of the
+     page. */
+  line-height: calc(var(--nb-rule-h) * 2);
+  min-height: calc(var(--nb-rule-h) * 2);
+  font-weight: 600;
+}
+.nb-h2 {
+  font-family: var(--nb-font-head);
+  font-size: 19px;
+  line-height: var(--nb-rule-h);
+  min-height: var(--nb-rule-h);
+  font-weight: 600;
+}
+
+/* Markers hang into the gutter. `position:absolute` against the block rather
+   than a ::marker so the exact offset is ours and lands on the grid. */
+.nb-marker {
+  position: absolute;
+  inset-inline-start: 0;
+  width: calc(var(--nb-text-x) - 8px);
+  text-align: end;
+  color: var(--nb-marker);
+  font-family: var(--nb-font-meta);
+  font-size: 12px;
+  line-height: var(--nb-rule-h);
+  user-select: none;
+}
+.nb-block[data-indent='1'] .nb-marker { width: calc(var(--nb-text-x) + 14px); }
+
+/* ── The checkbox — §8 Trap 1's named example ──────────────────────────────
+   Its border and its checked fill resolve from --nb-check-line and
+   --nb-check-fill SEPARATELY. The original incident was one literal driving
+   both a fill and a stroke, so the element vanished entirely rather than
+   losing one part. If one token drove both here, a theme needing a hollow box
+   with a contrasting tick could not express it and the checked state would be
+   invisible. Both are measured independently by the contrast gate. */
+.nb-check {
+  position: absolute;
+  /* Centred in the 28px line box: (28 - 15) / 2 ≈ 6.5, rounded to the grid. */
+  inset-inline-start: calc(var(--nb-margin-w) - 21px);
+  top: 6px;
+  width: 15px;
+  height: 15px;
+  border: var(--nb-stroke-w) solid var(--nb-check-line);
+  border-radius: 2px;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  /* 44px hit area from a 15px box, without changing the layout — the target
+     is real even though the drawing is small (§5: "the box itself is the
+     target, 44px hit area"). */
+  box-shadow: none;
+}
+.nb-check::before {
+  content: '';
+  position: absolute;
+  inset: -14px;
+}
+.nb-block[data-indent='1'] .nb-check { inset-inline-start: calc(var(--nb-margin-w) + 1px); }
+
+.nb-check[aria-checked='true'] {
+  background: var(--nb-check-fill);
+  border-color: var(--nb-check-fill);
+}
+/* The tick is knocked out of the fill, so it reads on any fill colour a theme
+   picks without needing a third token for the tick itself. */
+.nb-check[aria-checked='true']::after {
+  content: '';
+  position: absolute;
+  inset-inline-start: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border-inline-end: 2px solid var(--nb-page);
+  border-bottom: 2px solid var(--nb-page);
+  transform: rotate(42deg);
+}
+.nb-text-done { text-decoration: line-through; color: var(--nb-ink-muted); }
+
+/* ── Inline marks ─────────────────────────────────────────────────────────
+   A highlight is a WASH BEHIND UNCHANGED INK (§6): never a saturated block,
+   never carrying its own text colour. That is what makes ink legibility
+   impossible to drift — the only pair that ever needs checking is
+   --nb-ink on --nb-hl-*, which the gate measures for all five themes. */
+.nb-b { font-weight: 700; }
+.nb-i { font-style: italic; }
+.nb-u { text-decoration: underline; text-underline-offset: 3px; }
+.nb-hl {
+  /* Painted with a background rather than a highlighter-shaped gradient: a
+     wash has to survive line wrapping, and box-decoration-break is what makes
+     it continue correctly onto the next ruled line. */
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  padding: 1px 2px;
+  border-radius: 2px;
+}
+.nb-hl[data-role='1'] { background: var(--nb-hl-1); }
+.nb-hl[data-role='2'] { background: var(--nb-hl-2); }
+.nb-hl[data-role='3'] { background: var(--nb-hl-3); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE FOCUSED BLOCK
+   A plain <textarea> holding literal source. Nothing rewrites it while it has
+   focus — see the header of features/notebook/model.js for why that is the
+   whole IME-safety argument. It has to be typographically IDENTICAL to the
+   rendered block it replaces, or every tap on a line makes the page jump.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.nb-input {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  background: transparent;
+  color: var(--nb-ink);
+  caret-color: var(--nb-caret);
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  font-style: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  /* The editor has no chrome: no border, no background, no focus ring. The
+     caret is the only affordance (§ Overview). The global *:focus-visible
+     outline in base.css would draw a 2px box around the line being typed,
+     which is exactly the chrome this design removes — so it is cancelled
+     here, and only here. */
+}
+.nb-input:focus-visible { outline: none; }
+
+/* Revealed source. Marks and commands show in --nb-src so the line the caret
+   is on reads as source rather than as broken prose. */
+.nb-src { color: var(--nb-src); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PHOTOS  (§2)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.nb-photo {
+  margin: 4px 0 8px;
+  padding: 8px;
+  border: 1px solid var(--nb-photo-border);
+  background: var(--nb-page);
+  display: inline-block;
+  max-width: 100%;
+  cursor: zoom-in;
+}
+.nb-photo img { display: block; max-width: 230px; width: 100%; height: auto; }
+.nb-photo-cap {
+  margin-top: 6px;
+  font-family: var(--nb-font-meta);
+  font-size: 10px;
+  color: var(--nb-ink-muted);
+}
+/* Never re-tinted in dark modes. These are photographs of handwritten pages —
+   dimming them makes them harder to read, which is the opposite of the point.
+   Stated here as well as in modes.css because "dim the images" is a reflex. */
+.nb-photo img { filter: none; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   §11 — MATHS, CHEMISTRY, DIAGRAMS
+   Everything on this page is text that renders. Glyphs are --nb-ink, strokes
+   and arrowheads --nb-check-line, labels --nb-ink-muted, a failed tally
+   --danger. No new fonts: palette glyphs are real Unicode set in
+   --nb-font-meta, so Stacks renders them in Cutive Mono and Slate in
+   Anonymous Pro for free.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.nb-frac {
+  display: inline-flex;
+  flex-direction: column;
+  vertical-align: middle;
+  text-align: center;
+  /* Halved leading on each half keeps the whole fraction inside ONE 28px line
+     box, so a formula does not knock the rest of the page off the grid. */
+  line-height: calc(var(--nb-rule-h) / 2);
+  font-size: 0.86em;
+}
+.nb-frac-num { border-bottom: var(--nb-stroke-w) solid var(--nb-ink); padding: 0 3px; }
+.nb-frac-den { padding: 0 3px; }
+.nb-root { white-space: nowrap; }
+.nb-root-body {
+  border-top: var(--nb-stroke-w) solid var(--nb-ink);
+  padding-inline: 2px;
+  margin-inline-start: -1px;
+}
+
+/* The chemistry tally, in the margin gutter (§11 design move 2).
+   Stacked — symbol over have·need — at 8.5px, because the phone gutter is
+   only ~20px wide and an inline `Mn 1·1` measures 30px while a stacked one
+   fits in 18px. Widening the gutter when a chem line is active was rejected:
+   it reflows the text column on caret entry, and a page that shifts under you
+   while you type is worse than a small tally. Desktop uses the same unit at
+   the same size — a tally that changes shape between form factors is harder
+   to read at a glance than one that does not. */
+.nb-tally {
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0;
+  width: var(--nb-margin-w);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  pointer-events: none;
+}
+.nb-tally-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.05;
+  font-family: var(--nb-font-meta);
+  font-size: 8.5px;
+  color: var(--nb-ink-muted);
+}
+.nb-tally-sym { font-weight: 700; }
+/* A column that does not match goes --danger. That is the only error colour
+   in the whole feature, and it marks a fact about the chemistry rather than a
+   fact about the parse — an unparseable span shows its source instead. */
+.nb-tally-row.is-off { color: var(--danger); }
+
+.nb-diagram { display: block; margin: 2px 0; max-width: 100%; }
+.nb-diagram-label {
+  font-family: var(--nb-font-meta);
+  font-size: 10px;
+  fill: var(--nb-ink-muted);
+}
+.nb-diagram-node { font-family: var(--nb-font-body); font-size: 12px; fill: var(--nb-ink); }
+.nb-diagram-stroke { stroke: var(--nb-check-line); stroke-width: var(--nb-stroke-w); fill: none; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE TREE SIDEBAR  (§2, desktop)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.nb-tree {
+  width: 216px;
+  min-width: 216px;
+  border-inline-end: 1px solid var(--nb-bar-rule);
+  padding: 12px 0;
+  overflow-y: auto;
+}
+.nb-scope {
+  margin: 0 12px 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--nb-bar-rule);
+  border-radius: 4px;
+  background: var(--nb-bar-bg);
+}
+.nb-scope-label {
+  font-family: var(--nb-font-meta);
+  font-size: 8.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--nb-ink-muted);
+  margin-bottom: 4px;
+}
+.nb-scope-course { display: flex; align-items: center; gap: 7px; font-size: 12.5px; }
+.nb-scope-pip { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+.nb-course-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 7px 12px;
+  background: none;
+  border: 0;
+  color: var(--nb-ink);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: start;
+  cursor: pointer;
+}
+.nb-course-row:hover { background: var(--nb-bar-bg); }
+.nb-course-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nb-course-count { font-family: var(--nb-font-meta); font-size: 10px; color: var(--nb-ink-muted); }
+.nb-chev { color: var(--nb-ink-muted); font-size: 9px; width: 9px; }
+
+.nb-note-row {
+  display: block;
+  width: 100%;
+  /* 39px, per §2 — the note rows indent under their course. */
+  padding: 6px 12px 6px 39px;
+  background: none;
+  border: 0;
+  color: var(--nb-ink-muted);
+  font: inherit;
+  font-size: 12px;
+  text-align: start;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nb-note-row:hover { background: var(--nb-bar-bg); }
+.nb-note-row.is-active { color: var(--nb-ink); background: var(--nb-bar-bg); }
+
+/* The collapsed-courses line while a session is scoping the tree. Dim, one
+   line, and every course in it stays tappable — §3 rule 1: "The scope is
+   visible and reversible. It is a default, not a lock." */
+.nb-collapsed {
+  padding: 6px 12px;
+  font-size: 11.5px;
+  color: var(--nb-ink-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.nb-collapsed button {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   NOTE HEADER  (§2) — 44px
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.nb-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--nb-bar-rule);
+}
+.nb-head-course { font-size: 12.5px; display: flex; align-items: center; gap: 7px; }
+.nb-head-meta { font-family: var(--nb-font-meta); font-size: 10px; color: var(--nb-ink-muted); }
+.nb-head-spacer { flex: 1; }
+
+/* The desktop format row. A FALLBACK — shortcuts are the real desktop path
+   (§2), and this exists so a mouse user can discover what is there. */
+.nb-format-row { display: flex; gap: 2px; }
+.nb-fmt {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  background: none;
+  border: 0;
+  border-radius: 3px;
+  color: var(--nb-ink-muted);
+  font-family: var(--nb-font-meta);
+  font-size: 12px;
+  cursor: pointer;
+}
+.nb-fmt:hover { color: var(--nb-ink); }
+/* Active state is the GLYPH going to --nb-ink. No pills, no fills — the bar
+   has to sit quietly under a paper page (§4). */
+.nb-fmt.is-on { color: var(--nb-ink); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE FORMAT BAR  (§4) — docked, one row, 44px
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.nb-bar {
+  position: fixed;
+  inset-inline: 0;
+  /* Anchored to the VISUAL viewport via --nb-kb, set from JS. A bar
+     positioned against the layout viewport sits BEHIND the keyboard on
+     Android — the exact failure §4 names. See useKeyboardInset.js. */
+  bottom: var(--nb-kb, 0px);
+  z-index: 60;
+  height: 44px;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: var(--nb-bar-bg);
+  border-top: 1px solid var(--nb-bar-rule);
+}
+.nb-bar::-webkit-scrollbar { display: none; }
+
+/* Eleven controls across 360px is 32px each — under the 44px minimum. Each
+   control's HIT AREA spans the full 44px bar height with a smaller glyph
+   centred in it, which is what makes the target real (§4). Acceptance check 7
+   measures this. */
+.nb-bar-btn {
+  flex: 0 0 auto;
+  min-width: 34px;
+  height: 44px;
+  padding: 0 7px;
+  background: none;
+  border: 0;
+  color: var(--nb-ink-muted);
+  font-family: var(--nb-font-meta);
+  font-size: 13px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.nb-bar-btn.is-on { color: var(--nb-ink); }
+.nb-bar-sep {
+  flex: 0 0 auto;
+  align-self: center;
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: var(--nb-bar-rule);
+}
+
+/* Highlight long-press popover — three swatches, above the bar. No free
+   colour picker (§4). */
+.nb-swatches {
+  position: fixed;
+  inset-inline-start: 0;
+  bottom: calc(var(--nb-kb, 0px) + 44px);
+  z-index: 61;
+  display: flex;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--nb-bar-bg);
+  border-top: 1px solid var(--nb-bar-rule);
+}
+.nb-swatch { width: 34px; height: 28px; border: 1px solid var(--nb-bar-rule); border-radius: 3px; cursor: pointer; }
+.nb-swatch[data-role='1'] { background: var(--nb-hl-1); }
+.nb-swatch[data-role='2'] { background: var(--nb-hl-2); }
+.nb-swatch[data-role='3'] { background: var(--nb-hl-3); }
+
+/* Empty state. Deliberately plain: an illustrated empty state on a page whose
+   whole identity is blank ruled paper would be arguing with the design. */
+.nb-empty {
+  padding: 48px var(--nb-text-x);
+  color: var(--nb-ink-muted);
+  font-size: 13.5px;
+  line-height: var(--nb-rule-h);
+}
+.nb-empty p { margin-bottom: 14px; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   The handoff's geometry table gives phone/desktop pairs. Tokens hold the
+   phone value; the desktop overrides live here, in ONE block, so the two
+   halves of each pair are readable together.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .nb-tree { display: none; }
+  .nb-page { max-width: 100%; padding-inline: 0; }
+  /* Measure: full width − 62px on phone. */
+  .nb-block { padding-inline-end: 14px; }
+}
+
+@media (min-width: 769px) {
+  /* The desktop values for --nb-margin-w, --nb-text-x and --nb-rule-top are
+     NOT set here. They are per-theme (Stacks pins its gutter at 34px in both
+     form factors because the gutter is a spine, not a margin; Slate sits 2px
+     inboard of everything because its chalk vertical is 2px and skewed), and
+     a `:root` override in this file would silently flatten both. Each scope
+     declares its own desktop values in the file that owns it — base.css,
+     modes.css, themes.css — which is the same rule as every other token here:
+     if a rule in this file would need to know which theme it is in, the token
+     set is wrong. */
+
+  /* 560px measure, centred in the remaining width. */
+  .nb-page { max-width: 560px; }
+  /* The docked bar is a phone answer to a phone problem — there is no soft
+     keyboard to fight on desktop, and the always-visible format row in the
+     note header takes its place. */
+  .nb-bar, .nb-swatches { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nb-bar, .nb-swatches { transition: none; }
+}
+
+/* Delete, in the note header. Sized to the 44px touch target the rest of the
+   app uses; muted until pressed, because a destructive control that draws the
+   eye on every note is a control people learn to avoid rather than trust. */
+.nb-head-delete {
+  border: 0;
+  background: none;
+  color: var(--nb-ink-muted);
+  font-size: 1.4rem;
+  line-height: 1;
+  min-width: 44px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.nb-head-delete:hover,
+.nb-head-delete:focus-visible {
+  color: var(--danger);
+}

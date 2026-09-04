@@ -1,0 +1,21 @@
+Notebook — write notes right where you study.
+
+Notes fold under their course, and starting one while a study session is running scopes it to that course automatically. Bold, italic, highlight, headings, lists and checklists, with markdown shortcuts that work on a phone: type "- " for a bullet, "## " for a heading, "[] " for a checkbox. Photograph a handwritten page and it sits inline. You can type maths, chemistry and simple diagrams as ordinary text and they render as you go — a chemical equation even tallies the atoms on each side in the margin.
+
+Dark and Black, free.
+
+Two new looks for everyone: Dark, warm and easy at night, and Black, true black for OLED screens.
+
+Your work is safer.
+
+If this device runs out of space, StudyDesk now tells you instead of quietly failing to save. Study sessions that never reached the cloud are found and sent on the next sync, and a sync that has stopped now says so plainly and offers to try again.
+
+Timetable.
+
+Lessons can repeat every other week. Mark attendance per lesson and see your percentage per term and per course — cancelled lessons don't count against you. You can also set which day your week starts on.
+
+Subscribe to a calendar feed.
+
+Paste the private calendar address from your school system and your due dates arrive on their own. Works with Canvas, Moodle, Blackboard, Google Classroom and most university timetables.
+
+Also: exams can be edited instead of deleted and re-added.

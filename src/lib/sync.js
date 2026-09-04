@@ -470,7 +470,7 @@ export async function deleteTerm({ id, descendantIds = [] }) {
   if (error) throw error;
 }
 
-export async function upsertTimetableEntry({ id, termId, subjectId, title, weekday, startsAt, endsAt, room, color }) {
+export async function upsertTimetableEntry({ id, termId, subjectId, title, weekday, startsAt, endsAt, room, color, weekParity }) {
   if (!termId) throw new Error('termId is required (a lesson must belong to a term)');
   const userId = await currentUserId();
   const { error } = await supabase.from('timetable_entries').upsert({
@@ -487,6 +487,9 @@ export async function upsertTimetableEntry({ id, termId, subjectId, title, weekd
     ends_at: endsAt,
     room: (room || '').trim() || null,
     color: color || null,
+    // v1.13 — null means every week, which is what every pre-v1.13 row
+    // already means, so no backfill and no special case on read.
+    week_parity: weekParity === 1 || weekParity === 2 ? weekParity : null,
     updated_at: nowISO(),
   });
   if (error) throw error;
@@ -661,12 +664,136 @@ export async function deleteAttachment({ id, storagePath }) {
 
 // ── pull (full sync) ─────────────────────────────────────────────────────────
 
+// ── Lesson attendance (v1.13 Tier 2, issue #31) ─────────────────────────────
+
+export async function upsertAttendance({ id, timetableEntryId, date, status, note }) {
+  const userId = await currentUserId();
+  // `onConflict` on the natural key, not the surrogate id. Two devices marking
+  // the same lesson generate different uuids for the same FACT, and without
+  // this they would both insert and the lesson would be counted twice in the
+  // percentage.
+  //
+  // ── The index this infers against must NOT be partial ──────────────────
+  //
+  // v1.13 review, blocker 2. The migration originally created this unique
+  // index as `WHERE deleted_at is null`, so that clearing a mark did not
+  // block re-marking the lesson later. Postgres cannot infer a PARTIAL index
+  // from a bare column list — the conflict target has to repeat the index's
+  // WHERE clause, which PostgREST's `onConflict` cannot express. The result
+  // was `42P10: there is no unique or exclusion constraint matching the ON
+  // CONFLICT specification` on the FIRST attendance mark, for every user,
+  // permanently.
+  //
+  // The index is now unconditional (`v113_lesson_attendance_full_unique_idx`)
+  // and the un-delete is done here instead: one lesson on one date is ONE row
+  // forever, and re-marking a cleared lesson revives that row rather than
+  // inserting a second one. That is a better model than the partial index
+  // was reaching for — two rows for the same fact could never be right.
+  const { error } = await supabase.from('lesson_attendance').upsert({
+    id,
+    user_id: userId,
+    timetable_entry_id: timetableEntryId,
+    date,
+    status,
+    note: note || null,
+    // Explicit, not omitted: this is what makes re-marking a previously
+    // cleared lesson work now that the row is reused rather than replaced.
+    deleted_at: null,
+    updated_at: nowISO(),
+  }, { onConflict: 'user_id,timetable_entry_id,date' });
+  if (error) throw error;
+  return id;
+}
+
+export async function deleteAttendance(id) {
+  const { error } = await supabase
+    .from('lesson_attendance')
+    .update({ deleted_at: nowISO(), updated_at: nowISO() })
+    .eq('id', id);
+  if (error) throw error;
+  return id;
+}
+
+// ── Notebook (v1.13 Item 1b) ────────────────────────────────────────────────
+
+/**
+ * Upsert one note. `content` is markdown SOURCE — see the migration for why
+ * that is the storage format and not a block tree.
+ *
+ * Same snapshot-not-patch contract as assignments: the payload carries the
+ * whole note, so a retry after a later local edit still converges under LWW.
+ */
+export async function upsertNote({ id, courseId, title, lessonDate, content, sessionId }) {
+  const userId = await currentUserId();
+  const { error } = await supabase.from('notebook_entries').upsert({
+    id,
+    user_id: userId,
+    // `|| null` rather than leaving undefined: a note can be deliberately
+    // unfiled, and the column is nullable precisely so an unfiled note is
+    // representable rather than being refused.
+    course_id: courseId || null,
+    title: title || null,
+    lesson_date: lessonDate || null,
+    content: content ?? '',
+    session_id: sessionId || null,
+    updated_at: nowISO(),
+  });
+  if (error) throw error;
+  return id;
+}
+
+/** Soft delete, never a hard DELETE — same rule as every other table here, so
+ *  the tombstone reaches other devices on their next pull. */
+export async function deleteNote(id) {
+  const { error } = await supabase
+    .from('notebook_entries')
+    .update({ deleted_at: nowISO(), updated_at: nowISO() })
+    .eq('id', id);
+  if (error) throw error;
+  return id;
+}
+
+export async function upsertNoteAttachment({ id, entryId, storagePath, fileName, mimeType, sizeBytes }) {
+  const userId = await currentUserId();
+  const { error } = await supabase.from('notebook_attachments').upsert({
+    id,
+    user_id: userId,
+    entry_id: entryId,
+    storage_path: storagePath,
+    file_name: fileName,
+    mime_type: mimeType || null,
+    size_bytes: sizeBytes ?? null,
+    updated_at: nowISO(),
+  });
+  if (error) throw error;
+  return id;
+}
+
+export async function deleteNoteAttachment({ id, storagePath }) {
+  if (storagePath) {
+    // Storage first: a row without its object renders a broken image, an
+    // object without its row is invisible and merely costs bytes. If the
+    // storage call fails the row stays and the user can retry.
+    const { error: sErr } = await supabase.storage.from(NOTEBOOK_BUCKET).remove([storagePath]);
+    if (sErr && !/not.*found/i.test(sErr.message || '')) throw sErr;
+  }
+  const { error } = await supabase
+    .from('notebook_attachments')
+    .update({ deleted_at: nowISO(), updated_at: nowISO() })
+    .eq('id', id);
+  if (error) throw error;
+  return id;
+}
+
+export const NOTEBOOK_BUCKET = 'notebook';
+
 export async function pullAllStudyData() {
   // Pull EVERYTHING including soft-deleted rows so the local LWW merge
   // can correctly tombstone things the user deleted on another device.
   const [
     subjectsRes, gradesRes, sessionsRes, assignmentsRes, examsRes, actionsRes,
     plannedRes, termsRes, timetableRes, attachmentsRes, commitmentsRes,
+    notesRes, noteAttRes, attendanceRes,
   ] = await Promise.all([
     supabase.from('subjects').select('*'),
     supabase.from('grades').select('*'),
@@ -679,6 +806,9 @@ export async function pullAllStudyData() {
     supabase.from('timetable_entries').select('*'),
     supabase.from('assignment_attachments').select('*'),
     supabase.from('commitments').select('*'),
+    supabase.from('notebook_entries').select('*'),
+    supabase.from('notebook_attachments').select('*'),
+    supabase.from('lesson_attendance').select('*'),
   ]);
   if (subjectsRes.error) throw subjectsRes.error;
   if (gradesRes.error) throw gradesRes.error;
@@ -691,6 +821,26 @@ export async function pullAllStudyData() {
   if (timetableRes.error) throw timetableRes.error;
   if (attachmentsRes.error) throw attachmentsRes.error;
   if (commitmentsRes.error) throw commitmentsRes.error;
+  // v1.13 — the notebook tables are the ONLY two whose error is tolerated,
+  // and only for the specific case of the table not existing yet.
+  //
+  // The app ships to F-Droid on its own schedule and the migration is applied
+  // by the owner, so there is a window where a 1.13 build is running against a
+  // 1.12 database. In that window every other select still succeeds, and
+  // throwing here would turn "the notebook is not available yet" into "sync is
+  // completely broken" — losing courses, grades and sessions over a feature
+  // the user has not seen. `42P01` is Postgres for undefined_table; PostgREST
+  // surfaces it as PGRST205 when its schema cache has not been reloaded.
+  // Anything else is a real failure and still throws.
+  const missingTable = (res) => {
+    if (!res.error) return false;
+    const code = res.error.code || '';
+    return code === '42P01' || code === 'PGRST205' || /does not exist/i.test(res.error.message || '');
+  };
+  if (notesRes.error && !missingTable(notesRes)) throw notesRes.error;
+  if (noteAttRes.error && !missingTable(noteAttRes)) throw noteAttRes.error;
+  // Same tolerance, same window, same reasoning as the notebook tables above.
+  if (attendanceRes.error && !missingTable(attendanceRes)) throw attendanceRes.error;
   return {
     subjects: subjectsRes.data || [],
     grades: gradesRes.data || [],
@@ -703,6 +853,9 @@ export async function pullAllStudyData() {
     timetableEntries: timetableRes.data || [],
     attachments: attachmentsRes.data || [],
     commitments: commitmentsRes.data || [],
+    notes: notesRes.data || [],
+    noteAttachments: noteAttRes.data || [],
+    attendance: attendanceRes.data || [],
   };
 }
 

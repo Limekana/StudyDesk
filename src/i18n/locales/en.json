@@ -30,7 +30,8 @@
     "plan": "Plan",
     "grades": "Grades",
     "timer": "Timer",
-    "stats": "Stats"
+    "stats": "Stats",
+    "notebook": "Notebook"
   },
   "topbar": {
     "nextUp": "Next Up"
@@ -105,6 +106,7 @@
     "errGoogleStart": "Failed to start Google sign-in",
     "errGoogleFailed": "Google sign-in failed",
     "desktopBrowser": "Finish signing in in your browser, then come back here.",
+    "errDesktopNoListener": "Desktop sign-in is unavailable this launch. Restart StudyDesk, or sign in with email below.",
     "errCallback": "Sign-in callback failed",
     "errGeneric": "Authentication failed",
     "errInvalidCredentials": "Incorrect email or password.",
@@ -291,7 +293,45 @@
       "other": "Other"
     },
     "discord": "Discord community",
-    "discordSub": "Questions, bug reports, and what's coming next"
+    "discordSub": "Questions, bug reports, and what's coming next",
+    "queueStoppedTitle": "Sync has stopped",
+    "queueStoppedRetry": "Try these again",
+    "queueStoppedBody_one": "One change could not be sent after several tries, so the queue stopped rather than retrying it forever. Nothing has been lost — it is still on this device.",
+    "queueStoppedBody_other": "{{count}} changes could not be sent after several tries, so the queue stopped rather than retrying them forever. Nothing has been lost — they are still on this device.",
+    "queueStoppedWhat": "Waiting: {{kinds}}",
+    "queueStoppedSince": "Stopped since {{when}}",
+    "queueStoppedSignIn": "Sign in to send these.",
+    "kind": {
+      "upsert_subject": "a course",
+      "delete_subject": "a deleted course",
+      "upsert_grade": "a grade",
+      "delete_grade": "a deleted grade",
+      "log_session": "a study session",
+      "update_session": "a session edit",
+      "delete_session": "a deleted session",
+      "upsert_assignment": "an assignment",
+      "delete_assignment": "a deleted assignment",
+      "upsert_exam": "an exam",
+      "delete_exam": "a deleted exam",
+      "upsert_action": "a to-do",
+      "delete_action": "a deleted to-do",
+      "upsert_planned": "a planned block",
+      "delete_planned": "a deleted plan",
+      "upsert_term": "a term",
+      "delete_term": "a deleted term",
+      "upsert_timetable": "a timetable lesson",
+      "delete_timetable": "a deleted lesson",
+      "upsert_commitment": "a commitment",
+      "delete_commitment": "a deleted commitment",
+      "delete_attachment": "a deleted attachment",
+      "submit_feedback": "feedback",
+      "record_app_open": "usage data"
+    },
+    "weekStartLbl": "Calendar",
+    "weekStart": "Week starts on",
+    "weekStartAuto": "Automatic ({{day}})",
+    "weekStartSaved": "Week start updated.",
+    "weekStartNote": "Automatic follows your language and region. Change it if your timetable starts on a different day."
   },
   "sdob": {
     "brand": "Stop deciding. Start studying.",
@@ -502,7 +542,9 @@
         "open": "Open the timer",
         "openWith": "Open the timer — {{task}}",
         "aria": "{{label}}, {{time}} — open the timer"
-      }
+      },
+      "courseAria": "Course for this block",
+      "courseNone": "No course"
     },
     "pl": {
       "assignments": "Assignments",
@@ -549,7 +591,9 @@
       "studyStart": "Study start:",
       "studyFor": "Study for {{label}}",
       "prepareFor": "Prepare for {{label}}",
-      "topicMore": " (+{{n}} more)"
+      "topicMore": " (+{{n}} more)",
+      "editExam": "Edit exam",
+      "examDate": "Exam date"
     },
     "md": {
       "addAssignment": "Add Assignment",
@@ -763,7 +807,14 @@
     "lessonDeleted": "Lesson removed",
     "lessonsToday": "{{n}} lessons",
     "addOn": "Add a lesson on {{day}}",
-    "warnNoDates": "This term has no start date, so its lessons won't appear on the calendar. Add one here or on a term above it."
+    "warnNoDates": "This term has no start date, so its lessons won't appear on the calendar. Add one here or on a term above it.",
+    "sections": "Timetable sections",
+    "tabSchedule": "Schedule",
+    "fRepeat": "Repeats",
+    "repeatEvery": "Every week",
+    "repeatOdd": "Week A (odd weeks)",
+    "repeatEven": "Week B (even weeks)",
+    "repeatNote": "Counted from the start of this term, so week 1 of the term is week A."
   },
   "at": {
     "title": "Attachments",
@@ -826,5 +877,128 @@
     },
     "dismiss": "Not now",
     "thanks": "Thanks — that helps."
+  },
+  "appearance": {
+    "title": "Appearance",
+    "lighting": "Lighting",
+    "character": "Character",
+    "mode": {
+      "light": "Light",
+      "dark": "Dark",
+      "black": "Black"
+    },
+    "modeNote": {
+      "light": "Cream paper",
+      "dark": "Warm, low-glare",
+      "black": "True black · AMOLED"
+    },
+    "theme": {
+      "free": "Studio",
+      "stacks": "Stacks",
+      "slate": "Slate"
+    },
+    "themeNote": {
+      "free": "The default",
+      "stacks": "Supporter",
+      "slate": "Supporter",
+      "locked": "Supporters"
+    },
+    "characterNote": "Dark and Black are lighting — they turn the page down. Stacks and Slate are character: a library circulation desk and a chalkboard, each with its own type, rules and marks. They are not the dark option, and never were.",
+    "lockedNote": "Stacks and Slate unlock for supporters. Dark and Black are free, and always will be.",
+    "lightingInThemeNote": "Stacks and Slate bring their own lighting. Your choice here comes back when you switch to Studio."
+  },
+  "storage": {
+    "title": "This device is out of space",
+    "quotaBody": "StudyDesk could not save your latest changes to this device — its storage is full.",
+    "blockedBody": "StudyDesk could not save your latest changes to this device — storage is unavailable or blocked.",
+    "stakes": "Everything you have added since the app last saved will be lost when you close it. Export now to keep it.",
+    "usage": "StudyDesk is using about {{ours}} of roughly {{total}} stored by this site.",
+    "export": "Export my data",
+    "dismiss": "Dismiss"
+  },
+  "nb": {
+    "treeLabel": "Courses and notes",
+    "scopedToSession": "Scoped to session",
+    "newNote": "New note",
+    "untitled": "Untitled note",
+    "unfiled": "Unfiled",
+    "edited": "Edited {{when}}",
+    "savedToSession": "Saved to session",
+    "emptyTitle": "Pick a note, or start a new one.",
+    "editorLine": "Note line {{n}}",
+    "formatBar": "Formatting",
+    "highlightRoles": "Highlight colour",
+    "bold": "Bold",
+    "italic": "Italic",
+    "underline": "Underline",
+    "highlight": "Highlight",
+    "h1": "Heading 1",
+    "h2": "Heading 2",
+    "bullet": "Bullet list",
+    "numbered": "Numbered list",
+    "checklist": "Checklist",
+    "insertPhoto": "Insert photo",
+    "hlRole": {
+      "1": "Mark — important",
+      "2": "Query — unsure",
+      "3": "Settled — confirmed"
+    },
+    "delete": "Delete note",
+    "confirmDelete": "Delete this note? This cannot be undone."
+  },
+  "feed": {
+    "title": "Calendar feed",
+    "subscribe": "Subscribe",
+    "refresh": "Refresh",
+    "syncing": "Syncing…",
+    "remove": "Remove feed",
+    "urlLabel": "Feed address",
+    "courseLabel": "File under",
+    "noCourse": "No course",
+    "itemCount_one": "{{count}} item",
+    "itemCount_other": "{{count}} items",
+    "synced": "{{added}} new, {{updated}} updated.",
+    "removed_one": "Feed removed, {{n}} item deleted.",
+    "removed_other": "Feed removed, {{n}} items deleted.",
+    "help": "Most school systems publish a private calendar address you can subscribe to — look for \"Calendar feed\", \"Subscribe\" or an .ics link on your calendar page. It works with Canvas, Moodle, Blackboard, Google Classroom and most university timetables.",
+    "limits": "Due dates, titles and descriptions arrive on their own. Assignment type, points and submission status are not part of a calendar feed, so they will not appear. Repeating events — a weekly lecture, say — import as a single date for now, not the whole term.",
+    "deviceOnly": "The address is kept on this device only and never synced — anyone who has it can read your calendar. The imported dates do sync, like any other assignment.",
+    "err": {
+      "invalid-url": "That does not look like a web address.",
+      "duplicate": "You are already subscribed to that address.",
+      "not-found": "The address returned nothing (404). Check it is the full feed link.",
+      "forbidden": "The server refused the request. The address may have been reset — copy it again.",
+      "not-a-calendar": "That address returned a page, not a calendar. It may be the calendar's web page rather than its feed link.",
+      "too-large": "That feed is too large to import.",
+      "cors": "A browser cannot fetch a calendar from another site. Use the Android app for this.",
+      "http": "The server returned an error.",
+      "network": "Could not reach that address."
+    },
+    "repeatingNote": "{{count}} repeating event imported as a single date",
+    "repeatingNote_other": "{{count}} repeating events imported as a single date each"
+  },
+  "att": {
+    "tab": "Attendance",
+    "prevWeek": "Previous",
+    "nextWeek": "Next",
+    "thisWeek": "This week",
+    "noLessons": "No lessons",
+    "noData": "No data yet",
+    "forTerm": "in {{name}}",
+    "allTime": "overall",
+    "present": "{{n}} present",
+    "absent": "{{n}} absent",
+    "cancelled": "{{n}} cancelled",
+    "rescheduled": "{{n}} rescheduled",
+    "uncountedNote": "Cancelled and rescheduled lessons are not counted — they did not happen, so they are in neither half of the percentage.",
+    "byCourse": "By course",
+    "unmarked": "not marked",
+    "cycleAria": "{{lesson}} — {{status}}. Tap to change.",
+    "status": {
+      "present": "present",
+      "absent": "absent",
+      "cancelled": "cancelled",
+      "rescheduled": "rescheduled"
+    }
   }
 }

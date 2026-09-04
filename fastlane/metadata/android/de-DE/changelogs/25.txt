@@ -1,0 +1,21 @@
+Notizbuch — schreib deine Notizen dort, wo du lernst.
+
+Notizen liegen unter ihrem Kurs, und wer während einer laufenden Lernsitzung eine anfängt, bekommt sie automatisch diesem Kurs zugeordnet. Fett, kursiv, Markierung, Überschriften, Listen und Checklisten, mit Markdown-Kürzeln, die auch am Handy funktionieren: „- " für einen Punkt, „## " für eine Überschrift, „[] " für ein Kästchen. Fotografiere eine handgeschriebene Seite, und sie steht mitten im Text. Mathematik, Chemie und einfache Diagramme tippst du als ganz normalen Text, und sie werden beim Schreiben gezeichnet — bei einer chemischen Gleichung zählt der Rand sogar die Atome auf beiden Seiten.
+
+Dunkel und Schwarz, kostenlos.
+
+Zwei neue Erscheinungsbilder für alle: Dunkel, warm und abends angenehm, und Schwarz, echtes Schwarz für OLED-Displays.
+
+Deine Arbeit ist sicherer.
+
+Wenn auf dem Gerät der Platz ausgeht, sagt StudyDesk es dir, statt still nicht zu speichern. Lernsitzungen, die nie in der Cloud angekommen sind, werden gefunden und bei der nächsten Synchronisierung nachgeschickt, und eine gestoppte Synchronisierung sagt das jetzt deutlich und bietet einen neuen Versuch an.
+
+Stundenplan.
+
+Stunden können vierzehntägig stattfinden. Trage deine Anwesenheit pro Stunde ein und sieh deinen Prozentsatz pro Zeitraum und Kurs — entfallene Stunden zählen nicht gegen dich. Du kannst außerdem festlegen, mit welchem Tag deine Woche beginnt.
+
+Kalender-Feed abonnieren.
+
+Füge die private Kalenderadresse deines Schulsystems ein, und deine Fristen kommen von allein. Funktioniert mit Canvas, Moodle, Blackboard, Google Classroom und den meisten Uni-Stundenplänen.
+
+Außerdem: Prüfungen lassen sich bearbeiten, statt sie löschen und neu anlegen zu müssen.

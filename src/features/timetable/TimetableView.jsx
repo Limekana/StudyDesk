@@ -16,6 +16,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Pencil, Trash2, CalendarRange } from 'lucide-react';
+import Attendance from './Attendance.jsx';
 import { shortenLabels } from '../../lib/courseLabels.js';
 import {
   TERM_LEVELS, childLevel, childrenOf, termIndex, resolveTermRange,
@@ -179,6 +180,10 @@ function LessonForm({ draft, courses, onSave, onDelete, onClose, t }) {
   const [start, setStart] = useState(clock(draft.startMin));
   const [end, setEnd] = useState(clock(draft.endMin));
   const [room, setRoom] = useState(draft.room || '');
+  // v1.13 — '' is "every week" and maps to null on save. A select rather than
+  // a checkbox pair: "every week / week A / week B" is one choice with three
+  // answers, and two checkboxes would allow the meaningless both-and-neither.
+  const [parity, setParity] = useState(draft.weekParity ? String(draft.weekParity) : '');
   const [err, setErr] = useState('');
   const locale = formatLocale();
   const weekStart = resolveWeekStart(locale);
@@ -199,6 +204,7 @@ function LessonForm({ draft, courses, onSave, onDelete, onClose, t }) {
       startsAt: minutesToSqlTime(s),
       endsAt: minutesToSqlTime(e),
       room: room.trim(),
+      weekParity: parity === '1' || parity === '2' ? Number(parity) : null,
     });
   };
 
@@ -246,6 +252,19 @@ function LessonForm({ draft, courses, onSave, onDelete, onClose, t }) {
         <div className="input-group">
           <div className="input-label">{t('tt.fRoom')}</div>
           <input type="text" value={room} onChange={(e) => setRoom(e.target.value)} placeholder={t('tt.roomPlaceholder')} />
+        </div>
+        {/* v1.13 — alternating weeks. Counted from the start of the term this
+            lesson's schedule is attached to, which is what the note below
+            says out loud: without it, "week A" is a label with no anchor and
+            two users will read it two different ways. */}
+        <div className="input-group">
+          <div className="input-label">{t('tt.fRepeat')}</div>
+          <select value={parity} onChange={(e) => setParity(e.target.value)}>
+            <option value="">{t('tt.repeatEvery')}</option>
+            <option value="1">{t('tt.repeatOdd')}</option>
+            <option value="2">{t('tt.repeatEven')}</option>
+          </select>
+          {parity && <div className="tt-hint">{t('tt.repeatNote')}</div>}
         </div>
         {err && <div className="tt-error">{err}</div>}
         <div className="plan-actions">
@@ -404,6 +423,11 @@ export default function TimetableView({ state, dispatch, session, showFlash }) {
   const [selectedId, setSelectedId] = useState(null);
   const [termDraft, setTermDraft] = useState(null);
   const [lessonDraft, setLessonDraft] = useState(null);
+  // v1.13 — Schedule / Attendance. A sub-tab rather than a fourth Plan tab or
+  // a fifth bottom tab, for the reason the rest of this app already settled:
+  // the bottom bar is sized for four. Attendance also genuinely belongs
+  // *inside* the timetable — it is the same lessons, on real dates.
+  const [sub, setSub] = useState('schedule');
 
   const byId = useMemo(() => termIndex(terms), [terms]);
   // Falls back to the first root so the grid has something to show on arrival
@@ -456,6 +480,7 @@ export default function TimetableView({ state, dispatch, session, showFlash }) {
       endsAt: form.endsAt,
       room: form.room,
       color: form.color || null,
+      weekParity: form.weekParity ?? null,
     };
     if (form.id) {
       dispatch({ type: 'EDIT_TT_ENTRY', id: form.id, ...payload });
@@ -542,7 +567,26 @@ export default function TimetableView({ state, dispatch, session, showFlash }) {
                   sitting unless the app says why. */}
               {unbounded && <div className="tt-warn">{t('tt.warnNoDates')}</div>}
 
-              <WeekGrid
+              <div className="timer-subtabs" role="tablist" aria-label={t('tt.sections')}>
+                {[['schedule', 'tt.tabSchedule'], ['attendance', 'att.tab']].map(([id, key]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    aria-selected={sub === id}
+                    className={`timer-subtab${sub === id ? ' active' : ''}`}
+                    onClick={() => setSub(id)}
+                  >
+                    {t(key)}
+                  </button>
+                ))}
+              </div>
+
+              {sub === 'attendance' && (
+                <Attendance state={state} dispatch={dispatch} session={session} term={selected} />
+              )}
+
+              {sub === 'schedule' && <WeekGrid
                 entries={entries}
                 courses={state.courses || {}}
                 weekStart={weekStart}
@@ -563,7 +607,7 @@ export default function TimetableView({ state, dispatch, session, showFlash }) {
                   color: e.color || null,
                 })}
                 t={t}
-              />
+              />}
             </>
           )}
         </section>

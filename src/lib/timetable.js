@@ -37,6 +37,84 @@ export function childLevel(level) {
   return null;
 }
 
+// ── Alternating weeks (v1.13 Tier 2) ───────────────────────────────────────
+//
+// Reported 2026-09-02, rated 5/5: "I have classes every two weeks but I didn't
+// find a way to make it happen in timetable here." Standard in European
+// timetables, including the jakso system this app was built around.
+//
+// `weekParity` on a timetable entry is `null` (every week), 1 (odd weeks) or
+// 2 (even weeks). Nullable and additive, per `P1` — an app version that
+// predates this column reads the row and shows the lesson every week, which
+// is the correct degradation: a user on an old build sees too many lessons,
+// never too few.
+//
+// ── What week 1 is, and why it is not the ISO week number ────────────────
+//
+// The parity is counted from THE START OF THE TERM THE ENTRY BELONGS TO, not
+// from January and not from the ISO week number. Three reasons, and the third
+// is decisive:
+//
+//   1. A student says "week A / week B" relative to their timetable, which
+//      starts when the term starts. Nobody thinks in ISO week 37.
+//   2. ISO week numbers roll over mid-year, so a term spanning New Year would
+//      flip its own parity halfway through for no reason the user can see.
+//   3. It has to agree with the term the entry hangs off, and terms are
+//      exactly what this app already models. Anchoring to anything else would
+//      mean two schedules attached at different levels disagreeing about
+//      which week it is — in the same week.
+//
+// The count is in whole weeks from the term's start, aligned to the user's
+// own week start, so a term beginning on a Wednesday still has its first
+// MONDAY-to-Sunday block as week 1 rather than splitting week 1 across the
+// boundary.
+
+export const WEEK_EVERY = null;
+export const WEEK_ODD = 1;
+export const WEEK_EVEN = 2;
+
+/**
+ * Which parity week `iso` falls in, counted from `termStart`.
+ *
+ * @returns {1|2|null}  null when either date is unusable, which callers must
+ *          treat as "show the lesson" — a lesson hidden because a date failed
+ *          to parse is a lesson the student misses.
+ */
+export function weekParityOf(iso, termStart, weekStart = 1) {
+  const day = parseLocalDate(iso);
+  const start = parseLocalDate(termStart);
+  if (!day || !start || Number.isNaN(day.getTime()) || Number.isNaN(start.getTime())) return null;
+
+  // Snap both to the first day of their own week, so the answer changes only
+  // at a week boundary and never mid-week.
+  const snap = (d) => {
+    const copy = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const shift = (copy.getDay() - weekStart + 7) % 7;
+    copy.setDate(copy.getDate() - shift);
+    return copy;
+  };
+
+  const a = snap(start);
+  const b = snap(day);
+  // Whole days, then whole weeks. Computed from local midnights rather than
+  // by dividing raw timestamps: a DST transition inside the range shifts a
+  // timestamp difference by an hour, and across a 26-week term that is enough
+  // to land a boundary on the wrong side.
+  const days = Math.round((b - a) / 86400000);
+  const weeks = Math.floor(days / 7);
+  // Week 1 is odd. Negative weeks (a date before the term starts) still
+  // answer, because a caller may be previewing a schedule ahead of the term.
+  return (((weeks % 2) + 2) % 2) === 0 ? WEEK_ODD : WEEK_EVEN;
+}
+
+/** Does an entry run on this date, given the parity of the week? */
+export function entryRunsOnParity(entry, parity) {
+  const want = entry?.weekParity;
+  if (want !== WEEK_ODD && want !== WEEK_EVEN) return true; // every week
+  if (parity === null) return true; // unknown parity — never hide a lesson
+  return want === parity;
+}
+
 // ── Time-of-day ────────────────────────────────────────────────────────────
 // Postgres `time without time zone` arrives as "08:15:00". Minutes past
 // midnight is the only form the grid geometry uses, so conversion happens once
@@ -197,7 +275,7 @@ export function childrenOf(terms, parentId) {
  * Returns occurrences sorted by start time, each carrying resolved course
  * colour/name so the caller does no lookups.
  */
-export function lessonsOn(state, iso) {
+export function lessonsOn(state, iso, weekStart = 1) {
   const entries = state.timetableEntries || [];
   if (!entries.length) return [];
   const date = parseLocalDate(iso);
@@ -217,10 +295,26 @@ export function lessonsOn(state, iso) {
   for (const term of covering) {
     const rank = levelRank(term.level);
     if (rank < chosenRank) break; // covering[] is sorted most-specific first
-    const forTerm = live.filter((e) => e.termId === term.id && e.weekday === weekday);
-    if (!forTerm.length) continue;
+    // v1.13 — parity is resolved against THIS term's start, so an entry
+    // attached to a jakso alternates on the jakso's own clock and one
+    // attached to the semester alternates on the semester's. Two schedules at
+    // different levels can therefore both be right about "week A" without
+    // agreeing with each other, which is the only reading that survives a
+    // period being inserted mid-semester.
+    const parity = weekParityOf(iso, term.startsOn, weekStart);
+    const forTerm = live.filter((e) => (
+      e.termId === term.id && e.weekday === weekday && entryRunsOnParity(e, parity)
+    ));
+    // Specificity is decided by whether a term has entries for this weekday AT
+    // ALL, not by whether they run this week. Otherwise a jakso whose only
+    // Tuesday lesson is fortnightly would fall through to the semester on the
+    // off week and draw the semester's Tuesday instead — an override that
+    // silently stops overriding every other week.
+    const anyForTerm = live.some((e) => e.termId === term.id && e.weekday === weekday);
+    if (!anyForTerm) continue;
     if (rank > chosenRank) { chosenRank = rank; chosen = []; }
     chosen.push(...forTerm.map((e) => ({ entry: e, term })));
+    continue;
   }
   if (!chosen.length) return [];
 
@@ -247,6 +341,7 @@ export function lessonsOn(state, iso) {
       courseName: liveCourse?.name || null,
       color: entry.color || liveCourse?.color || null,
       room: entry.room || null,
+      weekParity: entry.weekParity ?? null,
       startMin,
       endMin,
       durationMinutes: endMin - startMin,

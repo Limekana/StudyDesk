@@ -264,3 +264,76 @@
   .tt-term-level { min-width: 0; }
   .tt-term-dates { display: none; }
 }
+
+/* ── Attendance (v1.13 Tier 2, issue #31) ───────────────────────────────────
+   A week of real dates, not the repeating pattern the grid above shows. The
+   distinction is the reason this is a separate surface: you cannot mark
+   "Tuesday maths" on a pattern, because a pattern has no Tuesday to mark. */
+.at-wrap{display:flex;flex-direction:column;gap:14px;}
+.at-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.at-range{font-family:var(--font-mono);font-size:11px;color:var(--muted);flex:1;min-width:120px;}
+
+/* The percentage. Large, because it is the whole answer to "how am I doing",
+   and the counts beneath it are the working. */
+.at-summary{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;}
+.at-summary-main{display:flex;align-items:baseline;gap:10px;}
+.at-pct{font-family:var(--font-display);font-size:30px;font-weight:600;line-height:1;}
+.at-pct-lbl{font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted2);}
+.at-counts{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font-family:var(--font-mono);font-size:11px;color:var(--muted);}
+/* Cancelled and rescheduled are shown DIMMER than the counted states, so the
+   interface teaches the rule instead of the rule needing to be read. */
+.at-uncounted{color:var(--muted2);opacity:0.85;}
+.at-note{margin-top:8px;font-size:11.5px;line-height:1.5;color:var(--muted2);}
+
+.at-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;}
+.at-day{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 6px;min-height:80px;display:flex;flex-direction:column;gap:4px;}
+.at-day.is-today{border-color:var(--text);}
+.at-day-head{display:flex;align-items:baseline;justify-content:space-between;gap:4px;margin-bottom:2px;}
+.at-day-dow{font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted2);}
+.at-day-num{font-family:var(--font-mono);font-size:11px;color:var(--muted);}
+.at-day-empty{font-family:var(--font-mono);font-size:9px;color:var(--muted2);opacity:0.7;}
+
+.at-lesson{display:flex;align-items:center;gap:5px;width:100%;padding:5px 4px;background:var(--surface2);border:1px solid transparent;border-radius:4px;cursor:pointer;font:inherit;font-size:11px;text-align:start;color:var(--text);
+  /* 44px is not available in a seven-column week on a phone; this is the one
+     place in v1.13 that falls short of it, and it does so because the
+     alternative — a full-width list — loses the week-at-a-glance read that
+     makes an attendance gap visible in the first place. The row is still
+     ~30px tall and the whole row is the target, not just the glyph. */
+  min-height:30px;-webkit-tap-highlight-color:transparent;}
+.at-lesson:hover{border-color:var(--border2);}
+.at-lesson-pip{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.at-lesson-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.at-lesson-mark{font-family:var(--font-mono);font-size:12px;color:var(--muted2);}
+/* One border colour per state, and the glyph carries the meaning. Colour
+   alone would fail anyone who cannot distinguish the two, which is why the
+   glyph is not decorative. */
+.at-lesson.is-present{border-color:var(--success);}
+.at-lesson.is-present .at-lesson-mark{color:var(--success);}
+.at-lesson.is-absent{border-color:var(--danger);}
+.at-lesson.is-absent .at-lesson-mark{color:var(--danger);}
+.at-lesson.is-cancelled{opacity:0.6;}
+.at-lesson.is-cancelled .at-lesson-name{text-decoration:line-through;}
+.at-lesson.is-rescheduled{border-color:var(--warning);}
+.at-lesson.is-rescheduled .at-lesson-mark{color:var(--warning);}
+
+.at-courses{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;}
+.at-courses-title{font-family:var(--font-mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted2);margin-bottom:8px;}
+.at-course-row{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12.5px;border-bottom:1px solid var(--border);}
+.at-course-row:last-child{border-bottom:none;}
+.at-course-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.at-course-counts{font-family:var(--font-mono);font-size:10.5px;color:var(--muted2);}
+.at-course-pct{font-family:var(--font-mono);font-size:12px;min-width:44px;text-align:end;}
+
+/* Below 560px a seven-column grid gives each day ~70px, which fits a pip and
+   about four characters. The week becomes rows — the at-a-glance read is
+   already lost at that width, so keeping the grid would lose legibility too
+   and buy nothing. */
+@media(max-width:560px){
+  .at-week{grid-template-columns:1fr;}
+  .at-day{min-height:0;flex-direction:row;flex-wrap:wrap;align-items:center;}
+  .at-day-head{margin-bottom:0;min-width:62px;gap:6px;}
+  .at-lesson{width:auto;flex:1 1 140px;}
+}
+
+/* v1.13 — the alternating-weeks hint under the repeat selector. */
+.tt-hint{margin-top:6px;font-size:11.5px;line-height:1.5;color:var(--muted2);}

@@ -6,6 +6,146 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 h1,h2,h3,h4,h5,h6{font-weight:inherit;font-size:inherit;}
 :root{--bg:#f5f2ed;--surface:#faf8f4;--surface2:#f0ece4;--border:#e0d9cf;--border2:#cfc8bc;--text:#1a1814;--muted:#6b6560;--muted2:#7a7570;--danger:#c0392b;--danger-bg:#fee;--danger-border:#fcc;--danger-on:#fff;--warning:#b5470b;--warning-bg:#fff4e6;--warning-border:#f0d4a0;--font-display:'Playfair Display',serif;--font-mono:'DM Mono',monospace;--font-sans:'DM Sans',sans-serif;--shadow:0 1px 3px rgba(0,0,0,0.08);--shadow-md:0 4px 12px rgba(0,0,0,0.08);--ease-paper:cubic-bezier(0.4,0,0.2,1);--ease-page-turn:cubic-bezier(0.3,0,0.2,1);--ease-settle:cubic-bezier(0.16,1,0.3,1);/* Pomodoro phase colours, previously hardcoded in TimerView.jsx. Identical values, tokenised so the clock can be retinted: the focus one is the free theme's ink, so on a dark ground it rendered black-on-black. It drives the ring stroke as well as the numerals, so a literal there loses the whole timer, not one part of it. */--phase-focus:#1a1814;--phase-short:#2e7d52;--phase-long:#1a5c9e;}
+
+/* ── Semantic colour tokens (v1.13, free-tier dark mode) ───────────────────
+   Every one of these was a literal hex or rgba() sitting in a component
+   stylesheet. None of the values change here: this block is the light theme
+   restating what those files already painted, so the cream build is
+   byte-identical in appearance and the dark modes have something to override.
+
+   The reason for doing it at all is the `phaseColor` incident (see the note
+   on --phase-* above): a literal in a component file is invisible to a theme,
+   and the first theme that needs a different value discovers it as a missing
+   element rather than as a wrong colour. Names are semantic — what the colour
+   MEANS — because a name like `--violet` would lie the moment Slate paints it
+   in chalk yellow.
+
+   Tints are spelled out rather than derived with color-mix(): this app ships
+   to Android WebViews we do not control the version of, and a tint that
+   silently resolves to `transparent` on an older engine loses the element
+   rather than mis-colouring it — the same failure shape as the literal. */
+:root{
+  /* Solid ink on a filled control. Not --text: the button ground is browner
+     than the page ink, and on dark grounds they diverge entirely. */
+  --accent:#3d2e1e;
+  --accent-on:#faf8f4;
+  --on-solid:#fff;          /* text on a saturated chip (exam pills, ribbons) */
+
+  --focus-ring:#aaa;        /* input border while focused */
+
+  /* Three status hues the app uses outside the danger/warning pair. */
+  --success:#2e7d52;
+  --info:#1a5c9e;
+  --exam:#6d3fa0;
+
+  /* Washes. Each is its own token rather than an alpha on the hue above,
+     because on a dark ground a wash is a DEEPENING and cannot be expressed as
+     the same colour at low alpha. */
+  --exam-bg:rgba(109,63,160,0.12);
+  --exam-bg-strong:rgba(109,63,160,0.15);
+  --info-bg:rgba(26,92,158,0.12);
+  --info-soft:rgba(26,92,158,0.06);
+  --info-soft-border:rgba(26,92,158,0.3);
+  --success-soft:rgba(46,125,82,0.07);
+  --success-border:rgba(46,125,82,0.4);
+  --success-border-weak:rgba(46,125,82,0.25);
+  --danger-soft:rgba(192,57,43,0.08);
+  --danger-soft-border:rgba(192,57,43,0.25);
+  --danger-tint:rgba(192,57,43,0.1);
+  --danger-tint-border:rgba(192,57,43,0.2);
+  --danger-strong-border:rgba(192,57,43,0.4);
+  --danger-strong-bg:rgba(192,57,43,0.06);
+  --confirm-bg:#fdf6f5;
+  --confirm-border:#e8c6c0;
+
+  --rule2:#e7e0d1;          /* palest rule — lesson bands, context lines */
+  --chip-edge:rgba(0,0,0,0.12);
+
+  /* Lock In is a full-screen takeover that was ALREADY dark in every theme.
+     Tokenised so Black can take it to true #000 rather than leaving a
+     near-black gradient banding against the page behind it. */
+  --lockin-1:#1f1c17;
+  --lockin-2:#0e0c09;
+  --lockin-ink:#faf8f4;
+  --lockin-on:#1a1814;
+  --shadow-strong:0 4px 24px rgba(0,0,0,0.5);
+
+  --selection:#d4c9b8;
+  /* Paper grain. The overlay is the free theme's signature, so it is driven by
+     tokens rather than removed: a mode that should not carry it sets
+     --grain-opacity to 0 and the rule below no-ops. See modes.css. */
+  --grain-opacity:0.035;
+  --grain-size:128px;
+  --grain-blend:normal;
+}
+
+/* ── Notebook tokens (v1.13 Item 1b) ───────────────────────────────────────
+   Values are the design handoff's §6 and §11 tables, verbatim. Declared once
+   per theme scope, `--nb-` prefixed, and additive: no existing token changes
+   value and no existing selector is edited, which is what acceptance check 10
+   ("pre-existing Light views pixel-identical") depends on.
+
+   `--nb-page` is deliberately the same colour as the app's own `--bg` in each
+   palette. The notebook is not a panel sitting on the app; it is the same
+   sheet of paper. Change one and re-check the other.
+
+   Where a pair like `34/44px` appears in the handoff, the token holds the
+   PHONE value and notebook.css overrides it at the desktop breakpoint — a
+   custom property cannot carry two values, and putting the desktop number
+   here would make the phone the exception.
+
+   --nb-rule: none in Black and Slate is how those themes disable full-page
+   ruling with no selector change (§1). The gradient still evaluates; it just
+   paints nothing. */
+:root{
+  --nb-page:#f5f2ed;
+  --nb-rule:#E4DCCF;
+  --nb-rule-h:28px;
+  --nb-margin-rule:#C9756B;
+  --nb-margin-w:34px;
+  --nb-text-x:48px;
+  --nb-current-line:none;
+  --nb-ink:#1a1814;
+  /* §7 prints 5.4:1 for "muted UI text on page" in Light. The hex it gives
+     for it, #7a7570, actually measures 4.08:1 against #f5f2ed — below AA.
+     The handoff anticipates exactly this ("Re-measure every row in the
+     running app rather than trusting this table"), so the RULE wins over the
+     value and the token moves to the app's own --muted, which measures 5.14
+     and is the nearest existing ink in the palette. Same correction in Slate.
+     This is a NEW token, so nothing pre-existing moves and the pixel-freeze
+     on shipped Light views is untouched. */
+  --nb-ink-muted:#6b6560;
+  --nb-caret:#1a1814;
+  --nb-marker:#6b6560;
+  --nb-check-line:#6b6560;
+  --nb-check-fill:#6b6560;
+  --nb-hl-1:#EDD98A;
+  --nb-hl-2:#EFC5C0;
+  --nb-hl-3:#C9DCC4;
+  --nb-photo-border:#cfc8bc;
+  --nb-bar-bg:#faf8f4;
+  --nb-bar-rule:#e0d9cf;
+  --nb-font-body:'DM Sans',sans-serif;
+  --nb-font-head:'Playfair Display',serif;
+  --nb-font-meta:'DM Mono',monospace;
+  --nb-size-body:15px;
+  /* §11 */
+  --nb-src:#6b6560;
+  --nb-stroke-w:1px;
+}
+
+/* Notebook geometry, desktop tier. The handoff's §1 table gives phone/desktop
+   pairs; a custom property cannot hold two values, so the phone number is the
+   token and this is its other half. Applies to the free palettes (light, dark
+   and black share one geometry — lighting does not move a margin); Stacks and
+   Slate declare their own in themes.css. */
+@media(min-width:769px){
+  :root{
+    --nb-margin-w:44px;
+    --nb-text-x:60px;
+    --nb-rule-top:20px;
+  }
+}
 /* ── Shell tokens (v1.9 Item 14, Phase 1) ──────────────────────────────────
    The three-tier desktop shell is driven entirely by these three values, so a
    later desktop surface sizes itself against the same rhythm instead of
@@ -21,8 +161,8 @@ h1,h2,h3,h4,h5,h6{font-weight:inherit;font-size:inherit;}
 }
 html,body,#root{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-sans);overscroll-behavior:none;}
 /* Paper grain texture overlay */
-body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:0.035;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");background-repeat:repeat;background-size:128px 128px;}
-::selection{background:#d4c9b8;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:var(--grain-opacity);mix-blend-mode:var(--grain-blend);background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");background-repeat:repeat;background-size:var(--grain-size) var(--grain-size);}
+::selection{background:var(--selection);}
 ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
 *:focus-visible{outline:2px solid var(--text);outline-offset:2px;border-radius:2px;}
 
@@ -207,4 +347,18 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 }
 @media(prefers-reduced-motion:reduce){
   .sidebar{transition:none;}
+}
+
+/* Calendar-feed rows. The error and the note need to read as what they are —
+   an unstyled error message is just a sentence, and the whole point of giving
+   every failure code its own sentence was that the user can act on it. */
+.feed-row-err {
+  color: var(--danger);
+  font-size: 0.85em;
+  margin-top: 2px;
+}
+.feed-row-note {
+  color: var(--muted);
+  font-size: 0.85em;
+  margin-top: 2px;
 }

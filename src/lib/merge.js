@@ -223,6 +223,10 @@ function mergeTimetableEntry(localE, remoteRow) {
     endsAt: remoteRow.ends_at,
     room: remoteRow.room || '',
     color: remoteRow.color || null,
+    // v1.13 — `?? null` rather than `|| null`: 0 is not a valid parity, but
+    // reading it through `||` would be a silent coercion waiting for the day
+    // someone adds a third value.
+    weekParity: remoteRow.week_parity ?? null,
     updatedAt: remoteRow.updated_at || null,
     deletedAt: remoteRow.deleted_at || null,
   };
@@ -274,6 +278,58 @@ function mergeCommitment(localC, remoteRow) {
  * @param {object} state Current reducer state.
  * @param {{subjects:Array, grades:Array, sessions:Array, assignments:Array, exams:Array, actions:Array}} remote
  */
+function mergeAttendance(localRow, remoteRow) {
+  const remote = {
+    id: remoteRow.id,
+    timetableEntryId: remoteRow.timetable_entry_id,
+    date: remoteRow.date,
+    status: remoteRow.status,
+    note: remoteRow.note ?? null,
+    updatedAt: remoteRow.updated_at || null,
+    deletedAt: remoteRow.deleted_at || null,
+  };
+  if (!localRow) return remote;
+  if (newer(remote.updatedAt, localRow.updatedAt)) return remote;
+  return localRow;
+}
+
+function mergeNote(localNote, remoteRow) {
+  const remote = {
+    id: remoteRow.id,
+    courseId: remoteRow.course_id ?? null,
+    title: remoteRow.title ?? null,
+    lessonDate: remoteRow.lesson_date ?? null,
+    // The whole note under LWW. Character-level merge was considered and
+    // rejected: two devices editing one note is rare in a single-user study
+    // app, and a three-way text merge that gets it wrong silently interleaves
+    // two revision sessions into something neither person wrote. Whole-row LWW
+    // at least loses a whole edit visibly.
+    content: remoteRow.content ?? '',
+    sessionId: remoteRow.session_id ?? null,
+    updatedAt: remoteRow.updated_at || null,
+    deletedAt: remoteRow.deleted_at || null,
+  };
+  if (!localNote) return remote;
+  if (newer(remote.updatedAt, localNote.updatedAt)) return remote;
+  return localNote;
+}
+
+function mergeNoteAttachment(localAtt, remoteRow) {
+  const remote = {
+    id: remoteRow.id,
+    entryId: remoteRow.entry_id,
+    storagePath: remoteRow.storage_path,
+    fileName: remoteRow.file_name,
+    mimeType: remoteRow.mime_type ?? null,
+    sizeBytes: remoteRow.size_bytes ?? null,
+    updatedAt: remoteRow.updated_at || null,
+    deletedAt: remoteRow.deleted_at || null,
+  };
+  if (!localAtt) return remote;
+  if (newer(remote.updatedAt, localAtt.updatedAt)) return remote;
+  return localAtt;
+}
+
 export function applyRemotePull(state, remote) {
   // Subjects → state.courses (keyed by id).
   const courses = { ...(state.courses || {}) };
@@ -340,10 +396,17 @@ export function applyRemotePull(state, remote) {
   const timetableEntries = mergeList(state.timetableEntries, remote.timetableEntries, mergeTimetableEntry);
   const attachments = mergeList(state.attachments, remote.attachments, mergeAttachment);
   const commitments = mergeList(state.commitments, remote.commitments, mergeCommitment);
+  // v1.13 Item 1b. Tombstone-removal like the assignments above rather than a
+  // kept `deletedAt`, for the same reason: the notebook tree and the editor
+  // both read the list without filtering, and one missed guard would put a
+  // deleted note back on somebody's screen.
+  const notes = mergeList(state.notes, remote.notes, mergeNote);
+  const noteAttachments = mergeList(state.noteAttachments, remote.noteAttachments, mergeNoteAttachment);
+  const attendance = mergeList(state.attendance, remote.attendance, mergeAttendance);
 
   return {
     ...state,
-    courses, grades, studySessions, assignments, exams, actions,
+    courses, grades, studySessions, assignments, exams, actions, notes, noteAttachments, attendance,
     plannedSessions, academicTerms, timetableEntries, attachments, commitments,
   };
 }

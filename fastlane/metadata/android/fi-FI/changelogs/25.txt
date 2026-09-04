@@ -1,0 +1,21 @@
+Muistikirja — kirjoita muistiinpanot siellä missä opiskelet.
+
+Muistiinpanot asettuvat kurssiensa alle, ja jos aloitat sellaisen opiskelujakson ollessa käynnissä, se liitetään automaattisesti kyseiseen kurssiin. Lihavointi, kursivointi, korostus, otsikot, luettelot ja tarkistuslistat sekä markdown-pikanäppäimet, jotka toimivat puhelimessa: "- " tekee luettelomerkin, "## " otsikon, "[] " valintaruudun. Kuvaa käsin kirjoitettu sivu, niin se asettuu tekstin sekaan. Voit kirjoittaa matematiikkaa, kemiaa ja yksinkertaisia kaavioita tavallisena tekstinä, ja ne piirtyvät kirjoittaessasi — kemiallinen yhtälö laskee jopa atomit molemmilta puolilta marginaaliin.
+
+Tumma ja Musta, ilmaiseksi.
+
+Kaksi uutta ulkoasua kaikille: Tumma, lämmin ja silmäystävällinen illalla, ja Musta, aito musta OLED-näytöille.
+
+Työsi on turvassa.
+
+Jos laitteen tila loppuu, StudyDesk kertoo siitä sen sijaan että jättäisi hiljaa tallentamatta. Opiskelujaksot, jotka eivät koskaan päätyneet pilveen, löydetään ja lähetetään seuraavan synkronoinnin yhteydessä, ja pysähtynyt synkronointi sanoo sen nyt suoraan ja tarjoutuu yrittämään uudelleen.
+
+Lukujärjestys.
+
+Tunnit voivat toistua joka toinen viikko. Merkitse läsnäolo tunneittain ja näe prosenttisi jaksoittain ja kursseittain — perutut tunnit eivät laske sinua alas. Voit myös valita, mistä päivästä viikkosi alkaa.
+
+Tilaa kalenterisyöte.
+
+Liitä oppilaitosjärjestelmäsi yksityinen kalenteriosoite, niin määräpäivät saapuvat itsestään. Toimii Canvasin, Moodlen, Blackboardin, Google Classroomin ja useimpien yliopistojen lukujärjestysten kanssa.
+
+Lisäksi: kokeita voi nyt muokata sen sijaan että ne pitäisi poistaa ja luoda uudelleen.

@@ -42,10 +42,14 @@
 // the next mutation triggers another drain). We never silently drop.
 
 import * as sync from './sync.js';
+import { writeJson } from './localStore.js';
 
 const STORAGE_KEY = 'studydesk-outbox';
 const META_KEY = 'studydesk-outbox-meta'; // { lastSuccessAt }
 const MAX_ATTEMPTS = 5;
+
+// The item `drain` is currently awaiting, if any. See `enqueue`.
+let inFlightId = null;
 const CHANGE_EVENT = 'studydesk-outbox-change';
 
 // ── Storage helpers ────────────────────────────────────────────────────────
@@ -62,12 +66,20 @@ function loadItems() {
 }
 
 function saveItems(items) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  } catch (e) {
-    // Quota-exceeded is unrecoverable for the outbox — log and continue.
-    // The next mutation will overwrite + try again with whatever fits.
-    console.error('[outbox] storage write failed:', e);
+  // v1.13 Item 1a. This used to be a console.error and a shrug, with the
+  // comment "quota-exceeded is unrecoverable for the outbox". That is true as
+  // far as it goes and it buried the more important half: the outbox shares
+  // one origin quota with `studydesk-v1`, so an outbox that cannot be written
+  // is a strong signal that the STATE SNAPSHOT is about to fail too — and
+  // that one is the user's data.
+  //
+  // An offline stretch is what inflates this file, and an offline user is
+  // exactly the person whose rows exist nowhere else. Routing through
+  // `writeJson({critical: true})` means the first of the two writes to hit
+  // the ceiling raises the alarm, rather than each failing quietly in turn.
+  const { ok, error } = writeJson(STORAGE_KEY, items, { critical: true });
+  if (!ok) {
+    console.error('[outbox] storage write failed:', error);
   }
   // v1.3.1 — invalidate the cached snapshot so the next getStatus() rebuild
   // reflects this write. Without this, useSyncExternalStore subscribers
@@ -89,9 +101,10 @@ function loadMeta() {
 }
 
 function saveMeta(meta) {
-  try {
-    localStorage.setItem(META_KEY, JSON.stringify(meta));
-  } catch { /* see saveItems */ }
+  // Bookkeeping, not user data — a lost `lastSuccessAt` costs a wrong
+  // timestamp in Settings and nothing else, so this one stays non-critical
+  // and must never raise the alarm on its own.
+  writeJson(META_KEY, meta);
   // v1.3.1 — same cache-invalidation as saveItems.
   cachedStatus = null;
 }
@@ -112,12 +125,69 @@ function makeId() {
  *  @param {string} kind  One of the keys in KIND_DISPATCH below.
  *  @param {object} payload  Operation-specific args; matches the sync.js fn signature.
  */
+/**
+ * The identity of the FACT an item represents — not the identity of the item.
+ *
+ * `${kind}::${payload.id}` for anything row-shaped, which is every kind
+ * reconcile can produce. Kinds without a row id (`record_app_open`,
+ * `archive_semester`) return null and are appended as before; both are
+ * bounded by other means.
+ */
+function identityOf(kind, payload) {
+  const id = payload?.id;
+  return typeof id === 'string' && id ? `${kind}::${id}` : null;
+}
+
+/**
+ * Queue one mutation.
+ *
+ * ── Why this COALESCES rather than always appending ──────────────────────
+ *
+ * v1.13 review, blocker 1. `reconcileUnsynced` runs on every pull, and
+ * `sync.startRealtime(doPull)` makes pull the realtime handler too — so it
+ * runs on every remote change, not just at launch. It re-enqueues any row it
+ * finds locally but not remotely.
+ *
+ * A row that can never push is exactly such a row, permanently. It burns its
+ * five attempts, quarantines, and is then re-manufactured as a BRAND NEW item
+ * by the next pull, forever. The queue grows without bound in the same
+ * localStorage origin as the state blob — which is the durability failure
+ * this very release exists to fix. v1.12 had the shape for four tables;
+ * Item 1a widened reconcile to ten, so the leak widened with it.
+ *
+ * Coalescing on the fact's identity bounds the queue at one item per row per
+ * kind, whatever reconcile does. It is safe because every upsert here carries
+ * a SNAPSHOT rather than a patch — that contract is stated on the kinds
+ * themselves — so replacing a pending payload with a newer one loses nothing
+ * and is strictly more correct than pushing the stale copy first.
+ *
+ * `attempts` and `quarantined` are deliberately PRESERVED across a coalesce.
+ * Refreshing the payload must not silently revive a stuck item and re-fail
+ * it; the row stays quarantined, stays counted by `getStatus`, and carries
+ * the newest data for when the user presses Retry.
+ *
+ * The one item never coalesced onto is the one currently in flight: `drain`
+ * removes it by item id on success, so replacing its payload mid-await would
+ * drop the newer edit with no path back.
+ */
 export function enqueue(kind, payload) {
   if (!KIND_DISPATCH[kind]) {
     console.error('[outbox] unknown kind:', kind);
     return;
   }
   const items = loadItems();
+  const key = identityOf(kind, payload);
+  if (key) {
+    const at = items.findIndex(
+      (it) => it.id !== inFlightId && identityOf(it.kind, it.payload) === key,
+    );
+    if (at !== -1) {
+      items[at] = { ...items[at], payload };
+      saveItems(items);
+      void drain();
+      return;
+    }
+  }
   items.push({
     id: makeId(),
     createdAt: new Date().toISOString(),
@@ -233,6 +303,10 @@ export async function drain(opts = {}) {
       }
 
       try {
+        // Marked in flight so a concurrent `enqueue` appends instead of
+        // replacing this item's payload — the success path below removes it
+        // by id, which would take a newer edit with it.
+        inFlightId = id;
         await handler(item.payload);
         saveItems(loadItems().filter((i) => i.id !== id));
         saveMeta({ ...loadMeta(), lastSuccessAt: new Date().toISOString() });
@@ -250,6 +324,8 @@ export async function drain(opts = {}) {
             : i
         )));
         if (!firstError) { firstError = errMsg; firstErrorKind = item.kind; }
+      } finally {
+        inFlightId = null;
       }
     }
 
@@ -296,6 +372,18 @@ export function getStatus() {
     // drains, retried only when the user explicitly asks. Surfaced as a
     // needs-attention count rather than left to rotate invisibly.
     stuck: items.filter((i) => i.quarantined).length,
+    // v1.13 Item 1a — the count alone said "something is stuck" and nothing
+    // about WHAT, which is not enough to act on and not enough to report.
+    // These two answer "what stopped, and since when", so Settings can say it
+    // in words and a user can tell us something useful when they write in.
+    //
+    // Kinds are de-duplicated: five failing exams are one problem, and a list
+    // that repeats a kind five times reads as five.
+    stuckKinds: Array.from(new Set(items.filter((i) => i.quarantined).map((i) => i.kind))),
+    stuckSince: items
+      .filter((i) => i.quarantined)
+      .map((i) => i.createdAt)
+      .sort()[0] || null,
   };
   return cachedStatus;
 }
@@ -383,6 +471,17 @@ const KIND_DISPATCH = {
   // Non-study blockers — training, clubs, shifts.
   upsert_commitment: (p) => sync.upsertCommitment(p),
   delete_commitment: (p) => sync.deleteCommitment(p.id),
+  // v1.13 Tier 2 — lesson attendance (#31).
+  upsert_attendance: (p) => sync.upsertAttendance(p),
+  delete_attendance: (p) => sync.deleteAttendance(p.id),
+  // v1.13 Item 1b — the notebook. A note is queued like any other entity;
+  // its ATTACHMENT UPLOAD is not, for the same reason assignment uploads are
+  // not — a File cannot survive the JSON round trip this queue is persisted
+  // through. Only the delete queues.
+  upsert_note: (p) => sync.upsertNote(p),
+  delete_note: (p) => sync.deleteNote(p.id),
+  upsert_note_attachment: (p) => sync.upsertNoteAttachment(p),
+  delete_note_attachment: (p) => sync.deleteNoteAttachment(p),
   // v1.12 Item 0 — one row per user per app per day, written on foreground.
   // Queued rather than pushed directly for two reasons: a cold start can
   // foreground before `adoptSession()` has resolved, and RLS would reject the

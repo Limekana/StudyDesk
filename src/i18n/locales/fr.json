@@ -30,7 +30,8 @@
     "plan": "Plan",
     "grades": "Notes",
     "timer": "Minuteur",
-    "stats": "Stats"
+    "stats": "Stats",
+    "notebook": "Carnet"
   },
   "topbar": {
     "nextUp": "À suivre"
@@ -106,6 +107,7 @@
     "errGoogleStart": "Impossible de démarrer la connexion Google",
     "errGoogleFailed": "Échec de la connexion Google",
     "desktopBrowser": "Terminez la connexion dans votre navigateur, puis revenez ici.",
+    "errDesktopNoListener": "La connexion sur ordinateur est indisponible pour ce lancement. Redémarrez StudyDesk ou connectez-vous par e-mail ci-dessous.",
     "errCallback": "Échec du rappel de connexion",
     "errGeneric": "Échec de l'authentification",
     "errInvalidCredentials": "E-mail ou mot de passe incorrect.",
@@ -293,7 +295,45 @@
       "other": "Autre"
     },
     "discord": "Communauté Discord",
-    "discordSub": "Questions, rapports de bugs et la suite du programme"
+    "discordSub": "Questions, rapports de bugs et la suite du programme",
+    "queueStoppedTitle": "La synchronisation s'est arrêtée",
+    "queueStoppedRetry": "Réessayer",
+    "queueStoppedBody_one": "Une modification n'a pas pu être envoyée après plusieurs tentatives ; la file s'est donc arrêtée plutôt que de réessayer indéfiniment. Rien n'est perdu — elle est toujours sur cet appareil.",
+    "queueStoppedBody_other": "{{count}} modifications n'ont pas pu être envoyées après plusieurs tentatives ; la file s'est donc arrêtée plutôt que de réessayer indéfiniment. Rien n'est perdu — elles sont toujours sur cet appareil.",
+    "queueStoppedWhat": "En attente : {{kinds}}",
+    "queueStoppedSince": "Arrêtée depuis {{when}}",
+    "queueStoppedSignIn": "Connectez-vous pour les envoyer.",
+    "kind": {
+      "upsert_subject": "un cours",
+      "delete_subject": "un cours supprimé",
+      "upsert_grade": "une note",
+      "delete_grade": "une note supprimée",
+      "log_session": "une session d'étude",
+      "update_session": "une modification de session",
+      "delete_session": "une session supprimée",
+      "upsert_assignment": "un devoir",
+      "delete_assignment": "un devoir supprimé",
+      "upsert_exam": "un examen",
+      "delete_exam": "un examen supprimé",
+      "upsert_action": "une tâche",
+      "delete_action": "une tâche supprimée",
+      "upsert_planned": "un bloc planifié",
+      "delete_planned": "un plan supprimé",
+      "upsert_term": "une période",
+      "delete_term": "une période supprimée",
+      "upsert_timetable": "un cours à l'emploi du temps",
+      "delete_timetable": "un cours supprimé",
+      "upsert_commitment": "un engagement",
+      "delete_commitment": "un engagement supprimé",
+      "delete_attachment": "une pièce jointe supprimée",
+      "submit_feedback": "un retour",
+      "record_app_open": "des données d'usage"
+    },
+    "weekStartLbl": "Calendrier",
+    "weekStart": "La semaine commence le",
+    "weekStartAuto": "Automatique ({{day}})",
+    "weekStartSaved": "Début de semaine mis à jour.",
+    "weekStartNote": "Automatique suit votre langue et votre région. Changez-le si votre emploi du temps commence un autre jour."
   },
   "sdob": {
     "brand": "Arrête de choisir. Commence à réviser.",
@@ -506,7 +546,9 @@
         "open": "Ouvrir le minuteur",
         "openWith": "Ouvrir le minuteur — {{task}}",
         "aria": "{{label}}, {{time}} — ouvrir le minuteur"
-      }
+      },
+      "courseAria": "Cours pour ce bloc",
+      "courseNone": "Aucun cours"
     },
     "pl": {
       "assignments": "Devoirs",
@@ -554,7 +596,9 @@
       "studyStart": "Début des révisions :",
       "studyFor": "Réviser : {{label}}",
       "prepareFor": "Préparer : {{label}}",
-      "topicMore": " (+{{n}} de plus)"
+      "topicMore": " (+{{n}} de plus)",
+      "editExam": "Modifier l'examen",
+      "examDate": "Date de l'examen"
     },
     "md": {
       "addAssignment": "Ajouter un devoir",
@@ -768,7 +812,14 @@
     "lessonDeleted": "Cours supprimé",
     "lessonsToday": "{{n}} cours",
     "addOn": "Ajouter un cours le {{day}}",
-    "warnNoDates": "Cette période n'a pas de date de début, ses cours n'apparaîtront donc pas dans le calendrier. Ajoutez-en une ici ou à un niveau supérieur."
+    "warnNoDates": "Cette période n'a pas de date de début, ses cours n'apparaîtront donc pas dans le calendrier. Ajoutez-en une ici ou à un niveau supérieur.",
+    "sections": "Sections de l'emploi du temps",
+    "tabSchedule": "Horaire",
+    "fRepeat": "Répétition",
+    "repeatEvery": "Chaque semaine",
+    "repeatOdd": "Semaine A (impaires)",
+    "repeatEven": "Semaine B (paires)",
+    "repeatNote": "Compté depuis le début de cette période : la semaine 1 de la période est la semaine A."
   },
   "at": {
     "title": "Pièces jointes",
@@ -831,5 +882,128 @@
     },
     "dismiss": "Pas maintenant",
     "thanks": "Merci, ça nous aide."
+  },
+  "appearance": {
+    "title": "Apparence",
+    "lighting": "Éclairage",
+    "character": "Caractère",
+    "mode": {
+      "light": "Clair",
+      "dark": "Sombre",
+      "black": "Noir"
+    },
+    "modeNote": {
+      "light": "Papier crème",
+      "dark": "Chaud, sans éblouissement",
+      "black": "Noir absolu · AMOLED"
+    },
+    "theme": {
+      "free": "Studio",
+      "stacks": "Stacks",
+      "slate": "Slate"
+    },
+    "themeNote": {
+      "free": "Par défaut",
+      "stacks": "Soutiens",
+      "slate": "Soutiens",
+      "locked": "Soutiens"
+    },
+    "characterNote": "Sombre et Noir relèvent de l'éclairage — ils baissent la page. Stacks et Slate relèvent du caractère : un bureau de prêt de bibliothèque et un tableau noir, chacun avec sa typographie, ses filets et ses marques. Ce ne sont pas l'option sombre, et ne l'ont jamais été.",
+    "lockedNote": "Stacks et Slate se débloquent pour ceux qui soutiennent l'app. Sombre et Noir sont gratuits, et le resteront.",
+    "lightingInThemeNote": "Stacks et Slate ont leur propre éclairage. Votre choix revient dès que vous repassez à Studio."
+  },
+  "storage": {
+    "title": "Cet appareil n'a plus d'espace",
+    "quotaBody": "StudyDesk n'a pas pu enregistrer vos dernières modifications sur cet appareil — son stockage est plein.",
+    "blockedBody": "StudyDesk n'a pas pu enregistrer vos dernières modifications sur cet appareil — le stockage est indisponible ou bloqué.",
+    "stakes": "Tout ce que vous avez ajouté depuis le dernier enregistrement sera perdu à la fermeture. Exportez maintenant pour le conserver.",
+    "usage": "StudyDesk utilise environ {{ours}} sur les {{total}} stockés par ce site.",
+    "export": "Exporter mes données",
+    "dismiss": "Ignorer"
+  },
+  "nb": {
+    "treeLabel": "Cours et notes",
+    "scopedToSession": "Limité à la session",
+    "newNote": "Nouvelle note",
+    "untitled": "Note sans titre",
+    "unfiled": "Non classées",
+    "edited": "Modifiée {{when}}",
+    "savedToSession": "Enregistrée dans la session",
+    "emptyTitle": "Choisissez une note, ou commencez-en une.",
+    "editorLine": "Ligne {{n}} de la note",
+    "formatBar": "Mise en forme",
+    "highlightRoles": "Couleur de surlignage",
+    "bold": "Gras",
+    "italic": "Italique",
+    "underline": "Souligné",
+    "highlight": "Surligner",
+    "h1": "Titre 1",
+    "h2": "Titre 2",
+    "bullet": "Liste à puces",
+    "numbered": "Liste numérotée",
+    "checklist": "Liste de contrôle",
+    "insertPhoto": "Insérer une photo",
+    "hlRole": {
+      "1": "Repère — important",
+      "2": "Question — incertain",
+      "3": "Réglé — confirmé"
+    },
+    "delete": "Supprimer la note",
+    "confirmDelete": "Supprimer cette note ? Cette action est irréversible."
+  },
+  "feed": {
+    "title": "Flux de calendrier",
+    "subscribe": "S'abonner",
+    "refresh": "Actualiser",
+    "syncing": "Synchronisation…",
+    "remove": "Supprimer le flux",
+    "urlLabel": "Adresse du flux",
+    "courseLabel": "Classer dans",
+    "noCourse": "Aucun cours",
+    "itemCount_one": "{{count}} élément",
+    "itemCount_other": "{{count}} éléments",
+    "synced": "{{added}} nouveaux, {{updated}} mis à jour.",
+    "removed_one": "Flux supprimé, {{n}} élément supprimé.",
+    "removed_other": "Flux supprimé, {{n}} éléments supprimés.",
+    "help": "La plupart des systèmes scolaires publient une adresse de calendrier privée à laquelle s'abonner — cherchez « Calendar feed », « S'abonner » ou un lien .ics sur votre page de calendrier. Fonctionne avec Canvas, Moodle, Blackboard, Google Classroom et la plupart des emplois du temps universitaires.",
+    "limits": "Les échéances, les titres et les descriptions arrivent tout seuls. Le type de devoir, les points et l'état de rendu ne font pas partie d'un flux de calendrier et n'apparaîtront donc pas. Les événements récurrents — un cours hebdomadaire, par exemple — sont importés pour l'instant comme une seule date, pas comme tout le semestre.",
+    "deviceOnly": "L'adresse reste sur cet appareil et n'est jamais synchronisée — quiconque la possède peut lire votre calendrier. Les dates importées, elles, se synchronisent comme n'importe quel devoir.",
+    "err": {
+      "invalid-url": "Cela ne ressemble pas à une adresse web.",
+      "duplicate": "Vous êtes déjà abonné à cette adresse.",
+      "not-found": "L'adresse n'a rien renvoyé (404). Vérifiez qu'il s'agit du lien complet.",
+      "forbidden": "Le serveur a refusé la requête. L'adresse a peut-être été réinitialisée — copiez-la à nouveau.",
+      "not-a-calendar": "Cette adresse a renvoyé une page, pas un calendrier. C'est peut-être la page web du calendrier plutôt que son lien de flux.",
+      "too-large": "Ce flux est trop volumineux à importer.",
+      "cors": "Un navigateur ne peut pas récupérer un calendrier depuis un autre site. Utilisez l'application Android.",
+      "http": "Le serveur a renvoyé une erreur.",
+      "network": "Impossible d'atteindre cette adresse."
+    },
+    "repeatingNote": "{{count}} événement récurrent importé comme une seule date",
+    "repeatingNote_other": "{{count}} événements récurrents importés comme une seule date chacun"
+  },
+  "att": {
+    "tab": "Présence",
+    "prevWeek": "Précédente",
+    "nextWeek": "Suivante",
+    "thisWeek": "Cette semaine",
+    "noLessons": "Aucun cours",
+    "noData": "Pas encore de données",
+    "forTerm": "en {{name}}",
+    "allTime": "au total",
+    "present": "{{n}} présent",
+    "absent": "{{n}} absent",
+    "cancelled": "{{n}} annulé",
+    "rescheduled": "{{n}} reporté",
+    "uncountedNote": "Les cours annulés et reportés ne sont pas comptés — ils n'ont pas eu lieu, donc ils ne figurent dans aucune moitié du pourcentage.",
+    "byCourse": "Par cours",
+    "unmarked": "non marqué",
+    "cycleAria": "{{lesson}} — {{status}}. Touchez pour changer.",
+    "status": {
+      "present": "présent",
+      "absent": "absent",
+      "cancelled": "annulé",
+      "rescheduled": "reporté"
+    }
   }
 }
