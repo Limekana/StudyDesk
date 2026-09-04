@@ -16,6 +16,7 @@ import {
   enterBehaviour, indentBehaviour, backspaceAtStart, isList,
 } from './inputRules.js';
 import { useKeyboardInset } from './useKeyboardInset.js';
+import { isComposing, compositionTracking } from '../../lib/imeSubmit.js';
 
 // Desktop shortcuts, §5. Word/Docs conventions, unchanged — people arrive
 // already knowing these and an app that reassigns them is picking a fight it
@@ -44,6 +45,10 @@ function matchShortcut(e) {
   if (k === 'i') return { kind: 'mark', mark: MARK.ITALIC };
   if (k === 'u') return { kind: 'mark', mark: MARK.UNDERLINE };
   if (k === '\\') return { kind: 'clear' };
+  // ime-ok: this matcher is pure and is only ever reached from NoteEditor's
+  // keydown, which returns on `isComposing(e, el)` before calling it. It is
+  // also mod-gated — every branch above requires Ctrl/Cmd — so the keystroke
+  // is Ctrl+Enter, not the bare Enter an IME commits with.
   if (e.key === 'Enter') return { kind: 'toggleCheck' };
   return null;
 }
@@ -174,11 +179,19 @@ export default function NoteEditor({
     const at = el.selectionStart;
     const to = el.selectionEnd;
 
-    // Composition guard. While an IME is composing, every key belongs to the
-    // IME and intercepting one drops a character or commits a half-word. The
-    // `229` check is the legacy signal some Android keyboards still send
-    // instead of setting isComposing.
-    if (e.nativeEvent?.isComposing || e.keyCode === 229) return;
+    // Composition guard, and it is the FIRST thing this handler does. While an
+    // IME is composing, every key belongs to the IME: Enter commits the
+    // candidate, Tab cycles it, Backspace deletes from its buffer. Every
+    // branch below would steal one of those.
+    //
+    // Routed through the shared helper rather than checked inline. The inline
+    // version this replaces tested `isComposing` and keyCode 229 — two of the
+    // three signals — and missed the one the helper exists for: some Android
+    // WebView builds have already cleared `isComposing` by the time keydown is
+    // dispatched, which is #35 reappearing through the very check meant to
+    // catch it. The third signal is a flag we maintain ourselves, from
+    // `compositionTracking()` on the textarea below.
+    if (isComposing(e, el)) return;
 
     const sc = matchShortcut(e);
     if (sc) {
@@ -230,6 +243,10 @@ export default function NoteEditor({
       return;
     }
 
+    // ime-ok: guarded by the single `isComposing(e, el)` early return at the
+    // top of this handler. One guard covers Enter, Tab and Backspace together,
+    // which is what this handler needs — a per-branch check would leave the
+    // other two keys open.
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       const cur = { ...parse(draft)[0], id: focus };
@@ -388,6 +405,10 @@ export default function NoteEditor({
                 rows={1}
                 onChange={onInput}
                 onKeyDown={onKeyDown}
+                // Maintains signal 3 for the guard in `onKeyDown`. Without
+                // this the guard is back to the two signals that were not
+                // enough on Android.
+                {...compositionTracking()}
                 onBlur={blurToRead}
                 spellCheck={false}
                 // §5: "No auto-correct, no smart quotes, no em-dash

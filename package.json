@@ -19,7 +19,7 @@
     "check:logic": "node scripts/check-logic.mjs",
     "check:notebook-colours": "node scripts/check-notebook-colours.mjs",
     "build": "vite build",
-    "lint": "node scripts/check-contrast.mjs && node scripts/check-notebook-colours.mjs && node scripts/check-logic.mjs && eslint . --report-unused-disable-directives --max-warnings 0",
+    "lint": "node scripts/check-ime.mjs && node scripts/check-contrast.mjs && node scripts/check-notebook-colours.mjs && node scripts/check-logic.mjs && eslint . --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "cap:sync": "npm run build && cap sync android",
     "electron:dev": "electron .",
