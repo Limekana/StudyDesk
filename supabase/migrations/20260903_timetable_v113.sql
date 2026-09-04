@@ -1,8 +1,10 @@
 -- StudyDesk v1.13 Tier 2 — alternating weeks, and lesson attendance.
 --
--- ── APPLY BEFORE THE APP BUILD REACHES USERS ──────────────────────────────
--- Not applied by the builder; owner confirms DDL, per `P1`. The client
--- degrades cleanly until it lands — see the notes on each change below.
+-- ── APPLIED 2026-09-04, on the owner's instruction ────────────────────────
+-- Live on Nexus OS Suite as `v113_timetable_week_parity_and_lesson_attendance`
+-- (the covering index below went as `v113_lesson_attendance_fk_covering_index`).
+-- Kept here as the readable record of what was run and why. The client
+-- degraded cleanly before it landed — see the notes on each change below.
 --
 -- Additive only. One new nullable column and one new table. Nothing is
 -- altered or dropped, so no shipped app version can regress from applying it,
@@ -91,12 +93,30 @@ create unique index if not exists lesson_attendance_entry_date_uidx
 create index if not exists lesson_attendance_user_updated_idx on public.lesson_attendance (user_id, updated_at);
 create index if not exists lesson_attendance_date_idx         on public.lesson_attendance (user_id, date);
 
+-- Covers the FK on its own. The unique index above leads on user_id, so it
+-- does not — and without this, deleting a timetable entry sequentially scans
+-- this table to find the rows to cascade. Caught by the performance advisor
+-- on the first run after applying, which is why it is a second migration.
+create index if not exists lesson_attendance_entry_idx
+  on public.lesson_attendance (timetable_entry_id);
+
+-- `auth.uid()` wrapped in a scalar subquery, per
+-- `rls_initplan_wrap_auth_uid_in_select` — unwrapped it is re-evaluated once
+-- per row and the advisor flags it.
+--
 -- `P2`: RLS enabled with its policies in the same migration. No exceptions.
 alter table public.lesson_attendance enable row level security;
 
-create policy lesson_attendance_select on public.lesson_attendance for select using (auth.uid() = user_id);
-create policy lesson_attendance_insert on public.lesson_attendance for insert with check (auth.uid() = user_id);
-create policy lesson_attendance_update on public.lesson_attendance for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy lesson_attendance_delete on public.lesson_attendance for delete using (auth.uid() = user_id);
+create policy lesson_attendance_select on public.lesson_attendance for select using ((select auth.uid()) = user_id);
+create policy lesson_attendance_insert on public.lesson_attendance for insert with check ((select auth.uid()) = user_id);
+create policy lesson_attendance_update on public.lesson_attendance for update using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+create policy lesson_attendance_delete on public.lesson_attendance for delete using ((select auth.uid()) = user_id);
 
--- After applying: re-run `get_advisors(type: security)`, per `P2`.
+comment on column public.timetable_entries.week_parity is 'NULL = every week (what every pre-v1.13 row means, so no backfill). 1 = odd weeks, 2 = even weeks, counted from the start of the entry''s academic term — not the ISO week number.';
+comment on table public.lesson_attendance is 'StudyDesk-owned. One row per (timetable_entry, date). status is present|absent|cancelled|rescheduled as free text, not an enum, so a newer client cannot fail the upsert. CANCELLED IS NOT AN ABSENCE — the percentage is a client aggregate and counts neither cancelled nor rescheduled in either half.';
+
+-- Advisors after applying: security clean (no new findings — the one
+-- outstanding WARN is `auth_leaked_password_protection`, an auth setting that
+-- predates this and is unrelated). Performance clean for these tables once the
+-- covering index above was added; the `unused_index` INFOs are the expected
+-- state of an index on an empty table.

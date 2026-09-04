@@ -4,11 +4,10 @@
 -- here: `notebook_entries` (user_id, course_id FK, nullable lesson_date,
 -- content) plus `notebook_attachments` mirroring `assignment_attachments`.
 --
--- ── APPLY THIS BEFORE THE APP BUILD REACHES USERS ─────────────────────────
--- Not applied by the builder. `P1` in the version registry is explicit that
--- migrations go through `apply_migration` against production, and the owner
--- rule is that Supabase DDL is confirmed first. The client degrades cleanly
--- until it lands: `pullAllStudyData` treats a missing-table error on the
+-- ── APPLIED 2026-09-04, on the owner's instruction ────────────────────────
+-- Live on Nexus OS Suite as `v113_notebook_entries_and_attachments`. Kept here
+-- as the readable record of what was run and why. The client degraded cleanly
+-- before it landed: `pullAllStudyData` treats a missing-table error on the
 -- notebook selects as "no notes yet" rather than failing the whole pull, so
 -- an app shipped ahead of this migration loses the feature and nothing else.
 --
@@ -76,20 +75,31 @@ create index if not exists notebook_entries_session_idx      on public.notebook_
 create index if not exists notebook_attachments_entry_idx    on public.notebook_attachments (entry_id);
 create index if not exists notebook_attachments_user_idx     on public.notebook_attachments (user_id, updated_at);
 
+-- `auth.uid()` is wrapped in a scalar subquery on every policy. Postgres
+-- otherwise re-evaluates it once PER ROW, which the performance advisor
+-- flags as `auth_rls_initplan`; the project already has a migration
+-- (`rls_initplan_wrap_auth_uid_in_select`) that did this to the tables that
+-- existed then, and there is no reason to add new tables that need it again.
+--
 -- `P2`: a new table ships with RLS enabled and a policy in the SAME migration.
 -- No exceptions, no "I'll add it after". These are people's revision notes —
 -- a policy hole here is a real data breach.
 alter table public.notebook_entries     enable row level security;
 alter table public.notebook_attachments enable row level security;
 
-create policy notebook_entries_select on public.notebook_entries for select using (auth.uid() = user_id);
-create policy notebook_entries_insert on public.notebook_entries for insert with check (auth.uid() = user_id);
-create policy notebook_entries_update on public.notebook_entries for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy notebook_entries_delete on public.notebook_entries for delete using (auth.uid() = user_id);
+create policy notebook_entries_select on public.notebook_entries for select using ((select auth.uid()) = user_id);
+create policy notebook_entries_insert on public.notebook_entries for insert with check ((select auth.uid()) = user_id);
+create policy notebook_entries_update on public.notebook_entries for update using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+create policy notebook_entries_delete on public.notebook_entries for delete using ((select auth.uid()) = user_id);
 
-create policy notebook_attachments_select on public.notebook_attachments for select using (auth.uid() = user_id);
-create policy notebook_attachments_insert on public.notebook_attachments for insert with check (auth.uid() = user_id);
-create policy notebook_attachments_update on public.notebook_attachments for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy notebook_attachments_delete on public.notebook_attachments for delete using (auth.uid() = user_id);
+create policy notebook_attachments_select on public.notebook_attachments for select using ((select auth.uid()) = user_id);
+create policy notebook_attachments_insert on public.notebook_attachments for insert with check ((select auth.uid()) = user_id);
+create policy notebook_attachments_update on public.notebook_attachments for update using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+create policy notebook_attachments_delete on public.notebook_attachments for delete using ((select auth.uid()) = user_id);
 
--- After applying: re-run `get_advisors(type: security)`, per `P2`.
+comment on table public.notebook_entries is 'StudyDesk-owned. One note per row; content is MARKDOWN SOURCE, verbatim. Highlights are stored as a role (==x==, =2=x=2=), never a colour, so a note cannot strand a light-mode colour on a dark page. course_id and session_id are set null on delete: written work outlives the course it was filed under.';
+comment on table public.notebook_attachments is 'StudyDesk-owned metadata for files in the private notebook bucket. Mirrors assignment_attachments so one attachment path serves both.';
+
+-- Advisors after applying, per `P2`: security clean. No RLS findings on either
+-- table; the one outstanding WARN is `auth_leaked_password_protection`, an
+-- auth setting unrelated to this migration.
