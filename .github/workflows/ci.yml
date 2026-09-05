@@ -38,6 +38,15 @@ jobs:
       - name: IME guard
         run: node scripts/check-ime.mjs
 
+      # Static, no browser, so it runs early and covers EVERY component —
+      # including views the boot gate's tab sweep does not reach. A dependency
+      # array evaluated during render that names a value declared further down
+      # throws a TDZ ReferenceError and blanks the app. That has shipped three
+      # times (v1.10 App.jsx, v1.13 App.jsx, v1.13 TimerView.jsx) with the
+      # build and eslint green each time.
+      - name: Dependency TDZ guard
+        run: npm run check:dep-tdz
+
       # The v1.13 incident that motivates the two steps below: `vite build`
       # failed on the dev machine, dist/ kept its two-day-old contents, `cap
       # sync` copied that stale dist/ into the APK, and `assembleRelease`

@@ -130,20 +130,75 @@ try {
   // after `playwright install chromium`), Playwright resolves its own.
   const executablePath = process.env.BOOT_CHECK_CHROMIUM || undefined;
   browser = await chromium.launch(executablePath ? { executablePath } : {});
-  const page = await (await browser.newContext()).newPage();
+  // A phone viewport. The mobile tab bar is what the sweep below clicks, and
+  // the phone is the platform this app ships on.
+  const page = await (await browser.newContext({
+    viewport: { width: 393, height: 851 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+    hasTouch: true,
+  })).newPage();
 
   page.on('pageerror', (e) => problems.push(`Uncaught exception:\n      ${(e.stack || e.message).split('\n').join('\n      ')}`));
   page.on('console', (m) => {
     if (m.type() === 'error') problems.push(`console.error: ${m.text()}`);
   });
 
+  // Skip onboarding so the tab sweep below reaches the real views.
+  await page.addInitScript(() => {
+    try { localStorage.setItem('studydesk-onboarded', '1'); } catch { /* private mode */ }
+  });
+
   await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: 'load' });
   await page.waitForTimeout(SETTLE_MS);
 
-  rootChildren = await page.evaluate(() => {
+  const countRoot = () => page.evaluate(() => {
     const el = document.getElementById('root');
     return el ? el.children.length : -1;
   });
+
+  rootChildren = await countRoot();
+
+  // ── Then open each main view ───────────────────────────────────────────
+  //
+  // The first screen is not the whole app. `courseId` in TimerView's persist
+  // effect blanked the entire app the moment the Timer tab was opened, and a
+  // gate that only loads the landing screen sails straight past that — this
+  // one did, on the run that shipped it.
+  //
+  // Deliberately cannot fail on a missing selector: if a tab is not found it
+  // is skipped. The only failure modes are the two that matter — an uncaught
+  // exception, or `#root` going empty. That keeps a UI-driving check from
+  // becoming the flaky step everyone learns to re-run.
+  if (rootChildren > 0) {
+    const guest = page.locator('button', { hasText: /continue as guest|start studying/i }).first();
+    if (await guest.count().catch(() => 0)) {
+      await guest.click({ timeout: 3000 }).catch(() => {});
+      await page.waitForTimeout(2000);
+    }
+
+    for (const tab of ['Study', 'Plan', 'Grades', 'Timer', 'Notebook']) {
+      const opened = await page.evaluate((name) => {
+        const el = [...document.querySelectorAll('button,[role=button],a,div,span')]
+          .find((e) => (e.innerText || '').trim().toLowerCase() === name.toLowerCase()
+            && e.getBoundingClientRect().width > 0);
+        if (!el) return false;
+        el.click();
+        return true;
+      }, tab).catch(() => false);
+      if (!opened) continue;
+      await page.waitForTimeout(1500);
+
+      const n = await countRoot().catch(() => -1);
+      if (n <= 0) {
+        problems.push(
+          `Opening the ${tab} view emptied #root — the app went blank.\n` +
+          '      If there is an uncaught exception above, that is the cause.',
+        );
+        break;
+      }
+    }
+  }
 } catch (e) {
   problems.push(`The browser could not load the app at all: ${e.message}`);
 } finally {

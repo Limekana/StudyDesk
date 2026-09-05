@@ -114,6 +114,45 @@ export default function TimerView({ state, onTimerComplete }) {
   useEffect(()=>{ customFocusRef.current=customFocus; },[customFocus]);
   useEffect(()=>{ modeRef.current=mode; },[mode]);
 
+  // ── Declared HERE, above the persist effect that lists it ────────────────
+  //
+  // v1.13 review. `courseId` is in the dependency array of the "persist timer
+  // state" effect below, and a dependency array is evaluated DURING RENDER. It
+  // used to be declared ~110 lines further down, next to the UI that sets it,
+  // so every render of this component read the binding inside its temporal
+  // dead zone and threw:
+  //
+  //     ReferenceError: Cannot access 'courseId' before initialization
+  //
+  // React unwound and committed nothing, so opening the Timer tab blanked the
+  // whole app — `#root` with zero children, the same signature as the v1.13
+  // cold-launch blocker (item G) and the same root cause, in a second file.
+  // The v1.13 notebook work added `courseId` to that effect for session
+  // scoping without moving the declaration above it.
+  //
+  // Keep every value a dependency array names declared above the effect that
+  // names it. `scripts/check-dep-tdz.mjs` fails the build if that stops being
+  // true anywhere in the app.
+  // v1.13 Item 1b — WHICH COURSE this block is for, chosen before it starts
+  // rather than after it ends.
+  //
+  // Until now the course was picked at SAVE time only, and the dropdown below
+  // set the free-text `task` from a course NAME — a label, not a link. That
+  // was enough when the only consumer was the saved row. It is not enough for
+  // the notebook, whose §3 says the tree "auto-scopes to the course selected
+  // in the timer": there was no such thing to read.
+  //
+  // Two things fall out of naming it. The notebook can scope, and
+  // SaveSessionSheet can arrive pre-filled instead of asking again for
+  // something the user already said — which is one less field on the sheet
+  // whose two silent `return`s were the 1.12.1 H1 defect.
+  const [courseId, setCourseId] = useState(() => _saved.courseId || '');
+  // Mirrored into a ref for the same reason `taskRef` exists: the completion
+  // callbacks are memoised and reading state directly would either capture a
+  // stale value or force the callback to rebuild on every keystroke.
+  const courseIdRef = useRef(courseId);
+  useEffect(()=>{ courseIdRef.current = courseId; },[courseId]);
+
   // Persist timer state to localStorage so tab-switching preserves it
   useEffect(() => {
     try {
@@ -231,25 +270,6 @@ export default function TimerView({ state, onTimerComplete }) {
   }, [running, handlePhaseEnd]);
 
   const courses = Object.values(state.courses).filter(c => !c.deletedAt);
-  // v1.13 Item 1b — WHICH COURSE this block is for, chosen before it starts
-  // rather than after it ends.
-  //
-  // Until now the course was picked at SAVE time only, and the dropdown below
-  // set the free-text `task` from a course NAME — a label, not a link. That
-  // was enough when the only consumer was the saved row. It is not enough for
-  // the notebook, whose §3 says the tree "auto-scopes to the course selected
-  // in the timer": there was no such thing to read.
-  //
-  // Two things fall out of naming it. The notebook can scope, and
-  // SaveSessionSheet can arrive pre-filled instead of asking again for
-  // something the user already said — which is one less field on the sheet
-  // whose two silent `return`s were the 1.12.1 H1 defect.
-  const [courseId, setCourseId] = useState(() => _saved.courseId || '');
-  // Mirrored into a ref for the same reason `taskRef` exists: the completion
-  // callbacks are memoised and reading state directly would either capture a
-  // stale value or force the callback to rebuild on every keystroke.
-  const courseIdRef = useRef(courseId);
-  useEffect(()=>{ courseIdRef.current = courseId; },[courseId]);
   const totalSecs = phase==="focus" ? customFocus*60 : phase==="short" ? SHORT_SECS : LONG_SECS;
   // A count-up has no portion-complete, so the ring cannot honestly show one.
   // It sweeps the current minute instead - true information, and it keeps the
