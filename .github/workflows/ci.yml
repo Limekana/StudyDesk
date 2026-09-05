@@ -64,6 +64,30 @@ jobs:
       - name: Native plugin registration
         run: npm run check:native-plugins
 
+      # The boot gate. Loads the built bundle in a real browser and asserts the
+      # app actually renders — see scripts/check-boot.mjs for the incident.
+      #
+      # v1.13 cold-launched to a completely blank screen on device: `#root`
+      # present, zero children, React never committed anything. The cause was a
+      # temporal-dead-zone read of `session` from a dependency array declared
+      # above its useState. The identical bug shipped in v1.10.
+      #
+      # Every gate above stays GREEN on that bug. `npm run build` succeeds
+      # because it is valid JavaScript and the error is at runtime; eslint's
+      # react-hooks rules check which values a dep array lists, not whether they
+      # are initialised; `npm run dev` does not reproduce it because unbundled
+      # ESM evaluates differently from the production chunk; and the Vercel
+      # preview reports Ready because the BUILD succeeded, not because anyone
+      # loaded the page. Verified by reverting the fix: build 0, lint 0, this
+      # step 1.
+      #
+      # Only a production build loaded in a browser sees it, which is this step.
+      - name: Install Chromium for the boot gate
+        run: npx playwright install --with-deps chromium
+
+      - name: Boot gate
+        run: npm run check:boot
+
       # There is no TypeScript here by design, so lint is the only static
       # check this app has.
       - name: Lint

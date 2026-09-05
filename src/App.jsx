@@ -1049,6 +1049,45 @@ export default function App() {
     } catch { return init; }
   });
   const { t } = useTranslation();
+
+  // ── Auth session — DECLARED FIRST, DELIBERATELY ────────────────────────────
+  //
+  // `session` is read by dependency arrays scattered through this component,
+  // and a dependency array is evaluated DURING RENDER. A `const` is in its
+  // temporal dead zone until its own line runs, so any `[..., session]` above
+  // this point throws `ReferenceError: Cannot access 'session' before
+  // initialization` on the very first render. React unwinds, nothing is
+  // committed into `#root`, and the user gets a blank page in the app's cream
+  // ground — no crash, no console output in a release build, nothing.
+  //
+  // THIS HAS NOW SHIPPED TWICE. v1.10 hit it with the account-onboarding
+  // effect; the fix then was a comment telling the next author to keep their
+  // effect below the declaration. v1.13's notebook work added four more
+  // `session` readers above it — the debounced note-push effect, its flush,
+  // the note delete, and the export callback — and blanked the app again, this
+  // time only discovered by installing a signed APK on a physical phone and
+  // dumping the view hierarchy to find `#root` present with zero children.
+  //
+  // "Remember to declare your effect below this line" is not a fix, because it
+  // asks every future author to know about a bug they have never seen. Hoisting
+  // the declaration to the top of the component is: there is no longer anywhere
+  // above it to put an effect. Keep it here.
+  //
+  // Why nothing caught it: `npm run build` succeeds (this is valid JS, the
+  // error is at runtime), eslint's react-hooks rules do not model TDZ, and
+  // `npm run dev` does not reproduce it — the dev server's unbundled ESM
+  // evaluates the module differently from the production chunk. Only a
+  // production build, actually loaded in a browser, shows it. That is what
+  // `npm run check:boot` now does, and it runs in CI.
+  //
+  // undefined = auth still resolving · null = signed out · object = signed in.
+  const [session, setSession] = useState(undefined);
+  // v1.1 — guest mode flag. When `session === null` AND `guest === true`, the
+  // app renders normally with cloud sync disabled (Supabase realtime + outbox
+  // are already session-gated, so this is a pure UI bypass — no other code
+  // changes needed). When the user signs in or signs out, the flag is cleared.
+  const [guest, setGuest] = useState(() => isGuestMode());
+
   const [onboarded, setOnboarded] = useState(() => {
     try { return localStorage.getItem("studydesk-onboarded") === "1"; } catch { return false; }
   });
@@ -1446,12 +1485,8 @@ export default function App() {
   }, [state, session, showFlash, t]);
 
   // ── Auth session ─────────────────────────────────────────────────────────────
-  const [session, setSession] = useState(undefined); // undefined = loading; null = signed out; object = signed in
-  // v1.1 — guest mode flag. When `session === null` AND `guest === true`, the
-  // app renders normally with cloud sync disabled (Supabase realtime + outbox
-  // are already session-gated, so this is a pure UI bypass — no other code
-  // changes needed). When the user signs in or signs out, the flag is cleared.
-  const [guest, setGuest] = useState(() => isGuestMode());
+  // `session` and `guest` are DECLARED AT THE TOP of this component, with the
+  // other state, not here. See the block comment there — it is the reason.
 
   // v1.10 - the account-level onboarding check. Declared HERE, below `session`,
   // rather than beside the `onboardChecked` state it drives: the dependency

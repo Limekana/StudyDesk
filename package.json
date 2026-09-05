@@ -20,6 +20,7 @@
     "check:notebook-colours": "node scripts/check-notebook-colours.mjs",
     "check:native-plugins": "node scripts/check-native-plugins.mjs",
     "check:dist-fresh": "node scripts/check-dist-fresh.mjs",
+    "check:boot": "node scripts/check-boot.mjs",
     "build": "vite build",
     "lint": "node scripts/check-ime.mjs && node scripts/check-contrast.mjs && node scripts/check-notebook-colours.mjs && node scripts/check-logic.mjs && eslint . --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
@@ -56,6 +57,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.26",
     "globals": "^16.5.0",
+    "playwright": "^1.49.1",
     "sharp": "^0.35.3",
     "vite": "^7.3.1"
   },
