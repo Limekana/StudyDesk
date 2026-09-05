@@ -19,11 +19,67 @@ import i18n from '../i18n';
 // Exported since v1.9 (Item 8): the home-screen widget renders outside the
 // WebView, so its date strings must be formatted here and handed over already
 // done. Same rule, one definition.
+//
+// ── Every tag returned here is VALIDATED first (v1.13 review) ─────────────
+//
+// `navigator.language` is not guaranteed to be a well-formed BCP-47 tag. Some
+// environments report a POSIX-style locale with an `@modifier` —
+// `en-US@posix`, `de-DE@euro`, `ca-ES@valencia` — and `Intl` rejects those
+// outright:
+//
+//     new Date().toLocaleDateString('en-US@posix')
+//     RangeError: Invalid language tag: en-US@posix
+//
+// This function fed `navigator.language` straight into `toLocaleDateString`
+// at a dozen call sites, several of them in render paths. A `RangeError`
+// during render is not caught anywhere, so React unwinds and commits nothing:
+// the app shows an empty `#root` over the cream ground. That is the SAME
+// blank-screen signature as the v1.13 TDZ blocker, reached through a
+// different door, and it would hit only users whose device reports an odd
+// locale — the hardest kind of bug to get a report about, because the app is
+// blank so there is nothing to report from.
+//
+// Found by the boot gate (`scripts/check-boot.mjs`) on its first CI run: the
+// headless Chromium shell reports `en-US@posix`, and the gate went red with
+// the RangeError and a zero-child `#root`. It was a real defect, not a test
+// artifact — the environment simply exposed a tag this code always assumed
+// could not exist.
+//
+// `undefined` is the final fallback rather than `'en'`: it tells `Intl` to use
+// the runtime's own default, which is always valid and better matches the
+// user's device than forcing English on them.
+function usableLocale(tag) {
+  if (!tag) return false;
+  try {
+    // Constructing the formatter is the only reliable test — a tag can be
+    // syntactically plausible and still be rejected.
+    new Intl.DateTimeFormat(tag);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Memoised on the two inputs. This is called for every formatted date, which
+// on the timetable grid is once per cell per render, and constructing an
+// Intl.DateTimeFormat to validate is not free.
+let localeCache = { lang: null, nav: null, out: undefined };
+
 export function formatLocale() {
   const lang = (i18n.language || 'en').split('-')[0];
   const nav = (typeof navigator !== 'undefined'
     && (navigator.languages?.[0] || navigator.language)) || '';
-  return nav.split('-')[0] === lang ? nav : lang;
+
+  if (localeCache.lang === lang && localeCache.nav === nav) return localeCache.out;
+
+  const preferred = nav.split('-')[0] === lang ? nav : lang;
+  let out;
+  if (usableLocale(preferred)) out = preferred;
+  else if (preferred !== lang && usableLocale(lang)) out = lang;   // drop the region, keep the language
+  else out = undefined;                                            // runtime default; never throws
+
+  localeCache = { lang, nav, out };
+  return out;
 }
 
 export function parseLocalDate(s) {
