@@ -161,15 +161,94 @@ function identityOf(kind, payload) {
  * themselves — so replacing a pending payload with a newer one loses nothing
  * and is strictly more correct than pushing the stale copy first.
  *
- * `attempts` and `quarantined` are deliberately PRESERVED across a coalesce.
- * Refreshing the payload must not silently revive a stuck item and re-fail
- * it; the row stays quarantined, stays counted by `getStatus`, and carries
- * the newest data for when the user presses Retry.
+ * `attempts` and `quarantined` are preserved across a coalesce of the SAME
+ * payload — reconcile re-manufacturing an identical snapshot must not reset a
+ * row's failure budget behind the user's back, which is what made the queue
+ * grow without bound before.
+ *
+ * A genuinely DIFFERENT payload is another matter entirely. See `revives`
+ * below: it clears quarantine, because otherwise a row that burned its budget
+ * on a transient failure would swallow every later edit to it, silently and
+ * for good.
  *
  * The one item never coalesced onto is the one currently in flight: `drain`
  * removes it by item id on success, so replacing its payload mid-await would
  * drop the newer edit with no path back.
  */
+
+/** Does a new payload carry anything the queued one did not?
+ *
+ *  v1.13 review, blocker B. Coalescing preserved `quarantined`, and `drain`
+ *  skips quarantined items until an explicit forced retry. Together those two
+ *  correct-looking rules meant that once a row burned its five attempts on a
+ *  TRANSIENT failure — an outage, a flaky connection, a 500 — every subsequent
+ *  edit to that row coalesced into the dead item and was never pushed.
+ *  Indefinitely. No error, no new item, no way for the user to find out except
+ *  a counter in a Settings panel they have no reason to open.
+ *
+ *  Before the coalescing existed, each fresh edit created a new item with
+ *  `attempts: 0` that pushed as soon as the network recovered. Reconcile is not
+ *  a net for this either: `findUnsynced` compares ids, so a note that has been
+ *  pushed even once exists remotely and is invisible to repair.
+ *
+ *  That is the "five hours of lost study" failure reached through a different
+ *  door, and it applies to notes — the most precious data in the app.
+ *
+ *  The distinction that fixes it without giving back the bounded queue: an
+ *  identical payload is reconcile re-manufacturing work that already failed,
+ *  and deserves no new budget. A different payload is the USER TYPING, and
+ *  their new words have never been given a chance to reach the server. So a
+ *  genuinely new payload revives the item; an identical one does not.
+ *
+ *  Self-limiting by construction: a row that truly cannot push burns at most
+ *  MAX_ATTEMPTS per user edit, not per drain, because only a real edit revives
+ *  it.
+ *
+ *  Compared by serialisation rather than field-by-field because payload shapes
+ *  differ per kind and this must not need updating when a kind gains a field.
+ *
+ *  Keys are SORTED first, so the comparison does not depend on the order two
+ *  call sites happen to write an object literal in. `upsert_note` is built in
+ *  both App.jsx (the debounced editor timer) and reconcile.js (the offline
+ *  repair pass); their key orders agree today, and nothing would have told
+ *  anyone if a future edit made them diverge. It would simply have started
+ *  reading identical reconcile work as a fresh user edit and handing it a new
+ *  attempt budget on every pass — quietly reintroducing the unbounded retry
+ *  this coalescing exists to stop. */
+function stableStringify(v) {
+  if (v === null || typeof v !== 'object') return JSON.stringify(v) ?? 'null';
+  if (Array.isArray(v)) return `[${v.map(stableStringify).join(',')}]`;
+  return `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${stableStringify(v[k])}`).join(',')}}`;
+}
+
+function payloadChanged(prev, next) {
+  try {
+    return stableStringify(prev) !== stableStringify(next);
+  } catch {
+    // Unserialisable payload (a cycle, a BigInt). Treat as changed: reviving a
+    // row that did not need it costs one retry, failing to revive one that did
+    // costs the user their edit.
+    return true;
+  }
+}
+
+/** Merge a new payload onto a queued item, deciding its failure budget. */
+function coalesceOnto(item, payload) {
+  if (!payloadChanged(item.payload, payload)) {
+    // Same work, already failed. Keep the budget and the quarantine.
+    return { ...item, payload };
+  }
+  return {
+    ...item,
+    payload,
+    attempts: 0,
+    quarantined: false,
+    // Cleared so the Settings panel does not keep showing the error from work
+    // that has since been superseded.
+    lastError: null,
+  };
+}
+
 export function enqueue(kind, payload) {
   if (!KIND_DISPATCH[kind]) {
     console.error('[outbox] unknown kind:', kind);
@@ -177,12 +256,36 @@ export function enqueue(kind, payload) {
   }
   const items = loadItems();
   const key = identityOf(kind, payload);
-  if (key) {
-    const at = items.findIndex(
-      (it) => it.id !== inFlightId && identityOf(it.kind, it.payload) === key,
-    );
-    if (at !== -1) {
-      items[at] = { ...items[at], payload };
+  const rowId = payload?.id;
+  if (key && typeof rowId === 'string' && rowId) {
+    // The LAST queued item touching this ROW, of any kind — not the first item
+    // matching `kind::id`.
+    //
+    // v1.13 review, blocker C. `kind` is part of the coalescing identity, so
+    // `upsert_*` and `delete_*` never coalesce with each other. Taking the
+    // FIRST match therefore moved a newer upsert BEHIND an older delete.
+    //
+    // Reachable offline in three taps. Attendance cycles status per tap and
+    // enqueues per tap, so tapping a lesson present -> ... -> null -> present
+    // while offline left the queue holding [upsert(X), delete(X), upsert(X)],
+    // and the third enqueue wrote its payload into index 0. Drain order became
+    // upsert then delete: the row ended up DELETED although the user's final
+    // state was "present", and local state disagreed with the server
+    // permanently. Same shape for any delete-then-recreate pair, in any table.
+    //
+    // Looking at the last item for the row makes the rule simple and total: if
+    // the newest thing queued for this row is the same kind, coalescing onto it
+    // preserves order by definition. If it is a conflicting kind, that item is
+    // newer than anything we could coalesce onto, so we must append and let
+    // FIFO carry the sequence.
+    let at = -1;
+    for (let i = items.length - 1; i >= 0; i -= 1) {
+      const it = items[i];
+      if (it.id === inFlightId) continue;
+      if (it.payload?.id === rowId) { at = i; break; }
+    }
+    if (at !== -1 && identityOf(items[at].kind, items[at].payload) === key) {
+      items[at] = coalesceOnto(items[at], payload);
       saveItems(items);
       void drain();
       return;
@@ -222,10 +325,41 @@ export function enqueue(kind, payload) {
 // Sort stability matters and is relied on: within a rank the original FIFO
 // order is preserved (Array.prototype.sort is stable, ES2019+), so two edits
 // to the same row still apply in the order the user made them.
+// v1.13 review. Two levels were not enough once the new tables landed.
+// `upsert_attendance` -> `timetable_entries` and `upsert_note_attachment` ->
+// `notebook_entries` were both rank 1, sitting at the same rank as their own
+// parents and relying on FIFO to keep parent before child. That is the same
+// incidental-ordering argument #38 disproved: reconcile emits parents and
+// children in a single pass, and nothing preserves their relative order across
+// a partial drain, a quarantine, or a coalesce.
+//
+// The two new parents cannot simply join rank 0, because they are children
+// themselves: `timetable_entries` carries `term_id` and `subject_id`, and
+// `notebook_entries` carries `course_id` and `session_id`. Promoting them
+// would put them alongside the very rows they depend on. So the scale grows a
+// third level instead:
+//
+//   0  roots      — subjects, terms, sessions. Depend on nothing here.
+//   1  middle     — timetable entries, notes. Children of a root, parents of a
+//                   leaf. Also the DEFAULT, which is why it stays correct for
+//                   every ordinary child that has no dependants of its own.
+//   2  leaves     — attendance, note attachments. Depend on a middle row and
+//                   nothing depends on them.
+//
+// Deletes are deliberately unranked (default 1). A delete's ordering
+// constraint is the reverse of an insert's — the child must go first — and
+// mixing the two into one scale would get one of them wrong. Every delete here
+// is either a soft delete or an ON DELETE CASCADE, so neither direction fails.
 const KIND_RANK = {
   upsert_subject: 0,
   upsert_term: 0,
   log_session: 0,
+
+  upsert_timetable: 1,
+  upsert_note: 1,
+
+  upsert_attendance: 2,
+  upsert_note_attachment: 2,
 };
 
 function rankOf(kind) {
@@ -238,6 +372,13 @@ function orderForDrain(items) {
     .map((item, i) => ({ item, i }))
     .sort((a, b) => rankOf(a.item.kind) - rankOf(b.item.kind) || a.i - b.i)
     .map(({ item }) => item);
+}
+
+/** Test seam for scripts/check-logic.mjs — the dependency ordering is a
+ *  correctness property (an FK violation quarantines the child), and asserting
+ *  it needs the ordering without a network. Not used by the app. */
+export function __drainOrderForTest(items) {
+  return orderForDrain(items);
 }
 
 let draining = false;
@@ -318,11 +459,47 @@ export async function drain(opts = {}) {
         // never left the queue, so it re-failed on every subsequent drain and
         // kept overwriting `lastError` with whichever child ran last.
         const quarantined = attempts >= MAX_ATTEMPTS;
-        saveItems(loadItems().map((i) => (
-          i.id === id
-            ? { ...i, attempts, quarantined, lastAttemptAt: new Date().toISOString(), lastError: errMsg }
-            : i
-        )));
+        const failed = {
+          ...item, attempts, quarantined,
+          lastAttemptAt: new Date().toISOString(), lastError: errMsg,
+        };
+
+        // v1.13 review, blocker D. `enqueue` never coalesces onto the in-flight
+        // item — correct, because the success path removes it by id and would
+        // take a newer edit with it — so a mutation arriving mid-push appends a
+        // second item for the same `kind::id`. Fine when the push SUCCEEDS: the
+        // in-flight item is removed and the appended one is all that is left.
+        //
+        // When it FAILS, the queue is left holding two items for one row, the
+        // earlier carrying the older payload. Nothing downstream can arbitrate
+        // between them: `upsertNote` and `upsertAttendance` stamp
+        // `updated_at: nowISO()` at PUSH time rather than carrying the edit's
+        // own timestamp, so server-side LWW sees the stale copy as the newer
+        // write and it simply wins.
+        //
+        // Collapse them here instead, at the one moment both are visible: the
+        // failed item's payload is superseded by the later duplicate's, so drop
+        // the failed item and let the duplicate carry the row forward. Its own
+        // budget applies — the payload it holds is genuinely newer work and has
+        // not itself failed, which is the same rule `coalesceOnto` uses.
+        //
+        // Deliberately not fixed by moving the timestamp into the payload.
+        // That would make LWW meaningful across the whole outbox, but it also
+        // hands arbitration to the DEVICE clock, and a phone with a wrong clock
+        // would then lose every conflict against itself. Server-stamped
+        // `now()` is the safer authority; the ordering is what needed fixing.
+        const failedKey = identityOf(failed.kind, failed.payload);
+        const current = loadItems();
+        const hasDuplicate = failedKey != null && current.some((o) => (
+          o.id !== id && identityOf(o.kind, o.payload) === failedKey
+        ));
+        // Dropped, not kept alongside: the duplicate already carries this row's
+        // newest state, and two items for one row is the defect.
+        saveItems(
+          hasDuplicate
+            ? current.filter((i) => i.id !== id)
+            : current.map((i) => (i.id === id ? failed : i)),
+        );
         if (!firstError) { firstError = errMsg; firstErrorKind = item.kind; }
       } finally {
         inFlightId = null;

@@ -12,6 +12,7 @@
 // both are testable without a browser.
 
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { register } from 'node:module';
 
 // Teaches Node the directory imports Vite already understands, so the
@@ -1011,7 +1012,7 @@ check('different rows and different kinds stay separate items', () => {
   assert.equal(queued().length, 3);
 });
 
-check('coalescing preserves quarantine rather than reviving a stuck row', () => {
+check('an identical payload does not reset a quarantined row\'s budget', () => {
   outbox.clear();
   outbox.enqueue('upsert_attendance', { id: 'att-1', status: 'present' });
   // Simulate the row having burned its attempts, as a 42P10 would have done.
@@ -1020,12 +1021,116 @@ check('coalescing preserves quarantine rather than reviving a stuck row', () => 
   items[0].quarantined = true;
   obStore.map.set('studydesk-outbox', JSON.stringify(items));
 
-  outbox.enqueue('upsert_attendance', { id: 'att-1', status: 'absent' });
+  // Reconcile re-manufacturing the SAME snapshot. This is the case the
+  // coalescing exists for: it must not spawn a duplicate and must not hand
+  // work that already failed a fresh budget.
+  outbox.enqueue('upsert_attendance', { id: 'att-1', status: 'present' });
   const after = queued();
   assert.equal(after.length, 1, 'a quarantined row must not spawn a duplicate');
-  assert.equal(after[0].quarantined, true, 'refreshing the payload must not revive it');
+  assert.equal(after[0].quarantined, true, 're-pushing identical work must not revive it');
   assert.equal(after[0].attempts, 5, 'the failure budget is not reset behind the user');
-  assert.equal(after[0].payload.status, 'absent', 'but it carries the newest data for Retry');
+});
+
+check('a NEW payload on a quarantined row does not silently vanish', () => {
+  // v1.13 review, blocker B. Coalescing preserved `quarantined`, and `drain`
+  // skips quarantined items, so once a row burned its attempts on a transient
+  // failure every later edit to it disappeared into the dead item — forever,
+  // with no error and no new item. On notes, that is the app's most precious
+  // data going nowhere.
+  outbox.clear();
+  outbox.enqueue('upsert_note', { id: 'note-1', content: 'five hours of work' });
+  const items = queued();
+  items[0].attempts = 5;
+  items[0].quarantined = true;
+  items[0].lastError = 'NetworkError: failed to fetch';
+  obStore.map.set('studydesk-outbox', JSON.stringify(items));
+
+  // The user keeps typing. Their new words have never had a chance to reach
+  // the server, so they get one.
+  outbox.enqueue('upsert_note', { id: 'note-1', content: 'five hours of work, plus more' });
+  const after = queued();
+  assert.equal(after.length, 1, 'still bounded — one item per row');
+  assert.equal(after[0].payload.content, 'five hours of work, plus more');
+  assert.equal(after[0].quarantined, false, 'a genuinely new edit revives the row');
+  assert.equal(after[0].attempts, 0, 'and gets its own attempt budget');
+  assert.equal(after[0].lastError, null, 'the superseded error is cleared');
+});
+
+check('key order does not make identical work look like a new edit', () => {
+  // `upsert_note` payloads are built in two places — App.jsx's debounced editor
+  // timer and reconcile.js's offline repair pass. If their key orders ever
+  // diverged, a naive serialisation compare would read reconcile's identical
+  // snapshot as a fresh user edit and hand it a new attempt budget every pass,
+  // quietly reintroducing the unbounded retry the coalescing exists to stop.
+  outbox.clear();
+  outbox.enqueue('upsert_note', { id: 'n1', title: 'T', content: 'body', courseId: 'c1' });
+  const items = queued();
+  items[0].attempts = 5;
+  items[0].quarantined = true;
+  obStore.map.set('studydesk-outbox', JSON.stringify(items));
+
+  // Same fields, same values, written in a different order.
+  outbox.enqueue('upsert_note', { courseId: 'c1', content: 'body', id: 'n1', title: 'T' });
+  const after = queued();
+  assert.equal(after.length, 1);
+  assert.equal(after[0].quarantined, true, 'reordered but identical work is not a new edit');
+  assert.equal(after[0].attempts, 5, 'so it must not be handed a fresh budget');
+});
+
+check('upsert -> delete -> upsert keeps the user\'s final state', () => {
+  // v1.13 review, blocker C. `kind` is part of the coalescing identity, so
+  // upserts and deletes never coalesce together — and taking the FIRST match
+  // moved the newer upsert behind the older delete. Three offline taps on one
+  // lesson (present -> ... -> null -> present) ended with the row DELETED.
+  outbox.clear();
+  outbox.enqueue('upsert_attendance', { id: 'att-1', status: 'present' });
+  outbox.enqueue('delete_attendance', { id: 'att-1' });
+  outbox.enqueue('upsert_attendance', { id: 'att-1', status: 'present' });
+
+  const after = queued();
+  assert.equal(after.length, 3, 'the newer upsert must not fold into the older one');
+  assert.equal(after[after.length - 1].kind, 'upsert_attendance',
+    'the last thing to drain must be the upsert, or the lesson ends up deleted');
+  assert.equal(after[1].kind, 'delete_attendance', 'the delete keeps its place in the sequence');
+});
+
+check('a repeated upsert after a delete still coalesces, staying bounded', () => {
+  // The blocker-C fix must not give back the unbounded queue: once the newest
+  // item for a row is an upsert again, further upserts fold into it.
+  outbox.clear();
+  outbox.enqueue('upsert_note', { id: 'n1', content: 'a' });
+  outbox.enqueue('delete_note', { id: 'n1' });
+  for (let i = 0; i < 20; i++) outbox.enqueue('upsert_note', { id: 'n1', content: `b${i}` });
+
+  const after = queued();
+  assert.equal(after.length, 3, 'upsert, delete, and ONE coalesced upsert');
+  assert.equal(after[2].payload.content, 'b19', 'carrying the newest snapshot');
+});
+
+check('a parent always drains before its child, whatever order they enqueue in', () => {
+  // v1.13 review. `upsert_attendance` -> `timetable_entries` and
+  // `upsert_note_attachment` -> `notebook_entries` were both rank 1, sitting at
+  // the same rank as their own parents and relying on FIFO. Reconcile emits
+  // parents and children in one pass, so "they happen to be in the right order"
+  // is exactly the argument #38 disproved.
+  outbox.clear();
+  // Deliberately worst-case: every child enqueued before its parent.
+  outbox.enqueue('upsert_note_attachment', { id: 'att-1', noteId: 'n1' });
+  outbox.enqueue('upsert_attendance', { id: 'a-1', timetableEntryId: 't1' });
+  outbox.enqueue('upsert_note', { id: 'n1', courseId: 'c1', content: 'x' });
+  outbox.enqueue('upsert_timetable', { id: 't1', subjectId: 'c1' });
+  outbox.enqueue('upsert_subject', { id: 'c1', name: 'Maths' });
+
+  const order = outbox.__drainOrderForTest(queued()).map((i) => i.kind);
+  const pos = (k) => order.indexOf(k);
+  assert.ok(pos('upsert_subject') < pos('upsert_timetable'),
+    'a timetable entry carries subject_id — its subject must exist first');
+  assert.ok(pos('upsert_subject') < pos('upsert_note'),
+    'a note carries course_id');
+  assert.ok(pos('upsert_timetable') < pos('upsert_attendance'),
+    'attendance carries timetable_entry_id, and the FK cascades');
+  assert.ok(pos('upsert_note') < pos('upsert_note_attachment'),
+    'an attachment carries note_id');
 });
 
 check('payloads with no row id still enqueue, one per call', () => {
@@ -1033,6 +1138,106 @@ check('payloads with no row id still enqueue, one per call', () => {
   outbox.enqueue('record_app_open', { app: 'studydesk', date: '2026-09-04' });
   outbox.enqueue('record_app_open', { app: 'studydesk', date: '2026-09-05' });
   assert.equal(queued().length, 2, 'kinds without an id keep the old append behaviour');
+});
+
+// ── notebook/model.js — a paste must survive every exit from the editor ───
+//
+// v1.13 review, blocker E. The textarea holds ONE block, so a newline can only
+// arrive by paste. The previous round split at the commit boundary, which
+// covered blur/Escape/arrow-out — but six other exits still reduced the draft
+// with `parse(draft)[0]` and wrote the truncation back to the note:
+//
+//   Enter · Tab · Backspace-at-start · block shortcut · toggleCheck ·
+//   the format bar's block button
+//
+// The last is the worst: on Android the format bar is the primary way to set a
+// block type, so paste-then-format silently destroyed everything after line
+// one.
+//
+// The fix normalises in `onInput`, so `draft` never holds a multi-line value
+// for any of those six to see. That makes two things worth locking: the splice
+// itself is correct, and `onInput` actually performs it.
+
+const { parse: nbParse, serialize: nbSerialize, spliceDraft } =
+  await import('../src/features/notebook/model.js');
+
+const PASTE = 'Lecture 3\nFirst point\nSecond point\nThird point';
+
+check('a multi-line paste becomes every one of its lines, not just the first', () => {
+  const blocks = nbParse('existing');
+  const out = spliceDraft(blocks, 0, PASTE);
+  assert.ok(out, 'a multi-line draft must produce a splice');
+  assert.equal(out.blocks.length, 4, 'four pasted lines must become four blocks');
+  assert.deepEqual(
+    out.blocks.map((b) => b.text),
+    ['Lecture 3', 'First point', 'Second point', 'Third point'],
+  );
+  assert.equal(out.focus, 3, 'the caret lands at the end of what was pasted');
+});
+
+check('a single-line draft is left alone for the ordinary path', () => {
+  assert.equal(spliceDraft(nbParse('one'), 0, 'just one line'), null);
+  assert.equal(spliceDraft(nbParse('one'), 0, ''), null);
+});
+
+check('pasting into the middle keeps the blocks on either side', () => {
+  const blocks = nbParse('before\ntarget\nafter');
+  const out = spliceDraft(blocks, 1, PASTE);
+  assert.deepEqual(
+    out.blocks.map((b) => b.text),
+    ['before', 'Lecture 3', 'First point', 'Second point', 'Third point', 'after'],
+  );
+  assert.equal(out.focus, 4, 'the caret is on the last pasted line, not on `after`');
+});
+
+check('block ids stay positional after a splice', () => {
+  // Every handler in the editor writes with `next[focus] = { ...cur, id: focus }`,
+  // so an id that does not match its index sends the next edit to the wrong
+  // block.
+  const out = spliceDraft(nbParse('a\nb\nc'), 1, PASTE);
+  assert.deepEqual(out.blocks.map((b) => b.id), out.blocks.map((_, i) => i));
+});
+
+check('markdown markers in a paste are parsed, not left as literal text', () => {
+  const out = spliceDraft(nbParse(''), 0, '# Heading\n- one\n- two');
+  assert.equal(out.blocks.length, 3);
+  assert.notEqual(out.blocks[0].type, out.blocks[1].type, 'a heading is not a bullet');
+  // Round-trip: what the note stores must re-parse to the same thing.
+  assert.deepEqual(
+    nbParse(nbSerialize(out.blocks)).map((b) => b.text),
+    out.blocks.map((b) => b.text),
+  );
+});
+
+check('NoteEditor normalises multi-line input before any exit can truncate it', () => {
+  // A source check, in the spirit of check-ime.mjs. The six truncating exits
+  // are inside a React component and cannot be exercised from here, so what is
+  // locked instead is the invariant that makes all six safe: `onInput` splices
+  // a multi-line draft immediately, and `commitDraft` keeps a backstop.
+  const src = readFileSync(
+    new URL('../src/features/notebook/NoteEditor.jsx', import.meta.url), 'utf8',
+  );
+
+  const onInput = src.slice(src.indexOf('const onInput = useCallback'));
+  const onInputBody = onInput.slice(0, onInput.indexOf('}, ['));
+  assert.ok(
+    /spliceDraft\(/.test(onInputBody),
+    'onInput must call spliceDraft — it is the only place every text-insertion '
+    + 'route arrives, including Android IME clipboard insertion, which fires no '
+    + 'paste event. Without it, draft can hold a multi-line value and the six '
+    + 'parse(draft)[0] exits truncate the note.',
+  );
+  assert.ok(
+    /setDraft\(text\)/.test(onInputBody.slice(onInputBody.indexOf('spliceDraft('))),
+    'the single-line path must still set the draft',
+  );
+
+  const commitDraft = src.slice(src.indexOf('const commitDraft = useCallback'));
+  assert.ok(
+    /spliceDraft\(/.test(commitDraft.slice(0, commitDraft.indexOf('}, ['))),
+    'commitDraft must keep its backstop splice for any commit that did not '
+    + 'pass through onInput',
+  );
 });
 
 // ── icsParse.js — repeating events are counted, never silently dropped ────

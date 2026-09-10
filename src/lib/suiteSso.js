@@ -9,6 +9,45 @@ import { supabase } from './supabase.js';
 
 const SuiteSso = registerPlugin('SuiteSso');
 
+// How long any single network step in the SSO path may take before we stop
+// waiting and fall through to the next option.
+//
+// v1.13 review, item G. `adoptSession` awaited `functions.invoke` and
+// `setSession` with no timeout, no AbortController and no Promise.race, from a
+// session-init effect that renders a loading label until it settles. A request
+// that never settles — not one that fails, one that HANGS — therefore pinned
+// the app on that label indefinitely. An OS-level TCP timeout on a
+// half-connected network is minutes, not seconds, and a captive portal or a
+// device with partial connectivity (the test phone was Tailscale-only, with no
+// general internet path) reproduces it exactly. So does a normal user on a
+// hotel wifi that accepts the connection and then drops the traffic.
+//
+// Eight seconds is chosen to be longer than any plausible successful round
+// trip on a slow mobile connection and far shorter than a TCP timeout. The
+// cost of expiring too early is one degraded sign-in; the cost of not
+// expiring at all is an app that never opens.
+const SSO_STEP_TIMEOUT_MS = 8000;
+
+/** Resolve to `{ timedOut: true }` rather than hanging forever.
+ *
+ *  Deliberately resolves rather than rejects: every caller here already
+ *  branches on a result object, and a timeout is an expected outcome on a bad
+ *  network, not an exceptional one. The timer is always cleared, so a slow
+ *  call that eventually settles does not leave a pending handle behind. */
+function withTimeout(promise, ms = SSO_STEP_TIMEOUT_MS) {
+  let timer;
+  const expiry = new Promise((resolve) => {
+    timer = setTimeout(() => resolve({ timedOut: true }), ms);
+  });
+  return Promise.race([
+    Promise.resolve(promise).then(
+      (value) => ({ value }),
+      (error) => ({ error }),
+    ),
+    expiry,
+  ]).finally(() => clearTimeout(timer));
+}
+
 
 // -- v1.10: inherit the IDENTITY, not the refresh token -------------------
 // This used to call supabase.auth.setSession() with NCC's tokens, which put
@@ -31,10 +70,16 @@ const SuiteSso = registerPlugin('SuiteSso');
 // it restores the collision risk - so it says so in the log.
 async function adoptSession(bundle) {
   try {
-    const { data, error } = await supabase.functions.invoke('suite-session', {
+    const invoked = await withTimeout(supabase.functions.invoke('suite-session', {
       body: { app: 'studydesk' },
       headers: { Authorization: 'Bearer ' + bundle.access_token },
-    });
+    }));
+    if (invoked.timedOut) {
+      console.warn('[sso] suite-session timed out, using shared-token fallback');
+      return fallbackSession(bundle);
+    }
+    if (invoked.error) throw invoked.error;
+    const { data, error } = invoked.value || {};
     if (error) {
       console.warn('[sso] suite-session unavailable, using shared-token fallback:', error.message);
     } else if (data && data.token_hash) {
@@ -58,7 +103,16 @@ async function adoptSession(bundle) {
       // in Auth from silently re-enabling a daily logout.
       let otpErr = null;
       for (const type of ['magiclink', 'email', 'recovery']) {
-        const { error } = await supabase.auth.verifyOtp({ token_hash: data.token_hash, type });
+        const verified = await withTimeout(
+          supabase.auth.verifyOtp({ token_hash: data.token_hash, type }),
+        );
+        // A hung verify is not worth retrying with another type — the network
+        // is the problem, not the credential type.
+        if (verified.timedOut) {
+          console.warn('[sso] verifyOtp timed out, using shared-token fallback');
+          return fallbackSession(bundle);
+        }
+        const { error } = verified.error ? { error: verified.error } : (verified.value || {});
         if (!error) return { ok: true, email: bundle.email };
         otpErr = error;
         // A consumed one-time token cannot be retried with another type, so
@@ -71,12 +125,27 @@ async function adoptSession(bundle) {
     console.warn('[sso] suite-session threw, using shared-token fallback:', e.message);
   }
 
-  // Degraded path - shares NCC's refresh token, so the revocation collision
-  // this release exists to fix is possible again until the function is back.
-  const { error } = await supabase.auth.setSession({
+  return fallbackSession(bundle);
+}
+
+// Degraded path - shares NCC's refresh token, so the revocation collision
+// this release exists to fix is possible again until the function is back.
+//
+// Bounded too. This is the path every timeout above falls through to, and a
+// fallback that can itself hang forever would just move item G's blank screen
+// one call further down.
+async function fallbackSession(bundle) {
+  const applied = await withTimeout(supabase.auth.setSession({
     access_token: bundle.access_token,
     refresh_token: bundle.refresh_token,
-  });
+  }));
+  if (applied.timedOut) {
+    return { ok: false, reason: 'Timed out applying the inherited session. Sign in normally.' };
+  }
+  if (applied.error) {
+    return { ok: false, reason: 'Supabase rejected the inherited session: ' + applied.error.message };
+  }
+  const { error } = applied.value || {};
   if (error) {
     return { ok: false, reason: 'Supabase rejected the inherited session: ' + error.message };
   }

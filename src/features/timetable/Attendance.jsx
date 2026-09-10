@@ -23,7 +23,7 @@ import { formatLocale, toLocalISO, addDays, parseLocalDate } from '../../lib/dat
 import { resolveWeekStart, weekdayLabels, startOfWeek } from '../../lib/calendar.js';
 import { lessonsOn, termCoversDate, termIndex } from '../../lib/timetable.js';
 import {
-  ATTENDANCE, indexAttendance, statusFor, nextStatus,
+  ATTENDANCE, indexAttendance, statusFor, nextStatus, attendanceKey,
   summariseTerm, summariseByCourse,
 } from '../../lib/attendance.js';
 import * as outbox from '../../lib/outbox.js';
@@ -93,29 +93,67 @@ export default function Attendance({ state, dispatch, session, term }) {
     return summariseByCourse(inTerm, entriesById);
   }, [rows, term, covers, entriesById]);
 
+  // Every attendance row in local state, including soft-deleted ones, keyed by
+  // the natural key. `index` (from `indexAttendance`) deliberately drops
+  // deleted rows because it backs the grid, but the enqueue path needs to find
+  // a cleared row in order to revive it rather than mint a second id for a
+  // fact the server stores once.
+  const rowsByKey = useMemo(() => {
+    const m = new Map();
+    for (const r of rows || []) {
+      if (r) m.set(attendanceKey(r.timetableEntryId, r.date), r);
+    }
+    return m;
+  }, [rows]);
+
   const cycle = useCallback((entryId, iso) => {
     const current = statusFor(index, entryId, iso);
     const next = nextStatus(current);
-    dispatch({ type: 'SET_ATTENDANCE', timetableEntryId: entryId, date: iso, status: next });
 
-    if (!session) return;
-    // Read the row back after the dispatch would have created it, so the
-    // queued payload carries the id the reducer actually assigned. The
-    // existing row is reused when there is one — the server's unique index is
-    // on (user, entry, date), so a second id for the same fact would be
-    // rejected rather than duplicated, and the outbox would quarantine it.
-    const existing = index.get(`${entryId}::${iso}`);
-    if (next === null) {
-      if (existing) outbox.enqueue('delete_attendance', { id: existing.id });
-      return;
-    }
-    outbox.enqueue('upsert_attendance', {
-      id: existing?.id,
+    // The id is minted HERE and handed to both the reducer and the outbox, so
+    // the two cannot disagree.
+    //
+    // v1.13 review, blocker A4: this used to read the id back from `index`
+    // AFTER dispatching, on the assumption that the dispatch had already
+    // created the row. It had not — `index` is memoised over the pre-dispatch
+    // `rows`, and React has not re-rendered yet. For a new mark that meant
+    // enqueueing `id: undefined` while the reducer minted a different uuid,
+    // so the outbox item and local state described the same fact under two
+    // identities from the moment it was created.
+    //
+    // An existing row (live OR cleared) is reused: the server's unique index
+    // is total on (user, entry, date), so one lesson on one date is one row
+    // forever and re-marking revives it.
+    const existing = rowsByKey.get(attendanceKey(entryId, iso));
+    const id = existing?.id || crypto.randomUUID();
+
+    dispatch({
+      type: 'SET_ATTENDANCE',
+      id,
       timetableEntryId: entryId,
       date: iso,
       status: next,
     });
-  }, [index, dispatch, session]);
+
+    if (!session) return;
+    if (next === null) {
+      // Nothing to delete if the row was never created locally, and nothing to
+      // tell the server about either.
+      if (existing) outbox.enqueue('delete_attendance', { id });
+      return;
+    }
+    // `id` is carried for the outbox's own identity (`kind::payload.id`, which
+    // is what lets a re-tap coalesce onto the pending item instead of growing
+    // the queue). It is NOT sent to Supabase — `upsertAttendance` strips it,
+    // because PostgREST would otherwise emit `DO UPDATE SET id = ...` and
+    // reassign the row's primary key on every conflicting write.
+    outbox.enqueue('upsert_attendance', {
+      id,
+      timetableEntryId: entryId,
+      date: iso,
+      status: next,
+    });
+  }, [index, rowsByKey, dispatch, session]);
 
   const labels = weekdayLabels(weekStart, locale);
   const today = toLocalISO(new Date());

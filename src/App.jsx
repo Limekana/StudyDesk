@@ -721,13 +721,29 @@ function reducer(state, action) {
     // hold, rather than diverging until the next pull.
     case "SET_ATTENDANCE": {
       const rows = state.attendance || [];
+      // Matched on the NATURAL KEY, and deliberately including soft-deleted
+      // rows. The server's identity for an attendance fact is
+      // (user, timetable_entry, date) — see the unique index in
+      // supabase/migrations/20260904_lesson_attendance_natural_key.sql — and it
+      // is total, so the database cannot represent a cleared row and a live row
+      // for the same lesson at once.
+      //
+      // This used to skip `deletedAt` rows, so clearing a mark and re-marking
+      // it appended a SECOND local row with a fresh uuid for a fact the server
+      // stores once. The two identities then disagreed at every layer: the
+      // percentage double-counted until the next pull, and the merge layer had
+      // to reconcile a pair the server could never send back.
+      //
+      // Reviving the existing row instead is exactly what `upsertAttendance`
+      // does on the server with `deleted_at: null`. One lesson on one date is
+      // one row, on both sides.
       const i = rows.findIndex((r) => (
-        !r.deletedAt && r.timetableEntryId === action.timetableEntryId && r.date === action.date
+        r.timetableEntryId === action.timetableEntryId && r.date === action.date
       ));
       const now = new Date().toISOString();
       // A null status means "unmark" — the cycle returns to unmarked, and an
-      // unmarked lesson must leave NO row, or it would sit in the denominator
-      // as a status the summariser does not recognise.
+      // unmarked lesson must leave NO live row, or it would sit in the
+      // denominator as a status the summariser does not recognise.
       if (action.status == null) {
         if (i < 0) return state;
         const next = [...rows];
@@ -736,12 +752,25 @@ function reducer(state, action) {
       }
       if (i >= 0) {
         const next = [...rows];
-        next[i] = { ...next[i], status: action.status, note: action.note ?? next[i].note ?? null, updatedAt: now };
+        next[i] = {
+          ...next[i],
+          status: action.status,
+          note: action.note ?? next[i].note ?? null,
+          // Revive: without this, re-marking a cleared lesson would update a
+          // row that `indexAttendance` still filters out as deleted.
+          deletedAt: null,
+          updatedAt: now,
+        };
         return { ...state, attendance: next };
       }
       return {
         ...state,
         attendance: [...rows, {
+          // `action.id` is supplied by the caller so the id enqueued to the
+          // outbox is the same one this reducer stores. Attendance.jsx used to
+          // read its id back from a memoised pre-dispatch index, which is empty
+          // for a new mark — it enqueued `id: undefined` while this minted a
+          // different uuid.
           id: action.id || newSyncId(),
           timetableEntryId: action.timetableEntryId,
           date: action.date,
@@ -1020,6 +1049,45 @@ export default function App() {
     } catch { return init; }
   });
   const { t } = useTranslation();
+
+  // ── Auth session — DECLARED FIRST, DELIBERATELY ────────────────────────────
+  //
+  // `session` is read by dependency arrays scattered through this component,
+  // and a dependency array is evaluated DURING RENDER. A `const` is in its
+  // temporal dead zone until its own line runs, so any `[..., session]` above
+  // this point throws `ReferenceError: Cannot access 'session' before
+  // initialization` on the very first render. React unwinds, nothing is
+  // committed into `#root`, and the user gets a blank page in the app's cream
+  // ground — no crash, no console output in a release build, nothing.
+  //
+  // THIS HAS NOW SHIPPED TWICE. v1.10 hit it with the account-onboarding
+  // effect; the fix then was a comment telling the next author to keep their
+  // effect below the declaration. v1.13's notebook work added four more
+  // `session` readers above it — the debounced note-push effect, its flush,
+  // the note delete, and the export callback — and blanked the app again, this
+  // time only discovered by installing a signed APK on a physical phone and
+  // dumping the view hierarchy to find `#root` present with zero children.
+  //
+  // "Remember to declare your effect below this line" is not a fix, because it
+  // asks every future author to know about a bug they have never seen. Hoisting
+  // the declaration to the top of the component is: there is no longer anywhere
+  // above it to put an effect. Keep it here.
+  //
+  // Why nothing caught it: `npm run build` succeeds (this is valid JS, the
+  // error is at runtime), eslint's react-hooks rules do not model TDZ, and
+  // `npm run dev` does not reproduce it — the dev server's unbundled ESM
+  // evaluates the module differently from the production chunk. Only a
+  // production build, actually loaded in a browser, shows it. That is what
+  // `npm run check:boot` now does, and it runs in CI.
+  //
+  // undefined = auth still resolving · null = signed out · object = signed in.
+  const [session, setSession] = useState(undefined);
+  // v1.1 — guest mode flag. When `session === null` AND `guest === true`, the
+  // app renders normally with cloud sync disabled (Supabase realtime + outbox
+  // are already session-gated, so this is a pure UI bypass — no other code
+  // changes needed). When the user signs in or signs out, the flag is cleared.
+  const [guest, setGuest] = useState(() => isGuestMode());
+
   const [onboarded, setOnboarded] = useState(() => {
     try { return localStorage.getItem("studydesk-onboarded") === "1"; } catch { return false; }
   });
@@ -1370,9 +1438,17 @@ export default function App() {
       noteTimers.current.clear();
     };
     const onHide = () => { if (document.visibilityState === "hidden") flush(); };
+    // `pagehide` as well as `visibilitychange`. iOS WKWebView does not reliably
+    // deliver `visibilitychange` when the OS terminates a backgrounded app, and
+    // this flush is the last thing standing between a debounced note edit and
+    // losing it. `pagehide` fires on that path, and flushing twice is free —
+    // `flush` clears the timer map, and `enqueue` coalesces on the note id.
+    const onPageHide = () => flush();
     document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("pagehide", onPageHide);
     return () => {
       document.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("pagehide", onPageHide);
       flush();
     };
   }, []);
@@ -1409,12 +1485,8 @@ export default function App() {
   }, [state, session, showFlash, t]);
 
   // ── Auth session ─────────────────────────────────────────────────────────────
-  const [session, setSession] = useState(undefined); // undefined = loading; null = signed out; object = signed in
-  // v1.1 — guest mode flag. When `session === null` AND `guest === true`, the
-  // app renders normally with cloud sync disabled (Supabase realtime + outbox
-  // are already session-gated, so this is a pure UI bypass — no other code
-  // changes needed). When the user signs in or signs out, the flag is cleared.
-  const [guest, setGuest] = useState(() => isGuestMode());
+  // `session` and `guest` are DECLARED AT THE TOP of this component, with the
+  // other state, not here. See the block comment there — it is the reason.
 
   // v1.10 - the account-level onboarding check. Declared HERE, below `session`,
   // rather than beside the `onboardChecked` state it drives: the dependency

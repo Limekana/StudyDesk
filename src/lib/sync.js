@@ -666,31 +666,54 @@ export async function deleteAttachment({ id, storagePath }) {
 
 // ── Lesson attendance (v1.13 Tier 2, issue #31) ─────────────────────────────
 
-export async function upsertAttendance({ id, timetableEntryId, date, status, note }) {
+export async function upsertAttendance({ timetableEntryId, date, status, note }) {
   const userId = await currentUserId();
   // `onConflict` on the natural key, not the surrogate id. Two devices marking
   // the same lesson generate different uuids for the same FACT, and without
   // this they would both insert and the lesson would be counted twice in the
   // percentage.
   //
-  // ── The index this infers against must NOT be partial ──────────────────
+  // ── The index this infers against ─────────────────────────────────────
   //
-  // v1.13 review, blocker 2. The migration originally created this unique
-  // index as `WHERE deleted_at is null`, so that clearing a mark did not
-  // block re-marking the lesson later. Postgres cannot infer a PARTIAL index
-  // from a bare column list — the conflict target has to repeat the index's
-  // WHERE clause, which PostgREST's `onConflict` cannot express. The result
-  // was `42P10: there is no unique or exclusion constraint matching the ON
-  // CONFLICT specification` on the FIRST attendance mark, for every user,
-  // permanently.
+  // `lesson_attendance_entry_date_full_uidx`, created by
+  // supabase/migrations/20260904_lesson_attendance_natural_key.sql. If you
+  // rename it there, rename it here: the v1.13 review found this comment and
+  // the migration naming three different indexes between them, at most one of
+  // which existed.
   //
-  // The index is now unconditional (`v113_lesson_attendance_full_unique_idx`)
-  // and the un-delete is done here instead: one lesson on one date is ONE row
-  // forever, and re-marking a cleared lesson revives that row rather than
-  // inserting a second one. That is a better model than the partial index
-  // was reaching for — two rows for the same fact could never be right.
+  // It must NOT be partial. It shipped as `WHERE deleted_at is null` so that
+  // clearing a mark did not block re-marking the lesson later, but Postgres
+  // cannot infer a PARTIAL index from a bare column list — the conflict target
+  // has to repeat the index's WHERE clause, which PostgREST's `onConflict`
+  // cannot express. The result was `42P10: there is no unique or exclusion
+  // constraint matching the ON CONFLICT specification` on the FIRST attendance
+  // mark, for every user, permanently.
+  //
+  // The index is unconditional now and the un-delete is done here instead: one
+  // lesson on one date is ONE row forever, and re-marking a cleared lesson
+  // revives that row rather than inserting a second one.
+  //
+  // ── `id` is deliberately NOT in this payload ──────────────────────────
+  //
+  // v1.13 review, blocker A4. PostgREST emits `DO UPDATE SET` for every column
+  // the payload carries, so sending `id` alongside a natural-key `onConflict`
+  // makes a conflicting write REASSIGN THE ROW'S PRIMARY KEY to whatever the
+  // pushing device happened to mint.
+  //
+  // That is not cosmetic. Device A marks a lesson offline as `A1` and pushes;
+  // the row is inserted as `A1`. Device B marked the same lesson offline as
+  // `B1` and pushes; the row's PK becomes `B1`. Device A pulls, and because the
+  // merge layer used to key on `id` it kept `A1` as a local-only row alongside
+  // the incoming `B1` — two rows for one lesson, double-counted in the
+  // percentage, which is the exact bug the natural key exists to prevent. Then
+  // reconcile saw local `A1` missing remotely and re-enqueued it, flipping the
+  // PK back. Permanent cross-device ping-pong.
+  //
+  // Omitting `id` lets the row keep whatever PK it was first inserted with.
+  // The server is the authority on identity; the client's uuid is only its
+  // local handle until the first successful push. src/lib/merge.js adopts the
+  // server's id on pull, so the two converge.
   const { error } = await supabase.from('lesson_attendance').upsert({
-    id,
     user_id: userId,
     timetable_entry_id: timetableEntryId,
     date,
@@ -702,7 +725,6 @@ export async function upsertAttendance({ id, timetableEntryId, date, status, not
     updated_at: nowISO(),
   }, { onConflict: 'user_id,timetable_entry_id,date' });
   if (error) throw error;
-  return id;
 }
 
 export async function deleteAttendance(id) {
@@ -891,6 +913,11 @@ export function startRealtime(onChange) {
     'subjects', 'grades', 'study_sessions', 'assignments', 'exams', 'study_actions',
     'planned_sessions', 'academic_terms', 'timetable_entries', 'assignment_attachments',
     'commitments',
+    // v1.13 review. These three shipped without a subscription, so notes and
+    // attendance did not propagate live between devices at all — they appeared
+    // only when some OTHER table's event happened to trigger a pull. Notes are
+    // the most valuable thing in the app to see up to date on a second device.
+    'notebook_entries', 'notebook_attachments', 'lesson_attendance',
   ]) {
     c.on(
       'postgres_changes',

@@ -64,6 +64,16 @@ export function findUnsynced(state, remote) {
   const remoteCommitments = remoteIds(remote?.commitments);
   const remoteNotes = remoteIds(remote?.notes);
   const remoteAttendance = remoteIds(remote?.attendance);
+  // Attendance is also indexed by its NATURAL key, because that — not `id` —
+  // is what the server considers the row's identity (a total unique index on
+  // user/entry/date). A row this device pushed under its own uuid can come
+  // back under the id the server actually stored it as, and an id-only check
+  // would read that as "missing remotely" and re-enqueue it on every
+  // reconcile. Harmless now that `upsertAttendance` no longer sends `id`, but
+  // it is pointless queue churn and it was one leg of the v1.13 ping-pong.
+  const remoteAttendanceKeys = new Set(
+    (remote?.attendance || []).map((r) => `${r.timetable_entry_id}::${r.date}`),
+  );
 
   const out = [];
 
@@ -313,7 +323,20 @@ export function findUnsynced(state, remote) {
         // note is worth far more than its session link, and an FK to a
         // session that never synced would fail the whole upsert. The link is
         // a nicety; the writing is the point.
-        sessionId: n.sessionId && remoteIds(remote?.sessions).has(n.sessionId) ? n.sessionId : null,
+        // Tests the sessions this pass is ITSELF pushing as well as the ones
+        // already remote. v1.13 review: it checked `remote.sessions` only, a
+        // few lines below emitting `log_session` items for exactly the
+        // sessions an offline user's notes are linked to — so reconcile, whose
+        // whole job here is rescuing that user's data, pushed `session_id:
+        // null` for their notes and the next pull's LWW wrote that null back
+        // over the local link. The rescue severed the thing it was rescuing.
+        //
+        // `log_session` ranks 0 and drains before `upsert_note`, so a session
+        // queued in this same pass will exist by the time the note is written.
+        sessionId: n.sessionId && (
+          remoteIds(remote?.sessions).has(n.sessionId)
+          || out.some((o) => o.kind === 'log_session' && o.payload?.id === n.sessionId)
+        ) ? n.sessionId : null,
       },
     });
   }
@@ -328,6 +351,7 @@ export function findUnsynced(state, remote) {
   // is meaningless without the lesson it records, and its FK cascades.
   for (const a of state?.attendance || []) {
     if (!a?.id || a.deletedAt || remoteAttendance.has(a.id)) continue;
+    if (remoteAttendanceKeys.has(`${a.timetableEntryId}::${a.date}`)) continue;
     if (!a.timetableEntryId) continue;
     const parentPushed = out.some((o) => o.kind === 'upsert_timetable' && o.payload.id === a.timetableEntryId);
     if (!remoteTimetable.has(a.timetableEntryId) && !parentPushed) continue;
