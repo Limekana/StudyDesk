@@ -949,7 +949,8 @@
       "3": "Resolvido — confirmado"
     },
     "delete": "Excluir nota",
-    "confirmDelete": "Excluir esta nota? Não é possível desfazer."
+    "confirmDelete": "Excluir esta nota? Não é possível desfazer.",
+    "fileUnder": "Arquivar em"
   },
   "feed": {
     "title": "Feed de calendário",

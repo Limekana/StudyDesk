@@ -944,7 +944,8 @@
       "3": "Geklärt — bestätigt"
     },
     "delete": "Notiz löschen",
-    "confirmDelete": "Diese Notiz löschen? Das lässt sich nicht rückgängig machen."
+    "confirmDelete": "Diese Notiz löschen? Das lässt sich nicht rückgängig machen.",
+    "fileUnder": "Ablegen unter"
   },
   "feed": {
     "title": "Kalender-Feed",

@@ -197,6 +197,62 @@ try {
         );
         break;
       }
+
+      // The Notebook has to be TYPABLE, not merely present.
+      //
+      // A blank-screen check cannot see this one. v1.13 shipped a notebook
+      // that rendered its page, its tree and its blocks perfectly and could
+      // not be written in: focus was claimed on mousedown without
+      // preventDefault, so the browser's own default focus handling — which
+      // runs after the React handler — blurred the textarea that had just
+      // mounted, `onBlur` tore it down, and the editor vanished inside the
+      // same click. Every gate was green, including this one.
+      //
+      // So this clicks a line and asserts an editor actually opens. Same
+      // philosophy as the rest of the walk: a missing affordance skips the
+      // step rather than failing it, because a moved button is a UI change
+      // and a dead editor is a bug.
+      if (tab === 'Notebook') {
+        const madeNote = await page.evaluate(() => {
+          const el = [...document.querySelectorAll('button')]
+            .find((e) => /new note/i.test(e.innerText || '') && e.getBoundingClientRect().width > 0);
+          if (!el) return false;
+          el.click();
+          return true;
+        }).catch(() => false);
+
+        if (madeNote) {
+          await page.waitForTimeout(1200);
+
+          // A REAL mouse click, not a dispatched MouseEvent.
+          //
+          // This distinction is the whole test. `dispatchEvent(new
+          // MouseEvent('mousedown'))` runs the React handler but performs no
+          // default action, and the default action — the browser moving focus
+          // after the handler returns — IS the bug. A synthetic event
+          // therefore passes happily against the broken build, which is
+          // exactly what an earlier version of this check did.
+          const box = await page.locator('.nb-block').first()
+            .boundingBox().catch(() => null);
+          let probe = { skipped: true };
+          if (box) {
+            await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+            await page.waitForTimeout(700);
+            probe = {
+              editor: await page.locator('textarea.nb-input').count().catch(() => 0) > 0,
+            };
+          }
+
+          if (probe && probe.editor === false) {
+            problems.push(
+              'The Notebook rendered but could not be typed into: clicking a line\n' +
+              '      opened no editor. Check that the block mousedown handler calls\n' +
+              '      preventDefault — without it the browser blurs the textarea that\n' +
+              '      just mounted, and onBlur closes the editor in the same click.',
+            );
+          }
+        }
+      }
     }
   }
 } catch (e) {
@@ -220,10 +276,20 @@ if (rootChildren === -1) {
 if (problems.length) {
   console.error(`\nBoot check FAILED (${problems.length} ${problems.length === 1 ? 'problem' : 'problems'}):\n`);
   for (const p of problems) console.error(`  ✗ ${p}\n`);
+  // The trailer has to match the failure. This gate started out only able to
+  // fail one way — an empty #root — so it always signed off with "does not
+  // render". It can now also fail on a view that renders perfectly and does
+  // not work, and telling someone their bundle is blank when it is not sends
+  // them looking in the wrong place.
+  const blank = rootChildren <= 0;
   console.error(
-    'The production bundle does not render. Do not ship this build — it will\n' +
-    'cold-launch to a blank screen on device, with no crash in logcat, because\n' +
-    'WebView console output is not bridged in a release build.\n',
+    blank
+      ? 'The production bundle does not render. Do not ship this build — it will\n' +
+        'cold-launch to a blank screen on device, with no crash in logcat, because\n' +
+        'WebView console output is not bridged in a release build.\n'
+      : 'The bundle renders, but a view above does not work. Do not ship this\n' +
+        'build: every other gate passes on it, and on device this looks like a\n' +
+        'feature that is simply dead rather than like an error.\n',
   );
   process.exit(1);
 }

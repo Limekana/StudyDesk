@@ -939,7 +939,8 @@
       "3": "Beres — terkonfirmasi"
     },
     "delete": "Hapus catatan",
-    "confirmDelete": "Hapus catatan ini? Tindakan ini tidak bisa dibatalkan."
+    "confirmDelete": "Hapus catatan ini? Tindakan ini tidak bisa dibatalkan.",
+    "fileUnder": "Simpan di"
   },
   "feed": {
     "title": "Umpan kalender",

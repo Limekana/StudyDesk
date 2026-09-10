@@ -949,7 +949,8 @@
       "3": "Resuelto — confirmado"
     },
     "delete": "Eliminar nota",
-    "confirmDelete": "¿Eliminar esta nota? No se puede deshacer."
+    "confirmDelete": "¿Eliminar esta nota? No se puede deshacer.",
+    "fileUnder": "Archivar en"
   },
   "feed": {
     "title": "Fuente de calendario",

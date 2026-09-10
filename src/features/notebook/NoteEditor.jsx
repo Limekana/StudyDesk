@@ -456,7 +456,14 @@ export default function NoteEditor({
         // A click on the page below the last block puts the caret at the end,
         // which is what a page of paper implies. Without it, the large empty
         // area under a short note is dead.
-        if (e.target === e.currentTarget && blocks.length) setFocus(blocks.length - 1);
+        //
+        // `preventDefault` for the same reason as in Block.jsx: without it the
+        // browser's default mousedown focus handling blurs the textarea this
+        // is about to mount, and the editor closes inside the same click.
+        if (e.target === e.currentTarget && blocks.length) {
+          e.preventDefault();
+          setFocus(blocks.length - 1);
+        }
       }}>
         {blocks.map((b, i) => (
           i === focus ? (

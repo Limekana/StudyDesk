@@ -944,7 +944,8 @@
       "3": "Selvä — vahvistettu"
     },
     "delete": "Poista muistiinpano",
-    "confirmDelete": "Poistetaanko tämä muistiinpano? Tätä ei voi kumota."
+    "confirmDelete": "Poistetaanko tämä muistiinpano? Tätä ei voi kumota.",
+    "fileUnder": "Kurssi"
   },
   "feed": {
     "title": "Kalenterisyöte",
