@@ -1,0 +1,41 @@
+# Line endings. Issue #53 — F-Droid could not build.
+#
+# The repo had no .gitattributes at all, so every file's line endings were
+# whatever the committing machine's core.autocrlf happened to produce. The dev
+# machine is Windows; CI and F-Droid's builders are Linux. The result, measured
+# on tag v1.12.1: eleven tracked files stored with CRLF, and .gitignore stored
+# with 70 of its 74 lines CRLF — which is exactly the "even parts of the files
+# have different end-of-lines" the reporter saw.
+#
+# The one that actually broke the build: android/gradlew-quiet was stored with
+# a CRLF shebang (`#!/bin/bash\r`). Linux passes the carriage return to the
+# kernel as part of the interpreter path, so it looks for `/bin/bash\r`, does
+# not find it, and fails with "bad interpreter: No such file or directory".
+# CLAUDE.md documents `./gradlew-quiet` as this project's build command.
+#
+# Normalising is not enough on its own — without this file the next commit from
+# a Windows checkout puts it straight back.
+
+# Everything is text and is stored LF, whatever the working tree uses.
+* text=auto eol=lf
+
+# Windows-only scripts genuinely need CRLF: cmd.exe mis-parses an LF .bat.
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+
+# Shell scripts are executed by a kernel that reads the shebang literally.
+# Called out explicitly rather than relying on `text=auto` because these two
+# are the ones whose breakage is silent and total.
+gradlew        text eol=lf
+gradlew-quiet  text eol=lf
+*.sh           text eol=lf
+
+# Binary. Never touched, never diffed as text. gradle-wrapper.jar in particular
+# scanned as "3 CRLF lines" purely because its bytes happen to contain 0d 0a —
+# normalising it would corrupt the wrapper and break every build.
+*.jar    binary
+*.png    binary
+*.ico    binary
+*.woff2  binary
+*.keystore binary
+*.jks    binary
