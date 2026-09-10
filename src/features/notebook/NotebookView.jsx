@@ -123,6 +123,23 @@ export default function NotebookView({ state, dispatch, onDeleteNote, onOpenTime
     dispatch({ type: 'UPDATE_NOTE', id: active.id, patch: { content } });
   }, [active, dispatch]);
 
+  // Filing a note under a course, after it exists.
+  //
+  // `createNote` takes a course id, and the tree offers a per-course "new
+  // note" row — but that was the ONLY way a note ever acquired a course. The
+  // main "New note" button passes the timer's scope, which is null whenever no
+  // session is running, so a note written outside a session was filed nowhere
+  // and could never be moved. `UPDATE_NOTE` was only ever dispatched with
+  // `{ content }`.
+  //
+  // That is half of "notes cannot be filed into folders": the tree groups by
+  // course correctly, and nothing could put a note into a group.
+  const updateCourse = useCallback((courseId) => {
+    if (!active) return;
+    dispatch({ type: 'UPDATE_NOTE', id: active.id, patch: { courseId: courseId || null } });
+    if (courseId) setExpanded((prev) => new Set(prev).add(courseId));
+  }, [active, dispatch]);
+
   const scopedCourse = scopedCourseId ? courses.find((c) => c.id === scopedCourseId) : null;
   const activeCourse = active?.courseId ? courses.find((c) => c.id === active.courseId) : null;
 
@@ -141,11 +158,28 @@ export default function NotebookView({ state, dispatch, onDeleteNote, onOpenTime
 
       <div className="nb-page-wrap">
         <header className="nb-head">
-          {activeCourse && (
-            <span className="nb-head-course">
-              <span className="nb-scope-pip" style={{ background: activeCourse.color }} aria-hidden="true" />
-              {activeCourse.name}
-            </span>
+          {active && (
+            <label className="nb-head-course">
+              <span
+                className="nb-scope-pip"
+                style={{ background: activeCourse?.color || 'var(--border2)' }}
+                aria-hidden="true"
+              />
+              {/* A select rather than a drag target: the tree is a list on a
+                  phone, and dragging a note between collapsed course groups is
+                  not a gesture that works one-handed. */}
+              <select
+                className="nb-head-course-select"
+                value={active.courseId || ''}
+                onChange={(e) => updateCourse(e.target.value)}
+                aria-label={t('nb.fileUnder')}
+              >
+                <option value="">{t('nb.unfiled')}</option>
+                {courses.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </label>
           )}
           {active?.updatedAt && (
             <span className="nb-head-meta">

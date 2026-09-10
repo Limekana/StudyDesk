@@ -944,7 +944,8 @@
       "3": "Settled — confirmed"
     },
     "delete": "Delete note",
-    "confirmDelete": "Delete this note? This cannot be undone."
+    "confirmDelete": "Delete this note? This cannot be undone.",
+    "fileUnder": "File under"
   },
   "feed": {
     "title": "Calendar feed",

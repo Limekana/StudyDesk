@@ -949,7 +949,8 @@
       "3": "Réglé — confirmé"
     },
     "delete": "Supprimer la note",
-    "confirmDelete": "Supprimer cette note ? Cette action est irréversible."
+    "confirmDelete": "Supprimer cette note ? Cette action est irréversible.",
+    "fileUnder": "Classer dans"
   },
   "feed": {
     "title": "Flux de calendrier",

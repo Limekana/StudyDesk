@@ -222,7 +222,27 @@ function BlockView({ block, index, number, onFocus, onToggleCheck, photoUrl, onO
   const common = {
     className: `nb-block nb-${block.type}`,
     'data-indent': block.indent || 0,
-    onMouseDown: () => onFocus(index),
+    // `preventDefault` is what makes the editor open at all.
+    //
+    // Focus is claimed on mousedown so the caret lands in the same gesture
+    // that selects the line. But the browser's OWN default focus handling for
+    // that mousedown runs after this handler returns, and it moves focus to
+    // whatever is under the pointer — this div, which is not focusable, so
+    // effectively the body. By then React has already re-rendered the line as
+    // a <textarea> and the mount effect has focused it, so the default
+    // handling immediately blurs it, `onBlur` fires `blurToRead`, and the
+    // editor is torn down inside the same click. Measured:
+    //
+    //     mousedown on nb-block nb-p
+    //     focusin  nb-input     <- textarea mounts and is focused
+    //     focusout nb-input     <- default mousedown focus lands
+    //     textarea REMOVED      <- blurToRead(-1)
+    //
+    // Net effect: tapping a note did nothing, on both touch and mouse. That
+    // is the "cannot be typed into" report. Suppressing the default keeps the
+    // programmatic focus, and costs nothing here — the element this would
+    // have focused is being replaced by the textarea anyway.
+    onMouseDown: (e) => { e.preventDefault(); onFocus(index); },
   };
 
   if (block.type === BLOCK.PHOTO) {

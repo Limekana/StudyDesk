@@ -617,3 +617,23 @@
 .nb-head-delete:focus-visible {
   color: var(--danger);
 }
+
+/* The course picker in the note header. Styled to read as the label it
+   replaced rather than as a form control — it sits in a header, not a form,
+   and a boxed <select> there would pull the eye away from the page. */
+.nb-head-course-select {
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  padding: 2px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  max-width: 40vw;
+}
+.nb-head-course-select:hover,
+.nb-head-course-select:focus-visible {
+  /* The format bar's own ground. A token rather than a tint literal — every
+     theme already defines it, and Black needs it to stay black. */
+  background: var(--nb-bar-bg);
+}
