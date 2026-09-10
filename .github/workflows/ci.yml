@@ -35,6 +35,14 @@ jobs:
       # which made CJK text entry impossible, because nobody has ever typed
       # Chinese into any of these apps. A one-line fix does not stop that
       # recurring; failing the build does.
+      # Issue #53 — F-Droid could not build the tag. Eleven tracked files were
+      # stored with CRLF, and android/gradlew-quiet had a CRLF shebang, so the
+      # kernel looked for an interpreter named `/bin/bash\r`. Checks the stored
+      # blobs, not the working tree: a Windows checkout legitimately has CRLF
+      # on disk, and a tag only ever carries the blob.
+      - name: Line endings
+        run: npm run check:line-endings
+
       - name: IME guard
         run: node scripts/check-ime.mjs
 
