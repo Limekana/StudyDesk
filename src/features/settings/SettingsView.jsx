@@ -22,6 +22,7 @@ import { avatarInitials } from '../../lib/avatarInitials.js';
 import { focusCapabilities, ensureNotificationPermission } from '../../lib/focusMode.js';
 import { scaleFor, normalizeScale, describeScale } from '../../lib/gradeScale.js';
 import { preferredWeekStart, setPreferredWeekStart, resolveWeekStart, weekdayLabels } from '../../lib/calendar.js';
+import { preferredDayStart, setPreferredDayStart, DAY_START_CHOICES } from '../../lib/studyDay.js';
 import { formatLocale } from '../../lib/dates.js';
 import { GuestAvatar } from '../../lib/avatar.jsx';
 import pkg from '../../../package.json';
@@ -289,6 +290,10 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
   // starts on Wednesday is not a thing anyone has, and seven options would
   // make the real three harder to find.
   const [weekStartPref, setWeekStartPref] = useState(() => preferredWeekStart());
+  // v1.13 (#54) — when does the user's day end? A night owl's 01:00 session is
+  // the end of one night, not the start of a day, and the calendar splitting it
+  // in two breaks a streak they actually kept.
+  const [dayStartPref, setDayStartPref] = useState(() => preferredDayStart());
   const settingsLocale = formatLocale();
   const dayNames = useMemo(
     // Index by real getDay() value, so `dayNames[6]` is Saturday whatever the
@@ -540,6 +545,40 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
             </span>
           </div>
           <div className="sv2-note">{t('settings.weekStartNote')}</div>
+        </div>
+
+        {/* ── Day boundary (v1.13, #54) ──
+             Asked for in the same breath as the streak bug it causes: "it's
+             common for people to study during the night. Those sessions, even
+             though they are technically a new day, feel more like the same
+             one." Midnight stays the default, so nobody's numbers move unless
+             they say so. Options stop at 06:00 — past that a "day" is no
+             longer recognisable as one, and a free number field would invite
+             23, which silently relabels every daytime session as yesterday's.
+             ── */}
+        <div className="sv2-section">
+          <div className="sv2-section-title">{t('settings.dayStartLbl')}</div>
+          <div className="sv2-row">
+            <span className="sv2-row-label">{t('settings.dayStart')}</span>
+            <span className="sv2-row-value">
+              <select
+                value={String(dayStartPref)}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setPreferredDayStart(v);
+                  setDayStartPref(v);
+                  showFlash(t('settings.dayStartSaved'));
+                }}
+              >
+                {DAY_START_CHOICES.map((h) => (
+                  <option key={h} value={h}>
+                    {h === 0 ? t('settings.dayStartMidnight') : `${String(h).padStart(2, '0')}:00`}
+                  </option>
+                ))}
+              </select>
+            </span>
+          </div>
+          <div className="sv2-note">{t('settings.dayStartNote')}</div>
         </div>
 
         {/* ── Cloud sync ── */}

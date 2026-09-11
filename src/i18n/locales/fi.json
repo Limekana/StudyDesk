@@ -350,7 +350,12 @@
     "weekStart": "Viikko alkaa",
     "weekStartAuto": "Automaattinen ({{day}})",
     "weekStartSaved": "Viikon alku päivitetty.",
-    "weekStartNote": "Automaattinen seuraa kieltäsi ja aluettasi. Vaihda, jos lukujärjestyksesi alkaa eri päivänä."
+    "weekStartNote": "Automaattinen seuraa kieltäsi ja aluettasi. Vaihda, jos lukujärjestyksesi alkaa eri päivänä.",
+    "dayStartLbl": "Opiskelupäivät",
+    "dayStart": "Päiväni alkaa klo",
+    "dayStartMidnight": "Keskiyö",
+    "dayStartNote": "Tämän jälkeen opiskelu lasketaan edelliselle päivälle, joten myöhäinen ilta on yksi opiskelupäivä eikä kaksi. Vaikuttaa putkeen ja jaksojen ryhmittelyyn.",
+    "dayStartSaved": "Päivän alku päivitetty."
   },
   "sdob": {
     "brand": "Lopeta miettiminen. Aloita opiskelu.",

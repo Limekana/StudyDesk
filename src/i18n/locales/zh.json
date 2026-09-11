@@ -350,7 +350,12 @@
     "weekStart": "每周开始于",
     "weekStartAuto": "自动（{{day}}）",
     "weekStartSaved": "每周起始日已更新。",
-    "weekStartNote": "自动会跟随你的语言和地区。如果你的课表从其他日子开始，可以更改。"
+    "weekStartNote": "自动会跟随你的语言和地区。如果你的课表从其他日子开始，可以更改。",
+    "dayStartLbl": "学习日",
+    "dayStart": "我的一天开始于",
+    "dayStartMidnight": "午夜",
+    "dayStartNote": "在此之后的学习算作前一天，这样熬夜学习只算一个学习日，而不是两个。会影响连续天数和学习记录的分组。",
+    "dayStartSaved": "一天的起点已更新。"
   },
   "sdob": {
     "brand": "别再纠结，开始学习。",

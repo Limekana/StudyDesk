@@ -350,7 +350,12 @@
     "weekStart": "Woche beginnt am",
     "weekStartAuto": "Automatisch ({{day}})",
     "weekStartSaved": "Wochenbeginn aktualisiert.",
-    "weekStartNote": "Automatisch richtet sich nach Sprache und Region. Ändere es, wenn dein Stundenplan an einem anderen Tag beginnt."
+    "weekStartNote": "Automatisch richtet sich nach Sprache und Region. Ändere es, wenn dein Stundenplan an einem anderen Tag beginnt.",
+    "dayStartLbl": "Lerntage",
+    "dayStart": "Mein Tag beginnt um",
+    "dayStartMidnight": "Mitternacht",
+    "dayStartNote": "Späteres Lernen zählt zum Vortag — eine lange Nacht ist ein Lerntag, nicht zwei. Wirkt sich auf deine Serie und die Gruppierung der Einheiten aus.",
+    "dayStartSaved": "Tagesbeginn aktualisiert."
   },
   "sdob": {
     "brand": "Schluss mit Grübeln. Fang an zu lernen.",

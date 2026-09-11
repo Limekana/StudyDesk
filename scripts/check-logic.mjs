@@ -1323,3 +1323,103 @@ check('a value that merely CONTAINS the word is not a recovery', () => {
   assert.equal(looksLikeRecovery('https://app.example/account/type=recovery?code=abc'), false);
   assert.equal(looksLikeRecovery('https://app.example/?type=recovery-plan&code=abc'), false);
 });
+
+// ── studyDay.js — which day a session belongs to (#54) ────────────────────
+//
+// Two defects, one module. The first was that three surfaces answered this
+// question and two of them answered it in UTC:
+//
+//     `startedAt.slice(0, 10)` is the UTC date
+//
+// so west of Greenwich every evening session was filed a day late and east of
+// it every early-morning one a day early — while the streak, which was local
+// and correct, disagreed with both. The `TZ` switching below is what makes
+// that testable on a CI runner that is itself UTC: in UTC the two
+// implementations are indistinguishable, which is exactly why the bug lived
+// as long as it did.
+//
+// The second is the boundary itself. A night owl's 01:00 session ends one
+// night rather than starting a day, and splitting it across two calendar days
+// breaks a streak they kept.
+const studyDay = await import('../src/lib/studyDay.js');
+
+function inTimezone(tz, fn) {
+  const previous = process.env.TZ;
+  process.env.TZ = tz;
+  try { return fn(); } finally { process.env.TZ = previous; }
+}
+
+check('a study day is the LOCAL date, not the UTC one', () => {
+  inTimezone('America/Los_Angeles', () => {
+    // 21:00 on the 10th in UTC-7 is 04:00 on the 11th in UTC.
+    const evening = new Date(2026, 8, 10, 21, 0, 0);
+    assert.equal(evening.toISOString().slice(0, 10), '2026-09-11', 'precondition: the UTC slice really is the next day');
+    assert.equal(studyDay.studyDayKey(evening), '2026-09-10');
+  });
+  inTimezone('Asia/Tokyo', () => {
+    // 00:30 on the 11th in UTC+9 is 15:30 on the 10th in UTC.
+    const smallHours = new Date(2026, 8, 11, 0, 30, 0);
+    assert.equal(smallHours.toISOString().slice(0, 10), '2026-09-10', 'precondition: the UTC slice really is the previous day');
+    assert.equal(studyDay.studyDayKey(smallHours), '2026-09-11');
+  });
+});
+
+check('the day boundary moves late-night study to the night before', () => {
+  const lateNight = new Date(2026, 8, 11, 1, 30, 0);   // 01:30
+  const morning = new Date(2026, 8, 11, 7, 0, 0);      // 07:00
+  // Default: the calendar answer, so no existing user's numbers move.
+  assert.equal(studyDay.studyDayKey(lateNight), '2026-09-11');
+  assert.equal(studyDay.studyDayKey(lateNight, 0), '2026-09-11');
+  // With a 4am boundary the small hours belong to the night before…
+  assert.equal(studyDay.studyDayKey(lateNight, 4), '2026-09-10');
+  // …and the morning after does not.
+  assert.equal(studyDay.studyDayKey(morning, 4), '2026-09-11');
+  // Exactly on the boundary is the new day: the rule is "before this hour".
+  assert.equal(studyDay.studyDayKey(new Date(2026, 8, 11, 4, 0, 0), 4), '2026-09-11');
+  assert.equal(studyDay.studyDayKey(new Date(2026, 8, 11, 3, 59, 0), 4), '2026-09-10');
+});
+
+check('an out-of-range or junk boundary cannot relabel the whole day', () => {
+  const afternoon = new Date(2026, 8, 11, 15, 0, 0);
+  // 23 would make every daytime session count for yesterday. Clamped to 6.
+  assert.equal(studyDay.studyDayKey(afternoon, 23), '2026-09-11');
+  assert.equal(studyDay.studyDayKey(afternoon, -5), '2026-09-11');
+  assert.equal(studyDay.studyDayKey(afternoon, NaN), '2026-09-11');
+  assert.equal(studyDay.studyDayKey(afternoon, undefined), '2026-09-11');
+});
+
+check('an unusable date is reported as such, not as today', () => {
+  // The grouping falls back to an "unknown" bucket on null. Returning a key
+  // here would file a broken row under whatever day the app is having.
+  assert.equal(studyDay.studyDayKey(null), null);
+  assert.equal(studyDay.studyDayKey(''), null);
+  assert.equal(studyDay.studyDayKey('not a date'), null);
+});
+
+check('walking back a day survives a DST transition', () => {
+  inTimezone('America/Los_Angeles', () => {
+    // 2026-11-01 is the US fall-back: that local day is 25 hours long, so
+    // subtracting 86400000ms lands back on the same date and a streak would
+    // count one day twice. shiftDayKey walks the calendar instead.
+    assert.equal(studyDay.shiftDayKey('2026-11-02', 1), '2026-11-01');
+    assert.equal(studyDay.shiftDayKey('2026-11-01', 1), '2026-10-31');
+    // Spring forward, 2026-03-08: a 23-hour day, which drops a day the other way.
+    assert.equal(studyDay.shiftDayKey('2026-03-09', 1), '2026-03-08');
+    assert.equal(studyDay.shiftDayKey('2026-03-08', 1), '2026-03-07');
+  });
+  // Month and year boundaries, which the same arithmetic has to cross.
+  assert.equal(studyDay.shiftDayKey('2026-03-01', 1), '2026-02-28');
+  assert.equal(studyDay.shiftDayKey('2027-01-01', 1), '2026-12-31');
+  assert.equal(studyDay.shiftDayKey('2024-03-01', 1), '2024-02-29', 'leap year');
+});
+
+check('a day key renders as the day it names, in any timezone', () => {
+  inTimezone('America/Los_Angeles', () => {
+    // `new Date('2026-09-11')` is parsed as UTC midnight, which renders as the
+    // 10th here — the group header would be off by one for half the world.
+    const d = studyDay.dayKeyToDate('2026-09-11');
+    assert.equal(d.getFullYear(), 2026);
+    assert.equal(d.getMonth(), 8);
+    assert.equal(d.getDate(), 11);
+  });
+});
