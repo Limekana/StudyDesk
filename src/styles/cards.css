@@ -12,7 +12,7 @@
 .course-card-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .course-card-pills{display:flex;gap:5px;flex-shrink:0;}
 .course-card-pill{font-family:var(--font-mono);font-size:9px;padding:2px 7px;border-radius:20px;background:var(--surface2);color:var(--muted);border:1px solid var(--border);}
-.course-card-pill.urgent{background:rgba(192,57,43,0.1);color:#c0392b;border-color:rgba(192,57,43,0.2);}
+.course-card-pill.urgent{background:var(--danger-tint);color:var(--danger);border-color:var(--danger-tint-border);}
 .course-card-chevron{font-size:10px;color:var(--muted2);transition:transform 0.2s;flex-shrink:0;margin-inline-start:6px;}
 .course-card-chevron.open{transform:rotate(90deg);}
 .course-card-detail{border-top:1px solid var(--border);padding:12px 16px 14px;background:var(--surface2);}
@@ -54,7 +54,7 @@
 .topic-title.done{text-decoration:line-through;color:var(--muted2);}
 .topic-del{opacity:0;background:none;border:none;color:var(--muted2);cursor:pointer;font-size:16px;padding:0 4px;transition:opacity 0.1s,color 0.1s;}
 .topic-item:hover .topic-del{opacity:1;}
-.topic-del:hover{color:#c0392b;}
+.topic-del:hover{color:var(--danger);}
 .topics-empty{font-family:var(--font-mono);font-size:11px;color:var(--muted2);padding:14px 12px;text-align:center;border:1px dashed var(--border);border-radius:5px;margin-bottom:12px;}
 .topic-add-row{display:flex;gap:6px;margin-top:6px;}
 .topic-add-row input{font-size:13px;padding:9px 12px;}
@@ -70,8 +70,8 @@
 .cal-day-num{font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-bottom:3px;}
 .cal-day.today .cal-day-num{color:var(--text);font-weight:600;}
 .cal-event{font-size:9px;padding:2px 5px;border-radius:3px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--font-mono);font-weight:500;}
-.cal-exam{background:rgba(109,63,160,0.15);color:#6d3fa0;}
-.cal-study{background:rgba(26,92,158,0.12);color:#1a5c9e;}
+.cal-exam{background:var(--exam-bg-strong);color:var(--exam);}
+.cal-study{background:var(--info-bg);color:var(--info);}
 /* Mobile agenda replaces grid */
 .cal-agenda{display:none;}
 .cal-agenda-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);}
@@ -90,10 +90,10 @@
 .nextup-unlock-sub{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:16px;}
 .nextup-unlock-progress{display:flex;align-items:center;gap:8px;margin-bottom:16px;}
 .nextup-unlock-pip{width:32px;height:6px;border-radius:3px;background:var(--border2);transition:background 0.25s;}
-.nextup-unlock-pip.filled{background:#2e7d52;}
+.nextup-unlock-pip.filled{background:var(--success);}
 .nextup-unlock-progress-label{font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-inline-start:4px;}
-.suggest-banner{background:rgba(26,92,158,0.06);border:1px dashed rgba(26,92,158,0.3);border-radius:5px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;font-size:13px;flex-wrap:wrap;}
-.suggest-banner-label{font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;color:#1a5c9e;margin-inline-end:4px;}
+.suggest-banner{background:var(--info-soft);border:1px dashed var(--info-soft-border);border-radius:5px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;font-size:13px;flex-wrap:wrap;}
+.suggest-banner-label{font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;color:var(--info);margin-inline-end:4px;}
 .quick-add-box{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px;margin-bottom:24px;box-shadow:var(--shadow);}
 /* ── Course detail (v1.9 Item 14a) ───────────────────────────────────────────
    The middle pane of the desktop three-pane layout. The sidebar is pane one
@@ -158,3 +158,45 @@
      bar plus the home-indicator inset. */
   .ref-card{bottom:calc(72px + env(safe-area-inset-bottom));inset-inline-end:14px;inset-inline-start:14px;width:auto;}
 }
+
+/* ── Storage alert (v1.13 Item 1a) ──────────────────────────────────────────
+   Shown only when a critical local write has failed, so it is allowed to be
+   louder than anything else on the page — at the moment it appears, it is the
+   most important thing on the screen by a wide margin.
+
+   Uses the danger tokens rather than the warning ones deliberately. This is
+   not "heads up"; it is "your data will not survive closing the app". The
+   tokens resolve per theme, so the panel deepens rather than glows on the
+   dark modes and reads as a rose correction on Slate. */
+.storage-alert{
+  background:var(--danger-soft);
+  border:1px solid var(--danger-soft-border);
+  border-inline-start:3px solid var(--danger);
+  border-radius:5px;
+  padding:14px 16px;
+  margin-bottom:18px;
+}
+.storage-alert-head{
+  font-family:var(--font-mono);
+  font-size:10px;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  color:var(--danger);
+  margin-bottom:8px;
+}
+.storage-alert-body{font-size:13px;line-height:1.55;color:var(--text);margin-bottom:8px;}
+/* The consequence, set apart from the cause. A user who reads one line should
+   read the one that says what they stand to lose. */
+.storage-alert-stakes{font-weight:500;}
+.storage-alert-usage{
+  font-family:var(--font-mono);
+  font-size:10.5px;
+  color:var(--muted);
+  margin-bottom:12px;
+}
+.storage-alert-actions{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* v1.13 (#45) — the exam edit affordance. Muted until hover, like the course
+   row's own edit button, so a card full of controls does not shout. */
+.exam-edit-btn{background:none;border:none;color:var(--muted2);cursor:pointer;padding:2px 5px;display:flex;align-items:center;transition:color 0.1s;}
+.exam-edit-btn:hover{color:var(--text);}

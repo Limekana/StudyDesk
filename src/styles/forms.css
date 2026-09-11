@@ -22,7 +22,7 @@
    This list is opt-in by design — anything new added to a form needs adding
    here too, which is the trap that has now caught three input types. */
 input[type=text],input[type=password],input[type=date],input[type=time],input[type=number],select,textarea{background:var(--surface);border:1px solid var(--border2);color:var(--text);padding:9px 12px;font-family:var(--font-sans);font-size:13px;border-radius:4px;outline:none;transition:border-color 0.15s;width:100%;}
-input[type=text]:focus,input[type=password]:focus,input[type=date]:focus,input[type=time]:focus,input[type=number]:focus,select:focus,textarea:focus{border-color:#aaa;}
+input[type=text]:focus,input[type=password]:focus,input[type=date]:focus,input[type=time]:focus,input[type=number]:focus,select:focus,textarea:focus{border-color:var(--focus-ring);}
 textarea{resize:vertical;min-height:80px;line-height:1.6;}
 /* The native dropdown arrow is painted INSIDE the padding box, so symmetric
    padding lets the value slide under it. Invisible at full width, obvious in a
@@ -48,7 +48,7 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
 .input-group{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
 .input-label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;}
 .input-row{display:flex;gap:8px;align-items:flex-start;}
-.btn{background:#3d2e1e;color:#faf8f4;border:none;padding:9px 18px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:4px;transition:opacity 0.1s;white-space:nowrap;font-weight:500;}
+.btn{background:var(--accent);color:var(--accent-on);border:none;padding:9px 18px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:4px;transition:opacity 0.1s;white-space:nowrap;font-weight:500;}
 .btn:hover{opacity:0.8;}.btn-sm{padding:6px 12px;font-size:10px;}
 /* v1.6.2 — there was no :disabled rule at all, so a blocked .btn rendered as a
    very slightly darker button that silently swallowed taps. That is exactly how
@@ -59,16 +59,16 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
 .btn-outline{background:transparent;color:var(--muted);border:1px solid var(--border2);padding:7px 14px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:4px;transition:all 0.1s;}
 .btn-outline:hover{color:var(--text);border-color:var(--text);}
 .btn-danger-text{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:16px;padding:2px 6px;transition:color 0.1s;}
-.btn-danger-text:hover{color:#c0392b;}
-.btn-red{background:#c0392b;color:#fff;border:none;padding:8px 16px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:4px;transition:opacity 0.1s;}
+.btn-danger-text:hover{color:var(--danger);}
+.btn-red{background:var(--danger);color:var(--danger-on);border:none;padding:8px 16px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:4px;transition:opacity 0.1s;}
 .btn-red:hover{opacity:0.85;}
 
 /* v1.10 — destructive confirmation, used by the course-delete step.
    Its own block rather than another item in the footer row: the question needs
    a full line to sit on, and squeezing it in beside Save/Cancel is what made it
    "not quite fit". Tinted panel so the state is obvious without a modal-on-modal. */
-.confirm-delete{margin-top:12px;padding:14px;border:1px solid #e8c6c0;background:#fdf6f5;border-radius:5px;}
-.confirm-delete-q{font-family:var(--font-mono);font-size:11px;letter-spacing:0.06em;line-height:1.5;color:#c0392b;text-transform:uppercase;text-align:center;margin-bottom:12px;}
+.confirm-delete{margin-top:12px;padding:14px;border:1px solid var(--confirm-border);background:var(--confirm-bg);border-radius:5px;}
+.confirm-delete-q{font-family:var(--font-mono);font-size:11px;letter-spacing:0.06em;line-height:1.5;color:var(--danger);text-transform:uppercase;text-align:center;margin-bottom:12px;}
 .confirm-delete-actions{display:flex;gap:8px;}
 /* Both answers to the same geometry — the size difference was two classes
    disagreeing, not a decision. Colour carries the weight instead. Wrapping is
@@ -101,7 +101,7 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
 .asgn-due{font-family:var(--font-mono);font-size:10px;font-weight:500;}
 .asgn-notes{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.5;}
 .tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-family:var(--font-mono);font-size:10px;font-weight:500;}
-.tag-exam{background:rgba(109,63,160,0.12);color:#6d3fa0;}
+.tag-exam{background:var(--exam-bg);color:var(--exam);}
 .action-item{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;background:var(--surface);border:1px solid var(--border);border-radius:5px;margin-bottom:6px;box-shadow:var(--shadow);}
 .action-item.done{opacity:0.4;}
 .action-item.suggested{border-style:dashed;background:rgba(26,92,158,0.04);}
@@ -133,8 +133,8 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
    message is about, so the two read as one statement. */
 .modal-error{background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger);padding:10px 12px;border-radius:4px;font-size:12px;margin:2px 0 14px;}
 .modal input[aria-invalid]{border-color:var(--danger);}
-.urgent-banner{background:rgba(192,57,43,0.08);border:1px solid rgba(192,57,43,0.25);border-radius:5px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px;font-size:13px;}
-.urgent-banner strong{color:#c0392b;font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;}
+.urgent-banner{background:var(--danger-soft);border:1px solid var(--danger-soft-border);border-radius:5px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px;font-size:13px;}
+.urgent-banner strong{color:var(--danger);font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;}
 .empty{color:var(--muted2);font-family:var(--font-mono);font-size:11px;padding:20px 0;}
 .divider{height:1px;background:var(--border);margin:24px 0;}
 /* v1.8 RTL — Unicode arrows are bidi-neutral and are NOT mirrored by the

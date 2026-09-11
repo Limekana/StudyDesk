@@ -234,9 +234,9 @@
 /* Exam — the only solid fill on the sheet. */
 .cal-chip.is-exam {
   background: var(--chip-color, var(--text));
-  color: #fff;
+  color: var(--on-solid);
   font-weight: 500;
-  border-color: rgba(0, 0, 0, 0.12);
+  border-color: var(--chip-edge);
 }
 /* Assignment — cream with a course-coloured leading edge, like a tab on a
    file divider. */
@@ -681,22 +681,22 @@
   .cal-ribbon-row.today .cal-ribbon-num { color: var(--text); font-weight: 600; }
   .cal-ribbon-pins { display: flex; gap: 2px; }
   .cal-ribbon-pin { width: 5px; height: 5px; border-radius: 50%; background: var(--muted2); }
-  .cal-ribbon-pin.k-exam { background: var(--danger, #c2757a); }
+  .cal-ribbon-pin.k-exam { background: var(--danger); }
   .cal-ribbon-pin.k-assignment { background: transparent; border: 1px solid var(--muted2); }
 
   .cal-ribbon-track { position: relative; flex: 1 1 auto; min-width: 0; }
-  .cal-ribbon-now { position: absolute; top: 0; bottom: 0; width: 1.5px; background: var(--danger, #c2757a); }
+  .cal-ribbon-now { position: absolute; top: 0; bottom: 0; width: 1.5px; background: var(--danger); }
 
   .cal-ribbon-b {
     position: absolute; top: calc(5px + var(--rb-lane, 0) * 22px); height: 18px;
     border-radius: 3px; border: 0; padding: 0 4px;
     font-family: var(--font-mono); font-size: 9px; line-height: 18px;
     overflow: hidden; white-space: nowrap; text-align: start; cursor: pointer;
-    background: var(--rb-color, var(--border2)); color: #fff;
+    background: var(--rb-color, var(--border2)); color: var(--on-solid);
   }
   /* Lessons are the day's skeleton: palest, and drawn as context rather than
      as an event competing with the things sitting on top of them. */
-  .cal-ribbon-b.k-lesson { background: var(--rule2, #e7e0d1); color: var(--muted); }
+  .cal-ribbon-b.k-lesson { background: var(--rule2); color: var(--muted); }
   /* Planned is OUTLINED and logged is FILLED, mirroring the schema's own split
      between `planned_sessions` and `study_sessions`. An intention is not a
      fact, and the UI must not blur what the database keeps apart. */

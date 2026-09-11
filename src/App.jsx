@@ -9,10 +9,15 @@ import { App as CapApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "./lib/supabase.js";
 import AuthGate from "./features/auth/AuthGate.jsx";
+import SetPasswordScreen from "./features/auth/SetPasswordScreen.jsx";
+import { isRecoveryPending, subscribeRecovery } from "./lib/passwordRecovery.js";
 import { isGuestMode, setGuestMode } from "./lib/guestMode.js";
 import { scheduleOriginStamp } from "./lib/originMarker.js";
 import { watchAppOpens } from "./lib/appOpens.js";
 import { refreshEntitlement } from "./lib/entitlement.js";
+import { writeJson } from "./lib/localStore.js";
+import { downloadExport } from "./lib/dataRights.js";
+import StorageAlert from "./features/settings/StorageAlert.jsx";
 import TimerPill from "./features/timer/TimerPill.jsx";
 import { useAccountAvatar } from "./lib/useAccountAvatar.js";
 import ReferralPrompt from "./features/referral/ReferralPrompt.jsx";
@@ -25,6 +30,8 @@ import { applyRemotePull } from "./lib/merge.js";
 import GradesView from "./features/grades/GradesView.jsx";
 import SessionsView from "./features/sessions/SessionsView.jsx";
 import SaveSessionSheet from "./features/sessions/SaveSessionSheet.jsx";
+import NotebookView from "./features/notebook/NotebookView.jsx";
+import "./styles/notebook.css";
 import { isGradeMode, normalizeScale, DEFAULT_CUSTOM_SCALE } from "./lib/gradeScale.js";
 import CoursePicker from "./lib/CoursePicker.jsx";
 import { ASSIGN_TYPES, OTHER_ASSIGN_TYPE } from "./lib/assignTypes.js";
@@ -33,6 +40,14 @@ import { AddAsgnModal, AddExamModal, EditCourseModal } from "./features/plan/Cou
 import TimerView from "./features/timer/TimerView.jsx";
 // Cascade order preserved from the old css+css2+css3+css4+cssOnboard concat.
 import './styles/base.css';
+/* Load order is load-bearing. base.css declares the free light palette on
+   bare :root; modes.css scopes the two free dark palettes on [data-mode];
+   themes.css scopes the two paid palettes on [data-theme]. All three are
+   (0,1,0) or looser, so the LAST matching one wins — which is why a paid
+   theme applied over a remembered dark preference resolves to the paid theme
+   and not a hybrid. See the header comment in modes.css. */
+import './styles/modes.css';
+import './styles/themes.css';
 import './styles/forms.css';
 import './styles/cards.css';
 import './styles/onboarding.css';
@@ -41,7 +56,7 @@ import './styles/onboarding.css';
 import './styles/print.css';
 import './styles/desktop.css';
 import { COURSE_COLORS } from "./lib/courseColors.js";
-import { NotebookPen, CalendarDays, Award, Timer, PanelLeftClose, PanelLeftOpen, Paperclip } from "lucide-react";
+import { NotebookPen, CalendarDays, Award, Timer, PanelLeftClose, PanelLeftOpen, Paperclip, BookOpen, Pencil } from "lucide-react";
 import { GuestAvatar, AccountAvatar } from "./lib/avatar.jsx";
 import { useShellTier, useSidebarRail } from "./lib/useShell.js";
 import { startPlanReminderLoop, webNotifySupported } from "./lib/webNotify.js";
@@ -270,6 +285,15 @@ const INITIAL = {
   // Non-study blockers — training, clubs, shifts. Time that is NOT available
   // for study, and never counted as study anywhere.
   commitments:[],
+  // v1.13 Item 1b — the notebook. `notes` is the entries; `noteAttachments`
+  // mirrors `attachments`. Named `notes` at the top level and NOT reused for
+  // the per-course `notes` array on a course row, which is an older,
+  // unrelated local-only field (see mergeSubject) — they never meet, because
+  // one lives on `state.notes` and the other on `state.courses[id].notes`.
+  notes:[], noteAttachments:[],
+  // v1.13 Tier 2 (#31) — one row per lesson per date. The percentage is never
+  // stored; see src/lib/attendance.js.
+  attendance:[],
   gradeMode:"ib",                  // 'ib' | 'us' | 'custom' — persisted locally
   customScale:DEFAULT_CUSTOM_SCALE, // bounds for gradeMode 'custom' (SD-F4)
   aiEnabled:false,                 // AI debrief opt-in — device-level, persisted locally
@@ -366,8 +390,66 @@ function reducer(state, action) {
     case "TOGGLE_ASSIGNMENT": return {...state,assignments:state.assignments.map(a=>a.id===action.id?{...a,done:!a.done,updatedAt:new Date().toISOString()}:a)};
     case "EDIT_ASSIGNMENT":   return {...state,assignments:state.assignments.map(a=>a.id===action.id?{...a,title:action.title,dueDate:action.dueDate,notes:action.notes,updatedAt:new Date().toISOString()}:a)};
     case "DELETE_ASSIGNMENT": return {...state,assignments:state.assignments.filter(a=>a.id!==action.id)};
+    // v1.13 Tier 3 — upsert by id, for the calendar feed.
+    //
+    // ADD_ASSIGNMENT always appends, which is right for a user typing a new
+    // one and wrong for a feed that re-fetches every six hours: the server
+    // upsert converges on the derived id, but local state would grow a
+    // duplicate on every poll until the next pull tidied it up.
+    //
+    // It also takes `assignType` rather than `type`, because the action's own
+    // discriminator is called `type`. A caller spreading a row that carries a
+    // `type` field into an action would silently overwrite the action name —
+    // so this one takes an explicit `row` instead of being spread, which
+    // makes that class of mistake impossible rather than merely documented.
+    case "UPSERT_ASSIGNMENT": {
+      const row = action.row || {};
+      if (!row.id) return state;
+      const now = new Date().toISOString();
+      const i = state.assignments.findIndex(a => a.id === row.id);
+      const next = {
+        id: row.id,
+        courseId: row.courseId ?? null,
+        title: row.title || "",
+        type: row.type || null,
+        dueDate: row.dueDate || null,
+        notes: row.notes || "",
+        // `done` is preserved on an existing row. A student who ticked off an
+        // imported assignment must not have it un-ticked by the next poll —
+        // the feed knows the deadline, not whether they did it.
+        done: i >= 0 ? state.assignments[i].done : false,
+        updatedAt: now,
+      };
+      if (i < 0) return {...state, assignments:[...state.assignments, next]};
+      const copy = [...state.assignments];
+      copy[i] = { ...copy[i], ...next };
+      return {...state, assignments: copy};
+    }
     case "ADD_EXAM":    { const e={id:action.id||newSyncId(),courseId:action.courseId,title:action.title,dueDate:action.dueDate,difficulty:action.difficulty||"medium",notes:action.notes||"",done:false,topics:[],updatedAt:action.updatedAt||new Date().toISOString()}; return {...state,exams:[...state.exams,e]}; }
     case "TOGGLE_EXAM": return {...state,exams:state.exams.map(e=>e.id===action.id?{...e,done:!e.done,updatedAt:new Date().toISOString()}:e)};
+    // v1.13 (#45) — `deflate8818`, 2026-08-31: "Sometimes exams get
+    // rescheduled, change name, aren't as difficult as once thought."
+    // Assignments have had EDIT_ASSIGNMENT since v1.0; exams never did, so the
+    // only route was delete-and-recreate — which loses the topic checklist,
+    // the difficulty, and the study-start date derived from it. For an exam
+    // three weeks out with half its topics ticked off, that is the worst
+    // possible way to change a title.
+    //
+    // Difficulty is included here as well as in UPDATE_EXAM_DIFFICULTY: the
+    // report names it ("aren't as difficult as once thought") and the pills
+    // are only reachable with the card expanded, so the edit form has to
+    // carry it too. Topics are deliberately NOT touched — they have their own
+    // actions and a form field that could silently drop them is exactly the
+    // loss this fixes.
+    case "EDIT_EXAM": return {...state,exams:state.exams.map(e=>e.id!==action.id?e:{
+      ...e,
+      title: action.title !== undefined ? action.title : e.title,
+      dueDate: action.dueDate !== undefined ? action.dueDate : e.dueDate,
+      notes: action.notes !== undefined ? action.notes : e.notes,
+      difficulty: action.difficulty !== undefined ? action.difficulty : e.difficulty,
+      courseId: action.courseId !== undefined ? action.courseId : e.courseId,
+      updatedAt: new Date().toISOString(),
+    })};
     case "DELETE_EXAM": return {...state,exams:state.exams.filter(e=>e.id!==action.id)};
     case "UPDATE_EXAM_DIFFICULTY": return {...state,exams:state.exams.map(e=>e.id===action.id?{...e,difficulty:action.difficulty,updatedAt:new Date().toISOString()}:e)};
     // Topic ids stay uid(): they live inside the exam's jsonb payload and are
@@ -480,6 +562,10 @@ function reducer(state, action) {
         endsAt: action.endsAt,
         room: action.room || "",
         color: action.color || null,
+        // v1.13 — null is "every week". Only 1 and 2 are meaningful; anything
+        // else normalises to null here rather than being stored and having to
+        // be defended against at every read.
+        weekParity: action.weekParity === 1 || action.weekParity === 2 ? action.weekParity : null,
         updatedAt: action.updatedAt || new Date().toISOString(),
       };
       return { ...state, timetableEntries: [...(state.timetableEntries || []), e] };
@@ -494,6 +580,9 @@ function reducer(state, action) {
         endsAt: action.endsAt ?? e.endsAt,
         room: action.room !== undefined ? (action.room || "") : e.room,
         color: action.color !== undefined ? (action.color || null) : e.color,
+        weekParity: action.weekParity !== undefined
+          ? (action.weekParity === 1 || action.weekParity === 2 ? action.weekParity : null)
+          : (e.weekParity ?? null),
         updatedAt: new Date().toISOString(),
       })};
     case "DELETE_TT_ENTRY":
@@ -588,6 +677,112 @@ function reducer(state, action) {
       return {...state, studyUntil: Math.max(0, Math.min(24*60, Math.round(n)))};
     }
     case "SET_NOTIF_ENABLED": return {...state,notifEnabled:!!action.on};
+
+    // ── v1.13 Item 1b — notebook ──
+    // The content field is the ONLY thing that changes on nearly every
+    // keystroke, so UPDATE_NOTE patches rather than replacing: a full-row
+    // action would make every edit carry the whole note through the reducer
+    // and into the persist effect's dependency comparison.
+    case "ADD_NOTE": {
+      const n = {
+        id: action.note.id || newSyncId(),
+        courseId: action.note.courseId ?? null,
+        title: action.note.title ?? '',
+        lessonDate: action.note.lessonDate ?? null,
+        content: action.note.content ?? '',
+        sessionId: action.note.sessionId ?? null,
+        updatedAt: new Date().toISOString(),
+        deletedAt: null,
+      };
+      return { ...state, notes: [...(state.notes || []), n] };
+    }
+    case "UPDATE_NOTE": {
+      const notes = (state.notes || []).map((n) => (
+        n.id === action.id
+          ? { ...n, ...action.patch, updatedAt: new Date().toISOString() }
+          : n
+      ));
+      return { ...state, notes };
+    }
+    // Soft delete locally too, so the tombstone reaches the outbox and then
+    // other devices. A splice here would make the note reappear on the next
+    // pull, which is the resurrection bug reconcile.js guards against.
+    case "DELETE_NOTE": {
+      const notes = (state.notes || []).map((n) => (
+        n.id === action.id
+          ? { ...n, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+          : n
+      ));
+      return { ...state, notes };
+    }
+
+    // ── v1.13 Tier 2 — attendance (#31) ──
+    // Keyed by (entryId, date), not by id: marking the same lesson twice is
+    // one fact being corrected, not two records. The reducer enforces that
+    // locally so the local list matches what the server's unique index will
+    // hold, rather than diverging until the next pull.
+    case "SET_ATTENDANCE": {
+      const rows = state.attendance || [];
+      // Matched on the NATURAL KEY, and deliberately including soft-deleted
+      // rows. The server's identity for an attendance fact is
+      // (user, timetable_entry, date) — see the unique index in
+      // supabase/migrations/20260904_lesson_attendance_natural_key.sql — and it
+      // is total, so the database cannot represent a cleared row and a live row
+      // for the same lesson at once.
+      //
+      // This used to skip `deletedAt` rows, so clearing a mark and re-marking
+      // it appended a SECOND local row with a fresh uuid for a fact the server
+      // stores once. The two identities then disagreed at every layer: the
+      // percentage double-counted until the next pull, and the merge layer had
+      // to reconcile a pair the server could never send back.
+      //
+      // Reviving the existing row instead is exactly what `upsertAttendance`
+      // does on the server with `deleted_at: null`. One lesson on one date is
+      // one row, on both sides.
+      const i = rows.findIndex((r) => (
+        r.timetableEntryId === action.timetableEntryId && r.date === action.date
+      ));
+      const now = new Date().toISOString();
+      // A null status means "unmark" — the cycle returns to unmarked, and an
+      // unmarked lesson must leave NO live row, or it would sit in the
+      // denominator as a status the summariser does not recognise.
+      if (action.status == null) {
+        if (i < 0) return state;
+        const next = [...rows];
+        next[i] = { ...next[i], deletedAt: now, updatedAt: now };
+        return { ...state, attendance: next };
+      }
+      if (i >= 0) {
+        const next = [...rows];
+        next[i] = {
+          ...next[i],
+          status: action.status,
+          note: action.note ?? next[i].note ?? null,
+          // Revive: without this, re-marking a cleared lesson would update a
+          // row that `indexAttendance` still filters out as deleted.
+          deletedAt: null,
+          updatedAt: now,
+        };
+        return { ...state, attendance: next };
+      }
+      return {
+        ...state,
+        attendance: [...rows, {
+          // `action.id` is supplied by the caller so the id enqueued to the
+          // outbox is the same one this reducer stores. Attendance.jsx used to
+          // read its id back from a memoised pre-dispatch index, which is empty
+          // for a new mark — it enqueued `id: undefined` while this minted a
+          // different uuid.
+          id: action.id || newSyncId(),
+          timetableEntryId: action.timetableEntryId,
+          date: action.date,
+          status: action.status,
+          note: action.note ?? null,
+          updatedAt: now,
+          deletedAt: null,
+        }],
+      };
+    }
 
     // ── Sync: bulk merge from Supabase pull (LWW logic in merge.js) ──
     case "MERGE_REMOTE":   return applyRemotePull(state, action.remote);
@@ -838,6 +1033,9 @@ export default function App() {
         timetableEntries: Array.isArray(saved.timetableEntries) ? saved.timetableEntries : [],
         attachments: Array.isArray(saved.attachments) ? saved.attachments : [],
         commitments: Array.isArray(saved.commitments) ? saved.commitments : [],
+        notes: Array.isArray(saved.notes) ? saved.notes : [],
+        noteAttachments: Array.isArray(saved.noteAttachments) ? saved.noteAttachments : [],
+        attendance: Array.isArray(saved.attendance) ? saved.attendance : [],
         activeCourse: migratedActiveCourse,
         gradeMode,
         customScale,
@@ -853,6 +1051,53 @@ export default function App() {
     } catch { return init; }
   });
   const { t } = useTranslation();
+
+  // ── Auth session — DECLARED FIRST, DELIBERATELY ────────────────────────────
+  //
+  // `session` is read by dependency arrays scattered through this component,
+  // and a dependency array is evaluated DURING RENDER. A `const` is in its
+  // temporal dead zone until its own line runs, so any `[..., session]` above
+  // this point throws `ReferenceError: Cannot access 'session' before
+  // initialization` on the very first render. React unwinds, nothing is
+  // committed into `#root`, and the user gets a blank page in the app's cream
+  // ground — no crash, no console output in a release build, nothing.
+  //
+  // THIS HAS NOW SHIPPED TWICE. v1.10 hit it with the account-onboarding
+  // effect; the fix then was a comment telling the next author to keep their
+  // effect below the declaration. v1.13's notebook work added four more
+  // `session` readers above it — the debounced note-push effect, its flush,
+  // the note delete, and the export callback — and blanked the app again, this
+  // time only discovered by installing a signed APK on a physical phone and
+  // dumping the view hierarchy to find `#root` present with zero children.
+  //
+  // "Remember to declare your effect below this line" is not a fix, because it
+  // asks every future author to know about a bug they have never seen. Hoisting
+  // the declaration to the top of the component is: there is no longer anywhere
+  // above it to put an effect. Keep it here.
+  //
+  // Why nothing caught it: `npm run build` succeeds (this is valid JS, the
+  // error is at runtime), eslint's react-hooks rules do not model TDZ, and
+  // `npm run dev` does not reproduce it — the dev server's unbundled ESM
+  // evaluates the module differently from the production chunk. Only a
+  // production build, actually loaded in a browser, shows it. That is what
+  // `npm run check:boot` now does, and it runs in CI.
+  //
+  // undefined = auth still resolving · null = signed out · object = signed in.
+  const [session, setSession] = useState(undefined);
+  // v1.1 — guest mode flag. When `session === null` AND `guest === true`, the
+  // app renders normally with cloud sync disabled (Supabase realtime + outbox
+  // are already session-gated, so this is a pure UI bypass — no other code
+  // changes needed). When the user signs in or signs out, the flag is cleared.
+  const [guest, setGuest] = useState(() => isGuestMode());
+  // #52 — a password-recovery session is a session, so without this flag the
+  // gate below would open the whole app the moment the user proved they own the
+  // mailbox, leaving the password they came to change still unknown: in on this
+  // device, locked out on the next. Declared HERE, with the other gate state,
+  // because the TDZ incident this app shipped twice came from exactly this kind
+  // of binding being read by an effect above its declaration.
+  const [recoveryPending, setRecoveryPending] = useState(() => isRecoveryPending());
+  useEffect(() => subscribeRecovery(() => setRecoveryPending(isRecoveryPending())), []);
+
   const [onboarded, setOnboarded] = useState(() => {
     try { return localStorage.getItem("studydesk-onboarded") === "1"; } catch { return false; }
   });
@@ -862,8 +1107,21 @@ export default function App() {
   // is evaluated during render, so up here it referenced the binding before
   // its useState had run.
   const [onboardChecked, setOnboardChecked] = useState(false);
+  // v1.13 Item 1a — THE five-hours bug.
+  //
+  // This write is the app's database, and until now it was
+  // `try { ... } catch {}`. When it failed the app carried on with in-memory
+  // state that would not survive the next cold start: the user kept studying,
+  // the timer kept logging, and everything since the last successful write
+  // vanished at relaunch. Offline, none of it had reached the server either,
+  // so it was gone from every device — which is the report verbatim.
+  //
+  // `writeJson` marks this critical, so a failure raises the app-wide storage
+  // health state that `StorageAlert` renders. See src/lib/localStore.js for
+  // why an app update is not special here: it is simply the relaunch at which
+  // the user finds out.
   useEffect(() => {
-    try { localStorage.setItem("studydesk-v1", JSON.stringify({
+    writeJson("studydesk-v1", {
       courses:state.courses,
       assignments:state.assignments,
       actions:state.actions,
@@ -875,8 +1133,11 @@ export default function App() {
       timetableEntries:state.timetableEntries,
       attachments:state.attachments,
       commitments:state.commitments,
-    })); } catch {}
-  }, [state.courses,state.assignments,state.actions,state.exams,state.grades,state.studySessions,state.plannedSessions,state.academicTerms,state.timetableEntries,state.attachments,state.commitments]);
+      notes:state.notes,
+      noteAttachments:state.noteAttachments,
+      attendance:state.attendance,
+    }, { critical: true });
+  }, [state.courses,state.assignments,state.actions,state.exams,state.grades,state.studySessions,state.plannedSessions,state.academicTerms,state.timetableEntries,state.attachments,state.commitments,state.notes,state.noteAttachments,state.attendance]);
   // gradeMode is UI-only — persist separately so it doesn't trigger a v1 rewrite on every toggle.
   useEffect(() => {
     try { localStorage.setItem("studydesk-grade-mode", state.gradeMode); } catch {}
@@ -1105,13 +1366,137 @@ export default function App() {
   const [newCourseColor, setNewCourseColor] = useState(COURSE_COLORS[0]);
   const showFlash = useCallback((msg) => { setFlash(msg); setTimeout(()=>setFlash(null),2200); }, []);
 
+  // v1.13 Item 1a — the escape hatch offered by StorageAlert.
+  //
+  // Reads from `state`, which is IN MEMORY and still correct, rather than
+  // from localStorage, which is the thing that just failed. That is the whole
+  // point of the button: it is the one action that does not depend on
+  // anything currently broken. `downloadExport` builds a blob and hands it to
+  // the browser, touching no persistent storage on the way.
+  // ── v1.13 Item 1b — pushing note edits ──────────────────────────────────
+  //
+  // A note changes on every keystroke, so it CANNOT be enqueued the way an
+  // assignment is. Enqueueing per change would put hundreds of items in a
+  // queue that persists to localStorage on every write — which is the exact
+  // pressure that Item 1a identifies as the cause of the five-hours loss.
+  //
+  // So: debounce, and enqueue at most one item per note per idle window. The
+  // outbox de-duplicates nothing, but `upsert_note` carries the whole note as
+  // a snapshot, so a later item simply supersedes an earlier one under LWW —
+  // which makes a stale queued copy harmless rather than a lost edit.
+  //
+  // The 1500ms window matches the realtime pull's own coalescing constant, so
+  // the two do not fight: an edit settles, pushes, and the echo arrives after
+  // the queue has already drained it.
+  const noteTimers = useRef(new Map());
+  useEffect(() => {
+    if (!session) return undefined;
+    const timers = noteTimers.current;
+    for (const n of state.notes || []) {
+      if (n.deletedAt) continue;
+      const prev = timers.get(n.id);
+      if (prev?.updatedAt === n.updatedAt) continue;
+      if (prev?.handle) clearTimeout(prev.handle);
+      // The payload is captured HERE, alongside the timer, so `flush` below
+      // can push it without the note being in scope. Without it the flush had
+      // nothing to send — see blocker 3 on that effect.
+      const payload = {
+        id: n.id,
+        courseId: n.courseId,
+        title: n.title,
+        lessonDate: n.lessonDate,
+        content: n.content,
+        sessionId: n.sessionId,
+      };
+      const handle = setTimeout(() => {
+        outbox.enqueue("upsert_note", payload);
+        const cur = timers.get(n.id);
+        if (cur) timers.set(n.id, { ...cur, handle: 0 });
+      }, 1500);
+      timers.set(n.id, { updatedAt: n.updatedAt, handle, payload });
+    }
+    return undefined;
+  }, [state.notes, session]);
+
+  // Flush pending note pushes on unmount and on backgrounding.
+  //
+  // ── This CANCELLED them instead (v1.13 review, blocker 3) ──────────────
+  //
+  // It cleared every timer and enqueued nothing, so the edit it was written
+  // to rescue was the exact edit it destroyed: type a line, press Home inside
+  // the 1.5s debounce, and the write never left the device. It fired on
+  // unmount too, so merely navigating out of the notebook did the same.
+  //
+  // Nor was reconcile the safety net the old comment claimed. `findUnsynced`
+  // compares IDS: once a note has been pushed even once it exists remotely,
+  // so a later lost edit is invisible to it. The note then sits locally with
+  // a newer `updatedAt` that no one ever sees, until another device's older
+  // copy wins LWW and overwrites it.
+  //
+  // That is the five-hours bug, in the data the build plan calls the most
+  // precious in the app. It now enqueues.
+  useEffect(() => {
+    const flush = () => {
+      for (const [, rec] of noteTimers.current) {
+        if (!rec.handle) continue;
+        clearTimeout(rec.handle);
+        // Cancel the timer and do its job immediately. `enqueue` coalesces on
+        // the note id, so a flush racing a timer that already fired replaces
+        // one pending item rather than queueing a second.
+        if (rec.payload) outbox.enqueue("upsert_note", rec.payload);
+      }
+      noteTimers.current.clear();
+    };
+    const onHide = () => { if (document.visibilityState === "hidden") flush(); };
+    // `pagehide` as well as `visibilitychange`. iOS WKWebView does not reliably
+    // deliver `visibilitychange` when the OS terminates a backgrounded app, and
+    // this flush is the last thing standing between a debounced note edit and
+    // losing it. `pagehide` fires on that path, and flushing twice is free —
+    // `flush` clears the timer map, and `enqueue` coalesces on the note id.
+    const onPageHide = () => flush();
+    document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      document.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("pagehide", onPageHide);
+      flush();
+    };
+  }, []);
+
+  // Deleting a note. v1.13 review, blocker 4.
+  //
+  // `DELETE_NOTE` existed in the reducer and `delete_note` in KIND_DISPATCH,
+  // and NOTHING dispatched or enqueued either — the notebook shipped with no
+  // way to delete a note at all. The half that would have bitten hardest is
+  // the sync half: a note removed on one device would have stayed live on the
+  // server and come back on the next reinstall.
+  //
+  // Sited here rather than in the view because this is where `session` and
+  // the outbox live, matching every other delete path in this file.
+  const onDeleteNote = useCallback((id) => {
+    if (!id) return;
+    const pending = noteTimers.current.get(id);
+    // Drop any queued upsert for this note first: pushing an edit and then a
+    // tombstone for the same note in one drain is two round trips to reach
+    // the state one of them describes.
+    if (pending?.handle) clearTimeout(pending.handle);
+    noteTimers.current.delete(id);
+    dispatch({ type: "DELETE_NOTE", id });
+    if (session) outbox.enqueue("delete_note", { id });
+  }, [session]);
+
+  const onExportFromAlert = useCallback(() => {
+    try {
+      const name = downloadExport(state, session);
+      showFlash(t('settings.exportDone', { name }));
+    } catch (e) {
+      showFlash(t('settings.exportFailed', { msg: e.message }));
+    }
+  }, [state, session, showFlash, t]);
+
   // ── Auth session ─────────────────────────────────────────────────────────────
-  const [session, setSession] = useState(undefined); // undefined = loading; null = signed out; object = signed in
-  // v1.1 — guest mode flag. When `session === null` AND `guest === true`, the
-  // app renders normally with cloud sync disabled (Supabase realtime + outbox
-  // are already session-gated, so this is a pure UI bypass — no other code
-  // changes needed). When the user signs in or signs out, the flag is cleared.
-  const [guest, setGuest] = useState(() => isGuestMode());
+  // `session` and `guest` are DECLARED AT THE TOP of this component, with the
+  // other state, not here. See the block comment there — it is the reason.
 
   // v1.10 - the account-level onboarding check. Declared HERE, below `session`,
   // rather than beside the `onboardChecked` state it drives: the dependency
@@ -1539,6 +1924,22 @@ export default function App() {
     // v1.3 — Timer now hosts Log + Stats as sub-tabs (see TimerView), so they
     // no longer take their own bottom-bar slots — keeps the nav uncrowded.
     {id:"timer",    label:t('nav.timer'),  Icon:Timer},
+    // v1.13 Item 1b — Notebook. `railOnly` keeps it OUT of the mobile bottom
+    // bar and in the desktop sidebar, which is a deliberate departure from
+    // §10's "a nav entry for Notebook" and is worth stating plainly.
+    //
+    // The bottom bar is four tabs because v1.9 Item 6 sized it that way
+    // against the longest label the app ships — Spanish "Temporizador", 12
+    // characters, needing ~65px of the ~90px each tab gets on a 360px screen.
+    // A fifth tab drops that to 72px and the longest label no longer fits.
+    // The same constraint is why Log and Stats became Timer sub-tabs in v1.3
+    // and why the Plan calendar became a sub-tab in v1.9, both documented in
+    // this file — so this follows the app's own established answer rather
+    // than inventing one.
+    //
+    // On mobile the notebook is a Timer sub-tab instead, which is where §3
+    // wants it anyway: "one tap from a running timer, no search."
+    {id:"notebook", label:t('nav.notebook'), Icon:BookOpen, railOnly:true},
     // v1.3.1 — Settings is no longer a nav tab; it opens from the top-right
     // profile avatar (matches NCC/LimeLog). Still a valid `state.view`.
   ];
@@ -1554,6 +1955,14 @@ export default function App() {
   // still null, so realtime stays off and outbox enqueue calls are no-ops.
   if (session === null && !guest) {
     return <><AuthGate/></>;
+  }
+  // #52 — a recovery session must not become an ordinary signed-in session
+  // until a new password has actually been set. This sits AFTER the gate (there
+  // is nothing to set a password on without a session) and BEFORE everything
+  // else, because letting the app open here is the whole defect: the user is
+  // signed in on this device and still locked out of the next one.
+  if (session && recoveryPending) {
+    return <><SetPasswordScreen/></>;
   }
 
   return (<>
@@ -1659,10 +2068,16 @@ export default function App() {
             shell width rather than a reading measure: the calendar sheet and
             the multi-pane course detail. Everything else keeps the measure. */}
         <div className={"content"+(((state.view==="plan"&&(planSub==="calendar"||planSub==="timetable"))||state.view==="status")?" content-wide":"")}>
+          {/* v1.13 Item 1a — renders nothing unless a critical local write has
+              failed. Inside `.content` so it appears on every route: the
+              window in which the data still exists in memory is the only
+              window in which the user can save it, and they will not
+              necessarily be on Settings when it opens. */}
+          <StorageAlert onExport={onExportFromAlert} />
           {(urgent.length>0||urgentExams.length>0)&&state.view==="plan"&&(
             <div className="urgent-banner"><span>⚠️</span><div>
               <strong>{t('av.chrome.urgent')}</strong> —{" "}
-              {urgentExams.map((e,i)=><span key={e.id} style={{color:"#6d3fa0"}}>{t('av.chrome.examPrefix',{title:e.title})}{i<urgentExams.length-1?", ":""}</span>)}
+              {urgentExams.map((e,i)=><span key={e.id} style={{color:"var(--exam)"}}>{t('av.chrome.examPrefix',{title:e.title})}{i<urgentExams.length-1?", ":""}</span>)}
               {urgent.length>0&&urgentExams.length>0&&", "}
               {urgent.map((a,i)=><span key={a.id}>{a.title}{i<urgent.length-1?", ":""}</span>)}
             </div></div>
@@ -1725,7 +2140,7 @@ export default function App() {
           {state.view==="timer"   &&(
             <>
               <div className="timer-subtabs" role="tablist" aria-label="Timer sections">
-                {[["timer","av.tm.timerTab"],["log","av.tm.logTab"],["stats","av.tm.statsTab"]].map(([id,key])=>(
+                {[["timer","av.tm.timerTab"],["notes","nav.notebook"],["log","av.tm.logTab"],["stats","av.tm.statsTab"]].map(([id,key])=>(
                   <button key={id} type="button" role="tab" aria-selected={timerSub===id}
                     className={"timer-subtab"+(timerSub===id?" active":"")}
                     onClick={()=>setTimerSub(id)}>{t(key)}</button>
@@ -1735,8 +2150,20 @@ export default function App() {
                 {timerSub==="timer" &&<TimerView   state={state} dispatch={dispatch} session={session} showFlash={showFlash} onTimerComplete={(payload)=>setPendingSession(payload)}/>}
                 {timerSub==="log"   &&<SessionsView state={state} dispatch={dispatch} showFlash={showFlash} session={session}/>}
                 {timerSub==="stats" &&<StatsView    state={state}/>}
+                {/* The mobile home for the notebook. Same component as the
+                    desktop route below — one implementation, two entry
+                    points, so the two cannot drift. */}
+                {timerSub==="notes" &&<NotebookView state={state} dispatch={dispatch} onDeleteNote={onDeleteNote} onOpenTimer={()=>setTimerSub("timer")}/>}
               </div>
             </>
+          )}
+          {state.view==="notebook"&&(
+            <NotebookView
+              state={state}
+              dispatch={dispatch}
+              onDeleteNote={onDeleteNote}
+              onOpenTimer={()=>{ setTimerSub("timer"); dispatch({type:"SET_VIEW",view:"timer"}); }}
+            />
           )}
           {state.view==="settings"&&<SettingsView state={state} dispatch={dispatch} showFlash={showFlash} session={session}/>}
           </div>
@@ -1745,7 +2172,7 @@ export default function App() {
 
       {/* ── Mobile: collapsible course strip + bottom tab bar ── */}
       <nav className="mobile-tabbar">
-        {views.map(v=><div key={v.id} role="button" tabIndex={0} className={"mobile-tab"+(state.view===v.id?" active":"")}
+        {views.filter(v=>!v.railOnly).map(v=><div key={v.id} role="button" tabIndex={0} className={"mobile-tab"+(state.view===v.id?" active":"")}
           onClick={()=>dispatch({type:"SET_VIEW",view:v.id})}
           onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&dispatch({type:"SET_VIEW",view:v.id})}>
           <v.Icon size={20} strokeWidth={1.75} aria-hidden="true"/>
@@ -2171,13 +2598,59 @@ function ExamCard({ exam, courses, dispatch }) {
   const { t } = useTranslation();
   const [topicInput, setTopicInput] = useState("");
   const [open, setOpen] = useState(false);
+  // v1.13 (#45). Same shape as AsgnItem's inline editor rather than a modal:
+  // an exam card is already an expandable panel, and a modal over it would be
+  // a second layer for a three-field form.
+  const [editing, setEditing] = useState(false);
+  const [eTitle, setETitle] = useState(exam.title);
+  const [eDate, setEDate] = useState(exam.dueDate || "");
+  const [eNotes, setENotes] = useState(exam.notes || "");
+  const [eDiff, setEDiff] = useState(exam.difficulty || "medium");
+  const startEdit = () => {
+    // Re-seed from the row on every open. Without this, editing, cancelling,
+    // and reopening shows the abandoned draft rather than what is stored.
+    setETitle(exam.title); setEDate(exam.dueDate || "");
+    setENotes(exam.notes || ""); setEDiff(exam.difficulty || "medium");
+    setEditing(true);
+  };
+  const saveEdit = () => {
+    dispatch({
+      type: "EDIT_EXAM",
+      id: exam.id,
+      // A blank title falls back rather than clearing: an exam with no name
+      // is unusable, and the delete button is right there for people who mean
+      // to remove it.
+      title: eTitle.trim() || exam.title,
+      dueDate: eDate || null,
+      notes: eNotes,
+      difficulty: eDiff,
+    });
+    setEditing(false);
+  };
   const course=courses[exam.courseId]; const days=daysUntil(exam.dueDate);
   const studyStart=studyStartDate(exam); const studyDays=daysUntil(studyStart);
   const diff=exam.difficulty||"medium"; const topics=exam.topics||[];
   const doneCnt=topics.filter(t=>t.done).length;
   const pct=topics.length>0?Math.round((doneCnt/topics.length)*100):0;
-  const progressColor=pct===100?"#2e7d52":pct>50?"#d4860a":"#c0392b";
+  const progressColor=pct===100?"var(--success)":pct>50?"var(--warning)":"var(--danger)";
   const addTopic=()=>{ if(!topicInput.trim()) return; dispatch({type:"ADD_EXAM_TOPIC",examId:exam.id,title:topicInput.trim()}); setTopicInput(""); };
+  if (editing) return <div className="exam-card" style={{borderInlineStartColor:course?.color||"var(--border2)",flexDirection:"column",gap:10,padding:14}}>
+    <input type="text" value={eTitle} onChange={e=>setETitle(e.target.value)} style={{fontWeight:500}} autoFocus aria-label={t('sv.fTitle')}/>
+    <input type="date" value={eDate} onChange={e=>setEDate(e.target.value)} aria-label={t('av.ec.examDate')}/>
+    <div className="study-plan-bar">
+      <span className="study-plan-label">{t('av.ec.difficulty')}</span>
+      {["easy","medium","hard","brutal"].map(d=>(
+        <span key={d} className="difficulty-pill"
+          style={{background:eDiff===d?DIFFICULTY_COLORS[d]+"18":"transparent",color:eDiff===d?DIFFICULTY_COLORS[d]:"var(--muted2)",borderColor:eDiff===d?DIFFICULTY_COLORS[d]:"var(--border2)"}}
+          onClick={()=>setEDiff(d)}>{t(`av.difficulty.${d}`)}</span>
+      ))}
+    </div>
+    <textarea value={eNotes} onChange={e=>setENotes(e.target.value)} placeholder={t('sv.fNotes')+"…"} style={{minHeight:48,fontSize:12}}/>
+    <div style={{display:"flex",gap:8}}>
+      <button className="btn btn-sm" onClick={saveEdit}>{t('common.save')}</button>
+      <button className="btn-outline btn-sm" onClick={()=>setEditing(false)}>{t('common.cancel')}</button>
+    </div>
+  </div>;
   return <div className={"exam-card"+(exam.done?" done":"")} style={{borderInlineStartColor:course?.color||"var(--border2)"}}>
     <div className="exam-card-header" onClick={()=>setOpen(o=>!o)}>
       <div className={"asgn-check"+(exam.done?" checked":"")} style={{marginTop:5,flexShrink:0}} onClick={e=>{e.stopPropagation();dispatch({type:"TOGGLE_EXAM",id:exam.id});}}/>
@@ -2191,6 +2664,11 @@ function ExamCard({ exam, courses, dispatch }) {
         {topics.length>0&&<div className="exam-header-progress"><div className="exam-header-progress-track"><div className="exam-header-progress-fill" style={{width:pct+"%",background:progressColor}}/></div><span className="exam-header-progress-txt">{t('av.ec.topicsCount',{done:doneCnt,total:topics.length})}{pct===100?" ✓":""}</span></div>}
       </div>
       <span style={{fontSize:10,color:"var(--muted2)",transform:open?"rotate(90deg)":"rotate(0deg)",transition:"transform 0.2s",flexShrink:0,marginLeft:6}}>▶</span>
+      {/* v1.13 (#45). Beside delete, because that is where somebody who wants
+          to change an exam has been going and finding only delete. */}
+      <button className="exam-edit-btn" style={{flexShrink:0}} onClick={e=>{e.stopPropagation();startEdit();}} aria-label={t('av.ec.editExam')} title={t('av.ec.editExam')}>
+        <Pencil size={13} strokeWidth={1.75}/>
+      </button>
       <button className="btn-danger-text" style={{flexShrink:0}} onClick={e=>{e.stopPropagation();dispatch({type:"DELETE_EXAM",id:exam.id});}}>×</button>
     </div>
     {open&&<div className="exam-card-body">
@@ -2199,7 +2677,7 @@ function ExamCard({ exam, courses, dispatch }) {
         <span className="study-plan-label">{t('av.ec.difficulty')}</span>
         {["easy","medium","hard","brutal"].map(d=><span key={d} className="difficulty-pill" style={{background:diff===d?DIFFICULTY_COLORS[d]+"18":"transparent",color:diff===d?DIFFICULTY_COLORS[d]:"var(--muted2)",borderColor:diff===d?DIFFICULTY_COLORS[d]:"var(--border2)"}} onClick={()=>dispatch({type:"UPDATE_EXAM_DIFFICULTY",id:exam.id,difficulty:d})}>{t(`av.difficulty.${d}`)}</span>)}
       </div>}
-      {!exam.done&&exam.dueDate&&<div className="study-plan-bar"><span className="study-plan-label">{t('av.ec.startStudying')}</span><span className="study-plan-date">{fmtDateFull(studyStart)}</span><span style={{fontFamily:"var(--font-mono)",fontSize:11,color:studyDays<=0?"#c0392b":studyDays<=3?"#d4860a":"var(--muted)"}}>({studyDays<=0?t('av.ec.now'):t('av.ec.inDays',{n:studyDays})})</span></div>}
+      {!exam.done&&exam.dueDate&&<div className="study-plan-bar"><span className="study-plan-label">{t('av.ec.startStudying')}</span><span className="study-plan-date">{fmtDateFull(studyStart)}</span><span style={{fontFamily:"var(--font-mono)",fontSize:11,color:studyDays<=0?"var(--danger)":studyDays<=3?"var(--warning)":"var(--muted)"}}>({studyDays<=0?t('av.ec.now'):t('av.ec.inDays',{n:studyDays})})</span></div>}
       <div className="topics-section">
         <div className="topics-section-header">
           <span className="topics-section-label">{t('av.ec.topics')}</span>

@@ -31,7 +31,16 @@
 // and entries die with the element.
 const composing = new WeakSet();
 
-function isComposing(e, el) {
+/**
+ * Is this keystroke part of an open composition?
+ *
+ * Exported because `enterSubmit` only fits a single-purpose input. A handler
+ * that owns several keys — the Notebook editor's, which routes Enter, Tab and
+ * Backspace — needs the same three signals as ONE early return at the top,
+ * before any branch gets to look at the key. Pair it with
+ * `compositionTracking()` on the same element or the third signal is dead.
+ */
+export function isComposing(e, el) {
   const ne = e.nativeEvent;
   return Boolean(
     (ne && ne.isComposing) ||
@@ -55,10 +64,24 @@ function isComposing(e, el) {
  * the behaviour every native CJK text field has; it is the correct outcome,
  * not a compromise.
  */
-export function enterSubmit(fn) {
+/**
+ * The composition-tracking half of `enterSubmit`, on its own.
+ *
+ * Spread it onto any element whose own keydown handler calls `isComposing`.
+ * Signal 3 — the flag we keep ourselves — only exists if something maintains
+ * it, and it is the signal that catches the WebView builds where the other
+ * two have already gone quiet.
+ */
+export function compositionTracking() {
   return {
     onCompositionStart: (e) => { composing.add(e.currentTarget); },
     onCompositionEnd: (e) => { composing.delete(e.currentTarget); },
+  };
+}
+
+export function enterSubmit(fn) {
+  return {
+    ...compositionTracking(),
     onKeyDown: (e) => {
       if (e.key !== 'Enter') return;
       if (isComposing(e, e.currentTarget)) return;

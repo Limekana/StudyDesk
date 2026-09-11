@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { calculateGPA, subjectsWithEffectiveGrades } from '../../lib/gpa.js';
+import { preferredDayStart, studyDayKey, todayStudyDayKey, shiftDayKey } from '../../lib/studyDay.js';
 
 // ── BUG-21: Study Statistics Dashboard ───────────────────────────────────────
 //
@@ -59,14 +60,18 @@ function weekStart(d) {
   x.setDate(x.getDate() - day);
   return x;
 }
-function dayKey(d) {
-  const x = new Date(d);
-  return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
-}
+// `dayKey` used to live here, local and correct, while SessionsView and
+// TimerView each had their own UTC version. One module now answers the
+// question for all three — and answers it with the user's day boundary
+// rather than midnight. See lib/studyDay.js (#54).
 
 export default function StatsView({ state }) {
   const { t } = useTranslation();
   const mode = state.gradeMode || 'ib';
+  // Read once per mount rather than per render: this is a localStorage-backed
+  // preference that only Settings writes, and re-reading it mid-render would
+  // make the streak a function of something React cannot see change.
+  const dayStart = useMemo(() => preferredDayStart(), []);
 
   const sessions = useMemo(
     () => (state.studySessions || []).filter((s) => !s.deletedAt && s.startedAt),
@@ -124,25 +129,29 @@ export default function StatsView({ state }) {
   }, [sessions, state.courses]);
 
   // ── Study streak: consecutive days (ending today/yesterday) with ≥1 session ─
+  //
+  // #54 — days are STUDY days, not calendar days: with a 4am boundary the
+  // 01:00 session that ends a long night counts for the night, not for the
+  // morning after. Whether that changes anything is the user's call and
+  // nobody else's, so the default (midnight) leaves this exactly as it was.
+  //
+  // Walking by key rather than by Date is what makes the streak survive a DST
+  // transition; `shiftDayKey` explains why.
   const streak = useMemo(() => {
-    const days = new Set(sessions.map((s) => dayKey(s.startedAt)));
+    const days = new Set(sessions.map((s) => studyDayKey(s.startedAt, dayStart)).filter(Boolean));
     let count = 0;
-    const cursor = new Date(); cursor.setHours(0, 0, 0, 0);
+    const today = todayStudyDayKey(dayStart);
     // Allow the streak to "still be alive" if nothing logged today yet but
     // yesterday has a session.
-    if (!days.has(dayKey(cursor))) cursor.setDate(cursor.getDate() - 1);
+    let cursor = days.has(today) ? today : shiftDayKey(today, 1);
     const last14 = [];
-    const probe = new Date(); probe.setHours(0, 0, 0, 0);
-    for (let i = 0; i < 14; i++) {
-      last14.unshift(days.has(dayKey(probe)));
-      probe.setDate(probe.getDate() - 1);
-    }
-    while (days.has(dayKey(cursor))) {
+    for (let i = 13; i >= 0; i--) last14.push(days.has(shiftDayKey(today, i)));
+    while (days.has(cursor)) {
       count += 1;
-      cursor.setDate(cursor.getDate() - 1);
+      cursor = shiftDayKey(cursor, 1);
     }
     return { count, last14 };
-  }, [sessions]);
+  }, [sessions, dayStart]);
 
   // ── GPA trend: cumulative GPA per month over the trailing window ───────────
   const gpaTrend = useMemo(() => {

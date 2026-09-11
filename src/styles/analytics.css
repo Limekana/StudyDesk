@@ -111,10 +111,10 @@
 }
 /* Only a real finding gets colour. "Insufficient" and "none" stay grey, so a
    glance at the card cannot mistake an absence of evidence for a result. */
-.an-corr-verdict.v-strongPositive { color: #2e7d52; border-color: rgba(46, 125, 82, 0.4); background: rgba(46, 125, 82, 0.07); }
-.an-corr-verdict.v-weakPositive { color: #2e7d52; border-color: rgba(46, 125, 82, 0.25); }
-.an-corr-verdict.v-strongNegative { color: var(--danger); border-color: rgba(192, 57, 43, 0.4); background: rgba(192, 57, 43, 0.06); }
-.an-corr-verdict.v-weakNegative { color: var(--danger); border-color: rgba(192, 57, 43, 0.25); }
+.an-corr-verdict.v-strongPositive { color: var(--success); border-color: var(--success-border); background: var(--success-soft); }
+.an-corr-verdict.v-weakPositive { color: var(--success); border-color: var(--success-border-weak); }
+.an-corr-verdict.v-strongNegative { color: var(--danger); border-color: var(--danger-strong-border); background: var(--danger-strong-bg); }
+.an-corr-verdict.v-weakNegative { color: var(--danger); border-color: var(--danger-soft-border); }
 .an-corr-n { font-family: var(--font-mono); font-size: 10px; color: var(--muted2); }
 .an-caveat {
   margin-top: 12px;

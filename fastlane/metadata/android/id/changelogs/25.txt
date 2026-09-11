@@ -1,0 +1,21 @@
+Buku catatan — tulis catatanmu di tempat kamu belajar.
+
+Catatan tersusun di bawah mata pelajarannya, dan memulai catatan saat sesi belajar sedang berjalan otomatis mengaitkannya ke mata pelajaran itu. Tebal, miring, sorotan, judul, daftar, dan daftar centang, dengan pintasan markdown yang bekerja di ponsel: "- " untuk butir, "## " untuk judul, "[] " untuk kotak centang. Foto halaman tulisan tanganmu dan ia menyatu di dalam teks. Kamu bisa mengetik matematika, kimia, dan diagram sederhana sebagai teks biasa dan semuanya tergambar saat kamu mengetik — persamaan kimia bahkan menghitung atom di kedua sisi pada margin.
+
+Gelap dan Hitam, gratis.
+
+Dua tampilan baru untuk semua orang: Gelap, hangat dan nyaman di malam hari, dan Hitam, hitam pekat untuk layar OLED.
+
+Pekerjaanmu lebih aman.
+
+Jika ruang perangkat habis, StudyDesk memberitahumu alih-alih gagal menyimpan diam-diam. Sesi belajar yang belum pernah sampai ke cloud ditemukan dan dikirim pada sinkronisasi berikutnya, dan sinkronisasi yang berhenti kini mengatakannya dengan jelas serta menawarkan mencoba lagi.
+
+Jadwal.
+
+Pelajaran bisa berulang dua minggu sekali. Tandai kehadiran per pelajaran dan lihat persentasemu per periode dan per mata pelajaran — pelajaran yang dibatalkan tidak merugikanmu. Kamu juga bisa mengatur hari mulai minggumu.
+
+Berlangganan umpan kalender.
+
+Tempel alamat kalender pribadi dari sistem sekolahmu dan tenggatmu datang sendiri. Bekerja dengan Canvas, Moodle, Blackboard, Google Classroom, dan sebagian besar jadwal universitas.
+
+Juga: ujian kini bisa diedit, tidak perlu dihapus lalu dibuat ulang.

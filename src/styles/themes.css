@@ -1,0 +1,905 @@
+/* ── Paid alternate themes (v1.11) ─────────────────────────────────────────
+   Two supporter themes, implemented as additive token scopes over the same
+   custom-property names the free cream theme defines on bare `:root` in
+   base.css. Component stylesheets are not edited to add a theme selector
+   unless they carry a signature element that no token can express — those
+   exceptions are grouped at the bottom of this file, under their theme, so
+   the whole theme is readable in one place.
+
+   The free theme is the brand and is never touched. With `data-theme` absent
+   the app must be pixel-identical to the cream build; that is the acceptance
+   test, and it is why `applyTheme('free')` removes the attribute rather than
+   setting it to a third value.
+
+   Load order matters: this file is imported after base.css so the scoped
+   blocks win on cascade order at equal specificity.
+
+   STACKS — a library circulation desk. Manila catalogue cards in oak drawers,
+   buckram spines, a violet DATE DUE stamp. Light, square, dense, archival.
+   SLATE  — a school chalkboard in an oak frame. Chalk on green-biased slate,
+   yellow for what matters, rose for corrections. Dark, loose, containerless.
+*/
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THEME 1 — STACKS
+   ══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="stacks"] {
+  --bg: #dccfb2;          /* drawer — olive-biased, deliberately not cream */
+  --surface: #f6f1e4;     /* card stock */
+  --surface2: #efe7d2;    /* spine gutter, pressed rows, month band */
+  --border: #c6b78f;      /* hairline */
+  --border2: #a99a72;
+  --text: #221f19;
+  --muted: #6e6656;       /* pencil */
+  --muted2: #8b8371;      /* filed / disabled */
+  --danger: #8e3b2e;      /* recall notice — exams and past-due only */
+  --danger-bg: #f7ece4;
+  --danger-border: #d8b5a6;
+  --danger-on: #f6f1e4;
+  --warning: #5a3c86;     /* stamp violet. Semantic name kept, meaning
+                             narrowed: in this theme violet means "a clock is
+                             running" and appears nowhere else. */
+  --warning-bg: #efe9f3;
+  --warning-border: #c3b2d6;
+
+  --font-display: "Zilla Slab", Georgia, serif;
+  --font-mono: "Cutive Mono", ui-monospace, monospace;
+  /* Intentional: no sans anywhere in this theme. A catalogue card was typed
+     on a machine, never typeset, so the "sans" slot takes the typewriter. */
+  --font-sans: "Cutive Mono", ui-monospace, monospace;
+
+  --shadow: 2px 2px 0 rgba(42, 64, 52, 0.18);
+  --shadow-md: 2px 2px 0 rgba(42, 64, 52, 0.18);
+
+  /* Values the free theme never needed to name. */
+  --ink: #2a4034;               /* buckram — headings, tabs, rules, primaries */
+  --row-surface: #fbf8ee;
+  --row-surface-done: #efeadb;
+  --rule-inner: #e2d8be;
+  --row-today: #f5eddc;
+  --placeholder: #a39a85;
+  --spine-w: 34px;
+
+  /* v1.13 — the semantic tokens base.css introduced when the free dark modes
+     went in. Stacks inherited the free theme's values for all of them, and
+     five failed AA against the DRAWER, which is the ground `.main` and
+     `.topbar` actually paint. Measured, not guessed: `npm run check:contrast`.
+
+     The drawer is much darker than cream (#dccfb2 vs #f5f2ed), so text that
+     is comfortable on the free page is not comfortable here. Both greys move
+     down together so the muted/muted2 hierarchy survives — muted2 sitting
+     darker than muted would read as a mistake even while passing the check.
+       --muted   3.68 -> 5.10 on drawer
+       --muted2  2.44 -> 4.57 on drawer  (`.empty` was the worst offender)
+     The status hues are re-picked from the theme's own inks rather than
+     darkened arbitrarily: the recall-notice green and the ledger blue, and
+     --exam folded onto the stamp violet the theme already owns, which is
+     better design than a second violet nobody chose. */
+  --muted: #585141;
+  --muted2: #5f5849;
+  --success: #1f5c3b;
+  --info: #17538d;
+  --exam: #5a3c86;
+  --exam-bg: #ece6f2;
+  --exam-bg-strong: #e3daee;
+  --phase-short: #1f5c3b;
+  --phase-long: #17538d;
+
+  /* ── Notebook (v1.13 §6) — a note is a catalogue card.
+     The theme's existing 34px spine gutter REPLACES the margin rule outright
+     and carries the note's call number vertically, so --nb-margin-rule is
+     transparent rather than a colour: the gutter is already doing that job
+     and two verticals 10px apart is a mistake, not a design. */
+  --nb-page:#F6F1E4;
+  --nb-rule:#E2D8BE;
+  --nb-margin-rule:transparent;
+  --nb-margin-w:34px;
+  --nb-text-x:48px;
+  --nb-current-line:none;
+  --nb-ink:#221F19;
+  --nb-ink-muted:#6E6656;
+  --nb-caret:#2A4034;
+  --nb-marker:#6E6656;
+  --nb-check-line:#2A4034;
+  --nb-check-fill:#2A4034;
+  --nb-hl-1:#DCCEE8;
+  --nb-hl-2:#EFD2CC;
+  /* Nudged from #CFDDD2, which measured 1.249 against card stock and so
+     failed the handoff's own findability floor of 1.25 by a rounding error.
+     #C7D6CA measures 1.34 — the number §7 prints for this row. */
+  --nb-hl-3:#C7D6CA;
+  --nb-photo-border:#C6B78F;
+  --nb-bar-bg:#EFE7D2;
+  --nb-bar-rule:#2A4034;
+  --nb-font-body:'Zilla Slab',Georgia,serif;
+  --nb-font-head:'Zilla Slab',Georgia,serif;
+  --nb-font-meta:'Cutive Mono',ui-monospace,monospace;
+  --nb-src:#6E6656;
+  /* Radius 0, one value, no exceptions - expressed as a re-point of
+     the free tier's scale rather than a sweep. */
+  --r-sm: 0; --r-md: 0; --r-lg: 0; --r-pill: 0;
+}
+
+/* Card stock is coarser than writing paper: same grain hook, denser tile. */
+[data-theme="stacks"] body::before {
+  opacity: 0.055;
+  background-size: 150px 150px;
+}
+
+/* Radius: one value, no exceptions — inputs, chips, buttons, avatar, cells.
+   Applied as a sweep rather than per-component because the free theme sets
+   radii in eleven stylesheets and this theme's rule is genuinely global. */
+[data-theme="stacks"] ::selection { background: #d9cba6; }
+[data-theme="stacks"] ::-webkit-scrollbar-thumb { border-radius: 0; }
+[data-theme="stacks"] *:focus-visible { border-radius: 0; }
+
+/* The 2px buckram rules that carry hierarchy below sheet level, in place of
+   the free theme's soft shadows. */
+[data-theme="stacks"] .topbar { border-bottom: 2px solid var(--ink); }
+[data-theme="stacks"] .topbar-title,
+[data-theme="stacks"] .sidebar-wordmark { color: var(--ink); }
+[data-theme="stacks"] .topbar-date { text-transform: uppercase; letter-spacing: 0.04em; }
+
+[data-theme="stacks"] .nav-item.active,
+[data-theme="stacks"] .course-item.active { border-left-color: var(--ink); }
+
+/* Section labels read as drawer tabs: knocked-out caps on solid ink. */
+[data-theme="stacks"] .courses-label {
+  background: var(--ink);
+  color: var(--surface);
+  display: inline-block;
+  padding: 3px 7px 2px;
+  margin: 0 20px 8px;
+  letter-spacing: 0.16em;
+  font-size: 9px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THEME 2 — SLATE
+   ══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="slate"] {
+  --bg: #1d2622;          /* slate — green hue bias, never blue-grey */
+  --surface: #1d2622;     /* intentionally identical to --bg: one surface only.
+                             There is no second panel colour in this theme;
+                             that absence is the layout. */
+  --surface2: #243029;
+  --border: #31413a;
+  --border2: #4e5c55;
+  --text: #efebdf;        /* chalk — warm off-white, never #fff */
+  --muted: #8fa096;
+  --muted2: #7c8a82;      /* dust */
+  --danger: #d98e8e;      /* rose chalk */
+  --danger-bg: #2c2422;
+  --danger-border: #5d4442;
+  --danger-on: #1d2622;
+  --warning: #e3c46a;     /* yellow chalk — at most twice per screen */
+  --warning-bg: #2a2a20;
+  --warning-border: #5c5236;
+
+  --font-display: "Kalam", cursive;
+  --font-mono: "Anonymous Pro", ui-monospace, monospace;
+  --font-sans: "Kalam", cursive;
+
+  /* Outer shadows are banned: chalk marks do not float. */
+  --shadow: none;
+  --shadow-md: none;
+
+  --frame: #5c4a33;             /* oak — the room around the board */
+  --mark-dim: #c9d2cb;
+  --dust-far: #5e6c64;
+  --dust-farther: #3e4c45;
+  --glow: inset 0 0 60px rgba(255, 255, 255, 0.045);
+
+  /* v1.13 — same pass as Stacks above, and this one contained a live bug.
+     Slate is dark, so every inherited light-theme value failed against the
+     board. The important row:
+
+       --phase-focus was #1a1814 on #1d2622 — 1.14:1.
+
+     That is THE incident base.css documents. `--phase-focus` drives the
+     Pomodoro ring stroke as well as the numerals, so at 1.14:1 the whole
+     timer is gone rather than merely hard to read, and Slate is the theme it
+     was found in. The token was tokenised in v1.12; nothing ever gave Slate a
+     value for it, so the fix was one step short of done. Chalk, now — 13.03:1.
+
+     The rest are chalks rather than lifted versions of the free hues: this
+     theme's rule is that everything on the board was drawn with a stick of
+     something, and a desaturated web-green would read as a UI colour that
+     wandered in. --muted2 (dust) moves 4.30 -> 5.17; below 4.5 it was the
+     only text row failing before the status hues were added.
+
+     Washes deepen rather than brighten, the same rule the notebook's
+     highlight palette states: on a dark ground, marking something means
+     making it darker, not making it glow. */
+  --muted2: #8b9890;
+  --success: #9fce9f;
+  --info: #a9c4de;
+  --exam: #c3a9d6;
+
+  --exam-bg: #2b2434;
+  --exam-bg-strong: #332b3e;
+  --info-bg: #1c2833;
+  --info-soft: #19222a;
+  --info-soft-border: #33475a;
+  --success-soft: #1b271f;
+  --success-border: #3a5c46;
+  --success-border-weak: #2c4535;
+  --danger-soft: #2a1e1c;
+  --danger-soft-border: #5d4442;
+  --danger-tint: #2c2422;
+  --danger-tint-border: #5d4442;
+  --danger-strong-border: #6b4d4a;
+  --danger-strong-bg: #2a1e1c;
+  --confirm-bg: #2c2422;
+  --confirm-border: #5d4442;
+
+  --rule2: #2a352f;
+  --chip-edge: rgba(239, 235, 223, 0.14);
+  --on-solid: #1d2622;
+  --focus-ring: #6e7c74;
+  --selection: #3c4f45;
+
+  /* Buttons in this theme are outlined, not filled (see the :where(button)
+     rule below), so --accent never paints a ground here. Set anyway so the
+     token resolves to something coherent if a future surface does fill one. */
+  --accent: #efebdf;
+  --accent-on: #1d2622;
+
+  --phase-focus: #efebdf;
+  --phase-short: #9fce9f;
+  --phase-long: #a9c4de;
+
+  /* A chalkboard is not paper: the Lock In takeover goes to the board's own
+     darkest value rather than the free theme's brown-black. */
+  --lockin-1: #1d2622;
+  --lockin-2: #0f1512;
+  --lockin-ink: #efebdf;
+  --lockin-on: #1d2622;
+
+  /* ── Notebook (v1.13 §6) — a board is not ruled.
+     No page ruling at all; one chalk baseline under the current line, plus a
+     chalk vertical for the margin. The margin offsets to 32px and the text to
+     46px because the chalk vertical is 2px and skewed, so the optical edge
+     sits where a 1px rule would not. */
+  --nb-page:#1D2622;
+  --nb-rule:none;
+  --nb-margin-rule:rgba(201,210,203,.22);
+  --nb-margin-w:32px;
+  --nb-text-x:46px;
+  --nb-current-line:rgba(201,210,203,.28);
+  --nb-ink:#EFEBDF;
+  /* §7 prints 5.6:1 here; #7C8A82 measures 4.30 against the board, below AA.
+     Same correction as Light — lifted to the value the app's own --muted2
+     already uses in this theme, 5.17. */
+  --nb-ink-muted:#8b9890;
+  --nb-caret:#EFEBDF;
+  --nb-marker:#C9D2CB;
+  --nb-check-line:#C9D2CB;
+  --nb-check-fill:#C9D2CB;
+  --nb-hl-1:#4A4225;
+  --nb-hl-2:#5A3636;
+  --nb-hl-3:#3A4640;
+  --nb-photo-border:#4E5C55;
+  /* The board has no panels, so the bar sits directly on the slate with only
+     a hairline above it. The theme's own rule, not an exception to it. */
+  --nb-bar-bg:transparent;
+  --nb-bar-rule:#2C3A34;
+  --nb-font-body:'Kalam',cursive;
+  --nb-font-head:'Kalam',cursive;
+  --nb-font-meta:'Anonymous Pro',ui-monospace,monospace;
+  --nb-size-body:16px;
+  --nb-src:#8b9890;
+  --nb-stroke-w:2px;
+  /* One radius value. Nothing in this theme has a corner except the
+     hand-drawn checkbox and the chalk rule caps, so 2px everywhere
+     is indistinguishable from 2px in those two places alone. */
+  --r-sm: 2px; --r-md: 2px; --r-lg: 2px; --r-pill: 2px;
+}
+
+/* Chalk dust rather than paper fibre: larger tile, lighter blend. */
+[data-theme="slate"] body::before {
+  opacity: 0.05;
+  background-size: 220px 220px;
+  mix-blend-mode: screen;
+}
+
+/* Radius: 2px, and only where a hand would round something. Everything the
+   free theme rounds gets squared off; the checkbox and rule caps opt back in. */
+[data-theme="slate"] ::selection { background: #3c4f45; }
+[data-theme="slate"] ::-webkit-scrollbar-thumb { background: var(--dust-far); }
+
+/* The one inset glow, on the board itself. */
+[data-theme="slate"] .main { box-shadow: var(--glow); }
+
+/* The oak frame: the board needs a room around it or it reads as a dark UI. */
+[data-theme="slate"] .sidebar { border-inline-end: 2px solid var(--frame); }
+[data-theme="slate"] .topbar { border-bottom: none; }
+[data-theme="slate"] .topbar-title { font-weight: 700; letter-spacing: 0; }
+
+/* There are no cards, panels or row backgrounds in this theme. Items sit
+   directly on the slate, grouped by a written heading and a ruled line. */
+html[data-theme="slate"] :where(.course-card, .exam-card, .cal-agenda-item) {
+  background: transparent;
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+[data-theme="slate"] .nav-item.active,
+[data-theme="slate"] .course-item.active {
+  background: transparent;
+  border-left-color: var(--warning);
+}
+[data-theme="slate"] .nav-item:hover,
+[data-theme="slate"] .course-item:hover { background: var(--surface2); }
+
+/* Kalam has a 16px floor — below that a chalk hand stops being readable.
+   The free theme's 13px row titles would land under it, so the display face
+   is nudged up wherever it carries an item title. */
+[data-theme="slate"] .course-card-name,
+[data-theme="slate"] .exam-card-title,
+[data-theme="slate"] .cdv-name { font-size: 16px; line-height: 1.25; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SHARED — theme picker rows in Settings
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.theme-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.theme-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 8px);
+  background: var(--surface);
+  cursor: pointer;
+  text-align: start;
+  transition: border-color 0.12s var(--ease-paper, ease);
+  font: inherit;
+  color: inherit;
+}
+.theme-option:hover:not(:disabled) { border-color: var(--text); }
+.theme-option.active { border-color: var(--text); }
+.theme-option:disabled { cursor: default; opacity: 0.72; }
+
+/* Each swatch previews its own theme's real palette, so the choice is made by
+   looking rather than by reading a name. Values are literal on purpose: they
+   must not follow the theme currently applied. */
+.theme-swatch {
+  display: flex;
+  height: 42px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.theme-swatch span { flex: 1; }
+.theme-swatch.is-free span:nth-child(1) { background: #f5f2ed; }
+.theme-swatch.is-free span:nth-child(2) { background: #faf8f4; }
+.theme-swatch.is-free span:nth-child(3) { background: #1a1814; }
+.theme-swatch.is-free span:nth-child(4) { background: #b5470b; }
+.theme-swatch.is-stacks span:nth-child(1) { background: #dccfb2; }
+.theme-swatch.is-stacks span:nth-child(2) { background: #f6f1e4; }
+.theme-swatch.is-stacks span:nth-child(3) { background: #2a4034; }
+.theme-swatch.is-stacks span:nth-child(4) { background: #5a3c86; }
+.theme-swatch.is-slate span:nth-child(1) { background: #1d2622; }
+.theme-swatch.is-slate span:nth-child(2) { background: #5c4a33; }
+.theme-swatch.is-slate span:nth-child(3) { background: #efebdf; }
+.theme-swatch.is-slate span:nth-child(4) { background: #e3c46a; }
+
+/* v1.13 — the two free lighting levels get swatches on the same terms as the
+   themes: literal values, because a preview that followed the theme currently
+   applied would show you what you already have rather than what you would be
+   choosing. Four stops each, in the same roles as the rows above: ground,
+   panel, ink, accent. */
+.theme-swatch.is-dark span:nth-child(1) { background: #16140f; }
+.theme-swatch.is-dark span:nth-child(2) { background: #1e1b15; }
+.theme-swatch.is-dark span:nth-child(3) { background: #ede7da; }
+.theme-swatch.is-dark span:nth-child(4) { background: #e0913f; }
+.theme-swatch.is-black span:nth-child(1) { background: #000000; }
+.theme-swatch.is-black span:nth-child(2) { background: #0c0b08; }
+.theme-swatch.is-black span:nth-child(3) { background: #ede7da; }
+.theme-swatch.is-black span:nth-child(4) { background: #e0913f; }
+
+/* The swatch border is a token, so on a dark ground it stops being a pale
+   hairline around a dark block — which reads as a gap rather than an edge. */
+.theme-group + .theme-group { margin-top: 18px; }
+.theme-group-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted2);
+}
+/* The character/darkness line. Sits under the PAID group specifically — the
+   whole point is that a supporter reads it next to the thing they bought, not
+   buried in a changelog. */
+.theme-character-note {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.theme-option-name {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+}
+.theme-option-note {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted2);
+}
+.theme-locked-note {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   STACKS — structure
+   The handoff's rule is "radius 0, one value, no exceptions", which is a
+   genuinely global statement rather than a per-component list: the free theme
+   sets a radius in eleven stylesheets and enumerating them would go stale the
+   first time a new one is added. `html[data-theme]` keeps the sweep at
+   (0,1,1), which outranks any single-class rule regardless of load order,
+   without reaching for !important.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* The tokens above cover every surface. This catches what they do not:
+   the 50% circles (avatar, course pips, timer buttons), the 2px stroke
+   caps and the 10px logo - all deliberately untokenised in the free
+   theme, and all square under Stacks. */
+html[data-theme="stacks"] *,
+html[data-theme="stacks"] *::before,
+html[data-theme="stacks"] *::after { border-radius: 0; }
+
+/* Anything that names a thing is set in the slab; anything a clerk would have
+   typed stays in the typewriter, which is where `--font-sans` already points. */
+html[data-theme="stacks"] :where(
+  .asgn-title, .exam-card-title, .course-card-name, .cdv-name,
+  .topbar-title, .sidebar-wordmark, h1, h2, h3
+) {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+html[data-theme="stacks"] .asgn-title { font-size: 13.5px; line-height: 1.25; }
+
+/* Section labels become drawer tabs: caps in ink with a hairline running out
+   to fill the rest of the row. */
+html[data-theme="stacks"] .section-label {
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+}
+html[data-theme="stacks"] .section-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* Rows butt directly against each other — a course reads as a stack, not a
+   set of cards. This is the single biggest departure from the free theme, so
+   the doubled border between neighbours is removed rather than left to look
+   like a 2px rule that means nothing. */
+html[data-theme="stacks"] .asgn-item {
+  align-items: stretch;
+  gap: 10px;
+  padding: 9px 10px;
+  margin-bottom: 0;
+  background: var(--row-surface);
+  box-shadow: none;
+  border-bottom: none;
+  position: relative;
+}
+html[data-theme="stacks"] .asgn-item:last-of-type { border-bottom: 1px solid var(--border); }
+html[data-theme="stacks"] .asgn-item.done { opacity: 1; background: var(--row-surface-done); }
+html[data-theme="stacks"] .asgn-title.done { color: var(--muted2); }
+
+/* The 34px spine gutter. Present on every row, which is what makes a list
+   scan as a drawer rather than as a list that happens to be square. */
+html[data-theme="stacks"] .asgn-item::before {
+  content: attr(data-spine);
+  order: -1;
+  flex: 0 0 var(--spine-w);
+  align-self: stretch;
+  margin: -9px 0 -9px -10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  background: var(--surface2);
+  border-right: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+/* The signature: every deadline is a violet DATE DUE stamp. The line breaks
+   live in the attribute value because attr() cannot inject them; pre-line is
+   what turns them back into lines. Tilt and ink opacity arrive as custom
+   properties seeded from the item id, so a row keeps its angle across
+   re-renders instead of twitching on every state change. */
+html[data-theme="stacks"] .asgn-item[data-stamp]::after {
+  content: attr(data-stamp);
+  order: 2;
+  flex: 0 0 auto;
+  align-self: center;
+  white-space: pre-line;
+  text-align: center;
+  padding: 3px 6px 4px;
+  border: 2px solid var(--warning);
+  color: var(--warning);
+  font-family: var(--font-mono);
+  font-size: 7px;
+  letter-spacing: 0.14em;
+  line-height: 1.15;
+  transform: rotate(var(--stamp-tilt, -2deg));
+  opacity: var(--stamp-ink, 0.9);
+}
+html[data-theme="stacks"] .asgn-item[data-stamp-kind="exam"]::after {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+html[data-theme="stacks"] .asgn-item[data-stamp-kind="filed"]::after {
+  opacity: 0.45;
+  transform: rotate(-8deg);
+  letter-spacing: 0.12em;
+  font-size: 9px;
+}
+
+html[data-theme="stacks"] .asgn-check { order: 0; align-self: center; margin-top: 0; }
+html[data-theme="stacks"] .asgn-body { order: 1; }
+html[data-theme="stacks"] .asgn-clip { order: 3; }
+/* The edit/delete buttons carry no `order`, so they default to 0 and would
+   sit between the checkbox and the title once the other children are
+   ordered. Pushed past the stamp so the row reads spine -> title -> stamp
+   -> controls, which is the order the handoff draws. */
+html[data-theme="stacks"] .asgn-item > .btn-danger-text { order: 4; align-self: center; }
+html[data-theme="slate"] .asgn-item > .btn-danger-text { align-self: center; }
+
+/* The stamp carries the date, so the free theme's due text would say it
+   twice. Course colour is suppressed for the same reason the spine exists:
+   under Stacks a course is identified by its code, not by a swatch. */
+html[data-theme="stacks"] .asgn-due { display: none; }
+html[data-theme="stacks"] .asgn-course {
+  background: transparent !important;
+  color: var(--muted) !important;
+  padding: 0;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 9.5px;
+}
+html[data-theme="stacks"] .course-pip { display: none; }
+
+/* Stamping and drawer-pulls, never fades. Nothing exceeds 200ms. */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-theme="stacks"] .asgn-item[data-stamp]::after {
+    animation: stacks-impression 120ms cubic-bezier(.2, 0, 0, 1);
+  }
+}
+@keyframes stacks-impression {
+  from { transform: rotate(var(--stamp-tilt, -2deg)) scale(0.9); }
+  to   { transform: rotate(var(--stamp-tilt, -2deg)) scale(1); }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SLATE — structure
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Same reasoning as the Stacks sweep above, at this theme's one value. */
+html[data-theme="slate"] *,
+html[data-theme="slate"] *::before,
+html[data-theme="slate"] *::after { border-radius: 2px; }
+
+/* No cards, panels or row backgrounds. Items sit directly on the slate,
+   grouped only by a written heading and a ruled line — that absence is the
+   layout, so the free theme's row surface is removed rather than darkened. */
+html[data-theme="slate"] :where(.asgn-item, .action-item) {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 6px 2px;
+  margin-bottom: 11px;
+  gap: 11px;
+}
+
+/* 16px is a hard floor for Kalam: a chalk hand below that stops being
+   readable, and the free theme's 14px row title would land under it. */
+html[data-theme="slate"] .asgn-title { font-size: 16px; line-height: 1.25; font-weight: 400; }
+
+html[data-theme="slate"] .section-label {
+  color: var(--warning);
+  letter-spacing: 0.16em;
+  font-size: 10px;
+  align-items: center;
+  gap: 8px;
+}
+/* The chalk rule: laid with the side of the stick, so it is a skewed bar
+   rather than a hairline border. */
+html[data-theme="slate"] .section-label::after {
+  content: "";
+  flex: 1;
+  height: 3px;
+  background: currentColor;
+  opacity: 0.55;
+  transform: scaleX(.98) skewY(-0.4deg);
+}
+
+/* The hand-drawn checkbox — one of only two places a corner is allowed. */
+html[data-theme="slate"] .asgn-check {
+  border: 2px solid var(--mark-dim);
+  border-radius: 2px;
+  transform: rotate(-1.5deg);
+  margin-top: 2px;
+}
+html[data-theme="slate"] .asgn-check.checked {
+  background: transparent;
+  border-color: var(--mark-dim);
+  opacity: 0.4;
+}
+html[data-theme="slate"] .asgn-check.checked::after { border-color: var(--mark-dim); }
+
+/* THE SIGNATURE — the ghost. Nothing you finish leaves the board: completing
+   an item wipes it in place to a faint, still-readable smear. The free theme
+   already dims a done row to 0.45; this takes it to the specified 0.30 and
+   adds the blur that makes it read as wiped chalk rather than as disabled UI. */
+html[data-theme="slate"] .asgn-item.done {
+  opacity: 0.3;
+  filter: blur(0.5px);
+}
+html[data-theme="slate"] .asgn-title.done { color: var(--text); }
+html[data-theme="slate"] .asgn-item.done .asgn-course { opacity: 0.6; }
+
+html[data-theme="slate"] .asgn-course {
+  background: transparent !important;
+  color: var(--muted) !important;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+html[data-theme="slate"] .asgn-type,
+html[data-theme="slate"] .asgn-due { font-family: var(--font-mono); font-size: 10px; }
+
+/* Writing and wiping. Chalk moves at a constant speed, so the reveal is
+   linear — an ease would read as a UI animation rather than as a stroke. */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-theme="slate"] .asgn-item {
+    animation: slate-write 260ms linear;
+  }
+}
+@keyframes slate-write {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Urgency retint, per theme
+   Stacks keeps deadline pressure in the stamp, so the inline urgency colour
+   is only reachable where a stamp is not drawn; it goes to pencil and violet
+   rather than the free theme's traffic-light green/amber/red, which would be
+   three colours this palette does not contain.
+   Slate answers it with rose for pressure and dust for everything else — a
+   board has two chalks for this, not four.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="stacks"] {
+  --urgency-none: #8b8371;
+  --urgency-over: #8e3b2e;
+  --urgency-soon: #5a3c86;
+  --urgency-ok: #6e6656;
+}
+
+[data-theme="slate"] {
+  --urgency-none: #5e6c64;
+  --urgency-over: #d98e8e;
+  --urgency-soon: #d98e8e;
+  --urgency-ok: #7c8a82;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Surfaces the token sweep alone does not reach
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Segmented controls and small buttons: the free theme's active state is a
+   light chip, which reads as a hole punched in the board under Slate. */
+html[data-theme="slate"] :where(button, .btn, .btn-sm) {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border2);
+}
+html[data-theme="slate"] :where(button.active, .btn.active, [aria-pressed="true"]) {
+  background: var(--surface2);
+  color: var(--warning);
+  border-color: var(--warning);
+}
+html[data-theme="slate"] :where(.btn, button):disabled { color: var(--dust-far); }
+
+/* Course-colour washes. Under Slate the pastels in courseColors.js are tuned
+   for cream and either vanish or glare on a dark ground, and they arrive as
+   inline styles from data, so CSS is the only place to answer them. Rather
+   than tint each one, the wash is dropped to a chalk-neutral: a board does
+   not colour-code, it labels. */
+html[data-theme="slate"] .cal-agenda-item,
+html[data-theme="slate"] .cal-event {
+  background: transparent !important;
+  border-left: 2px solid var(--border2);
+}
+html[data-theme="slate"] .cal-agenda-pill,
+html[data-theme="slate"] .tag {
+  background: transparent !important;
+  color: var(--muted) !important;
+  border: 1px solid var(--border);
+}
+
+/* Stacks suppresses colour for the same reason the spine exists: a course is
+   identified by its code. Washes become card stock with a hairline. */
+html[data-theme="stacks"] .cal-agenda-item,
+html[data-theme="stacks"] .cal-event {
+  background: var(--row-surface) !important;
+  border: 1px solid var(--border);
+}
+html[data-theme="stacks"] .cal-agenda-pill,
+html[data-theme="stacks"] .tag {
+  background: transparent !important;
+  color: var(--warning) !important;
+  border: 1px solid var(--warning);
+  letter-spacing: 0.1em;
+}
+
+/* The urgent banner. Stacks makes it a recall notice — hard-edged, no wash;
+   Slate makes it a rose correction written on the board, not a filled alert. */
+html[data-theme="stacks"] :where(.urgent-banner, .nextup-unlock) {
+  background: var(--row-surface);
+  border: 2px solid var(--danger);
+  box-shadow: none;
+}
+html[data-theme="slate"] :where(.urgent-banner, .nextup-unlock) {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid var(--danger);
+  box-shadow: none;
+}
+
+/* Inputs. Stacks: a request slip — flat card stock, hard hairline, typewriter
+   placeholder. Slate: a ghost line, dashed, because nothing on a board has a
+   filled field. */
+html[data-theme="stacks"] :where(input, textarea, select) {
+  background: var(--row-surface);
+  border: 1px solid var(--border2);
+  color: var(--text);
+}
+html[data-theme="stacks"] ::placeholder { color: var(--placeholder); }
+html[data-theme="slate"] :where(input, textarea, select) {
+  background: transparent;
+  border: 1px dashed var(--border2);
+  color: var(--text);
+}
+html[data-theme="slate"] ::placeholder { color: var(--dust-far); }
+
+/* Settings sheets. Stacks gets the single hard offset drop the policy allows
+   at sheet level; Slate gets nothing, because chalk marks do not float. */
+html[data-theme="stacks"] .sv2-section {
+  box-shadow: var(--shadow);
+  border-color: var(--border2);
+}
+html[data-theme="slate"] .sv2-section {
+  background: transparent;
+  box-shadow: none;
+  border-color: var(--border);
+}
+
+/* Sub-tabs. `.timer-subtab.active` is a two-class selector at (0,2,0), so the
+   generic `:where(button.active)` sweep above at (0,1,1) loses to it — named
+   explicitly here rather than escalated to !important. Its active state fills
+   with `--text`, which under Slate is chalk: a light chip punched into the
+   board. Slate answers with the yellow underline it uses for "active"
+   everywhere else; Stacks with the solid ink tab of a drawer. */
+html[data-theme="slate"] .timer-subtab.active {
+  background: transparent;
+  color: var(--warning);
+  border-color: transparent;
+  border-bottom: 3px solid var(--warning);
+  transform: skewY(-0.6deg);
+}
+html[data-theme="slate"] .timer-subtab {
+  background: transparent;
+  color: var(--muted);
+  border-color: transparent;
+}
+html[data-theme="stacks"] .timer-subtab.active {
+  background: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
+}
+
+/* Primary actions. Slate writes them; Stacks stamps them. */
+html[data-theme="slate"] :where(.btn, .btn-sm) {
+  background: transparent;
+  color: var(--warning);
+  border: 1px dashed var(--border2);
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+html[data-theme="slate"] :where(.btn, .btn-sm):hover { border-color: var(--warning); }
+html[data-theme="slate"] .btn-outline { color: var(--text); border-style: solid; }
+
+html[data-theme="stacks"] :where(.btn, .btn-sm) {
+  background: var(--ink);
+  color: var(--surface);
+  border: 1px solid var(--ink);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+html[data-theme="stacks"] .btn-outline {
+  background: transparent;
+  color: var(--ink);
+}
+
+/* ── Pomodoro phase colours ────────────────────────────────────────────────
+   The timer's numerals and its progress ring share one value. Under the free
+   theme that value is the page ink, which is exactly why it had to be
+   retinted here: on Slate's dark ground the clock was black on dark green.
+   Each theme answers with colours from its own palette — focus takes the
+   theme's own reading colour, so the clock matches the play button and the
+   preset row rather than fighting them. */
+
+[data-theme="stacks"] {
+  --phase-focus: #2a4034;   /* buckram — the same ink the titles use */
+  --phase-short: #5a3c86;   /* stamp violet: a clock is running */
+  --phase-long: #6e6656;    /* pencil */
+}
+
+[data-theme="slate"] {
+  --phase-focus: #efebdf;   /* chalk — matches the play button and time picker */
+  --phase-short: #e3c46a;   /* yellow chalk */
+  --phase-long: #7c8a82;    /* dust */
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Notebook geometry, desktop tier — the two paid themes
+   Here rather than in notebook.css because these are theme facts, and
+   notebook.css carries no theme selector by design (§8, §10). A single
+   `:root` override at this breakpoint would flatten both of the departures
+   below, which is exactly the bug this split prevents.
+   ══════════════════════════════════════════════════════════════════════════ */
+@media(min-width:769px){
+  /* Stacks pins the gutter at 34px in BOTH form factors. It is not a margin
+     that scales with the measure — it is the theme's existing spine, carrying
+     the note's call number vertically, and a spine that changes width between
+     a phone and a laptop stops reading as one physical object. */
+  [data-theme="stacks"]{
+    --nb-margin-w:34px;
+    --nb-text-x:48px;
+  }
+  /* Slate sits 2px inboard of the default at every breakpoint. §1: "Slate
+     offsets its margin to 32px and its text to 46px because the chalk
+     vertical is 2px and skewed" — those are the phone numbers, 2px under the
+     free theme's 34/48, so the desktop pair is the same 2px under 44/60. The
+     optical edge of a skewed 2px chalk line is where a 1px printed rule would
+     not be, and the offset is what puts them in the same place. */
+  [data-theme="slate"]{
+    --nb-margin-w:42px;
+    --nb-text-x:58px;
+  }
+}

@@ -34,7 +34,47 @@ import { DIFFICULTY_DAYS } from './examDifficulty.js';
 // it declines to guess rather than picking one and being wrong half the time.
 const SUNDAY_FIRST_REGIONS = new Set(['US', 'CA', 'PT', 'BR', 'IN', 'ID']);
 
+// v1.13 — the user's own override, when they have set one.
+//
+// CLDR is right about what a locale's week START conventionally is, and the
+// resolution below is correct: `ar-EG` answers Saturday, `en-GB` Monday,
+// `en-US` Sunday. It was still worth adding an override, because the report
+// that prompted this ("the week starts on Sunday", 2026-09-02, 5/5) is not a
+// locale bug — it is a person whose locale genuinely says Sunday and who
+// wants Monday anyway. A student's week starts when their timetable does, and
+// that is not always what their region does on average.
+//
+// Device-level and local-only, like the grade scale: it is a display
+// preference, not academic data, and syncing it would mean a shared iPad
+// changing one person's grid because another person prefers Monday.
+export const WEEK_START_KEY = 'studydesk-week-start';
+
+export function preferredWeekStart() {
+  try {
+    const raw = localStorage.getItem(WEEK_START_KEY);
+    if (raw === null || raw === 'auto') return null;
+    const n = Number(raw);
+    return Number.isInteger(n) && n >= 0 && n <= 6 ? n : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setPreferredWeekStart(value) {
+  try {
+    if (value === null || value === 'auto') localStorage.removeItem(WEEK_START_KEY);
+    else localStorage.setItem(WEEK_START_KEY, String(value));
+  } catch {
+    /* private mode — the choice just won't survive a relaunch */
+  }
+}
+
 export function resolveWeekStart(locale) {
+  // The override wins outright. Checked FIRST rather than as a fallback: a
+  // user who has said "Monday" means it on every locale, including one whose
+  // CLDR answer changes when they travel.
+  const chosen = preferredWeekStart();
+  if (chosen !== null) return chosen;
   try {
     const l = new Intl.Locale(locale);
     // weekInfo is 1=Monday … 7=Sunday; this module uses JS's 0=Sunday … 6.

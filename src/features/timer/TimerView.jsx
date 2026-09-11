@@ -14,6 +14,7 @@ import { fmtTime } from '../../lib/dates.js';
 import { startFocus, stopFocus } from '../../lib/focusMode.js';
 import { enterSubmit } from '../../lib/imeSubmit.js';
 import { TIMER_CHANGE_EVENT } from '../../lib/timerSnapshot.js';
+import { preferredDayStart, studyDayKey, todayStudyDayKey, dayKeyToDate } from '../../lib/studyDay.js';
 import '../../styles/timer.css';
 
 function fmtMMSS(sec){ return String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0"); }
@@ -61,6 +62,11 @@ function FocusMinutesInput({ text, setText, commit, disabled, className, label }
 
 export default function TimerView({ state, onTimerComplete }) {
   const { t } = useTranslation();
+  // #54 — the user's day boundary, read once. Declared up here with the rest
+  // of this component's stable values rather than beside the session panel
+  // that uses it: this file is where the TDZ blanking bug lived, and the rule
+  // that came out of it is that nothing is declared below a reader.
+  const dayStart = preferredDayStart();
 
   // Restore persisted timer state from localStorage so tab-switching doesn't reset
   const _saved = (() => { try { return JSON.parse(localStorage.getItem('sd-timer')||'{}'); } catch { return {}; } })();
@@ -114,11 +120,52 @@ export default function TimerView({ state, onTimerComplete }) {
   useEffect(()=>{ customFocusRef.current=customFocus; },[customFocus]);
   useEffect(()=>{ modeRef.current=mode; },[mode]);
 
+  // ── Declared HERE, above the persist effect that lists it ────────────────
+  //
+  // v1.13 review. `courseId` is in the dependency array of the "persist timer
+  // state" effect below, and a dependency array is evaluated DURING RENDER. It
+  // used to be declared ~110 lines further down, next to the UI that sets it,
+  // so every render of this component read the binding inside its temporal
+  // dead zone and threw:
+  //
+  //     ReferenceError: Cannot access 'courseId' before initialization
+  //
+  // React unwound and committed nothing, so opening the Timer tab blanked the
+  // whole app — `#root` with zero children, the same signature as the v1.13
+  // cold-launch blocker (item G) and the same root cause, in a second file.
+  // The v1.13 notebook work added `courseId` to that effect for session
+  // scoping without moving the declaration above it.
+  //
+  // Keep every value a dependency array names declared above the effect that
+  // names it. `scripts/check-dep-tdz.mjs` fails the build if that stops being
+  // true anywhere in the app.
+  // v1.13 Item 1b — WHICH COURSE this block is for, chosen before it starts
+  // rather than after it ends.
+  //
+  // Until now the course was picked at SAVE time only, and the dropdown below
+  // set the free-text `task` from a course NAME — a label, not a link. That
+  // was enough when the only consumer was the saved row. It is not enough for
+  // the notebook, whose §3 says the tree "auto-scopes to the course selected
+  // in the timer": there was no such thing to read.
+  //
+  // Two things fall out of naming it. The notebook can scope, and
+  // SaveSessionSheet can arrive pre-filled instead of asking again for
+  // something the user already said — which is one less field on the sheet
+  // whose two silent `return`s were the 1.12.1 H1 defect.
+  const [courseId, setCourseId] = useState(() => _saved.courseId || '');
+  // Mirrored into a ref for the same reason `taskRef` exists: the completion
+  // callbacks are memoised and reading state directly would either capture a
+  // stale value or force the callback to rebuild on every keystroke.
+  const courseIdRef = useRef(courseId);
+  useEffect(()=>{ courseIdRef.current = courseId; },[courseId]);
+
   // Persist timer state to localStorage so tab-switching preserves it
   useEffect(() => {
     try {
       localStorage.setItem('sd-timer', JSON.stringify({
         customFocus, phase, secsLeft, running, session, focusDone, task, lockedIn, mode,
+        // v1.13 — read by timerSnapshot for the notebook's session scoping.
+        courseId: courseId || null,
         startedAt: startedAtRef.current,
         secsAtStart: secsAtStartRef.current,
         phaseStartedAt: phaseStartedAtRef.current,
@@ -128,7 +175,7 @@ export default function TimerView({ state, onTimerComplete }) {
       // notice a start or stop on its next one-second tick.
       window.dispatchEvent(new CustomEvent(TIMER_CHANGE_EVENT));
     } catch {}
-  }, [customFocus, phase, secsLeft, running, session, focusDone, task, lockedIn, mode]);
+  }, [customFocus, phase, secsLeft, running, session, focusDone, task, lockedIn, mode, courseId]);
 
   // Background-safe elapsed tracking refs
   const startedAtRef = useRef(null);
@@ -171,6 +218,7 @@ export default function TimerView({ state, onTimerComplete }) {
       onTimerComplete?.({
         durationMinutes: cf,
         task: taskRef.current,
+        subjectId: courseIdRef.current || null,
         startedAt: startedAtIso,
       });
       phaseStartedAtRef.current = null;
@@ -286,6 +334,7 @@ export default function TimerView({ state, onTimerComplete }) {
     onTimerComplete?.({
       durationMinutes: 30,
       task: '',
+      subjectId: courseIdRef.current || null,
       startedAt: new Date(Date.now() - 60*60*1000).toISOString(),
       allowDateEdit: true,
     });
@@ -352,6 +401,7 @@ export default function TimerView({ state, onTimerComplete }) {
     onTimerComplete?.({
       durationMinutes: Math.max(1, Math.round(elapsedSecs/60)),
       task: taskRef.current,
+      subjectId: courseIdRef.current || null,
       startedAt: startedAtIso,
     });
     phaseStartedAtRef.current = null;
@@ -546,9 +596,26 @@ export default function TimerView({ state, onTimerComplete }) {
     <div className="pomo-task-row">
       <div className="pomo-task-label">{t('av.tm.studying')}</div>
       <input type="text" placeholder={t('av.tm.workingPlaceholder')} value={task} onChange={e=>setTask(e.target.value)} style={{fontSize:14,padding:"10px 12px"}}/>
-      {courses.length>0&&<select aria-label={t('av.tm.quickFillAria')} value="" onChange={e=>setTask(e.target.value)} style={{marginTop:6}}>
-        <option value="">{t('av.tm.quickFillOption')}</option>
-        {courses.map(c=><option key={c.id} value={c.name}>{c.name}</option>)}
+      {/* Selecting a course now RECORDS the course as well as filling the
+          task line. The old control only ever set the task text, so picking
+          "Physics" told the app nothing it could act on. Keeping the
+          task-fill behaviour means nothing regresses for anyone using it as
+          a shortcut for typing. */}
+      {courses.length>0&&<select
+        aria-label={t('av.tm.courseAria')}
+        value={courseId}
+        onChange={e=>{
+          const id = e.target.value;
+          setCourseId(id);
+          const c = courses.find(x=>x.id===id);
+          // Only fill an EMPTY task line. Overwriting "chapter 7 problems"
+          // with "Physics" because the user then picked the course would
+          // destroy the more specific of the two.
+          if (c && !task.trim()) setTask(c.name);
+        }}
+        style={{marginTop:6}}>
+        <option value="">{t('av.tm.courseNone')}</option>
+        {courses.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
       </select>}
     </div>
     <button className="pomo-log-past" onClick={logPastSession}>
@@ -557,18 +624,24 @@ export default function TimerView({ state, onTimerComplete }) {
     {(()=>{
       const sessions = (state.studySessions||[]).filter(s=>!s.deletedAt);
       if (sessions.length === 0) return null;
-      const today = new Date().toISOString().slice(0,10);
-      const dateKey = (iso) => iso ? iso.slice(0,10) : null;
+      // #54 — study days, not UTC dates. `iso.slice(0,10)` is the UTC date, so
+      // "today's sessions" was the wrong set for every evening west of
+      // Greenwich and every early morning east of it. See lib/studyDay.js.
+      const today = todayStudyDayKey(dayStart);
       const todayList = sessions
-        .filter(s => dateKey(s.startedAt) === today)
+        .filter(s => studyDayKey(s.startedAt, dayStart) === today)
         .sort((a,b)=> (b.startedAt||"").localeCompare(a.startedAt||""));
-      // Weekly summary: group by ISO Monday-week
+      // Weekly summary: group by ISO Monday-week. The Monday was computed with
+      // LOCAL date arithmetic and then read back with toISOString() — the same
+      // UTC slice, so the bar a session landed in could be a week out for a
+      // Sunday-evening or Monday-morning block. Both halves are local now.
       const getWeekKey = (iso) => {
-        if(!iso) return null;
-        const d = new Date(iso); if (isNaN(d.getTime())) return null;
+        const key = studyDayKey(iso, dayStart);
+        if (!key) return null;
+        const d = dayKeyToDate(key);
         const day = d.getDay(); const diff = d.getDate() - day + (day===0?-6:1);
         const mon = new Date(d); mon.setDate(diff);
-        return mon.toISOString().slice(0,10);
+        return studyDayKey(mon, 0);
       };
       const weekMap = {};
       sessions.forEach(s => {
@@ -576,7 +649,7 @@ export default function TimerView({ state, onTimerComplete }) {
         weekMap[wk] = (weekMap[wk]||0) + (Number(s.durationMinutes)||0);
       });
       const weeks = Object.entries(weekMap).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,8);
-      const thisWeekKey = getWeekKey(new Date().toISOString());
+      const thisWeekKey = getWeekKey(new Date());
       return <div className="pomo-session-log">
         <div className="section-label" style={{marginTop:24}}>{t('av.tm.weeklyHours')}</div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>

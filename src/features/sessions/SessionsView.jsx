@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import * as outbox from '../../lib/outbox.js';
 import { fmtTime } from '../../lib/dates.js';
 import { enterSubmit } from '../../lib/imeSubmit.js';
+import { preferredDayStart, studyDayKey, todayStudyDayKey, dayKeyToDate } from '../../lib/studyDay.js';
 
 const css = `
 .sv-wrap{padding:16px 24px 80px;max-width:780px;margin:0 auto;}
@@ -31,9 +32,14 @@ const css = `
 .sv-empty{padding:48px 20px;text-align:center;border:1px dashed var(--border2);border-radius:10px;background:var(--surface);color:var(--muted);}
 `;
 
-function fmtDateHeader(iso, t, lang) {
-  const d = new Date(iso + 'T00:00:00');
-  const today = new Date(); today.setHours(0, 0, 0, 0);
+// #54 — `key` is a study-day key from lib/studyDay.js, and "today" here is the
+// study day too. Before, the key was a UTC date and this compared it against a
+// LOCAL today: west of Greenwich an evening session was keyed to tomorrow and
+// then labelled with tomorrow's weekday, so the list showed a session dated in
+// the future and skipped a day that had one.
+function fmtDateHeader(key, dayStart, t, lang) {
+  const d = dayKeyToDate(key);
+  const today = dayKeyToDate(todayStudyDayKey(dayStart));
   const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
   const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
   if (sameDay(d, today)) return t('sv.todayHead');
@@ -51,21 +57,26 @@ export default function SessionsView({ state, dispatch, showFlash, session }) {
     [state.studySessions],
   );
 
-  // Group by date (YYYY-MM-DD).
+  const dayStart = useMemo(() => preferredDayStart(), []);
+
+  // Group by study day. Was `startedAt.slice(0, 10)` — the UTC date — which is
+  // the wrong day for most of the world most evenings. See lib/studyDay.js.
   const grouped = useMemo(() => {
     const map = new Map();
     for (const s of sessions) {
-      const key = (s.startedAt || '').slice(0, 10) || 'unknown';
+      const key = studyDayKey(s.startedAt, dayStart) || 'unknown';
       if (!map.has(key)) map.set(key, []);
       map.get(key).push(s);
     }
     return Array.from(map.entries());
-  }, [sessions]);
+  }, [sessions, dayStart]);
 
   // Totals
   const total = sessions.reduce((a, s) => a + (Number(s.durationMinutes) || 0), 0);
-  const todayKey = new Date().toISOString().slice(0, 10);
-  const todayTotal = sessions.filter((s) => (s.startedAt || '').startsWith(todayKey)).reduce((a, s) => a + (Number(s.durationMinutes) || 0), 0);
+  const todayKey = todayStudyDayKey(dayStart);
+  const todayTotal = sessions
+    .filter((s) => studyDayKey(s.startedAt, dayStart) === todayKey)
+    .reduce((a, s) => a + (Number(s.durationMinutes) || 0), 0);
   // Last 7 days
   const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 6); cutoff.setHours(0, 0, 0, 0);
   const weekTotal = sessions.filter((s) => s.startedAt && new Date(s.startedAt) >= cutoff).reduce((a, s) => a + (Number(s.durationMinutes) || 0), 0);
@@ -102,7 +113,7 @@ export default function SessionsView({ state, dispatch, showFlash, session }) {
           return (
             <div key={dateKey} className="sv-day">
               <div className="sv-date-head">
-                {fmtDateHeader(dateKey, t, lang)} · {(dayTotal / 60).toFixed(1)}h
+                {fmtDateHeader(dateKey, dayStart, t, lang)} · {(dayTotal / 60).toFixed(1)}h
               </div>
               {list.map((s) => {
                 const course = s.subjectId ? state.courses[s.subjectId] : null;
