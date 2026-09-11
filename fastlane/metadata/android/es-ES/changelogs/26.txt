@@ -1,0 +1,3 @@
+Correcciones del cuaderno: las notas vuelven a ser accesibles en el móvil (un error de navegación las ocultaba tras crearlas), el autoguardado ahora captura cada salida — incluso cuando la app pasa a segundo plano a mitad de escritura — y las líneas de lista de verificación vuelven a mostrarse como casillas reales.
+
+Novedad: coloca las notas donde quieras. El Cuaderno ahora permite colocar cuadros de texto libremente en la página, no solo en una columna.

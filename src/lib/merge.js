@@ -357,6 +357,13 @@ function mergeNote(localNote, remoteRow) {
     // two revision sessions into something neither person wrote. Whole-row LWW
     // at least loses a whole edit visibly.
     content: remoteRow.content ?? '',
+    // Free placement. Travels with the content it describes and under the same
+    // LWW rule, because the two are one fact: a layout that arrived without
+    // its own content would hash-mismatch and be discarded on open, which is
+    // the stale path in features/notebook/layout.js rather than a merge.
+    // `null` from a row written by a version that predates the column, and
+    // from any note nobody has arranged.
+    layout: remoteRow.layout ?? null,
     sessionId: remoteRow.session_id ?? null,
     updatedAt: remoteRow.updated_at || null,
     deletedAt: remoteRow.deleted_at || null,

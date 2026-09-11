@@ -1,4 +1,18 @@
 #!/bin/bash
 # Quiet Gradle build — filters to show only errors and final BUILD status
 # Usage: ./gradlew-quiet assembleDebug
-cd "$(dirname "$0")" && ./gradlew -q "$@" 2>&1 | grep -E "^>|ERROR|FAIL|BUILD|error:|warning:" || true
+#
+# The exit code must be gradlew's, not grep's: `gradlew -q` prints nothing at
+# all on a clean success, so grep finds zero matches and would exit 1 even
+# though the build succeeded — and the old `|| true` on the end papered over
+# that by turning EVERY failure (including a real build failure) into a
+# reported success. Use PIPESTATUS to read gradlew's own exit code instead.
+set -uo pipefail
+cd "$(dirname "$0")"
+./gradlew -q "$@" 2>&1 | grep -E "^>|ERROR|FAIL|BUILD|error:|warning:"
+gradle_status="${PIPESTATUS[0]}"
+if [ "$gradle_status" -ne 0 ]; then
+  echo "gradlew-quiet: BUILD FAILED (gradlew exit $gradle_status)" >&2
+  exit "$gradle_status"
+fi
+exit 0

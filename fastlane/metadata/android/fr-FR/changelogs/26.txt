@@ -1,0 +1,3 @@
+Corrections du carnet de notes : les notes sont de nouveau accessibles sur téléphone (un bug de navigation les cachait après leur création), l'enregistrement automatique capture désormais chaque sortie — y compris quand l'application passe en arrière-plan en pleine frappe — et les lignes de liste à cocher s'affichent de nouveau comme de vraies cases à cocher.
+
+Nouveau : disposez vos notes librement. Le Carnet prend désormais en charge le placement libre des zones de texte sur la page, pas seulement en une seule colonne.

@@ -1,0 +1,3 @@
+Notizbuch-Korrekturen: Notizen sind auf dem Handy wieder erreichbar (ein Navigationsfehler versteckte sie nach dem Erstellen), die automatische Speicherung erfasst jetzt jeden Ausstieg — auch wenn die App mitten beim Tippen in den Hintergrund wechselt — und Checklisten-Zeilen werden wieder als echte Kontrollkästchen dargestellt.
+
+Neu: Notizen frei anordnen. Das Notizbuch unterstützt jetzt das freie Platzieren von Textfeldern auf der Seite, nicht nur in einer Spalte.

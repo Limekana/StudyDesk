@@ -970,7 +970,10 @@
     },
     "delete": "Poista muistiinpano",
     "confirmDelete": "Poistetaanko tämä muistiinpano? Tätä ei voi kumota.",
-    "fileUnder": "Kurssi"
+    "fileUnder": "Kurssi",
+    "box": "Tekstilaatikko",
+    "moveBox": "Siirrä laatikkoa",
+    "resizeBox": "Muuta laatikon kokoa"
   },
   "feed": {
     "title": "Kalenterisyöte",
