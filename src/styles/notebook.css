@@ -160,7 +160,19 @@
    losing one part. If one token drove both here, a theme needing a hollow box
    with a contrasting tick could not express it and the checked state would be
    invisible. Both are measured independently by the contrast gate. */
-.nb-check {
+/* ── The selector is `button.nb-check`, and that is load-bearing ──────────
+   A checklist BLOCK is rendered as `nb-block nb-check` (Block.jsx builds the
+   class as `nb-block nb-${type}`), so a bare `.nb-check` here matched the line
+   as well as the box inside it — and won, being the later rule at equal
+   specificity. Every checklist line in a note was therefore an absolutely
+   positioned 15px square: the text wrapped one character per row, and the
+   lines stacked on top of whatever was above them. Shipped that way in v1.13.
+   `nb-photo-block` in this same file exists to dodge exactly this collision
+   for photos; checkboxes never got the same treatment, so the element type
+   does it here instead. The box is a <button> at its one render site
+   (Block.jsx) and the line is a <div>, so the element type separates them
+   with no new class and no change to the markup. */
+button.nb-check {
   position: absolute;
   /* Centred in the 28px line box: (28 - 15) / 2 ≈ 6.5, rounded to the grid. */
   inset-inline-start: calc(var(--nb-margin-w) - 21px);
@@ -177,20 +189,20 @@
      target, 44px hit area"). */
   box-shadow: none;
 }
-.nb-check::before {
+button.nb-check::before {
   content: '';
   position: absolute;
   inset: -14px;
 }
-.nb-block[data-indent='1'] .nb-check { inset-inline-start: calc(var(--nb-margin-w) + 1px); }
+.nb-block[data-indent='1'] button.nb-check { inset-inline-start: calc(var(--nb-margin-w) + 1px); }
 
-.nb-check[aria-checked='true'] {
+button.nb-check[aria-checked='true'] {
   background: var(--nb-check-fill);
   border-color: var(--nb-check-fill);
 }
 /* The tick is knocked out of the fill, so it reads on any fill colour a theme
    picks without needing a third token for the tick itself. */
-.nb-check[aria-checked='true']::after {
+button.nb-check[aria-checked='true']::after {
   content: '';
   position: absolute;
   inset-inline-start: 4px;
@@ -389,6 +401,26 @@
 .nb-scope-course { display: flex; align-items: center; gap: 7px; font-size: 12.5px; }
 .nb-scope-pip { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 
+/* A new note with no course chosen first. Sits above the courses because it
+   is the list's one action, not an item in it. */
+.nb-tree-new {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 7px 12px;
+  margin-bottom: 4px;
+  background: none;
+  border: 0;
+  color: var(--nb-ink);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: start;
+  cursor: pointer;
+}
+.nb-tree-new:hover { background: var(--nb-bar-bg); }
+.nb-tree-new > span:first-child { color: var(--nb-ink-muted); width: 9px; text-align: center; }
+
 .nb-course-row {
   display: flex;
   align-items: center;
@@ -462,7 +494,13 @@
   border-bottom: 1px solid var(--nb-bar-rule);
 }
 .nb-head-course { font-size: 12.5px; display: flex; align-items: center; gap: 7px; }
-.nb-head-meta { font-family: var(--nb-font-meta); font-size: 10px; color: var(--nb-ink-muted); }
+/* Phone only — the way back to the list. Hidden here, shown in the phone
+   block below, because on desktop the list is permanently on screen. */
+.nb-head-browse { display: none; }
+/* `nowrap` because the bar is a fixed 44px: a locale that renders the
+   timestamp long enough to wrap pushed a second line out of the bar and over
+   the first rule of the page. */
+.nb-head-meta { font-family: var(--nb-font-meta); font-size: 10px; color: var(--nb-ink-muted); white-space: nowrap; }
 .nb-head-spacer { flex: 1; }
 
 /* The desktop format row. A FALLBACK — shortcuts are the real desktop path
@@ -571,7 +609,55 @@
    ══════════════════════════════════════════════════════════════════════════ */
 
 @media (max-width: 768px) {
+  /* One pane at a time. The tree is the list screen and the page is the note
+     screen; `is-list` on the root says which is up. The tree being hidden here
+     with nothing in its place is what made every note on a phone unreachable
+     once it was closed — see the comment in NotebookView.jsx. */
   .nb-tree { display: none; }
+  .nb.is-list .nb-tree {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    border-inline-end: 0;
+  }
+  .nb.is-list .nb-page-wrap { display: none; }
+
+  /* Touch targets. 12.5px rows at 7px padding are a mouse geometry; on the
+     list screen these rows are the navigation and have to be hittable with a
+     thumb. The desktop sidebar keeps its own density. */
+  .nb.is-list .nb-tree-new,
+  .nb.is-list .nb-course-row { padding-block: 12px; font-size: 14px; }
+  .nb.is-list .nb-note-row { padding-block: 12px; font-size: 13.5px; }
+
+  .nb-head-browse {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+    /* Negative inline start so the chevron optically aligns with the header's
+       14px padding rather than sitting 8px inboard of it. */
+    margin-inline-start: -8px;
+    padding: 8px;
+    background: none;
+    border: 0;
+    color: var(--nb-ink-muted);
+    font: inherit;
+    font-size: 12.5px;
+    cursor: pointer;
+  }
+  .nb-head-browse-chev { font-size: 16px; line-height: 1; }
+  .nb-head-browse-chev::before { content: '\2039'; }
+  [dir='rtl'] .nb-head-browse-chev::before { content: '\203A'; }
+
+  /* A full `toLocaleString()` does not fit a 393px bar next to the course
+     select and the two buttons — it squeezed the course name down to "Phy".
+     The list rows are already ordered most-recently-edited first, which is
+     what the timestamp is read for; "Saved to session" stays, because that is
+     §3's meta line and it is three words. */
+  .nb-head-meta-edited { display: none; }
+  .nb-head-course { min-width: 0; }
+  .nb-head-course-select { min-width: 0; }
+
   .nb-page { max-width: 100%; padding-inline: 0; }
   /* Measure: full width − 62px on phone. */
   .nb-block { padding-inline-end: 14px; }

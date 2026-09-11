@@ -944,6 +944,7 @@
     "treeLabel": "Courses and notes",
     "scopedToSession": "Scoped to session",
     "newNote": "New note",
+    "allNotes": "All notes",
     "untitled": "Untitled note",
     "unfiled": "Unfiled",
     "edited": "Edited {{when}}",

@@ -944,6 +944,7 @@
     "treeLabel": "Kurse und Notizen",
     "scopedToSession": "Auf Sitzung begrenzt",
     "newNote": "Neue Notiz",
+    "allNotes": "Alle Notizen",
     "untitled": "Unbenannte Notiz",
     "unfiled": "Nicht zugeordnet",
     "edited": "Bearbeitet {{when}}",
