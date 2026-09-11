@@ -165,6 +165,63 @@ export default function NoteEditor({
     if (focus >= 0) commitDraft(draft, -1);
   }, [focus, draft, commitDraft]);
 
+  // ── The note has no Save button, so autosave has to be total ────────────
+  //
+  // `draft` is the focused block's live text and it lives ONLY in this
+  // component until something commits it — a blur, Enter, Tab, a format
+  // button. Backgrounding the app is none of those. Reproduced on the built
+  // bundle: type into a note, fire `visibilitychange` → hidden and `pagehide`
+  // without blurring, and what reaches storage is the note as it was BEFORE
+  // the typing:
+  //
+  //     textarea value        "existing line AND MORE TYPED TEXT"
+  //     persisted after hide  "existing line"
+  //
+  // Which is the report — "no button to save" — as a data-loss bug rather
+  // than a missing control. Android kills a backgrounded WebView whenever it
+  // wants, so the window this is lost in is every time the user switches away
+  // mid-sentence. App.jsx already flushes on these two events, but that flush
+  // is the outbox's sync debounce: it pushes what the reducer has, and the
+  // reducer has never been told.
+  //
+  // The caret is deliberately kept (`focus`, not -1). This is a save, not a
+  // blur: the user has not left the line, and coming back to a note with the
+  // keyboard closed because the phone rang is its own small bug.
+  //
+  // Held in a ref, refreshed after every render, so the listeners can be
+  // registered once and still see the current draft. Binding them to `draft`
+  // instead would add and remove two document listeners on every keystroke.
+  const commitRef = useRef(null);
+  useEffect(() => {
+    commitRef.current = () => {
+      if (focus < 0) return;
+      // Only when the draft actually differs from the block it came from.
+      // Without this, every trip to the background on a note the user merely
+      // OPENED bumps `updatedAt` and enqueues an upsert — churn on the sync
+      // queue, and a device winning an LWW race with content identical to the
+      // copy it beat.
+      if (blocks[focus] && serializeBlock(blocks[focus]) === draft) return;
+      commitDraft(draft, focus);
+    };
+  });
+  useEffect(() => {
+    const save = () => commitRef.current?.();
+    const onHide = () => { if (document.visibilityState === 'hidden') save(); };
+    document.addEventListener('visibilitychange', onHide);
+    // `pagehide` too, for the same reason App.jsx gives: a WebView that the OS
+    // terminates outright does not reliably deliver `visibilitychange`.
+    window.addEventListener('pagehide', save);
+    return () => {
+      document.removeEventListener('visibilitychange', onHide);
+      window.removeEventListener('pagehide', save);
+      // Unmount is the third way out — switching sub-tab, or the note being
+      // swapped for another. `key={active.id}` in NotebookView makes changing
+      // note an unmount, so this is what saves the line you were on when you
+      // tap a different note in the list.
+      save();
+    };
+  }, []);
+
   // ── Typing ──────────────────────────────────────────────────────────────
 
   const onInput = useCallback((e) => {
