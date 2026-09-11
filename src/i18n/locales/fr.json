@@ -352,7 +352,12 @@
     "weekStart": "La semaine commence le",
     "weekStartAuto": "Automatique ({{day}})",
     "weekStartSaved": "Début de semaine mis à jour.",
-    "weekStartNote": "Automatique suit votre langue et votre région. Changez-le si votre emploi du temps commence un autre jour."
+    "weekStartNote": "Automatique suit votre langue et votre région. Changez-le si votre emploi du temps commence un autre jour.",
+    "dayStartLbl": "Journées d’étude",
+    "dayStart": "Ma journée commence à",
+    "dayStartMidnight": "Minuit",
+    "dayStartNote": "Ce qui est étudié après cette heure compte pour la veille : une nuit tardive fait une seule journée d’étude, pas deux. Agit sur votre série et sur le regroupement des sessions.",
+    "dayStartSaved": "Début de journée mis à jour."
   },
   "sdob": {
     "brand": "Arrête de choisir. Commence à réviser.",

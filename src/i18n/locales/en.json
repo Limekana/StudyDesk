@@ -350,7 +350,12 @@
     "weekStart": "Week starts on",
     "weekStartAuto": "Automatic ({{day}})",
     "weekStartSaved": "Week start updated.",
-    "weekStartNote": "Automatic follows your language and region. Change it if your timetable starts on a different day."
+    "weekStartNote": "Automatic follows your language and region. Change it if your timetable starts on a different day.",
+    "dayStartLbl": "Study days",
+    "dayStart": "My day starts at",
+    "dayStartMidnight": "Midnight",
+    "dayStartNote": "Study later than this and it counts towards the day before — so a late night is one study day, not two. Affects your streak and how sessions are grouped.",
+    "dayStartSaved": "Day start updated."
   },
   "sdob": {
     "brand": "Stop deciding. Start studying.",

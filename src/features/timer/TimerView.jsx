@@ -14,6 +14,7 @@ import { fmtTime } from '../../lib/dates.js';
 import { startFocus, stopFocus } from '../../lib/focusMode.js';
 import { enterSubmit } from '../../lib/imeSubmit.js';
 import { TIMER_CHANGE_EVENT } from '../../lib/timerSnapshot.js';
+import { preferredDayStart, studyDayKey, todayStudyDayKey, dayKeyToDate } from '../../lib/studyDay.js';
 import '../../styles/timer.css';
 
 function fmtMMSS(sec){ return String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0"); }
@@ -61,6 +62,11 @@ function FocusMinutesInput({ text, setText, commit, disabled, className, label }
 
 export default function TimerView({ state, onTimerComplete }) {
   const { t } = useTranslation();
+  // #54 — the user's day boundary, read once. Declared up here with the rest
+  // of this component's stable values rather than beside the session panel
+  // that uses it: this file is where the TDZ blanking bug lived, and the rule
+  // that came out of it is that nothing is declared below a reader.
+  const dayStart = preferredDayStart();
 
   // Restore persisted timer state from localStorage so tab-switching doesn't reset
   const _saved = (() => { try { return JSON.parse(localStorage.getItem('sd-timer')||'{}'); } catch { return {}; } })();
@@ -618,18 +624,24 @@ export default function TimerView({ state, onTimerComplete }) {
     {(()=>{
       const sessions = (state.studySessions||[]).filter(s=>!s.deletedAt);
       if (sessions.length === 0) return null;
-      const today = new Date().toISOString().slice(0,10);
-      const dateKey = (iso) => iso ? iso.slice(0,10) : null;
+      // #54 — study days, not UTC dates. `iso.slice(0,10)` is the UTC date, so
+      // "today's sessions" was the wrong set for every evening west of
+      // Greenwich and every early morning east of it. See lib/studyDay.js.
+      const today = todayStudyDayKey(dayStart);
       const todayList = sessions
-        .filter(s => dateKey(s.startedAt) === today)
+        .filter(s => studyDayKey(s.startedAt, dayStart) === today)
         .sort((a,b)=> (b.startedAt||"").localeCompare(a.startedAt||""));
-      // Weekly summary: group by ISO Monday-week
+      // Weekly summary: group by ISO Monday-week. The Monday was computed with
+      // LOCAL date arithmetic and then read back with toISOString() — the same
+      // UTC slice, so the bar a session landed in could be a week out for a
+      // Sunday-evening or Monday-morning block. Both halves are local now.
       const getWeekKey = (iso) => {
-        if(!iso) return null;
-        const d = new Date(iso); if (isNaN(d.getTime())) return null;
+        const key = studyDayKey(iso, dayStart);
+        if (!key) return null;
+        const d = dayKeyToDate(key);
         const day = d.getDay(); const diff = d.getDate() - day + (day===0?-6:1);
         const mon = new Date(d); mon.setDate(diff);
-        return mon.toISOString().slice(0,10);
+        return studyDayKey(mon, 0);
       };
       const weekMap = {};
       sessions.forEach(s => {
@@ -637,7 +649,7 @@ export default function TimerView({ state, onTimerComplete }) {
         weekMap[wk] = (weekMap[wk]||0) + (Number(s.durationMinutes)||0);
       });
       const weeks = Object.entries(weekMap).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,8);
-      const thisWeekKey = getWeekKey(new Date().toISOString());
+      const thisWeekKey = getWeekKey(new Date());
       return <div className="pomo-session-log">
         <div className="section-label" style={{marginTop:24}}>{t('av.tm.weeklyHours')}</div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>

@@ -352,7 +352,12 @@
     "weekStart": "La semana empieza el",
     "weekStartAuto": "Automático ({{day}})",
     "weekStartSaved": "Inicio de semana actualizado.",
-    "weekStartNote": "Automático sigue tu idioma y región. Cámbialo si tu horario empieza otro día."
+    "weekStartNote": "Automático sigue tu idioma y región. Cámbialo si tu horario empieza otro día.",
+    "dayStartLbl": "Días de estudio",
+    "dayStart": "Mi día empieza a las",
+    "dayStartMidnight": "Medianoche",
+    "dayStartNote": "Lo que estudies después cuenta para el día anterior: una noche larga es un día de estudio, no dos. Afecta a tu racha y a cómo se agrupan las sesiones.",
+    "dayStartSaved": "Inicio del día actualizado."
   },
   "sdob": {
     "brand": "Deja de decidir. Empieza a estudiar.",

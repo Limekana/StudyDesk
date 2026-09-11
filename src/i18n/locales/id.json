@@ -348,7 +348,12 @@
     "weekStart": "Minggu dimulai",
     "weekStartAuto": "Otomatis ({{day}})",
     "weekStartSaved": "Awal minggu diperbarui.",
-    "weekStartNote": "Otomatis mengikuti bahasa dan wilayahmu. Ubah jika jadwalmu mulai di hari lain."
+    "weekStartNote": "Otomatis mengikuti bahasa dan wilayahmu. Ubah jika jadwalmu mulai di hari lain.",
+    "dayStartLbl": "Hari belajar",
+    "dayStart": "Hariku dimulai pukul",
+    "dayStartMidnight": "Tengah malam",
+    "dayStartNote": "Belajar setelah jam ini dihitung untuk hari sebelumnya, jadi begadang tetap satu hari belajar, bukan dua. Memengaruhi rentetan dan pengelompokan sesi.",
+    "dayStartSaved": "Awal hari diperbarui."
   },
   "sdob": {
     "brand": "Berhenti menimbang. Mulai belajar.",
