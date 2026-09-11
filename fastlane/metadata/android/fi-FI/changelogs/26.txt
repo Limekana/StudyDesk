@@ -1,0 +1,3 @@
+Muistikirjan korjaukset: muistiinpanot löytyvät taas puhelimessa (navigointivirhe piilotti ne luomisen jälkeen), automaattitallennus tallentaa nyt jokaisessa poistumistilanteessa — myös kun sovellus siirtyy taustalle kesken kirjoituksen — ja tarkistuslistan rivit näkyvät taas oikeina valintaruutuina.
+
+Uutta: järjestele muistiinpanot vapaasti. Muistikirja tukee nyt tekstilaatikoiden sijoittelua vapaasti sivulle, ei vain yhteen sarakkeeseen.

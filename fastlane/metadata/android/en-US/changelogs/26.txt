@@ -1,0 +1,3 @@
+Notebook fixes: notes are reachable on phone again (a navigation bug hid them after creation), autosave now catches every exit — including the app being backgrounded mid-keystroke — and checklist lines render as proper checkboxes again.
+
+New: arrange notes freely. The Notebook now supports placing text boxes anywhere on the page, not just in a single column.
