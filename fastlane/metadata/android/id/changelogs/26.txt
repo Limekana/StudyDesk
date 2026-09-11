@@ -1,0 +1,3 @@
+Perbaikan Notebook: catatan kini dapat diakses kembali di ponsel (bug navigasi menyembunyikannya setelah dibuat), penyimpanan otomatis kini menangkap setiap keluar — termasuk saat aplikasi masuk ke latar belakang di tengah pengetikan — dan baris daftar centang kini tampil sebagai kotak centang asli lagi.
+
+Baru: atur catatan secara bebas. Notebook kini mendukung penempatan kotak teks bebas di halaman, bukan hanya dalam satu kolom.

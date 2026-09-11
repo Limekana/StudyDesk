@@ -1,0 +1,3 @@
+Correções do Caderno: as notas voltam a ser acessíveis no celular (um bug de navegação as escondia após a criação), o salvamento automático agora captura toda saída — inclusive quando o app vai para segundo plano no meio da digitação — e as linhas de lista de verificação voltam a aparecer como caixas de seleção reais.
+
+Novidade: organize as notas livremente. O Caderno agora permite posicionar caixas de texto livremente na página, não apenas em uma coluna.
