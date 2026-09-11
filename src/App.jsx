@@ -9,6 +9,8 @@ import { App as CapApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "./lib/supabase.js";
 import AuthGate from "./features/auth/AuthGate.jsx";
+import SetPasswordScreen from "./features/auth/SetPasswordScreen.jsx";
+import { isRecoveryPending, subscribeRecovery } from "./lib/passwordRecovery.js";
 import { isGuestMode, setGuestMode } from "./lib/guestMode.js";
 import { scheduleOriginStamp } from "./lib/originMarker.js";
 import { watchAppOpens } from "./lib/appOpens.js";
@@ -1087,6 +1089,14 @@ export default function App() {
   // are already session-gated, so this is a pure UI bypass — no other code
   // changes needed). When the user signs in or signs out, the flag is cleared.
   const [guest, setGuest] = useState(() => isGuestMode());
+  // #52 — a password-recovery session is a session, so without this flag the
+  // gate below would open the whole app the moment the user proved they own the
+  // mailbox, leaving the password they came to change still unknown: in on this
+  // device, locked out on the next. Declared HERE, with the other gate state,
+  // because the TDZ incident this app shipped twice came from exactly this kind
+  // of binding being read by an effect above its declaration.
+  const [recoveryPending, setRecoveryPending] = useState(() => isRecoveryPending());
+  useEffect(() => subscribeRecovery(() => setRecoveryPending(isRecoveryPending())), []);
 
   const [onboarded, setOnboarded] = useState(() => {
     try { return localStorage.getItem("studydesk-onboarded") === "1"; } catch { return false; }
@@ -1945,6 +1955,14 @@ export default function App() {
   // still null, so realtime stays off and outbox enqueue calls are no-ops.
   if (session === null && !guest) {
     return <><AuthGate/></>;
+  }
+  // #52 — a recovery session must not become an ordinary signed-in session
+  // until a new password has actually been set. This sits AFTER the gate (there
+  // is nothing to set a password on without a session) and BEFORE everything
+  // else, because letting the app open here is the whole defect: the user is
+  // signed in on this device and still locked out of the next one.
+  if (session && recoveryPending) {
+    return <><SetPasswordScreen/></>;
   }
 
   return (<>
