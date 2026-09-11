@@ -1277,3 +1277,49 @@ check('the repeating count does not disturb the items array', () => {
   assert.equal([...items].length, 1);
   assert.equal(JSON.parse(JSON.stringify(items)).length, 1);
 });
+
+// ── passwordRecovery.js — which URLs are a recovery (#52) ─────────────────
+//
+// This one predicate decides whether a link that comes back from an email
+// opens "choose a new password" or opens the app. Both ways of getting it
+// wrong are silent and serious:
+//
+//   * too narrow — a real recovery link signs the user in with the password
+//     they could not remember still in place, which is issue #52 all over
+//     again, one step further along.
+//   * too broad — an ordinary Google sign-in is mistaken for a recovery and
+//     every signed-in user is asked to set a new password to get past the
+//     gate.
+//
+// It is a regex over a URL rather than two URL parses because the marker is
+// the same token whether Supabase puts it in the query (PKCE) or the fragment
+// (implicit), and which of those arrives is a project setting, not something
+// this app chooses.
+const { looksLikeRecovery } = await import('../src/lib/passwordRecovery.js');
+
+check('a recovery link is recognised in the query and in the fragment', () => {
+  assert.equal(looksLikeRecovery('https://app.example/?code=abc&type=recovery'), true);
+  assert.equal(looksLikeRecovery('https://app.example/#access_token=x&type=recovery'), true);
+  // Native deep link — same question, different scheme.
+  assert.equal(looksLikeRecovery('com.studydesk.app://login-callback?code=abc&type=recovery'), true);
+  // Not necessarily last in the string.
+  assert.equal(looksLikeRecovery('https://app.example/?type=recovery&code=abc'), true);
+});
+
+check('an ordinary sign-in callback is NOT a recovery', () => {
+  assert.equal(looksLikeRecovery('https://app.example/?code=abc'), false);
+  assert.equal(looksLikeRecovery('com.studydesk.app://login-callback?code=abc'), false);
+  assert.equal(looksLikeRecovery('https://app.example/#access_token=x&type=signup'), false);
+  assert.equal(looksLikeRecovery('https://app.example/'), false);
+  assert.equal(looksLikeRecovery(''), false);
+  assert.equal(looksLikeRecovery(undefined), false);
+});
+
+check('a value that merely CONTAINS the word is not a recovery', () => {
+  // The defect this pins: a substring test on the whole URL would call both of
+  // these a recovery, and the second is a perfectly ordinary sign-in return to
+  // a page whose path happens to say so.
+  assert.equal(looksLikeRecovery('https://app.example/?next=type=recovery'), false);
+  assert.equal(looksLikeRecovery('https://app.example/account/type=recovery?code=abc'), false);
+  assert.equal(looksLikeRecovery('https://app.example/?type=recovery-plan&code=abc'), false);
+});

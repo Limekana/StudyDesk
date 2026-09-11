@@ -9,6 +9,7 @@ import { inheritFromNexus } from '../../lib/suiteSso.js';
 import { setGuestMode } from '../../lib/guestMode.js';
 import { translateAuthError } from '../../lib/authErrors.js';
 import { withCaptcha } from '../../lib/captcha.js';
+import { beginRecovery, endRecovery, looksLikeRecovery } from '../../lib/passwordRecovery.js';
 
 // v1.8 / ACT-3 — has this device ever completed first run? `studydesk-onboarded`
 // is written at the end of onboarding, which lives *behind* this gate, so an
@@ -22,7 +23,11 @@ function hasOnboarded() {
   }
 }
 
-const authCss = `
+// Exported so SetPasswordScreen — which renders INSTEAD of this gate, once a
+// recovery session exists — is the same screen rather than a lookalike. It is
+// the card these `.auth-*` class names are written against, so it has to come
+// from one place or the two drift on the next design pass.
+export const authCss = `
 .auth-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px 20px;background:var(--bg);}
 .auth-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:36px 32px;width:100%;max-width:420px;box-shadow:var(--shadow-md);}
 .auth-wordmark{font-family:var(--font-display);font-size:28px;font-weight:600;text-align:center;margin-bottom:6px;}
@@ -61,6 +66,14 @@ const authCss = `
    meets WCAG 2.5.5; underline lifted with stronger weight + offset for tap clarity (#22). */
 .auth-toggle button{background:none;border:none;color:var(--text);cursor:pointer;font:inherit;font-weight:600;text-decoration:underline;text-underline-offset:3px;padding:12px 10px;min-height:44px;display:inline-flex;align-items:center;border-radius:4px;}
 .auth-toggle button:hover{background:var(--surface2);}
+/* #52 — the forgotten-password link. Same 44px tap target as the toggle above
+   (WCAG 2.5.5), but weighted lower: it is the exit from a failure, not one of
+   the two routes in. Tokenized, like everything else on this card — a literal
+   colour here is what the notebook colour gate exists to catch. */
+.auth-forgot{text-align:center;margin-top:4px;font-size:12px;}
+.auth-forgot button{background:none;border:none;color:var(--muted);cursor:pointer;font:inherit;text-decoration:underline;text-underline-offset:3px;padding:12px 10px;min-height:44px;display:inline-flex;align-items:center;border-radius:4px;}
+.auth-forgot button:hover{background:var(--surface2);color:var(--text);}
+.auth-forgot button:disabled{opacity:0.5;cursor:not-allowed;}
 /* v1.1 — UI/UX review #17: tokenized error palette (was hardcoded #fee/#fcc/#c0392b).
    Tokens live in :root in App.jsx so the editorial palette controls destructive surfaces too. */
 .auth-error{background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger);padding:10px 12px;border-radius:4px;font-size:12px;margin-bottom:14px;}
@@ -149,6 +162,13 @@ export default function AuthGate() {
   const [otpStep, setOtpStep] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [resendIn, setResendIn] = useState(0);
+  // #52 — forgotten password. `false` is the normal gate; `true` is the "we
+  // emailed you" screen, which accepts either half of what Supabase's recovery
+  // template can contain: a typed code here, or a tapped link that comes back
+  // through the deep-link listener / the URL snapshot in lib/passwordRecovery.js.
+  // Both end on SetPasswordScreen, so neither is a dead end if the project's
+  // email template carries only one of the two.
+  const [resetStep, setResetStep] = useState(false);
 
   // v1.4 — probe NCC's session provider on mount. If a session is available,
   // show the "Continue with Nexus" affordance as the primary option. Probe is
@@ -215,8 +235,17 @@ export default function AuthGate() {
         if (errParam) {
           setErr(errParam);
         } else if (code) {
+          // #52 — the same deep link carries both Google sign-ins and password
+          // recoveries, and the exchange below produces an indistinguishable
+          // session. Claim the recovery BEFORE exchanging: afterwards App.jsx
+          // has already swapped this gate out.
+          const recovery = looksLikeRecovery(url);
+          if (recovery) beginRecovery();
           const { error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error) setErr(translateAuthError(error, t));
+          if (error) {
+            if (recovery) endRecovery();
+            setErr(translateAuthError(error, t));
+          }
         }
       } catch (e) {
         setErr(translateAuthError(e, t, 'auth.errCallback'));
@@ -345,6 +374,65 @@ export default function AuthGate() {
     }
   }
 
+  // ── #52: forgotten password ───────────────────────────────────────────────
+  //
+  // Reported by a user who had an email login, changed device, and found no way
+  // back in. `redirectTo` reuses OAUTH_REDIRECT_URL on purpose: it is the one
+  // value already in Supabase's allow-list for every platform this app ships
+  // on, so the link half of this flow needs no new project configuration. The
+  // code half needs none either, beyond the recovery email template carrying
+  // `{{ .Token }}`.
+  async function onResetRequest() {
+    setErr(''); setInfo('');
+    // The email field is the input this needs and the user may have opened the
+    // reset before filling it in. Say so rather than sending nothing.
+    if (!email) { setErr(t('auth.errResetNoEmail')); setShowEmail(true); return; }
+    setLoading(true);
+    try {
+      // Desktop deliberately sends NO redirectTo. Its loopback listener
+      // answers 409 to any callback for a sign-in this app did not itself
+      // start — which is the property that makes a fixed local port safe, and
+      // is not worth weakening for a convenience. So a desktop recovery link
+      // would dead-end on "No sign-in is in progress"; omitting redirectTo
+      // lets Supabase fall back to the Site URL (a real page) and the user
+      // finishes here with the code, which needs no redirect at all.
+      const redirectTo = desktop ? undefined : OAUTH_REDIRECT_URL;
+      const { error } = await withCaptcha((captchaToken) =>
+        supabase.auth.resetPasswordForEmail(email, { redirectTo, captchaToken }));
+      if (error) throw error;
+      setResetStep(true);
+      setOtpCode('');
+      setInfo(t('auth.resetSent'));
+      setResendIn(60);
+    } catch (e) {
+      setErr(translateAuthError(e, t, 'auth.errReset'));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function onResetVerify(e) {
+    e.preventDefault();
+    setErr(''); setInfo('');
+    const token = otpCode.replace(/\D/g, '');
+    if (token.length < OTP_MIN) { setErr(t('auth.errOtpLength')); return; }
+    setLoading(true);
+    // Before the call, not after. A successful verifyOtp IS a sign-in: the
+    // session lands, App.jsx swaps this gate out, and anything we meant to do
+    // afterwards runs in an unmounted component. Setting the flag first is what
+    // makes the app open SetPasswordScreen instead of the study desk.
+    beginRecovery();
+    try {
+      const { error } = await supabase.auth.verifyOtp({ email, token, type: 'recovery' });
+      if (error) throw error;
+      // On success this component is already gone — see above.
+    } catch (e2) {
+      endRecovery();
+      setErr(translateAuthError(e2, t, 'auth.errOtp'));
+      setLoading(false);
+    }
+  }
+
   async function onGoogle() {
     setErr(''); setInfo('');
     // Desktop with no loopback listener: every candidate port was taken at
@@ -417,7 +505,9 @@ export default function AuthGate() {
               page. A first-run user who taps "Sign in" gets the returning
               framing, which is then correct — they're asserting they have one. */}
           <div className="auth-title">
-            {otpStep
+            {resetStep
+              ? t('auth.resetTitle')
+              : otpStep
               ? t('auth.otpTitle')
               : firstRun && mode === 'signup'
                 ? t('auth.titleFirstRun')
@@ -426,7 +516,9 @@ export default function AuthGate() {
                   : t('auth.titleSignin')}
           </div>
           <div className="auth-sub">
-            {otpStep
+            {resetStep
+              ? t('auth.resetSub')
+              : otpStep
               ? t('auth.otpSub')
               : firstRun && mode === 'signup'
                 ? t('auth.subFirstRun')
@@ -438,7 +530,48 @@ export default function AuthGate() {
           {err && <div className="auth-error">{err}</div>}
           {info && <div className="auth-info">{info}</div>}
 
-          {otpStep ? (
+          {resetStep ? (
+            /* #52 — the recovery screen. Same shape as the signup code step
+               above, because it is the same act: prove the mailbox. The hint
+               names BOTH halves of what the email can contain, so whichever
+               the project's template sends, the user is told what to do with
+               it rather than left looking for the other one. */
+            <>
+              <div className="auth-otp-to">{email}</div>
+              <form onSubmit={onResetVerify}>
+                <div className="input-group">
+                  <label className="input-label">{t('auth.resetCodeLabel')}</label>
+                  <input
+                    className="auth-otp-input"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    autoFocus
+                    placeholder={'-'.repeat(OTP_MAX)}
+                    maxLength={OTP_MAX}
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, OTP_MAX))}
+                  />
+                </div>
+                <button type="submit" className="btn auth-submit" disabled={loading}>
+                  {loading ? '…' : t('auth.resetCodeSubmit')}
+                </button>
+              </form>
+              <div className="auth-otp-hint">{t('auth.resetHint')}</div>
+              <div className="auth-otp-actions">
+                <button type="button" onClick={onResetRequest} disabled={loading || resendIn > 0}>
+                  {resendIn > 0 ? `${t('auth.otpResendIn')} ${resendIn}s` : t('auth.otpResend')}
+                </button>
+                <button
+                  type="button"
+                  className="auth-otp-back"
+                  onClick={() => { setResetStep(false); setOtpCode(''); setErr(''); setInfo(''); }}
+                >
+                  {t('auth.resetBack')}
+                </button>
+              </div>
+            </>
+          ) : otpStep ? (
             <>
               <div className="auth-otp-to">{email}</div>
               <form onSubmit={onVerify}>
@@ -546,6 +679,17 @@ export default function AuthGate() {
               {loading ? '…' : (mode === 'signup' ? t('auth.submitSignup') : t('auth.submitSignin'))}
             </button>
           </form>
+
+          {/* #52 — only in sign-in mode: there is no password to recover for an
+              account that does not exist yet, and on the signup screen this
+              would read as an instruction to someone who has never set one. */}
+          {mode === 'signin' && (
+            <div className="auth-forgot">
+              <button type="button" onClick={onResetRequest} disabled={loading}>
+                {t('auth.forgot')}
+              </button>
+            </div>
+          )}
 
           <div className="auth-toggle">
             {mode === 'signup' ? (
