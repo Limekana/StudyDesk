@@ -690,6 +690,10 @@ function reducer(state, action) {
         title: action.note.title ?? '',
         lessonDate: action.note.lessonDate ?? null,
         content: action.note.content ?? '',
+        // Free placement. `null` for a note nobody has arranged — see
+        // features/notebook/layout.js for why an unarranged note stores no
+        // layout at all.
+        layout: action.note.layout ?? null,
         sessionId: action.note.sessionId ?? null,
         updatedAt: new Date().toISOString(),
         deletedAt: null,
@@ -1407,6 +1411,7 @@ export default function App() {
         lessonDate: n.lessonDate,
         content: n.content,
         sessionId: n.sessionId,
+        layout: n.layout ?? null,
       };
       const handle = setTimeout(() => {
         outbox.enqueue("upsert_note", payload);

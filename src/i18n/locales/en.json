@@ -970,7 +970,10 @@
     },
     "delete": "Delete note",
     "confirmDelete": "Delete this note? This cannot be undone.",
-    "fileUnder": "File under"
+    "fileUnder": "File under",
+    "box": "Text box",
+    "moveBox": "Move box",
+    "resizeBox": "Resize box"
   },
   "feed": {
     "title": "Calendar feed",

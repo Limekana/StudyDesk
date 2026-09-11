@@ -975,7 +975,10 @@
     },
     "delete": "Eliminar nota",
     "confirmDelete": "¿Eliminar esta nota? No se puede deshacer.",
-    "fileUnder": "Archivar en"
+    "fileUnder": "Archivar en",
+    "box": "Cuadro de texto",
+    "moveBox": "Mover cuadro",
+    "resizeBox": "Redimensionar cuadro"
   },
   "feed": {
     "title": "Fuente de calendario",

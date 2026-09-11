@@ -1423,3 +1423,118 @@ check('a day key renders as the day it names, in any timezone', () => {
     assert.equal(d.getDate(), 11);
   });
 });
+
+// ── Free placement: the box layout (v1.13 follow-up) ───────────────────────
+//
+// The whole safety argument for this feature is that `content` stays the
+// authority on the WORDS and `layout` only ever decides the ARRANGEMENT. Every
+// assertion here is on that boundary: an old app version can edit `content`,
+// and when it does, the layout has to step aside rather than garble the note.
+const nbLayout = await import('../src/features/notebook/layout.js');
+
+check('a note with no layout opens as one full-width box', () => {
+  const { boxes, stale } = nbLayout.readLayout('first line\nsecond line', null);
+  assert.equal(boxes.length, 1);
+  assert.equal(boxes[0].text, 'first line\nsecond line');
+  assert.equal(boxes[0].x, 0);
+  assert.equal(boxes[0].y, 0);
+  assert.equal(boxes[0].w, nbLayout.MAX_W);
+  // Nothing was discarded, so there is nothing to rewrite.
+  assert.equal(stale, false, 'absent is not stale');
+});
+
+check('an arrangement round-trips through both columns', () => {
+  const boxes = [
+    nbLayout.makeBox({ x: 0.5, y: 56, w: 0.4, text: 'beside' }),
+    nbLayout.makeBox({ x: 0.02, y: 0, w: 0.45, text: 'above' }),
+  ];
+  const { content, layout } = nbLayout.writeLayout(boxes);
+  // Reading order, not insertion order: `content` is what a version with no
+  // layout shows, so it has to read down the page and then across.
+  assert.equal(content, 'above\n\nbeside');
+  const back = nbLayout.readLayout(content, layout);
+  assert.equal(back.stale, false);
+  assert.equal(back.boxes.length, 2);
+  assert.equal(back.boxes[0].text, 'above');
+  assert.deepEqual(
+    back.boxes.map((b) => [b.x, b.y, b.w]),
+    [[0.02, 0, 0.45], [0.5, 56, 0.4]],
+  );
+});
+
+check('a layout is JSON or an object, indifferently', () => {
+  // Postgres hands back jsonb as an object; localStorage round-trips it as
+  // whatever was stored. Both have to work or the note opens unarranged on
+  // exactly one of the two paths.
+  const { layout } = nbLayout.writeLayout([nbLayout.makeBox({ x: 0.1, y: 28, text: 'x' })]);
+  assert.equal(nbLayout.readLayout('x', layout).stale, false);
+  assert.equal(nbLayout.readLayout('x', JSON.stringify(layout)).stale, false);
+});
+
+check('content edited by another version WINS over a stale layout', () => {
+  const { content, layout } = nbLayout.writeLayout([
+    nbLayout.makeBox({ x: 0, y: 0, w: 0.5, text: 'mine' }),
+    nbLayout.makeBox({ x: 0.5, y: 0, w: 0.5, text: 'beside' }),
+  ]);
+  assert.equal(content, 'mine\n\nbeside');
+  // An app version that predates free placement edits the note. It knows
+  // nothing about `layout`, so the column survives untouched and now describes
+  // text that is no longer there.
+  const edited = 'mine\n\nbeside\n\nadded on the old phone';
+  const { boxes, stale } = nbLayout.readLayout(edited, layout);
+  assert.equal(stale, true);
+  assert.equal(boxes.length, 1, 'falls back to one box');
+  assert.equal(boxes[0].text, edited, 'not one word of the edit is lost');
+});
+
+check('a malformed layout cannot make a note unopenable', () => {
+  for (const bad of ['{not json', '{}', '[]', { boxes: 'nope' }, { boxes: [] }, null, undefined, 42]) {
+    const { boxes } = nbLayout.readLayout('the words', bad);
+    assert.equal(boxes.length, 1, `bad layout ${JSON.stringify(bad)}`);
+    assert.equal(boxes[0].text, 'the words');
+  }
+  // Junk INSIDE an otherwise valid box is revived rather than thrown: a NaN
+  // position must not put a box at `top: NaNpx`, which renders nowhere.
+  const revived = nbLayout.readLayout('a', {
+    v: 1, hash: nbLayout.hashContent('a'),
+    boxes: [{ x: 'left', y: null, w: 99, text: 'a' }],
+  });
+  assert.equal(revived.stale, false);
+  assert.equal(Number.isFinite(revived.boxes[0].x), true);
+  assert.equal(Number.isFinite(revived.boxes[0].y), true);
+  assert.equal(revived.boxes[0].w <= nbLayout.MAX_W, true);
+});
+
+check('a box cannot be placed where it can never be grabbed again', () => {
+  const far = nbLayout.makeBox({ x: 2, y: -50, w: 5 });
+  assert.equal(far.x <= 1 - nbLayout.MIN_W, true, 'stays on the page');
+  assert.equal(far.y >= 0, true, 'never above the first ruling');
+  assert.equal(far.x + far.w <= nbLayout.MAX_W + 1e-9, true, 'never wider than the page');
+  const thin = nbLayout.makeBox({ x: 0.1, y: 0, w: 0.001 });
+  assert.equal(thin.w >= nbLayout.MIN_W, true, 'never too narrow to type in');
+});
+
+check('a box top always lands on a ruling', () => {
+  for (const y of [0, 13, 14, 27, 28, 41, 200.6]) {
+    assert.equal(nbLayout.snapY(y) % nbLayout.GRID, 0, `snapY(${y})`);
+  }
+  assert.equal(nbLayout.snapY(-99), 0);
+});
+
+check('an unarranged note is recognised, so it stores no layout at all', () => {
+  assert.equal(nbLayout.isUnarranged(nbLayout.singleBox('anything')), true);
+  assert.equal(nbLayout.isUnarranged([nbLayout.makeBox({ x: 0.3, y: 0, w: 1, text: 'x' })]), false);
+  assert.equal(nbLayout.isUnarranged([nbLayout.makeBox({ x: 0, y: 28, w: 1, text: 'x' })]), false);
+  assert.equal(nbLayout.isUnarranged([
+    nbLayout.makeBox({ x: 0, y: 0, w: 1, text: 'a' }),
+    nbLayout.makeBox({ x: 0, y: 56, w: 1, text: 'b' }),
+  ]), false);
+});
+
+check('the hash notices any edit, including a reordering', () => {
+  const h = nbLayout.hashContent;
+  assert.notEqual(h('a\n\nb'), h('b\n\na'), 'order-dependent');
+  assert.notEqual(h('note'), h('note '), 'whitespace counts');
+  assert.notEqual(h(''), h('x'));
+  assert.equal(h('same'), h('same'), 'stable');
+});

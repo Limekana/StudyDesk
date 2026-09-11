@@ -970,7 +970,10 @@
     },
     "delete": "Notiz löschen",
     "confirmDelete": "Diese Notiz löschen? Das lässt sich nicht rückgängig machen.",
-    "fileUnder": "Ablegen unter"
+    "fileUnder": "Ablegen unter",
+    "box": "Textfeld",
+    "moveBox": "Feld verschieben",
+    "resizeBox": "Feldgröße ändern"
   },
   "feed": {
     "title": "Kalender-Feed",

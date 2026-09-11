@@ -60,6 +60,16 @@ export default function NoteEditor({
   photoUrls,
   onOpenPhoto,
   autoFocus,
+  // Free placement (v1.13 follow-up). When this editor is one box on a page
+  // rather than the page itself, the canvas owns the ruled paper and the
+  // scroll, and this renders only its own blocks. Nothing else about the
+  // editor changes — deliberately, because everything in here that is
+  // delicate is delicate about IMEs and carets, not about layout.
+  embedded = false,
+  // Told to the canvas so it can mark the box the caret is in, and drop its
+  // drag handles while the keyboard is up.
+  onFocusChange,
+  ariaLabel,
 }) {
   const { t } = useTranslation();
 
@@ -507,8 +517,13 @@ export default function NoteEditor({
 
   const currentType = focus >= 0 && blocks[focus] ? parse(draft)[0].type : null;
 
-  return (
-    <div className="nb-page-wrap">
+  // Reported upward rather than read from a prop, so the canvas never drives
+  // the caret — it only learns where it went. A controlled focus would put the
+  // one piece of state an IME is sensitive to under a parent that re-renders
+  // on every drag.
+  useEffect(() => { onFocusChange?.(focus >= 0); }, [focus, onFocusChange]);
+
+  const page = (
       <div className="nb-page" onMouseDown={(e) => {
         // A click on the page below the last block puts the caret at the end,
         // which is what a page of paper implies. Without it, the large empty
@@ -567,17 +582,35 @@ export default function NoteEditor({
           )
         ))}
       </div>
+  );
 
-      {focus >= 0 && (
-        <FormatBar
-          activeType={currentType}
-          isList={isList(currentType)}
-          swatchesOpen={swatches}
-          onSwatches={setSwatches}
-          onAction={applyFromBar}
-          canInsertPhoto={typeof onInsertPhoto === 'function'}
-        />
-      )}
+  // The bar is rendered by whichever editor holds the caret, and `focus >= 0`
+  // is true in at most one of them — so a page of twenty boxes still has one
+  // docked bar, not twenty stacked.
+  const bar = focus >= 0 ? (
+    <FormatBar
+      activeType={currentType}
+      isList={isList(currentType)}
+      swatchesOpen={swatches}
+      onSwatches={setSwatches}
+      onAction={applyFromBar}
+      canInsertPhoto={typeof onInsertPhoto === 'function'}
+    />
+  ) : null;
+
+  if (embedded) {
+    return (
+      <div className="nb-box-body" aria-label={ariaLabel}>
+        {page}
+        {bar}
+      </div>
+    );
+  }
+
+  return (
+    <div className="nb-page-wrap">
+      {page}
+      {bar}
     </div>
   );
 }

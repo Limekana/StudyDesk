@@ -160,7 +160,18 @@
    losing one part. If one token drove both here, a theme needing a hollow box
    with a contrasting tick could not express it and the checked state would be
    invisible. Both are measured independently by the contrast gate. */
-.nb-check {
+/* ── The selector is `button.nb-check`, and that is load-bearing ──────────
+   A checklist BLOCK is rendered as `nb-block nb-check` (Block.jsx builds the
+   class as `nb-block nb-${type}`), so a bare `.nb-check` here matched the line
+   as well as the box inside it — and won, being the later rule at equal
+   specificity. Every checklist line in a note was therefore an absolutely
+   positioned 15px square: the text wrapped one character per row, and the
+   lines stacked on top of whatever was above them. Shipped that way in v1.13.
+   `nb-photo-block` in this same file exists to dodge exactly this collision
+   for photos; checkboxes never got the same treatment, so the element type
+   does it here instead — one rule, both render paths (Block.jsx and the
+   focused branch in NoteEditor.jsx). */
+button.nb-check {
   position: absolute;
   /* Centred in the 28px line box: (28 - 15) / 2 ≈ 6.5, rounded to the grid. */
   inset-inline-start: calc(var(--nb-margin-w) - 21px);
@@ -177,20 +188,20 @@
      target, 44px hit area"). */
   box-shadow: none;
 }
-.nb-check::before {
+button.nb-check::before {
   content: '';
   position: absolute;
   inset: -14px;
 }
-.nb-block[data-indent='1'] .nb-check { inset-inline-start: calc(var(--nb-margin-w) + 1px); }
+.nb-block[data-indent='1'] button.nb-check { inset-inline-start: calc(var(--nb-margin-w) + 1px); }
 
-.nb-check[aria-checked='true'] {
+button.nb-check[aria-checked='true'] {
   background: var(--nb-check-fill);
   border-color: var(--nb-check-fill);
 }
 /* The tick is knocked out of the fill, so it reads on any fill colour a theme
    picks without needing a third token for the tick itself. */
-.nb-check[aria-checked='true']::after {
+button.nb-check[aria-checked='true']::after {
   content: '';
   position: absolute;
   inset-inline-start: 4px;
@@ -359,6 +370,143 @@
 }
 .nb-diagram-node { font-family: var(--nb-font-body); font-size: 12px; fill: var(--nb-ink); }
 .nb-diagram-stroke { stroke: var(--nb-check-line); stroke-width: var(--nb-stroke-w); fill: none; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   FREE PLACEMENT — boxes on the page
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* The canvas is `.nb-page` plus positioning, so it keeps the ruling, the
+   measure and the 28px grid every theme sets. Boxes snap their top to that
+   grid, which is what keeps text sitting ON the ruling once it is no longer
+   pinned to the margin. */
+.nb-canvas { position: relative; }
+
+/* Everything right of the margin rule. `x` is a fraction of THIS, so a note
+   written before free placement (x=0) still starts exactly where it always
+   did. */
+.nb-canvas-area {
+  position: relative;
+  /* Pulled back by exactly the in-box gutter below, so a box at x=0 puts its
+     text at `--nb-text-x` — the same column the notebook has always used. An
+     unarranged note has to open pixel-identical to the way it opened before
+     this feature, or every existing note visibly shifts on upgrade. The
+     markers hang back into this strip, which is where they were too. */
+  margin-inline-start: calc(var(--nb-text-x) - 24px);
+  margin-inline-end: 8px;
+  /* The area is the create surface: a press on it starts a box. Without this
+     the browser treats a drag here as a text selection and the gesture that
+     places a box instead highlights the paper. */
+  touch-action: pan-y;
+  user-select: none;
+}
+
+.nb-box {
+  position: absolute;
+  /* Above the ruling, below the docked format bar. */
+  z-index: 1;
+  user-select: text;
+}
+
+/* Inside a box the editor is only blocks: the ruling, the measure and the
+   scroll all belong to the canvas, and a second ruled page drawn inside the
+   first is the one thing that would make this look broken rather than
+   arranged. */
+.nb-box .nb-page {
+  background-image: none;
+  padding: 0;
+  margin: 0;
+  max-width: none;
+  min-height: 0;
+}
+.nb-box .nb-page::before { display: none; }
+
+/* A compact gutter inside a box, via the same tokens the blocks already read.
+   NOT zero: bullets, numbers and checkboxes hang into this gutter by absolute
+   position, so a box with no gutter draws its markers straight through its own
+   first word. 24px is the narrowest that still clears a checkbox (15px plus
+   its stroke) — the page's own 48px gutter is a margin for a full-width
+   column, and spending it again inside every box would cost half the measure
+   of a narrow one. */
+.nb-box {
+  --nb-text-x: 24px;
+  --nb-margin-w: 24px;
+}
+.nb-box .nb-block { padding-inline-end: 0; }
+
+/* Only while the box holds the caret, and only then — an outline on every box
+   all the time turns a page of notes into a page of widgets. */
+.nb-box.is-typing { z-index: 2; }
+.nb-box.is-typing .nb-box-body,
+.nb-box.is-dragging .nb-box-body {
+  box-shadow: 0 0 0 1px var(--nb-bar-rule);
+  border-radius: 3px;
+}
+.nb-box.is-dragging { opacity: 0.85; }
+
+.nb-box-handle,
+.nb-box-grip {
+  position: absolute;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--nb-ink-muted);
+  cursor: grab;
+  /* The gesture must not scroll the page out from under the box being
+     dragged. */
+  touch-action: none;
+  /* Invisible until the box is touched. The page should read as paper, not as
+     a form — the handles are there when you reach for them. */
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.nb-box:hover .nb-box-handle,
+.nb-box:hover .nb-box-grip,
+.nb-box.is-typing .nb-box-handle,
+.nb-box.is-typing .nb-box-grip,
+.nb-box-handle:focus-visible,
+.nb-box-grip:focus-visible { opacity: 1; }
+
+.nb-box-handle {
+  inset-block-start: 0;
+  inset-inline-start: -20px;
+  width: 20px;
+  height: 28px;
+  font-size: 12px;
+  line-height: 28px;
+  text-align: center;
+}
+.nb-box-grip {
+  inset-block-start: 0;
+  inset-inline-end: -4px;
+  width: 12px;
+  height: 100%;
+  cursor: ew-resize;
+}
+/* The grip has no glyph — a hairline down the right edge says "this edge
+   moves" without putting a control in the margin of every box. */
+.nb-box-grip::before {
+  content: '';
+  position: absolute;
+  inset-block: 2px;
+  inset-inline-start: 5px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--nb-bar-rule);
+}
+
+/* A drag handle sitting 20px outside the box is off-screen for a box at x=0 on
+   a phone. Inside the box there instead, over its own first line. */
+@media (max-width: 768px) {
+  .nb-box-handle { inset-inline-start: -18px; width: 18px; }
+  .nb-box[style*="left: 0%"] .nb-box-handle { inset-inline-start: 0; }
+  /* Touch has no hover, so the handles show for the box being typed in and
+     stay legible rather than depending on a pointer that never arrives. */
+  .nb-box-handle, .nb-box-grip { opacity: 0.45; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nb-box-handle, .nb-box-grip { transition: none; }
+}
 
 /* ══════════════════════════════════════════════════════════════════════════
    THE TREE SIDEBAR  (§2, desktop)
