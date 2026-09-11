@@ -944,6 +944,7 @@
     "treeLabel": "Kurssit ja muistiinpanot",
     "scopedToSession": "Rajattu sessioon",
     "newNote": "Uusi muistiinpano",
+    "allNotes": "Kaikki muistiinpanot",
     "untitled": "Nimetön muistiinpano",
     "unfiled": "Luokittelemattomat",
     "edited": "Muokattu {{when}}",
