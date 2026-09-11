@@ -169,8 +169,9 @@
    lines stacked on top of whatever was above them. Shipped that way in v1.13.
    `nb-photo-block` in this same file exists to dodge exactly this collision
    for photos; checkboxes never got the same treatment, so the element type
-   does it here instead — one rule, both render paths (Block.jsx and the
-   focused branch in NoteEditor.jsx). */
+   does it here instead. The box is a <button> at its one render site
+   (Block.jsx) and the line is a <div>, so the element type separates them
+   with no new class and no change to the markup. */
 button.nb-check {
   position: absolute;
   /* Centred in the 28px line box: (28 - 15) / 2 ≈ 6.5, rounded to the grid. */
