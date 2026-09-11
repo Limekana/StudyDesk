@@ -965,7 +965,10 @@
     },
     "delete": "Hapus catatan",
     "confirmDelete": "Hapus catatan ini? Tindakan ini tidak bisa dibatalkan.",
-    "fileUnder": "Simpan di"
+    "fileUnder": "Simpan di",
+    "box": "Kotak teks",
+    "moveBox": "Pindahkan kotak",
+    "resizeBox": "Ubah ukuran kotak"
   },
   "feed": {
     "title": "Umpan kalender",

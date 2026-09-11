@@ -975,7 +975,10 @@
     },
     "delete": "Supprimer la note",
     "confirmDelete": "Supprimer cette note ? Cette action est irréversible.",
-    "fileUnder": "Classer dans"
+    "fileUnder": "Classer dans",
+    "box": "Zone de texte",
+    "moveBox": "Déplacer la zone",
+    "resizeBox": "Redimensionner la zone"
   },
   "feed": {
     "title": "Flux de calendrier",

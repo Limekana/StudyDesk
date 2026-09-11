@@ -975,7 +975,10 @@
     },
     "delete": "Excluir nota",
     "confirmDelete": "Excluir esta nota? Não é possível desfazer.",
-    "fileUnder": "Arquivar em"
+    "fileUnder": "Arquivar em",
+    "box": "Caixa de texto",
+    "moveBox": "Mover caixa",
+    "resizeBox": "Redimensionar caixa"
   },
   "feed": {
     "title": "Feed de calendário",

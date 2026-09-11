@@ -745,7 +745,7 @@ export async function deleteAttendance(id) {
  * Same snapshot-not-patch contract as assignments: the payload carries the
  * whole note, so a retry after a later local edit still converges under LWW.
  */
-export async function upsertNote({ id, courseId, title, lessonDate, content, sessionId }) {
+export async function upsertNote({ id, courseId, title, lessonDate, content, sessionId, layout }) {
   const userId = await currentUserId();
   const { error } = await supabase.from('notebook_entries').upsert({
     id,
@@ -757,6 +757,13 @@ export async function upsertNote({ id, courseId, title, lessonDate, content, ses
     title: title || null,
     lesson_date: lessonDate || null,
     content: content ?? '',
+    // Free placement (v1.13 follow-up). Nullable and additive, per `P1`: a
+    // shipped version that has never heard of this column reads `content` and
+    // renders the note as one column of text — every word present, only the
+    // arrangement lost. `|| null` rather than undefined so CLEARING an
+    // arrangement actually clears the column instead of leaving the old one
+    // behind for the next device to lay the note out with.
+    layout: layout || null,
     session_id: sessionId || null,
     updated_at: nowISO(),
   });

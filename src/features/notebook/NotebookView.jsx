@@ -21,7 +21,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import NotebookTree from './NotebookTree.jsx';
-import NoteEditor from './NoteEditor.jsx';
+import NoteCanvas from './NoteCanvas.jsx';
+import { readLayout, writeLayout, isUnarranged } from './layout.js';
 import TimerPill from '../timer/TimerPill.jsx';
 import { readTimerSnapshot, subscribeTimer } from '../../lib/timerSnapshot.js';
 
@@ -152,10 +153,37 @@ export default function NotebookView({ state, dispatch, onDeleteNote, onOpenTime
     setBrowsing(false);
   }, []);
 
-  const updateContent = useCallback((content) => {
+  // The note's boxes. Derived from the two stored columns rather than held in
+  // state, so an edit that arrives from a sync pull redraws the page instead
+  // of being shadowed by a local copy.
+  //
+  // `stale` means a layout was stored but no longer describes `content` —
+  // another device, or an app version that predates free placement, rewrote
+  // the text. The words win and the arrangement is rebuilt as one box; writing
+  // that back immediately is what stops the note re-discarding the same dead
+  // layout on every open.
+  const { boxes, stale } = useMemo(
+    () => readLayout(active?.content ?? '', active?.layout ?? null),
+    [active?.content, active?.layout],
+  );
+
+  const updateBoxes = useCallback((next) => {
     if (!active) return;
-    dispatch({ type: 'UPDATE_NOTE', id: active.id, patch: { content } });
+    const { content, layout } = writeLayout(next);
+    dispatch({
+      type: 'UPDATE_NOTE',
+      id: active.id,
+      // A note nobody has arranged stores no layout at all: it stays exactly
+      // the row it was before this feature, which keeps both the storage cost
+      // and the stale-detection surface at zero for anyone who never drags
+      // anything.
+      patch: { content, layout: isUnarranged(next) ? null : layout },
+    });
   }, [active, dispatch]);
+
+  useEffect(() => {
+    if (stale && active) updateBoxes(boxes);
+  }, [stale, active, boxes, updateBoxes]);
 
   // Filing a note under a course, after it exists.
   //
@@ -270,11 +298,10 @@ export default function NotebookView({ state, dispatch, onDeleteNote, onOpenTime
         </header>
 
         {active ? (
-          <NoteEditor
+          <NoteCanvas
             key={active.id}
-            value={active.content || ''}
-            onChange={updateContent}
-            autoFocus={false}
+            boxes={boxes}
+            onChange={updateBoxes}
           />
         ) : (
           <div className="nb-empty">
