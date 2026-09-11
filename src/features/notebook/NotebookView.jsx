@@ -57,6 +57,32 @@ export default function NotebookView({ state, dispatch, onDeleteNote, onOpenTime
   const sessionCourseId = timer?.courseId || null;
   const scopedCourseId = !unscoped && sessionCourseId ? sessionCourseId : null;
 
+  // ── The notebook's navigation on a phone ────────────────────────────────
+  //
+  // The tree is `display: none` below 768px (notebook.css, RESPONSIVE), and
+  // nothing replaced it, so on a phone the notebook had no navigation at all:
+  // the only reachable action was the empty state's "New note". Measured on
+  // the built bundle at 393px — write a note, leave the sub-tab, come back:
+  //
+  //     .nb-tree display : none
+  //     note rows in DOM : 0          (visible: 0)
+  //     empty state      : "Pick a note, or start a new one." + New note
+  //     press New note   : a SECOND note, the first now unreachable
+  //
+  // The note was saved and the header said so — "Edited 9/11/2026, 10:47" —
+  // which is the whole of the report: notes that save and then cannot be
+  // picked, viewed or re-edited. StudyDesk is a phone app first, so the
+  // feature shipped with its navigation on the one form factor that is not
+  // the product.
+  //
+  // The phone answer is a list ↔ note flow, not a drawer: the tree already IS
+  // the list, so it takes the screen when there is no note to show or the user
+  // asks for it, and the note takes the screen otherwise. That needs no
+  // overlay, no scrim and no fixed positioning to fight the docked format bar
+  // and the keyboard inset over. On desktop both panes are always up and
+  // `is-list` is inert — its rules live inside the phone media query.
+  const [browsing, setBrowsing] = useState(false);
+
   // `null` means "nothing chosen yet"; the scoped default fills in below.
   // Deliberately NOT resolved in an effect: setState during an effect causes a
   // cascading render, and more importantly it makes the scoped default a
@@ -115,8 +141,16 @@ export default function NotebookView({ state, dispatch, onDeleteNote, onOpenTime
       },
     });
     setChosenId(id);
+    setBrowsing(false);
     if (courseId) setExpanded((prev) => new Set(prev).add(courseId));
   }, [dispatch, timer]);
+
+  // Picking a note on a phone is also leaving the list. On desktop the list
+  // never went away, so this is a no-op there.
+  const selectNote = useCallback((id) => {
+    setChosenId(id);
+    setBrowsing(false);
+  }, []);
 
   const updateContent = useCallback((content) => {
     if (!active) return;
@@ -143,21 +177,41 @@ export default function NotebookView({ state, dispatch, onDeleteNote, onOpenTime
   const scopedCourse = scopedCourseId ? courses.find((c) => c.id === scopedCourseId) : null;
   const activeCourse = active?.courseId ? courses.find((c) => c.id === active.courseId) : null;
 
+  // On a phone the list takes the screen when the user asked for it, and
+  // whenever there is no note to show — otherwise the phone would land on an
+  // empty page with the list one tap away but nothing saying so.
+  const showList = browsing || !active;
+
   return (
-    <div className="nb">
+    <div className={`nb${showList ? ' is-list' : ''}`}>
       <NotebookTree
         courses={courses}
         notes={notes}
         activeNoteId={activeId}
         expanded={expanded}
         onToggleCourse={toggleCourse}
-        onSelectNote={setChosenId}
+        onSelectNote={selectNote}
         onNewNote={createNote}
         scopedCourseId={scopedCourse ? scopedCourseId : null}
       />
 
       <div className="nb-page-wrap">
         <header className="nb-head">
+          {/* The way back to the list, phone only — on desktop the list is
+              already on screen and this is `display: none`. First in the
+              header because that is where a back affordance is looked for. */}
+          <button
+            type="button"
+            className="nb-head-browse"
+            onClick={() => setBrowsing(true)}
+            aria-label={t('nb.allNotes')}
+          >
+            {/* The chevron comes from CSS so it can flip for Arabic — a
+                hardcoded ‹ points out of the screen under dir="rtl", which
+                i18n/index.js sets on the document element. */}
+            <span className="nb-head-browse-chev" aria-hidden="true" />
+            <span>{t('nb.allNotes')}</span>
+          </button>
           {active && (
             <label className="nb-head-course">
               <span
@@ -182,7 +236,7 @@ export default function NotebookView({ state, dispatch, onDeleteNote, onOpenTime
             </label>
           )}
           {active?.updatedAt && (
-            <span className="nb-head-meta">
+            <span className="nb-head-meta nb-head-meta-edited">
               {t('nb.edited', { when: new Date(active.updatedAt).toLocaleString() })}
             </span>
           )}

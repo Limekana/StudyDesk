@@ -944,6 +944,7 @@
     "treeLabel": "课程与笔记",
     "scopedToSession": "限定到本次学习",
     "newNote": "新建笔记",
+    "allNotes": "所有笔记",
     "untitled": "未命名笔记",
     "unfiled": "未归类",
     "edited": "编辑于 {{when}}",

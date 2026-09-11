@@ -949,6 +949,7 @@
     "treeLabel": "Asignaturas y notas",
     "scopedToSession": "Limitado a la sesión",
     "newNote": "Nueva nota",
+    "allNotes": "Todas las notas",
     "untitled": "Nota sin título",
     "unfiled": "Sin clasificar",
     "edited": "Editada {{when}}",

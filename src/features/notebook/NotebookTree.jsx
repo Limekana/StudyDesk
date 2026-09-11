@@ -43,6 +43,20 @@ export default function NotebookTree({
 
   return (
     <nav className="nb-tree" aria-label={t('nb.treeLabel')}>
+      {/* A new note that does not need a course first.
+          Every other "new note" affordance here is nested under an expanded
+          course, and the only course-less one lived in the page's empty state —
+          which exists only while no note is open. So once you had a note open
+          there was no way to start a second unfiled one, on any screen size,
+          and on a phone (where this list IS the notebook's navigation) no way
+          to start one at all. It files under the session's course when a
+          session is scoping the tree, which is the same rule `createNote`
+          already applies to the empty state's button. */}
+      <button type="button" className="nb-tree-new" onClick={() => onNewNote(scopedCourseId ?? null)}>
+        <span aria-hidden="true">+</span>
+        <span>{t('nb.newNote')}</span>
+      </button>
+
       {scoped && (
         <div className="nb-scope">
           <div className="nb-scope-label">{t('nb.scopedToSession')}</div>
