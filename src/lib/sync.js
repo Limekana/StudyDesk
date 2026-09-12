@@ -9,6 +9,7 @@
 // All times stored as ISO strings. Soft-delete via deleted_at (never hard DELETE).
 
 import { supabase } from './supabase.js';
+import { dueTimeToSql } from './dueAt.js';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -260,10 +261,19 @@ export async function deleteStudySession(id) {
 // stayed put. They follow the same contract as everything above — client-set
 // updated_at for LWW, soft delete via deleted_at, never a hard DELETE.
 
-export async function upsertAssignment({ id, courseId, title, type, dueDate, notes, done }) {
+// v1.14 Item 5 — PostgREST's code for "you named a column this table does not
+// have". It rejects the WHOLE row on that, so without the fallback below a
+// client that reached users before
+// supabase/migrations/20260912_assignment_due_time.sql was applied would fail
+// the push for every assignment, timed or not — a total homework-sync outage,
+// not a missing feature. The notebook migration documents the same trap as a
+// warning to read carefully; a warning is not a mechanism.
+const UNKNOWN_COLUMN = 'PGRST204';
+
+export async function upsertAssignment({ id, courseId, title, type, dueDate, dueTime, notes, done }) {
   if (!courseId) throw new Error('courseId is required (assignment must reference a course)');
   const userId = await currentUserId();
-  const { error } = await supabase.from('assignments').upsert({
+  const row = {
     id,
     user_id: userId,
     subject_id: courseId,
@@ -272,12 +282,26 @@ export async function upsertAssignment({ id, courseId, title, type, dueDate, not
     // The local model stores an empty string when the user clears the date;
     // `date` columns reject '' but accept null.
     due_date: dueDate || null,
+    due_time: dueTimeToSql(dueTime),
     notes: notes || null,
     done: Boolean(done),
     updated_at: nowISO(),
-  });
-  if (error) throw error;
-  return id;
+  };
+
+  const { error } = await supabase.from('assignments').upsert(row);
+  if (!error) return id;
+
+  // Degrade to what the database can actually hold, ONCE, and only for this
+  // exact error. Losing the time is a missing feature the user can see; losing
+  // the assignment is lost work. Retrying blind would mask a real failure, so
+  // anything else still throws.
+  if (error.code === UNKNOWN_COLUMN && 'due_time' in row) {
+    delete row.due_time;
+    const retry = await supabase.from('assignments').upsert(row);
+    if (retry.error) throw retry.error;
+    return id;
+  }
+  throw error;
 }
 
 export async function deleteAssignment(id) {

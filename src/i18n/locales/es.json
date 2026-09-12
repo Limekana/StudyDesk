@@ -646,6 +646,7 @@
       "course": "Curso",
       "type": "Tipo",
       "dueDateOpt": "Fecha límite (opcional)",
+      "dueTimeOpt": "Hora (opcional)",
       "notesOpt": "Notas (opcional)",
       "asgnNotesPh": "Detalles, enlaces, en qué centrarse...",
       "addExam": "Añadir examen",

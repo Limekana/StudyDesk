@@ -636,6 +636,7 @@
       "course": "Mata pelajaran",
       "type": "Jenis",
       "dueDateOpt": "Tanggal tenggat (opsional)",
+      "dueTimeOpt": "Waktu (opsional)",
       "notesOpt": "Catatan (opsional)",
       "asgnNotesPh": "Detail, tautan, hal yang perlu diperhatikan...",
       "addExam": "Tambah ujian",

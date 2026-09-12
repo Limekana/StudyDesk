@@ -646,6 +646,7 @@
       "course": "Disciplina",
       "type": "Tipo",
       "dueDateOpt": "Data de entrega (opcional)",
+      "dueTimeOpt": "Hora (opcional)",
       "notesOpt": "Notas (opcional)",
       "asgnNotesPh": "Detalhes, links, no que focar...",
       "addExam": "Adicionar prova",

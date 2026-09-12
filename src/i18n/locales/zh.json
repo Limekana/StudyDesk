@@ -641,6 +641,7 @@
       "course": "课程",
       "type": "类型",
       "dueDateOpt": "截止日期（可选）",
+      "dueTimeOpt": "时间（可选）",
       "notesOpt": "备注（可选）",
       "asgnNotesPh": "细节、链接、重点……",
       "addExam": "添加考试",

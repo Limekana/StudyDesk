@@ -134,6 +134,7 @@ export function findUnsynced(state, remote) {
         title: a.title,
         type: a.type,
         dueDate: a.dueDate,
+        dueTime: a.dueTime,
         notes: a.notes,
         done: a.done,
       },

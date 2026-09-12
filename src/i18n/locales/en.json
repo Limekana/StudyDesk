@@ -641,6 +641,7 @@
       "course": "Course",
       "type": "Type",
       "dueDateOpt": "Due Date (optional)",
+      "dueTimeOpt": "Time (optional)",
       "notesOpt": "Notes (optional)",
       "asgnNotesPh": "Details, links, what to focus on...",
       "addExam": "Add Exam",

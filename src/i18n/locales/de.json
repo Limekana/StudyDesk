@@ -641,6 +641,7 @@
       "course": "Kurs",
       "type": "Typ",
       "dueDateOpt": "Fällig am (optional)",
+      "dueTimeOpt": "Uhrzeit (optional)",
       "notesOpt": "Notizen (optional)",
       "asgnNotesPh": "Details, Links, Schwerpunkte...",
       "addExam": "Prüfung hinzufügen",

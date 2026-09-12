@@ -32,6 +32,8 @@
 // The namespace prefix is what stops a feed UID colliding with anything else
 // this app hashes, now or later.
 
+import { normalizeDueTime } from './dueAt.js';
+
 const NAMESPACE = 'studydesk.calendar-feed.v1:';
 
 /**
@@ -44,6 +46,7 @@ const NAMESPACE = 'studydesk.calendar-feed.v1:';
  *
  * Async because `crypto.subtle` is. Every caller here is already async.
  */
+
 export async function idForUid(feedUid) {
   const input = `${NAMESPACE}${String(feedUid ?? '')}`;
 
@@ -119,10 +122,17 @@ export async function toAssignments(items, courseId) {
       title: item.title || item.uid,
       type: 'imported',
       dueDate: item.dueDate,
-      // The time and the source URL go in the notes because there is nowhere
-      // more honest to put them: `assignments` has no time column, and
-      // throwing away "23:59" from a deadline would lose the one detail
-      // students most often need.
+      // v1.14 Item 5 — this used to read "`assignments` has no time column",
+      // and the feed's time was folded into the notes to avoid losing it. The
+      // column exists now, so the time goes where it belongs and stops
+      // crowding the first line of every imported note.
+      //
+      // An all-day event is not a deadline at 00:00 — it is a day with no time
+      // on it, which is precisely what an empty due time means.
+      dueTime: item.allDay ? '' : normalizeDueTime(item.time),
+      // The location, description and source URL still go here: there is no
+      // more honest place for them, and unlike the time they were never
+      // pretending to be structured.
       notes: buildNotes(item),
       done: false,
     });
@@ -132,7 +142,9 @@ export async function toAssignments(items, courseId) {
 
 function buildNotes(item) {
   const parts = [];
-  if (item.time && !item.allDay) parts.push(item.time);
+  // The time is no longer prepended here — it is a real field now, and having
+  // it in both places would leave a stale copy in the notes the first time
+  // someone edits the deadline.
   if (item.location) parts.push(item.location);
   if (item.notes) parts.push(item.notes);
   const joined = parts.join('\n');

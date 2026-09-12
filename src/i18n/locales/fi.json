@@ -641,6 +641,7 @@
       "course": "Kurssi",
       "type": "Tyyppi",
       "dueDateOpt": "Eräpäivä (valinnainen)",
+      "dueTimeOpt": "Kellonaika (valinnainen)",
       "notesOpt": "Muistiinpanot (valinnainen)",
       "asgnNotesPh": "Tiedot, linkit, mihin keskittyä...",
       "addExam": "Lisää koe",

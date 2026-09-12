@@ -6,6 +6,8 @@
 // These helpers translate one direction (DB → local) and reconcile via LWW
 // using updated_at / updatedAt timestamps.
 
+import { normalizeDueTime } from './dueAt.js';
+
 function newer(remoteIso, localIso) {
   if (!localIso) return true;
   if (!remoteIso) return false;
@@ -113,6 +115,12 @@ function mergeAssignment(localA, remoteRow) {
     // React flipping the field to uncontrolled — keep the empty-string shape
     // the reducer already creates.
     dueDate: remoteRow.due_date || '',
+    // v1.14 Item 5. `normalizeDueTime` turns the column's `HH:MM:SS` into the
+    // `HH:MM` an <input type="time"> can hold, and it also absorbs the column
+    // simply not being there — a pull taken before the migration lands, or a
+    // row written by an older client, both arrive as undefined and mean the
+    // same thing: no time given.
+    dueTime: normalizeDueTime(remoteRow.due_time),
     notes: remoteRow.notes || '',
     done: Boolean(remoteRow.done),
     updatedAt: remoteRow.updated_at || null,

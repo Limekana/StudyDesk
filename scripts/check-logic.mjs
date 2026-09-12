@@ -1638,3 +1638,155 @@ check('a fold round-trips, and unfolding everything removes the key', () => {
   planSections.writeCollapsed({ assignments: false, exams: false, courses: false });
   assert.equal(store.store.getItem('studydesk-plan-collapsed'), null);
 });
+
+// ── dueAt.js — a deadline has a time now (v1.14 Item 5, #51) ─────────────
+//
+// Three things here are load-bearing and none of them is the feature itself.
+//
+// 1. An untimed assignment is END OF its day, not the start of it. Every one
+//    of the 317 live assignment rows is untimed, so getting this backwards
+//    would resort every existing list the first time anyone typed a 09:00.
+// 2. The sort key is a STRING. `new Date('2026-09-14')` is UTC midnight and
+//    `new Date('2026-09-14T09:00')` is LOCAL — mixing timed and untimed items
+//    through the Date constructor sorts them on two different clocks, and the
+//    TZ switching below is what makes that visible on a UTC CI runner.
+// 3. The due-day reminder may move EARLIER but never later, and never lands
+//    on the day before.
+const dueAt = await import('../src/lib/dueAt.js');
+
+check('a Postgres time, an input value and junk all normalise to HH:MM', () => {
+  assert.equal(dueAt.normalizeDueTime('09:00:00'), '09:00', 'the column shape');
+  assert.equal(dueAt.normalizeDueTime('09:00'), '09:00', 'the input shape');
+  assert.equal(dueAt.normalizeDueTime('9:05'), '09:05', 'unpadded');
+  assert.equal(dueAt.normalizeDueTime(''), '');
+  assert.equal(dueAt.normalizeDueTime(null), '');
+  assert.equal(dueAt.normalizeDueTime(undefined), '', 'the column not existing yet');
+  assert.equal(dueAt.normalizeDueTime('banana'), '');
+  assert.equal(dueAt.normalizeDueTime('99:99'), '');
+  // Postgres accepts 24:00 in a `time`; there is no such reading on a clock,
+  // so it reads as "no time given" — which already sorts at end of day, which
+  // is what 24:00 meant. Nothing in the app writes one.
+  assert.equal(dueAt.normalizeDueTime('24:00:00'), '');
+  assert.equal(dueAt.dueSortKey('2026-09-14', '24:00:00'), `2026-09-14T${dueAt.END_OF_DAY}`);
+  assert.equal(dueAt.dueTimeToSql('09:00'), '09:00:00');
+  assert.equal(dueAt.dueTimeToSql(''), null, 'a `time` column rejects the empty string');
+});
+
+check('an untimed assignment is the END of its day, never the start', () => {
+  assert.equal(dueAt.dueSortKey('2026-09-14', ''), '2026-09-14T23:59');
+  assert.equal(dueAt.dueSortKey('2026-09-14', '09:00'), '2026-09-14T09:00');
+  // The whole point: 09:00 comes FIRST on the same day.
+  assert.ok(dueAt.dueSortKey('2026-09-14', '09:00') < dueAt.dueSortKey('2026-09-14', ''));
+  // Undated last, as the "9999-12-31" fallback it replaces did.
+  assert.ok(dueAt.dueSortKey('', '') > dueAt.dueSortKey('2099-01-01', '23:59'));
+});
+
+check('the sort is timezone-independent, timed and untimed items together', () => {
+  const items = [
+    { id: 'none' },
+    { id: 'fri-late', dueDate: '2026-09-18', dueTime: '17:00' },
+    { id: 'fri-none', dueDate: '2026-09-18' },
+    { id: 'fri-9am', dueDate: '2026-09-18', dueTime: '09:00' },
+    { id: 'thu', dueDate: '2026-09-17', dueTime: '23:30' },
+  ];
+  const expected = ['thu', 'fri-9am', 'fri-late', 'fri-none', 'none'];
+  for (const tz of ['UTC', 'America/Los_Angeles', 'Asia/Tokyo', 'Pacific/Kiritimati']) {
+    inTimezone(tz, () => {
+      assert.deepEqual([...items].sort(dueAt.byDueAsc).map((x) => x.id), expected, tz);
+    });
+  }
+});
+
+check('descending keeps undated LAST too, rather than floating it to the top', () => {
+  const items = [
+    { id: 'none' },
+    { id: 'old', dueDate: '2026-01-05' },
+    { id: 'new', dueDate: '2026-09-18', dueTime: '09:00' },
+  ];
+  assert.deepEqual([...items].sort(dueAt.byDueDesc).map((x) => x.id), ['new', 'old', 'none']);
+});
+
+check('the deadline instant is local, not UTC', () => {
+  inTimezone('America/Los_Angeles', () => {
+    const d = dueAt.dueMoment('2026-09-18', '09:00');
+    assert.equal(d.getFullYear(), 2026);
+    assert.equal(d.getMonth(), 8);
+    assert.equal(d.getDate(), 18, 'the 18th in Los Angeles, not the 17th');
+    assert.equal(d.getHours(), 9);
+  });
+  assert.equal(dueAt.dueMoment('', '09:00'), null);
+  assert.equal(dueAt.dueMoment(null, null), null);
+  // No time means the end of the day, the same rule the sort key uses.
+  const untimed = dueAt.dueMoment('2026-09-18', '');
+  assert.equal(untimed.getHours(), 23);
+  assert.equal(untimed.getMinutes(), 59);
+});
+
+check('the due-day reminder moves earlier when it must, and never later', () => {
+  const at = (date, time) => dueAt.dueDayReminderAt(date, time);
+  // Untimed: unchanged from before this item — 9am.
+  const untimed = at('2026-09-18', '');
+  assert.equal(untimed.getHours(), 9);
+  assert.equal(untimed.getMinutes(), 0);
+  // An evening deadline keeps 9am; moving it later would be a regression.
+  assert.equal(at('2026-09-18', '17:00').getHours(), 9);
+  assert.equal(at('2026-09-18', '10:00').getHours(), 9, 'exactly an hour after 9 still gets 9');
+  // An early deadline pulls it forward to an hour before.
+  const early = at('2026-09-18', '08:00');
+  assert.equal(early.getHours(), 7);
+  assert.equal(early.getDate(), 18, 'still the due day');
+  // Too early to warn on the day at all — the 6pm day-before reminder has it.
+  assert.equal(at('2026-09-18', '00:30'), null);
+  assert.equal(at('2026-09-18', '00:00'), null);
+  // 01:00 is the boundary: an hour before is exactly midnight, which is still
+  // the due day, so the reminder fires rather than being dropped. Anything
+  // earlier than 01:00 pushes it into yesterday and is dropped.
+  const boundary = at('2026-09-18', '01:00');
+  assert.equal(boundary.getDate(), 18);
+  assert.equal(boundary.getHours(), 0);
+  assert.equal(boundary.getMinutes(), 0);
+  assert.equal(at('2026-09-18', '00:59'), null, 'one minute earlier lands yesterday');
+  assert.equal(at('', '09:00'), null);
+});
+
+// ── widget/glance.js — the one assignment the widget leads with ───────────
+//
+// The widget has room for exactly one, so its tie-break is the whole feature.
+// Before due times existed, two things due the same day were a genuine tie and
+// the name decided; now one of them may carry a time the user typed and the
+// other may not, and the untimed one must not win on alphabetical order.
+const glance = await import('../src/widget/glance.js');
+
+check('the widget leads with the soonest deadline, not the soonest day', () => {
+  const courses = {};
+  const pick = (assignments) => glance.nextDue({ assignments, courses }, '2026-09-18')?.title;
+
+  assert.equal(pick([
+    { id: '1', title: 'Zebra', dueDate: '2026-09-18', dueTime: '09:00' },
+    { id: '2', title: 'Apple', dueDate: '2026-09-18' },
+  ]), 'Zebra', 'a typed 09:00 beats an untimed one, alphabet notwithstanding');
+
+  assert.equal(pick([
+    { id: '1', title: 'Later', dueDate: '2026-09-18', dueTime: '17:00' },
+    { id: '2', title: 'Earlier', dueDate: '2026-09-18', dueTime: '08:00' },
+  ]), 'Earlier');
+
+  // An earlier DAY still wins outright, however late in it.
+  assert.equal(pick([
+    { id: '1', title: 'Tomorrow 8am', dueDate: '2026-09-19', dueTime: '08:00' },
+    { id: '2', title: 'Tonight', dueDate: '2026-09-18', dueTime: '23:30' },
+  ]), 'Tonight');
+
+  // Same instant: the name decides, as it always did, so the widget does not
+  // reshuffle between polls.
+  assert.equal(pick([
+    { id: '1', title: 'Beta', dueDate: '2026-09-18', dueTime: '09:00' },
+    { id: '2', title: 'Alpha', dueDate: '2026-09-18', dueTime: '09:00' },
+  ]), 'Alpha');
+
+  // Overdue still outranks everything — unchanged by this item.
+  assert.equal(pick([
+    { id: '1', title: 'Today 8am', dueDate: '2026-09-18', dueTime: '08:00' },
+    { id: '2', title: 'Missed', dueDate: '2026-09-15' },
+  ]), 'Missed');
+});

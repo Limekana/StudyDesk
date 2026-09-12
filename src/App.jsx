@@ -22,6 +22,7 @@ import TimerPill from "./features/timer/TimerPill.jsx";
 import { useAccountAvatar } from "./lib/useAccountAvatar.js";
 import { readCollapsed, writeCollapsed } from "./lib/planSections.js";
 import { preferredDueWindow, countsAsDue } from "./lib/dueWindow.js";
+import { normalizeDueTime, byDueAsc, byDueDesc, dueDayReminderAt } from "./lib/dueAt.js";
 import ReferralPrompt from "./features/referral/ReferralPrompt.jsx";
 import { inheritFromNexus } from "./lib/suiteSso.js";
 import { hydrateOnboardedFromCloud, markOnboardedCloud } from "./lib/onboardingCloud.js";
@@ -207,16 +208,24 @@ async function scheduleNotifications(exams, assignments, courses, plannedSession
     assignments.forEach(asgn => {
       if (asgn.done || !asgn.dueDate) return;
       const c = courses[asgn.courseId];
-      const label = c ? `${asgn.title} — ${c.name}` : asgn.title;
+      // v1.14 Item 5 — the deadline's own time, when it has one, goes in the
+      // body. A reminder that says "Essay — History" is a different message
+      // from "Essay — History · 09:00" at eight in the morning.
+      const base = c ? `${asgn.title} — ${c.name}` : asgn.title;
+      const label = asgn.dueTime ? `${base} · ${asgn.dueTime}` : base;
       // Day before at 6pm. Action button "Mark done" → TOGGLE_ASSIGNMENT
       // (see App-level useEffect listener). extra.assignmentId carries the
       // target id; both reminders for the same assignment share that id so
       // either notification can mark it done.
       const dayBefore = parseLocalDate(addDays(asgn.dueDate,-1)); dayBefore.setHours(18,0,0,0);
       if (dayBefore.getTime() > now) notes.push({ id: id++, title: "📋 Due tomorrow", body: label, schedule: { at: dayBefore }, smallIcon: "ic_stat_studydesk", iconColor: "#8b4a62", actionTypeId: ASSIGNMENT_ACTION_TYPE, extra: { assignmentId: asgn.id } });
-      // Due day at 9am
-      const dueDay = parseLocalDate(asgn.dueDate); dueDay.setHours(9,0,0,0);
-      if (dueDay.getTime() > now) notes.push({ id: id++, title: "📋 Due today", body: label, schedule: { at: dueDay }, smallIcon: "ic_stat_studydesk", iconColor: "#8b4a62", actionTypeId: ASSIGNMENT_ACTION_TYPE, extra: { assignmentId: asgn.id } });
+      // Due day — 9am, or an hour before the deadline when that is earlier.
+      // 9am was always fine for an evening deadline and useless for an 08:00
+      // one, which is the case this item makes expressible. `null` means the
+      // deadline is early enough that an hour's warning lands yesterday, where
+      // the 6pm reminder above already covers it.
+      const dueDay = dueDayReminderAt(asgn.dueDate, asgn.dueTime);
+      if (dueDay && dueDay.getTime() > now) notes.push({ id: id++, title: "📋 Due today", body: label, schedule: { at: dueDay }, smallIcon: "ic_stat_studydesk", iconColor: "#8b4a62", actionTypeId: ASSIGNMENT_ACTION_TYPE, extra: { assignmentId: asgn.id } });
     });
 
     // ── Planned study sessions (v1.10) ──────────────────────────────────
@@ -388,9 +397,9 @@ function reducer(state, action) {
     // LWW and use newSyncId() (a real UUID) instead of uid(). Deletes stay hard
     // removals: applyRemotePull drops remotely-deleted rows the same way, so
     // local state never holds a tombstone and no render site needs a new guard.
-    case "ADD_ASSIGNMENT":  { const a={id:action.id||newSyncId(),courseId:action.courseId,title:action.title,type:action.assignType,dueDate:action.dueDate,notes:action.notes||"",done:false,updatedAt:action.updatedAt||new Date().toISOString()}; return {...state,assignments:[...state.assignments,a]}; }
+    case "ADD_ASSIGNMENT":  { const a={id:action.id||newSyncId(),courseId:action.courseId,title:action.title,type:action.assignType,dueDate:action.dueDate,dueTime:normalizeDueTime(action.dueTime),notes:action.notes||"",done:false,updatedAt:action.updatedAt||new Date().toISOString()}; return {...state,assignments:[...state.assignments,a]}; }
     case "TOGGLE_ASSIGNMENT": return {...state,assignments:state.assignments.map(a=>a.id===action.id?{...a,done:!a.done,updatedAt:new Date().toISOString()}:a)};
-    case "EDIT_ASSIGNMENT":   return {...state,assignments:state.assignments.map(a=>a.id===action.id?{...a,title:action.title,dueDate:action.dueDate,notes:action.notes,updatedAt:new Date().toISOString()}:a)};
+    case "EDIT_ASSIGNMENT":   return {...state,assignments:state.assignments.map(a=>a.id===action.id?{...a,title:action.title,dueDate:action.dueDate,dueTime:normalizeDueTime(action.dueTime),notes:action.notes,updatedAt:new Date().toISOString()}:a)};
     case "DELETE_ASSIGNMENT": return {...state,assignments:state.assignments.filter(a=>a.id!==action.id)};
     // v1.13 Tier 3 — upsert by id, for the calendar feed.
     //
@@ -415,6 +424,10 @@ function reducer(state, action) {
         title: row.title || "",
         type: row.type || null,
         dueDate: row.dueDate || null,
+        // The calendar feed carries a real start time when the source event
+        // has one (VEVENT DTSTART), which is exactly a due time — so an
+        // imported deadline is timed without the user retyping it.
+        dueTime: normalizeDueTime(row.dueTime),
         notes: row.notes || "",
         // `done` is preserved on an existing row. A student who ticked off an
         // imported assignment must not have it un-ticked by the next poll —
@@ -1738,7 +1751,7 @@ export default function App() {
         if (cancelled) return;
         if (!a.courseId || !state.courses[a.courseId]) continue;
         try {
-          await sync.upsertAssignment({ id: a.id, courseId: a.courseId, title: a.title, type: a.type, dueDate: a.dueDate, notes: a.notes, done: a.done });
+          await sync.upsertAssignment({ id: a.id, courseId: a.courseId, title: a.title, type: a.type, dueDate: a.dueDate, dueTime: a.dueTime, notes: a.notes, done: a.done });
           pushed++;
         } catch (e) { failed++; console.error("[StudyDesk] initial push assignment failed:", a.id, e); }
       }
@@ -1819,7 +1832,7 @@ export default function App() {
       if (prev.assignments.get(id) === s) continue;
       const a = assignmentsById.get(id);
       if (!a?.courseId) continue;
-      outbox.enqueue('upsert_assignment', { id, courseId: a.courseId, title: a.title, type: a.type, dueDate: a.dueDate, notes: a.notes, done: a.done });
+      outbox.enqueue('upsert_assignment', { id, courseId: a.courseId, title: a.title, type: a.type, dueDate: a.dueDate, dueTime: a.dueTime, notes: a.notes, done: a.done });
     }
     for (const id of prev.assignments.keys()) {
       if (!next.assignments.has(id)) outbox.enqueue('delete_assignment', { id });
@@ -2200,7 +2213,7 @@ export default function App() {
       <div style={{marginBottom:16}}><CoursePicker value={newCourseColor} onChange={setNewCourseColor}/></div>
       <div style={{display:"flex",gap:8}}><button className="btn" onClick={addCourse}>{t('av.chrome.addCourse')}</button><button className="btn-outline" onClick={()=>setShowAddCourse(false)}>{t('common.cancel')}</button></div>
     </div></div>}
-    {showAddAsgn&&<AddAsgnModal courses={courses} activeCourse={state.activeCourse} onAdd={(data)=>{dispatch({type:"ADD_ASSIGNMENT",title:data.title,courseId:data.courseId,assignType:data.type,dueDate:data.dueDate,notes:data.notes});setShowAddAsgn(false);showFlash(t('av.flash.assignmentAdded'));}} onClose={()=>setShowAddAsgn(false)}/>}
+    {showAddAsgn&&<AddAsgnModal courses={courses} activeCourse={state.activeCourse} onAdd={(data)=>{dispatch({type:"ADD_ASSIGNMENT",title:data.title,courseId:data.courseId,assignType:data.type,dueDate:data.dueDate,dueTime:data.dueTime,notes:data.notes});setShowAddAsgn(false);showFlash(t('av.flash.assignmentAdded'));}} onClose={()=>setShowAddAsgn(false)}/>}
     {showAddExam&&<AddExamModal courses={courses} activeCourse={state.activeCourse} onAdd={(data)=>{dispatch({type:"ADD_EXAM",...data});setShowAddExam(false);showFlash(t('av.flash.examAdded'));}} onClose={()=>setShowAddExam(false)}/>}
     {editingCourse&&<EditCourseModal
       course={state.courses[editingCourse.id] || editingCourse}
@@ -2376,9 +2389,9 @@ function CourseDetailView({ state, dispatch, session, showFlash, tier, onAddAsgn
 
   const assignments = state.assignments.filter(a => a.courseId === ac);
   const open = assignments.filter(a => !a.done)
-    .sort((a, b) => new Date(a.dueDate || "9999-12-31") - new Date(b.dueDate || "9999-12-31"));
+    .sort(byDueAsc);
   const done = assignments.filter(a => a.done)
-    .sort((a, b) => new Date(b.dueDate || "1970-01-01") - new Date(a.dueDate || "1970-01-01"));
+    .sort(byDueDesc);
   const exams = state.exams.filter(e => e.courseId === ac);
   const openExams = exams.filter(e => !e.done).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
 
@@ -2495,11 +2508,17 @@ function AsgnItem({ asgn, courses, dispatch, attachments = [], session, showFlas
   const mine=attachments.filter(a=>a.assignmentId===asgn.id&&!a.deletedAt);
   const [editTitle,setEditTitle]=useState(asgn.title);
   const [editDate,setEditDate]=useState(asgn.dueDate||"");
+  const [editTime,setEditTime]=useState(asgn.dueTime||"");
   const [editNotes,setEditNotes]=useState(asgn.notes||"");
-  const save=()=>{ dispatch({type:"EDIT_ASSIGNMENT",id:asgn.id,title:editTitle.trim()||asgn.title,dueDate:editDate,notes:editNotes}); setEditing(false); };
+  // Clearing the date clears the time with it: a time with no day is not a
+  // deadline, and leaving it behind would resurrect it if a date came back.
+  const save=()=>{ dispatch({type:"EDIT_ASSIGNMENT",id:asgn.id,title:editTitle.trim()||asgn.title,dueDate:editDate,dueTime:editDate?editTime:"",notes:editNotes}); setEditing(false); };
   if(editing) return <div className="asgn-item" style={{flexDirection:"column",gap:10}}>
     <input type="text" value={editTitle} onChange={e=>setEditTitle(e.target.value)} style={{fontWeight:500}} autoFocus/>
-    <input type="date" value={editDate} onChange={e=>setEditDate(e.target.value)}/>
+    <div style={{display:"flex",gap:8}}>
+      <input type="date" value={editDate} onChange={e=>setEditDate(e.target.value)} style={{flex:"1 1 auto"}}/>
+      <input type="time" value={editTime} disabled={!editDate} onChange={e=>setEditTime(e.target.value)} style={{flex:"0 1 auto"}} aria-label={t('av.md.dueTimeOpt')}/>
+    </div>
     <textarea value={editNotes} onChange={e=>setEditNotes(e.target.value)} placeholder={t('sv.fNotes')+"…"} style={{minHeight:48,fontSize:12}}/>
     <div style={{display:"flex",gap:8}}><button className="btn btn-sm" onClick={save}>{t('common.save')}</button><button className="btn-outline btn-sm" onClick={()=>setEditing(false)}>{t('common.cancel')}</button></div>
   </div>;
@@ -2514,7 +2533,7 @@ function AsgnItem({ asgn, courses, dispatch, attachments = [], session, showFlas
       <div className="asgn-meta">
         {course&&<span className="asgn-course" style={{background:course.color+"18",color:course.color}}>{course.name}</span>}
         {asgn.type&&<span className="asgn-type">{t(`av.assignType.${asgn.type}`,{defaultValue:asgn.type})}</span>}
-        {asgn.dueDate&&<span className="asgn-due" style={{color:asgn.done?"var(--muted2)":urgencyColor(days)}}>{fmtDate(asgn.dueDate,t)} · {urgencyLabel(days,t)}</span>}
+        {asgn.dueDate&&<span className="asgn-due" style={{color:asgn.done?"var(--muted2)":urgencyColor(days)}}>{fmtDate(asgn.dueDate,t)}{asgn.dueTime&&` ${asgn.dueTime}`} · {urgencyLabel(days,t)}</span>}
       </div>
       {asgn.notes&&<div className="asgn-notes">{asgn.notes}</div>}
     </div>
@@ -2615,7 +2634,7 @@ function PlanView({ state, dispatch, session, showFlash, onAddAsgn, onAddExam, o
   const agendaEvents=[];
   const _agendaBase=todayMidnight();
   for(let i=0;i<60;i++){const d=new Date(_agendaBase);d.setDate(_agendaBase.getDate()+i);const ev=eventsOnDay(d);if(ev.length>0)agendaEvents.push({date:d,events:ev});}
-  const openAsgns=state.assignments.filter(a=>!a.done).sort((a,b)=>new Date(a.dueDate||"9999-12-31")-new Date(b.dueDate||"9999-12-31"));
+  const openAsgns=state.assignments.filter(a=>!a.done).sort(byDueAsc);
   const openExams=state.exams.filter(e=>!e.done).sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));
   // The root is NOT a tiling grid: this view also holds the month grid, the
   // agenda and the course cards, and tiling those would break each of them.
@@ -2627,7 +2646,7 @@ function PlanView({ state, dispatch, session, showFlash, onAddAsgn, onAddExam, o
     {!collapsed.assignments && <>
     {openAsgns.length===0&&<div className="empty">{t('av.pl.noOpenAsgn')}</div>}
     <div className="sd-list-tile">{openAsgns.map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch} attachments={state.attachments} session={session} showFlash={showFlash}/>)}</div>
-    {state.assignments.filter(a=>a.done).length>0&&<details style={{marginBottom:16}}><summary style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",cursor:"pointer",padding:"8px 0"}}>{t('av.pl.completed',{count:state.assignments.filter(a=>a.done).length})}</summary>{state.assignments.filter(a=>a.done).sort((a,b)=>new Date(b.dueDate||"1970-01-01")-new Date(a.dueDate||"1970-01-01")).map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch} attachments={state.attachments} session={session} showFlash={showFlash}/>)}</details>}
+    {state.assignments.filter(a=>a.done).length>0&&<details style={{marginBottom:16}}><summary style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",cursor:"pointer",padding:"8px 0"}}>{t('av.pl.completed',{count:state.assignments.filter(a=>a.done).length})}</summary>{state.assignments.filter(a=>a.done).sort(byDueDesc).map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch} attachments={state.attachments} session={session} showFlash={showFlash}/>)}</details>}
     </>}
     <div className="divider"/>
     <PlanSectionHead id="exams" label={t('av.pl.examsCalendar')} open={!collapsed.exams} onToggle={toggleSection}>
