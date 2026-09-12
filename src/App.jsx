@@ -20,6 +20,8 @@ import { downloadExport } from "./lib/dataRights.js";
 import StorageAlert from "./features/settings/StorageAlert.jsx";
 import TimerPill from "./features/timer/TimerPill.jsx";
 import { useAccountAvatar } from "./lib/useAccountAvatar.js";
+import { readCollapsed, writeCollapsed } from "./lib/planSections.js";
+import { preferredDueWindow, countsAsDue } from "./lib/dueWindow.js";
 import ReferralPrompt from "./features/referral/ReferralPrompt.jsx";
 import { inheritFromNexus } from "./lib/suiteSso.js";
 import { hydrateOnboardedFromCloud, markOnboardedCloud } from "./lib/onboardingCloud.js";
@@ -2061,7 +2063,11 @@ export default function App() {
               className={"topbar-avatar"+(state.view==="settings"?" active":"")}
               style={state.view==="settings"?undefined:accountAvatar.tintStyle}
               onClick={()=>dispatch({type:"SET_VIEW",view:"settings"})}
-              title={session?.user?.email ? t('av.chrome.settingsWith', { email: session.user.email }) : t('av.chrome.settings')}
+              /* v1.14 Item 12 — the name the user chose, when they have chosen
+                 one; the address only as the fallback it always was. */
+              title={(accountAvatar.displayName || session?.user?.email)
+                ? t('av.chrome.settingsWith', { who: accountAvatar.displayName || session.user.email })
+                : t('av.chrome.settings')}
               aria-label={t('av.chrome.openSettings')}>
               <AccountAvatar avatar={accountAvatar} session={session} />
             </button>
@@ -2534,12 +2540,60 @@ function AsgnItem({ asgn, courses, dispatch, attachments = [], session, showFlas
   </div>;
 }
 
+// ── PlanSectionHead ───────────────────────────────────────────────────────────
+//
+// v1.14 Item 3 (#51) — the LIST view's three section headings, now foldable.
+//
+// The chevron is `course-card-chevron`, the same mark the course cards below
+// already use for exactly this gesture, rather than a second one that means the
+// same thing: the tab teaches the affordance once. It also inherits the RTL
+// mirroring rule those cards already carry.
+//
+// The heading text becomes the button and the Add button stays a sibling, so
+// `.section-label`'s ordering rules — hairline at order 1, action at order 2 —
+// keep working untouched, and the Add buttons stay aligned down the right edge
+// whether a section is open or shut.
+function PlanSectionHead({ id, label, open, onToggle, children }) {
+  return (
+    <div className="section-label">
+      {/* No aria-controls: the section body is a fragment of siblings rather
+          than one element, so there is nothing honest to point at.
+          aria-expanded alone is valid and is what gets announced. */}
+      <button
+        type="button"
+        className="section-toggle"
+        onClick={() => onToggle(id)}
+        aria-expanded={open}
+      >
+        <span className={"course-card-chevron" + (open ? " open" : "")} aria-hidden="true">▶</span>
+        {label}
+      </button>
+      {children}
+    </div>
+  );
+}
+
 function PlanView({ state, dispatch, session, showFlash, onAddAsgn, onAddExam, onAddCourse, onEditCourse }) {
   const { t, i18n } = useTranslation();
   const lang = (i18n.language || "en").split("-")[0];
   const courses = Object.values(state.courses).filter(c => !c.deletedAt);
   const [calMonth, setCalMonth] = useState(()=>{const d=new Date(); return {year:d.getFullYear(),month:d.getMonth()};});
   const [expandedCourse, setExpandedCourse] = useState({});
+  // Read once at mount, not on every render: the value only ever changes
+  // through the toggle below, and reading localStorage per render would make
+  // scrolling this tab hit storage.
+  const [collapsed, setCollapsed] = useState(readCollapsed);
+  // Read at render, like `resolveWeekStart` and `preferredDayStart` elsewhere:
+  // a localStorage write is invisible to React, and this view remounts when the
+  // user comes back from Settings, which is the only place it can change.
+  const dueWindow = preferredDueWindow();
+  const toggleSection = useCallback((id) => {
+    setCollapsed((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      writeCollapsed(next);
+      return next;
+    });
+  }, []);
   const firstDay = new Date(calMonth.year,calMonth.month,1);
   const lastDay  = new Date(calMonth.year,calMonth.month+1,0);
   const startPad = firstDay.getDay();
@@ -2567,12 +2621,19 @@ function PlanView({ state, dispatch, session, showFlash, onAddAsgn, onAddExam, o
   // agenda and the course cards, and tiling those would break each of them.
   // Only the flat lists tile, which is where the vertical length comes from.
   return <div className="sd-page-plan">
-    <div className="section-label">{t('av.pl.assignments')}<button className="btn btn-sm" onClick={onAddAsgn}>{t('av.pl.add')}</button></div>
+    <PlanSectionHead id="assignments" label={t('av.pl.assignments')} open={!collapsed.assignments} onToggle={toggleSection}>
+      <button className="btn btn-sm" onClick={onAddAsgn}>{t('av.pl.add')}</button>
+    </PlanSectionHead>
+    {!collapsed.assignments && <>
     {openAsgns.length===0&&<div className="empty">{t('av.pl.noOpenAsgn')}</div>}
     <div className="sd-list-tile">{openAsgns.map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch} attachments={state.attachments} session={session} showFlash={showFlash}/>)}</div>
     {state.assignments.filter(a=>a.done).length>0&&<details style={{marginBottom:16}}><summary style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",cursor:"pointer",padding:"8px 0"}}>{t('av.pl.completed',{count:state.assignments.filter(a=>a.done).length})}</summary>{state.assignments.filter(a=>a.done).sort((a,b)=>new Date(b.dueDate||"1970-01-01")-new Date(a.dueDate||"1970-01-01")).map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch} attachments={state.attachments} session={session} showFlash={showFlash}/>)}</details>}
+    </>}
     <div className="divider"/>
-    <div className="section-label">{t('av.pl.examsCalendar')}<button className="btn btn-sm" onClick={onAddExam}>{t('av.pl.add')}</button></div>
+    <PlanSectionHead id="exams" label={t('av.pl.examsCalendar')} open={!collapsed.exams} onToggle={toggleSection}>
+      <button className="btn btn-sm" onClick={onAddExam}>{t('av.pl.add')}</button>
+    </PlanSectionHead>
+    {!collapsed.exams && <>
     <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
       <button className="btn-outline btn-sm" onClick={prevMonth}><span className="rtl-mirror" aria-hidden>←</span></button>
       <span style={{fontFamily:"var(--font-display)",fontSize:16,flex:1}}>{monthName}</span>
@@ -2589,12 +2650,17 @@ function PlanView({ state, dispatch, session, showFlash, onAddAsgn, onAddExam, o
     {openExams.map(e=><ExamCard key={e.id} exam={e} courses={state.courses} dispatch={dispatch}/>)}
     {openExams.length===0&&<div className="empty">{t('av.pl.noExams')}</div>}
     {state.exams.filter(e=>e.done).length>0&&<details style={{marginBottom:16}}><summary style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",cursor:"pointer",padding:"8px 0"}}>{t('av.pl.completedExams',{count:state.exams.filter(e=>e.done).length})}</summary>{state.exams.filter(e=>e.done).map(e=><ExamCard key={e.id} exam={e} courses={state.courses} dispatch={dispatch}/>)}</details>}
+    </>}
     <div className="divider"/>
-    <div className="section-label">{t('av.pl.courses')}<button className="btn btn-sm" onClick={onAddCourse}>{t('av.pl.add')}</button></div>
+    <PlanSectionHead id="courses" label={t('av.pl.courses')} open={!collapsed.courses} onToggle={toggleSection}>
+      <button className="btn btn-sm" onClick={onAddCourse}>{t('av.pl.add')}</button>
+    </PlanSectionHead>
+    {!collapsed.courses && <>
     {courses.length===0&&<div className="empty">{t('av.pl.noCourses')}</div>}
     <div className="home-grid">
-      {courses.map(c=>{const openA=state.assignments.filter(a=>a.courseId===c.id&&!a.done);const openE=state.exams.filter(e=>e.courseId===c.id&&!e.done);const isOpen=!!expandedCourse[c.id];const nextA=openA.filter(a=>a.dueDate).sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate))[0];const nextE=[...openE].sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate))[0];const hasUrgent=openA.some(a=>{const d=daysUntil(a.dueDate);return d!==null&&d<=2;})||openE.some(e=>{const d=daysUntil(e.dueDate);return d!==null&&d<=5;});return <div key={c.id} className="course-card" style={{borderInlineStartColor:c.color}}><div role="button" tabIndex={0} className="course-card-compact" onClick={()=>setExpandedCourse(x=>({...x,[c.id]:!x[c.id]}))} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&setExpandedCourse(x=>({...x,[c.id]:!x[c.id]}))}><div className="course-card-left"><div className="course-card-name">{c.name}</div><div className="course-card-pills">{openA.length>0&&<span className={"course-card-pill"+(hasUrgent?" urgent":"")}>{t('av.pl.due',{count:openA.length})}</span>}{openE.length>0&&<span className="course-card-pill" style={{background:"rgba(109,63,160,0.08)",color:"#6d3fa0",borderColor:"rgba(109,63,160,0.18)"}}>{t('av.pl.exam',{count:openE.length})}</span>}{openA.length===0&&openE.length===0&&<span className="course-card-pill" style={{color:"#2e7d52",borderColor:"rgba(46,125,82,0.2)"}}>{t('av.pl.clear')}</span>}</div></div><span className={"course-card-chevron"+(isOpen?" open":"")}>▶</span></div>{isOpen&&<div className="course-card-detail"><div className="course-card-next">{nextE&&<div style={{color:"#6d3fa0",marginBottom:5,fontFamily:"var(--font-mono)",fontSize:11}}>📝 <strong>{nextE.title}</strong> — {urgencyLabel(daysUntil(nextE.dueDate),t)}</div>}{nextA&&<div style={{marginBottom:5}}>{t('av.pl.next')} <strong>{nextA.title}</strong><span style={{color:urgencyColor(daysUntil(nextA.dueDate)),marginLeft:6,fontFamily:"var(--font-mono)",fontSize:11}}>{urgencyLabel(daysUntil(nextA.dueDate),t)}</span></div>}{!nextA&&!nextE&&<span style={{color:"var(--muted2)",fontFamily:"var(--font-mono)",fontSize:11}}>{t('av.pl.nothingDue')}</span>}</div><div className="course-card-actions"><button className="btn-outline btn-sm" onClick={()=>onEditCourse({id:c.id,name:c.name,color:c.color})}>{t('av.pl.edit')}</button></div></div>}</div>;})}
+      {courses.map(c=>{const openA=state.assignments.filter(a=>a.courseId===c.id&&!a.done);const openE=state.exams.filter(e=>e.courseId===c.id&&!e.done);const isOpen=!!expandedCourse[c.id];const dueA=openA.filter(a=>countsAsDue(daysUntil(a.dueDate),a.type,dueWindow));const nextA=openA.filter(a=>a.dueDate).sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate))[0];const nextE=[...openE].sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate))[0];const hasUrgent=openA.some(a=>{const d=daysUntil(a.dueDate);return d!==null&&d<=2;})||openE.some(e=>{const d=daysUntil(e.dueDate);return d!==null&&d<=5;});return <div key={c.id} className="course-card" style={{borderInlineStartColor:c.color}}><div role="button" tabIndex={0} className="course-card-compact" onClick={()=>setExpandedCourse(x=>({...x,[c.id]:!x[c.id]}))} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&setExpandedCourse(x=>({...x,[c.id]:!x[c.id]}))}><div className="course-card-left"><div className="course-card-name">{c.name}</div><div className="course-card-pills">{dueA.length>0&&<span className={"course-card-pill"+(hasUrgent?" urgent":"")} title={t('av.pl.dueTitle',{due:dueA.length,open:openA.length})}>{t('av.pl.due',{count:dueA.length})}</span>}{dueA.length===0&&openA.length>0&&<span className="course-card-pill" title={t('av.pl.openTitle',{count:openA.length})}>{t('av.pl.open',{count:openA.length})}</span>}{openE.length>0&&<span className="course-card-pill" style={{background:"rgba(109,63,160,0.08)",color:"#6d3fa0",borderColor:"rgba(109,63,160,0.18)"}}>{t('av.pl.exam',{count:openE.length})}</span>}{openA.length===0&&openE.length===0&&<span className="course-card-pill" style={{color:"#2e7d52",borderColor:"rgba(46,125,82,0.2)"}}>{t('av.pl.clear')}</span>}</div></div><span className={"course-card-chevron"+(isOpen?" open":"")}>▶</span></div>{isOpen&&<div className="course-card-detail"><div className="course-card-next">{nextE&&<div style={{color:"#6d3fa0",marginBottom:5,fontFamily:"var(--font-mono)",fontSize:11}}>📝 <strong>{nextE.title}</strong> — {urgencyLabel(daysUntil(nextE.dueDate),t)}</div>}{nextA&&<div style={{marginBottom:5}}>{t('av.pl.next')} <strong>{nextA.title}</strong><span style={{color:urgencyColor(daysUntil(nextA.dueDate)),marginLeft:6,fontFamily:"var(--font-mono)",fontSize:11}}>{urgencyLabel(daysUntil(nextA.dueDate),t)}</span></div>}{!nextA&&!nextE&&<span style={{color:"var(--muted2)",fontFamily:"var(--font-mono)",fontSize:11}}>{t('av.pl.nothingDue')}</span>}</div><div className="course-card-actions"><button className="btn-outline btn-sm" onClick={()=>onEditCourse({id:c.id,name:c.name,color:c.color})}>{t('av.pl.edit')}</button></div></div>}</div>;})}
     </div>
+    </>}
   </div>;
 }
 

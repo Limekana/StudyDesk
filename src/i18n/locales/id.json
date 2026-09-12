@@ -126,7 +126,8 @@
     "no": "Tidak",
     "updated": "Mata pelajaran diperbarui",
     "colorSwatch": "Warna {{hex}}",
-    "colorCustom": "Pilih warna apa pun"
+    "colorCustom": "Pilih warna apa pun",
+    "colorNone": "Tanpa warna"
   },
   "history": {
     "title": "Riwayat periode · Arsip",
@@ -353,7 +354,18 @@
     "dayStart": "Hariku dimulai pukul",
     "dayStartMidnight": "Tengah malam",
     "dayStartNote": "Belajar setelah jam ini dihitung untuk hari sebelumnya, jadi begadang tetap satu hari belajar, bukan dua. Memengaruhi rentetan dan pengelompokan sesi.",
-    "dayStartSaved": "Awal hari diperbarui."
+    "dayStartSaved": "Awal hari diperbarui.",
+    "dueWindowLbl": "Lencana tenggat",
+    "dueWindow": "Hitung sebagai jatuh tempo",
+    "dueWindowSmart": "Menurut jenis",
+    "dueWindowAll": "Semua yang punya tanggal",
+    "dueWindowDays": "Dalam {{count}} hari",
+    "dueWindowNote": "Tugas mana yang dihitung jatuh tempo oleh lencana mata kuliah. Menurut jenis berarti bacaan dalam 3 hari dan sisanya dalam 14 hari. Yang terlambat selalu dihitung.",
+    "dueWindowSaved": "Lencana tenggat diperbarui",
+    "scalePresets": "Mulai dari",
+    "scalePresetFr": "Prancis · 0–20",
+    "scalePresetFi": "Finlandia · 4–10",
+    "gradeCustomHint": "Skala lain — /20, 4–10, 1–6? Pilih Khusus dan tentukan batas Anda sendiri."
   },
   "sdob": {
     "brand": "Berhenti menimbang. Mulai belajar.",
@@ -585,7 +597,10 @@
       "edit": "Ubah",
       "examWord": "UJIAN",
       "studyWord": "BELAJAR",
-      "dueWord": "TENGGAT"
+      "dueWord": "TENGGAT",
+      "open": "{{count}} terbuka",
+      "openTitle": "{{count}} terbuka, tidak ada yang segera jatuh tempo",
+      "dueTitle": "{{due}} segera jatuh tempo · total {{open}} terbuka"
     },
     "cal": {
       "sun": "Min",
@@ -645,7 +660,7 @@
       "coursesLabel": "Mata pelajaran",
       "addCourse": "Tambah mata pelajaran",
       "settings": "Pengaturan",
-      "settingsWith": "Pengaturan · {{email}}",
+      "settingsWith": "Pengaturan · {{who}}",
       "openSettings": "Buka pengaturan",
       "collapseSidebar": "Ciutkan bilah sisi",
       "expandSidebar": "Perluas bilah sisi",
@@ -863,7 +878,6 @@
     "fUntil": "Sampai",
     "untilHint": "Kosongkan jika belum ada tanggal berakhir.",
     "fColour": "Warna",
-    "noColour": "Tanpa warna",
     "create": "Tambahkan ke kalender",
     "saved": "Agenda diperbarui",
     "created": "Agenda ditambahkan",

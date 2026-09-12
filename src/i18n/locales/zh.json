@@ -53,7 +53,8 @@
     "no": "否",
     "updated": "课程已更新",
     "colorSwatch": "颜色 {{hex}}",
-    "colorCustom": "选择任意颜色"
+    "colorCustom": "选择任意颜色",
+    "colorNone": "无颜色"
   },
   "history": {
     "title": "学段历史 · 归档",
@@ -355,7 +356,18 @@
     "dayStart": "我的一天开始于",
     "dayStartMidnight": "午夜",
     "dayStartNote": "在此之后的学习算作前一天，这样熬夜学习只算一个学习日，而不是两个。会影响连续天数和学习记录的分组。",
-    "dayStartSaved": "一天的起点已更新。"
+    "dayStartSaved": "一天的起点已更新。",
+    "dueWindowLbl": "到期标记",
+    "dueWindow": "计为到期",
+    "dueWindowSmart": "按类型",
+    "dueWindowAll": "所有有日期的项目",
+    "dueWindowDays": "{{count}} 天内",
+    "dueWindowNote": "课程标记把哪些作业算作到期。按类型表示阅读 3 天内、其他 14 天内。逾期的始终计入。",
+    "dueWindowSaved": "到期标记已更新",
+    "scalePresets": "从模板开始",
+    "scalePresetFr": "法国 · 0–20",
+    "scalePresetFi": "芬兰 · 4–10",
+    "gradeCustomHint": "使用其他量表 — /20、4–10、1–6？选择「自定义」并设置自己的范围。"
   },
   "sdob": {
     "brand": "别再纠结，开始学习。",
@@ -590,7 +602,10 @@
       "edit": "编辑",
       "examWord": "考试",
       "studyWord": "学习",
-      "dueWord": "到期"
+      "dueWord": "到期",
+      "open": "{{count}} 项未完成",
+      "openTitle": "{{count}} 项未完成，近期无到期",
+      "dueTitle": "{{due}} 项即将到期 · 共 {{open}} 项未完成"
     },
     "cal": {
       "sun": "日",
@@ -650,7 +665,7 @@
       "coursesLabel": "课程",
       "addCourse": "添加课程",
       "settings": "设置",
-      "settingsWith": "设置 · {{email}}",
+      "settingsWith": "设置 · {{who}}",
       "openSettings": "打开设置",
       "collapseSidebar": "折叠侧边栏",
       "expandSidebar": "展开侧边栏",
@@ -868,7 +883,6 @@
     "fUntil": "截止",
     "untilHint": "若尚无结束日期，请留空。",
     "fColour": "颜色",
-    "noColour": "无颜色",
     "create": "加入日历",
     "saved": "安排已更新",
     "created": "安排已添加",

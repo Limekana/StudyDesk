@@ -53,7 +53,8 @@
     "no": "Ei",
     "updated": "Kurssi päivitetty",
     "colorSwatch": "Väri {{hex}}",
-    "colorCustom": "Valitse mikä tahansa väri"
+    "colorCustom": "Valitse mikä tahansa väri",
+    "colorNone": "Ei väriä"
   },
   "history": {
     "title": "Jaksohistoria · Arkisto",
@@ -355,7 +356,18 @@
     "dayStart": "Päiväni alkaa klo",
     "dayStartMidnight": "Keskiyö",
     "dayStartNote": "Tämän jälkeen opiskelu lasketaan edelliselle päivälle, joten myöhäinen ilta on yksi opiskelupäivä eikä kaksi. Vaikuttaa putkeen ja jaksojen ryhmittelyyn.",
-    "dayStartSaved": "Päivän alku päivitetty."
+    "dayStartSaved": "Päivän alku päivitetty.",
+    "dueWindowLbl": "Eräpäivämerkit",
+    "dueWindow": "Laske erääntyväksi",
+    "dueWindowSmart": "Tyypin mukaan",
+    "dueWindowAll": "Kaikki, joilla on päivämäärä",
+    "dueWindowDays": "{{count}} päivän sisällä",
+    "dueWindowNote": "Mitkä tehtävät kurssin merkki laskee erääntyviksi. Tyypin mukaan tarkoittaa lukemistoja 3 päivän ja kaikkea muuta 14 päivän sisällä. Myöhässä olevat lasketaan aina.",
+    "dueWindowSaved": "Eräpäivämerkit päivitetty",
+    "scalePresets": "Valmis pohja",
+    "scalePresetFr": "Ranska · 0–20",
+    "scalePresetFi": "Suomi · 4–10",
+    "gradeCustomHint": "Eri asteikko — /20, 4–10, 1–6? Valitse Oma ja aseta omat rajasi."
   },
   "sdob": {
     "brand": "Lopeta miettiminen. Aloita opiskelu.",
@@ -590,7 +602,10 @@
       "edit": "Muokkaa",
       "examWord": "KOE",
       "studyWord": "OPISKELE",
-      "dueWord": "ERÄÄNTYY"
+      "dueWord": "ERÄÄNTYY",
+      "open": "{{count}} avoinna",
+      "openTitle": "{{count}} avoinna, mikään ei eräänny pian",
+      "dueTitle": "{{due}} erääntyy pian · {{open}} avoinna yhteensä"
     },
     "cal": {
       "sun": "Su",
@@ -650,7 +665,7 @@
       "coursesLabel": "Kurssit",
       "addCourse": "Lisää kurssi",
       "settings": "Asetukset",
-      "settingsWith": "Asetukset · {{email}}",
+      "settingsWith": "Asetukset · {{who}}",
       "openSettings": "Avaa asetukset",
       "collapseSidebar": "Kutista sivupalkki",
       "expandSidebar": "Laajenna sivupalkki",
@@ -868,7 +883,6 @@
     "fUntil": "Asti",
     "untilHint": "Jätä tyhjäksi, jos päättymispäivää ei vielä ole.",
     "fColour": "Väri",
-    "noColour": "Ei väriä",
     "create": "Lisää kalenteriin",
     "saved": "Meno päivitetty",
     "created": "Meno lisätty",

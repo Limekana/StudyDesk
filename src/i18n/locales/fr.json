@@ -53,7 +53,8 @@
     "no": "Non",
     "updated": "Cours mis à jour",
     "colorSwatch": "Couleur {{hex}}",
-    "colorCustom": "Choisir n'importe quelle couleur"
+    "colorCustom": "Choisir n'importe quelle couleur",
+    "colorNone": "Aucune couleur"
   },
   "history": {
     "title": "Historique des périodes · Archive",
@@ -357,7 +358,18 @@
     "dayStart": "Ma journée commence à",
     "dayStartMidnight": "Minuit",
     "dayStartNote": "Ce qui est étudié après cette heure compte pour la veille : une nuit tardive fait une seule journée d’étude, pas deux. Agit sur votre série et sur le regroupement des sessions.",
-    "dayStartSaved": "Début de journée mis à jour."
+    "dayStartSaved": "Début de journée mis à jour.",
+    "dueWindowLbl": "Badges d'échéance",
+    "dueWindow": "Compter comme dû",
+    "dueWindowSmart": "Selon le type",
+    "dueWindowAll": "Tout ce qui a une date",
+    "dueWindowDays": "Sous {{count}} jours",
+    "dueWindowNote": "Les devoirs que le badge d'un cours compte comme dus. Selon le type : lectures sous 3 jours, tout le reste sous 14. Les retards comptent toujours.",
+    "dueWindowSaved": "Badges d'échéance mis à jour",
+    "scalePresets": "Partir de",
+    "scalePresetFr": "France · 0–20",
+    "scalePresetFi": "Finlande · 4–10",
+    "gradeCustomHint": "Une autre échelle — /20, 4–10, 1–6 ? Choisissez Perso et définissez vos bornes."
   },
   "sdob": {
     "brand": "Arrête de choisir. Commence à réviser.",
@@ -595,7 +607,10 @@
       "examWord": "EXAMEN",
       "studyWord": "ÉTUDE",
       "dueWord": "À RENDRE",
-      "exam_many": "{{count}} examens"
+      "exam_many": "{{count}} examens",
+      "open": "{{count}} en cours",
+      "openTitle": "{{count}} en cours, rien à rendre bientôt",
+      "dueTitle": "{{due}} à rendre bientôt · {{open}} en cours au total"
     },
     "cal": {
       "sun": "Dim",
@@ -655,7 +670,7 @@
       "coursesLabel": "Cours",
       "addCourse": "Ajouter un cours",
       "settings": "Paramètres",
-      "settingsWith": "Paramètres · {{email}}",
+      "settingsWith": "Paramètres · {{who}}",
       "openSettings": "Ouvrir les paramètres",
       "collapseSidebar": "Réduire la barre latérale",
       "expandSidebar": "Développer la barre latérale",
@@ -873,7 +888,6 @@
     "fUntil": "Jusqu'au",
     "untilHint": "Laissez vide s'il n'y a pas encore de date de fin.",
     "fColour": "Couleur",
-    "noColour": "Aucune couleur",
     "create": "Ajouter au calendrier",
     "saved": "Engagement mis à jour",
     "created": "Engagement ajouté",

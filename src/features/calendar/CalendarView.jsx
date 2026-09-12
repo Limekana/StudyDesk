@@ -39,7 +39,7 @@ import { lessonsOn, localTimestamp, minutesToSqlTime, timeToMinutes } from '../.
 import { commitmentsOn } from '../../lib/commitments.js';
 import { shortenLabels } from '../../lib/courseLabels.js';
 import { ribbonWindow, spanPct, packRibbon, weekLoad, freeSlots, pctIn } from '../../lib/weekRibbon.js';
-import { COURSE_COLORS } from '../../lib/courseColors.js';
+import CoursePicker from '../../lib/CoursePicker.jsx';
 import { parseLocalDate, toLocalISO, addDays, fmtTime, formatLocale } from '../../lib/dates.js';
 import { downloadIcs } from '../../lib/ics.js';
 import * as outbox from '../../lib/outbox.js';
@@ -1121,28 +1121,13 @@ function CommitmentEditor({ draft, onSave, onDelete, onClose, t }) {
           </div>
         )}
 
+        {/* v1.14 Item 1 (#47) — the eight presets were the whole choice, so a
+            user who wanted their own colour for a blocker had none. This is
+            the same picker the course modals use, with its "no colour" slot
+            turned on: one control, one set of presets, one escape hatch. */}
         <div className="input-group">
           <div className="input-label">{t('cm.fColour')}</div>
-          <div className="cm-swatches">
-            <button
-              type="button"
-              className={'cm-swatch none' + (color ? '' : ' on')}
-              onClick={() => setColor('')}
-              title={t('cm.noColour')}
-              aria-pressed={!color}
-            />
-            {COURSE_COLORS.map((hex) => (
-              <button
-                key={hex}
-                type="button"
-                className={'cm-swatch' + (color === hex ? ' on' : '')}
-                style={{ '--sw': hex }}
-                onClick={() => setColor(hex)}
-                aria-pressed={color === hex}
-                aria-label={hex}
-              />
-            ))}
-          </div>
+          <CoursePicker value={color} onChange={setColor} allowNone />
         </div>
 
         <div className="input-group">

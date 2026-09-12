@@ -1538,3 +1538,103 @@ check('the hash notices any edit, including a reordering', () => {
   assert.notEqual(h(''), h('x'));
   assert.equal(h('same'), h('same'), 'stable');
 });
+
+// ── dueWindow.js — what the course badge calls "due" (v1.14 Item 4, #51) ──
+//
+//   > "if you have put in all your assignments for the semester it says you
+//      have like 20 assignments due which looks kind of alarming"
+//
+// The badge counted every open assignment that had a date at all and then
+// painted itself red. The number was right; the word was not. These assertions
+// pin the two rules that make the new count defensible rather than merely
+// smaller — overdue work is NEVER dropped from the count, and an item nobody
+// has given a date is not due — because both are the kind of thing a later
+// "simplification" quietly loses.
+const dueWindow = await import('../src/lib/dueWindow.js');
+
+check('a fixed horizon counts up to and including its last day', () => {
+  assert.equal(dueWindow.countsAsDue(0, 'Essay', 7), true, 'today');
+  assert.equal(dueWindow.countsAsDue(7, 'Essay', 7), true, 'the boundary itself');
+  assert.equal(dueWindow.countsAsDue(8, 'Essay', 7), false);
+});
+
+check('overdue always counts, at every setting', () => {
+  for (const w of dueWindow.DUE_WINDOW_CHOICES) {
+    assert.equal(dueWindow.countsAsDue(-1, 'Reading', w), true, `window ${w}`);
+    assert.equal(dueWindow.countsAsDue(-90, 'Essay', w), true, `window ${w}`);
+  }
+});
+
+check('an item with no due date is not due — it was counted before', () => {
+  for (const w of dueWindow.DUE_WINDOW_CHOICES) {
+    assert.equal(dueWindow.countsAsDue(null, 'Essay', w), false, `window ${w}`);
+    assert.equal(dueWindow.countsAsDue(undefined, 'Essay', w), false, `window ${w}`);
+  }
+});
+
+check('"by type" gives readings a shorter horizon than everything else', () => {
+  assert.equal(dueWindow.horizonFor('Reading', 'smart'), 3);
+  assert.equal(dueWindow.horizonFor('Essay', 'smart'), 14);
+  assert.equal(dueWindow.horizonFor('Project', 'smart'), 14);
+  // Free-text types come from the "Other" field, so the default has to catch
+  // anything at all, including a name that collides with an Object prototype
+  // key — `hasOwnProperty` rather than a bare lookup is what makes that true.
+  assert.equal(dueWindow.horizonFor('Väitöskirja', 'smart'), 14);
+  assert.equal(dueWindow.horizonFor('constructor', 'smart'), 14);
+  assert.equal(dueWindow.horizonFor(undefined, 'smart'), 14);
+  assert.equal(dueWindow.countsAsDue(5, 'Reading', 'smart'), false);
+  assert.equal(dueWindow.countsAsDue(5, 'Essay', 'smart'), true);
+});
+
+check('"everything" is the behaviour this item changed, kept reachable', () => {
+  assert.equal(dueWindow.horizonFor('Reading', 'all'), Infinity);
+  assert.equal(dueWindow.countsAsDue(3650, 'Reading', 'all'), true);
+  // Still not "everything open" — a dateless item has no due date to be past.
+  assert.equal(dueWindow.countsAsDue(null, 'Reading', 'all'), false);
+});
+
+check('a junk stored preference falls back, it does not blank the badge', () => {
+  const store = makeStorage();
+  globalThis.localStorage = store.store;
+  store.store.setItem('studydesk-due-window', 'banana');
+  assert.equal(dueWindow.preferredDueWindow(), dueWindow.DEFAULT_DUE_WINDOW);
+  store.store.setItem('studydesk-due-window', '9999');
+  assert.equal(dueWindow.preferredDueWindow(), dueWindow.DEFAULT_DUE_WINDOW);
+  // A number survives the string round trip localStorage forces on it.
+  dueWindow.setPreferredDueWindow(14);
+  assert.equal(dueWindow.preferredDueWindow(), 14);
+  dueWindow.setPreferredDueWindow('all');
+  assert.equal(dueWindow.preferredDueWindow(), 'all');
+  // The default writes nothing, so the key only exists for people who chose.
+  dueWindow.setPreferredDueWindow('smart');
+  assert.equal(store.store.getItem('studydesk-due-window'), null);
+});
+
+// ── planSections.js — which Plan sections are folded (v1.14 Item 3, #51) ──
+//
+// A view preference, so the only behaviour worth pinning is what happens when
+// the stored value is absent or wrong: every section must come back OPEN,
+// because a fold nobody asked for looks exactly like a tab that lost its data.
+const planSections = await import('../src/lib/planSections.js');
+
+check('nothing folds itself — an absent or corrupt value reads as all open', () => {
+  const store = makeStorage();
+  globalThis.localStorage = store.store;
+  for (const raw of [null, '', 'not json', '[]', '"assignments"', '{"assignments":"yes"}']) {
+    if (raw === null) store.store.removeItem('studydesk-plan-collapsed');
+    else store.store.setItem('studydesk-plan-collapsed', raw);
+    const state = planSections.readCollapsed();
+    for (const id of planSections.PLAN_SECTIONS) {
+      assert.equal(state[id], false, `${id} after ${JSON.stringify(raw)}`);
+    }
+  }
+});
+
+check('a fold round-trips, and unfolding everything removes the key', () => {
+  const store = makeStorage();
+  globalThis.localStorage = store.store;
+  planSections.writeCollapsed({ assignments: false, exams: true, courses: false });
+  assert.deepEqual(planSections.readCollapsed(), { assignments: false, exams: true, courses: false });
+  planSections.writeCollapsed({ assignments: false, exams: false, courses: false });
+  assert.equal(store.store.getItem('studydesk-plan-collapsed'), null);
+});

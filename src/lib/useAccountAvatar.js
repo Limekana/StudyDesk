@@ -23,7 +23,7 @@ import { avatarInitials } from './avatarInitials.js';
  * rather than on the next cold start.
  */
 export function useAccountAvatar(session) {
-  const [state, setState] = useState({ kind: 'initials', glyph: null, color: null, url: null });
+  const [state, setState] = useState({ kind: 'initials', glyph: null, color: null, url: null, name: '' });
 
   // One effect, one subscription, one cancellation flag.
   //
@@ -34,10 +34,10 @@ export function useAccountAvatar(session) {
   // URL could resolve after the component unmounted, or after a sign-out, and
   // write the previous account's avatar into a fresh render.
   const resolve = useCallback(async (alive) => {
-    if (!session) return { kind: 'initials', glyph: null, color: null, url: null };
+    if (!session) return { kind: 'initials', glyph: null, color: null, url: null, name: '' };
     const p = await loadProfile();
     const next = await resolveAvatar(p);
-    return alive() ? next : null;
+    return alive() ? { ...next, name: p?.full_name?.trim() || '' } : null;
   }, [session]);
 
   useEffect(() => {
@@ -63,5 +63,13 @@ export function useAccountAvatar(session) {
     ? { background: state.color, color: '#fff', borderColor: state.color }
     : undefined;
 
-  return { ...state, initials: avatarInitials(session), tintStyle };
+  // The profile row is the authority, but it arrives one tick after mount and
+  // needs a network round trip. `user_metadata` is already in the session
+  // object, synchronously, and `saveProfile` writes the name to BOTH — so this
+  // fallback means the name is correct in the first rendered frame and on a
+  // cold offline start, instead of flashing the email and then replacing it.
+  const meta = session?.user?.user_metadata ?? {};
+  const displayName = state.name || String(meta.full_name || meta.name || '').trim();
+
+  return { ...state, initials: avatarInitials(session), tintStyle, displayName };
 }

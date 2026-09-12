@@ -126,7 +126,8 @@
     "no": "Não",
     "updated": "Disciplina atualizada",
     "colorSwatch": "Cor {{hex}}",
-    "colorCustom": "Escolher qualquer cor"
+    "colorCustom": "Escolher qualquer cor",
+    "colorNone": "Sem cor"
   },
   "history": {
     "title": "Histórico de períodos · Arquivo",
@@ -357,7 +358,18 @@
     "dayStart": "Meu dia começa às",
     "dayStartMidnight": "Meia-noite",
     "dayStartNote": "Estudar depois disso conta para o dia anterior: uma noite longa é um dia de estudo, não dois. Afeta sua sequência e o agrupamento das sessões.",
-    "dayStartSaved": "Início do dia atualizado."
+    "dayStartSaved": "Início do dia atualizado.",
+    "dueWindowLbl": "Selos de entrega",
+    "dueWindow": "Contar como pendente",
+    "dueWindowSmart": "Por tipo",
+    "dueWindowAll": "Tudo com data",
+    "dueWindowDays": "Dentro de {{count}} dias",
+    "dueWindowNote": "Quais tarefas o selo de uma disciplina conta como pendentes. Por tipo significa leituras em 3 dias e o resto em 14. Atrasos contam sempre.",
+    "dueWindowSaved": "Selos de entrega atualizados",
+    "scalePresets": "Começar de",
+    "scalePresetFr": "França · 0–20",
+    "scalePresetFi": "Finlândia · 4–10",
+    "gradeCustomHint": "Outra escala — /20, 4–10, 1–6? Escolha Própria e defina os seus limites."
   },
   "sdob": {
     "brand": "Pare de decidir. Comece a estudar.",
@@ -595,7 +607,10 @@
       "examWord": "PROVA",
       "studyWord": "ESTUDO",
       "dueWord": "ENTREGA",
-      "exam_many": "{{count}} provas"
+      "exam_many": "{{count}} provas",
+      "open": "{{count}} em aberto",
+      "openTitle": "{{count}} em aberto, nada a entregar em breve",
+      "dueTitle": "{{due}} a entregar em breve · {{open}} em aberto no total"
     },
     "cal": {
       "sun": "Dom",
@@ -655,7 +670,7 @@
       "coursesLabel": "Disciplinas",
       "addCourse": "Adicionar disciplina",
       "settings": "Configurações",
-      "settingsWith": "Configurações · {{email}}",
+      "settingsWith": "Configurações · {{who}}",
       "openSettings": "Abrir configurações",
       "collapseSidebar": "Recolher barra lateral",
       "expandSidebar": "Expandir barra lateral",
@@ -873,7 +888,6 @@
     "fUntil": "Até",
     "untilHint": "Deixa em branco se ainda não tiver data de fim.",
     "fColour": "Cor",
-    "noColour": "Sem cor",
     "create": "Adicionar ao calendário",
     "saved": "Compromisso atualizado",
     "created": "Compromisso adicionado",

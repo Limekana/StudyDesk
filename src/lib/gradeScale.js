@@ -21,6 +21,37 @@ const GRADE_MODES = ['ib', 'us', 'custom'];
  *  the request, which also makes the feature self-explanatory. */
 export const DEFAULT_CUSTOM_SCALE = { min: 4, max: 10, passMark: 5, direction: 'up', name: '' };
 
+// v1.14 Item 2 (#47) — one-tap starting points for the Custom editor.
+//
+//   > "Is there a grade scale of 20? […] or would I need to manually customize
+//      this"    (issue #47, a French user)
+//
+// Nothing was broken: Custom already expresses /20 exactly, and always has.
+// What the question shows is someone looking at four empty number fields and
+// not being sure the app knows what they mean. So the fix is discoverability,
+// not capability — a chip that fills the fields in and lets them see the answer
+// rather than construct it.
+//
+// These are STARTING POINTS, not locked presets: tapping one writes the four
+// numbers into the same draft the fields edit, and every one stays editable
+// afterwards. There is deliberately no "which preset am I on" state to keep in
+// sync with the numbers — the numbers are the truth.
+//
+// `name` is NOT set by a preset. It is a stored, user-visible string, and
+// writing a country into it would freeze one language into the saved scale for
+// exactly the reason `normalizeScale` gives below. The chip's own label is
+// translated; the field underneath stays the user's to fill in.
+//
+// Two entries, both with evidence behind them: /20 is this issue, and 4–10 is
+// the Finnish scale that prompted the Custom mode in the first place (it is
+// already DEFAULT_CUSTOM_SCALE — the chip only gives it a name). More can be
+// added when more are actually asked for; a full country picker on the strength
+// of one request would be building a menu for an audience we have not met.
+export const SCALE_PRESETS = [
+  { id: 'fr20', labelKey: 'settings.scalePresetFr', scale: { min: 0, max: 20, passMark: 10, direction: 'up' } },
+  { id: 'fi410', labelKey: 'settings.scalePresetFi', scale: { min: 4, max: 10, passMark: 5, direction: 'up' } },
+];
+
 // Built-in scales, expressed in the same shape as a custom one so every
 // consumer can read bounds without caring which mode is active.
 const BUILTIN = {

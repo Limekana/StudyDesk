@@ -53,7 +53,8 @@
     "no": "No",
     "updated": "Course updated",
     "colorSwatch": "Colour {{hex}}",
-    "colorCustom": "Pick any colour"
+    "colorCustom": "Pick any colour",
+    "colorNone": "No colour"
   },
   "history": {
     "title": "Period history · Archive",
@@ -355,7 +356,18 @@
     "dayStart": "My day starts at",
     "dayStartMidnight": "Midnight",
     "dayStartNote": "Study later than this and it counts towards the day before — so a late night is one study day, not two. Affects your streak and how sessions are grouped.",
-    "dayStartSaved": "Day start updated."
+    "dayStartSaved": "Day start updated.",
+    "dueWindowLbl": "Due badges",
+    "dueWindow": "Count as due",
+    "dueWindowSmart": "By type",
+    "dueWindowAll": "Everything with a date",
+    "dueWindowDays": "Within {{count}} days",
+    "dueWindowNote": "Which assignments a course's badge calls due. By type means readings within 3 days and everything else within 14. Anything overdue always counts.",
+    "dueWindowSaved": "Due badges updated",
+    "scalePresets": "Start from",
+    "scalePresetFr": "France · 0–20",
+    "scalePresetFi": "Finland · 4–10",
+    "gradeCustomHint": "On another scale — /20, 4–10, 1–6? Pick Custom and set your own bounds."
   },
   "sdob": {
     "brand": "Stop deciding. Start studying.",
@@ -590,7 +602,10 @@
       "edit": "Edit",
       "examWord": "EXAM",
       "studyWord": "STUDY",
-      "dueWord": "DUE"
+      "dueWord": "DUE",
+      "open": "{{count}} open",
+      "openTitle": "{{count}} open, none due soon",
+      "dueTitle": "{{due}} due soon · {{open}} open in total"
     },
     "cal": {
       "sun": "Sun",
@@ -650,7 +665,7 @@
       "coursesLabel": "Courses",
       "addCourse": "Add Course",
       "settings": "Settings",
-      "settingsWith": "Settings · {{email}}",
+      "settingsWith": "Settings · {{who}}",
       "openSettings": "Open settings",
       "collapseSidebar": "Collapse sidebar",
       "expandSidebar": "Expand sidebar",
@@ -868,7 +883,6 @@
     "fUntil": "Until",
     "untilHint": "Leave blank if it has no end date yet.",
     "fColour": "Colour",
-    "noColour": "No colour",
     "create": "Add to calendar",
     "saved": "Commitment updated",
     "created": "Commitment added",

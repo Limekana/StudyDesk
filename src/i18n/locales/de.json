@@ -53,7 +53,8 @@
     "no": "Nein",
     "updated": "Kurs aktualisiert",
     "colorSwatch": "Farbe {{hex}}",
-    "colorCustom": "Beliebige Farbe wählen"
+    "colorCustom": "Beliebige Farbe wählen",
+    "colorNone": "Keine Farbe"
   },
   "history": {
     "title": "Periodenverlauf · Archiv",
@@ -355,7 +356,18 @@
     "dayStart": "Mein Tag beginnt um",
     "dayStartMidnight": "Mitternacht",
     "dayStartNote": "Späteres Lernen zählt zum Vortag — eine lange Nacht ist ein Lerntag, nicht zwei. Wirkt sich auf deine Serie und die Gruppierung der Einheiten aus.",
-    "dayStartSaved": "Tagesbeginn aktualisiert."
+    "dayStartSaved": "Tagesbeginn aktualisiert.",
+    "dueWindowLbl": "Fälligkeits-Badges",
+    "dueWindow": "Als fällig zählen",
+    "dueWindowSmart": "Nach Typ",
+    "dueWindowAll": "Alles mit einem Datum",
+    "dueWindowDays": "Innerhalb von {{count}} Tagen",
+    "dueWindowNote": "Welche Aufgaben das Badge eines Kurses als fällig zählt. Nach Typ heißt: Lektüre innerhalb von 3 Tagen, alles andere innerhalb von 14. Überfälliges zählt immer.",
+    "dueWindowSaved": "Fälligkeits-Badges aktualisiert",
+    "scalePresets": "Ausgehen von",
+    "scalePresetFr": "Frankreich · 0–20",
+    "scalePresetFi": "Finnland · 4–10",
+    "gradeCustomHint": "Eine andere Skala — /20, 4–10, 1–6? Wähle Eigene und lege eigene Grenzen fest."
   },
   "sdob": {
     "brand": "Schluss mit Grübeln. Fang an zu lernen.",
@@ -590,7 +602,10 @@
       "edit": "Bearbeiten",
       "examWord": "PRÜFUNG",
       "studyWord": "LERNEN",
-      "dueWord": "FÄLLIG"
+      "dueWord": "FÄLLIG",
+      "open": "{{count}} offen",
+      "openTitle": "{{count}} offen, nichts bald fällig",
+      "dueTitle": "{{due}} bald fällig · {{open}} offen insgesamt"
     },
     "cal": {
       "sun": "So",
@@ -650,7 +665,7 @@
       "coursesLabel": "Kurse",
       "addCourse": "Kurs hinzufügen",
       "settings": "Einstellungen",
-      "settingsWith": "Einstellungen · {{email}}",
+      "settingsWith": "Einstellungen · {{who}}",
       "openSettings": "Einstellungen öffnen",
       "collapseSidebar": "Seitenleiste einklappen",
       "expandSidebar": "Seitenleiste ausklappen",
@@ -868,7 +883,6 @@
     "fUntil": "Bis",
     "untilHint": "Leer lassen, wenn es noch kein Enddatum gibt.",
     "fColour": "Farbe",
-    "noColour": "Keine Farbe",
     "create": "Zum Kalender hinzufügen",
     "saved": "Termin aktualisiert",
     "created": "Termin hinzugefügt",

@@ -511,23 +511,8 @@
 }
 .cm-repeat button.on { border-color: var(--text); background: var(--text); color: var(--bg); }
 
-.cm-swatches { display: flex; flex-wrap: wrap; gap: 7px; }
-.cm-swatch {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  cursor: pointer;
-  border: 1px solid var(--border2);
-  background: var(--sw, transparent);
-  padding: 0;
-}
-.cm-swatch.on { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px var(--text); }
-/* "No colour" reads as an empty slot rather than as white, which on cream
-   would look like a colour someone picked. */
-.cm-swatch.none {
-  background:
-    linear-gradient(45deg, transparent 45%, var(--border2) 45%, var(--border2) 55%, transparent 55%);
-}
+/* The blocker colour row is CoursePicker now (v1.14 Item 1) — it carries its
+   own styles, including the "no colour" slot these rules used to draw. */
 
 /* ── Plan editor ───────────────────────────────────────────────────────── */
 .plan-row { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 8px; }
