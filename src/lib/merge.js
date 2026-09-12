@@ -269,6 +269,9 @@ function mergeCommitment(localC, remoteRow) {
     weekday: remoteRow.weekday === null || remoteRow.weekday === undefined ? null : Number(remoteRow.weekday),
     startsOn: remoteRow.starts_on || '',
     endsOn: remoteRow.ends_on || '',
+    // v1.14 Item 7b. Absent — an older row, or a pull taken before the
+    // migration — reads as every week, which is what those rows mean.
+    intervalWeeks: remoteRow.interval_weeks == null ? null : Number(remoteRow.interval_weeks),
     startTime: remoteRow.start_time,
     endTime: remoteRow.end_time,
     notes: remoteRow.notes || '',

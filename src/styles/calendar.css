@@ -516,6 +516,10 @@
 
 /* ── Plan editor ───────────────────────────────────────────────────────── */
 .plan-row { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 8px; }
+/* v1.14 Item 7b — the weekday and its interval read as one sentence ("every
+   other Thursday"), so they share a row; the three-column rhythm above is for
+   date + start + end and would leave this pair looking like an orphan. */
+.plan-row-2 { grid-template-columns: 1fr 1fr; }
 .plan-actions { display: flex; gap: 8px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
 .plan-delete { margin-inline-start: auto; display: inline-flex; align-items: center; gap: 5px; }
 .plan-status {

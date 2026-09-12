@@ -261,19 +261,43 @@ export async function deleteStudySession(id) {
 // stayed put. They follow the same contract as everything above — client-set
 // updated_at for LWW, soft delete via deleted_at, never a hard DELETE.
 
-// v1.14 Item 5 — PostgREST's code for "you named a column this table does not
-// have". It rejects the WHOLE row on that, so without the fallback below a
-// client that reached users before
-// supabase/migrations/20260912_assignment_due_time.sql was applied would fail
-// the push for every assignment, timed or not — a total homework-sync outage,
-// not a missing feature. The notebook migration documents the same trap as a
-// warning to read carefully; a warning is not a mechanism.
+// ── Upserting a row the database may not fully understand yet (v1.14) ───────
+//
+// PostgREST rejects the WHOLE row when an insert names a column the table does
+// not have, with code PGRST204. A client that reaches users before its
+// migration is applied therefore does not lose the new FIELD, it loses the
+// ROW — for every record of that kind, not just the ones using the feature.
+// `20260911_notebook_layout.sql` documents that trap as a warning to read
+// carefully. A warning is not a mechanism, and the two v1.14 migrations below
+// it are both unapplied at the time of writing.
+//
+// So: send everything, and if the database says it does not know a column,
+// drop exactly the ones this call declared optional and try once more. The
+// user loses the new field, which they can see is missing, rather than the
+// record, which they cannot. Only this error code, only once, so a real
+// failure still surfaces instead of being retried into silence.
 const UNKNOWN_COLUMN = 'PGRST204';
+
+async function upsertTolerant(table, row, optionalColumns) {
+  const { error } = await supabase.from(table).upsert(row);
+  if (!error) return;
+  if (error.code !== UNKNOWN_COLUMN) throw error;
+
+  const trimmed = { ...row };
+  let dropped = false;
+  for (const col of optionalColumns) {
+    if (col in trimmed) { delete trimmed[col]; dropped = true; }
+  }
+  if (!dropped) throw error;
+
+  const retry = await supabase.from(table).upsert(trimmed);
+  if (retry.error) throw retry.error;
+}
 
 export async function upsertAssignment({ id, courseId, title, type, dueDate, dueTime, notes, done }) {
   if (!courseId) throw new Error('courseId is required (assignment must reference a course)');
   const userId = await currentUserId();
-  const row = {
+  await upsertTolerant('assignments', {
     id,
     user_id: userId,
     subject_id: courseId,
@@ -282,26 +306,13 @@ export async function upsertAssignment({ id, courseId, title, type, dueDate, due
     // The local model stores an empty string when the user clears the date;
     // `date` columns reject '' but accept null.
     due_date: dueDate || null,
+    // v1.14 Item 5 — pending 20260912_assignment_due_time.sql.
     due_time: dueTimeToSql(dueTime),
     notes: notes || null,
     done: Boolean(done),
     updated_at: nowISO(),
-  };
-
-  const { error } = await supabase.from('assignments').upsert(row);
-  if (!error) return id;
-
-  // Degrade to what the database can actually hold, ONCE, and only for this
-  // exact error. Losing the time is a missing feature the user can see; losing
-  // the assignment is lost work. Retrying blind would mask a real failure, so
-  // anything else still throws.
-  if (error.code === UNKNOWN_COLUMN && 'due_time' in row) {
-    delete row.due_time;
-    const retry = await supabase.from('assignments').upsert(row);
-    if (retry.error) throw retry.error;
-    return id;
-  }
-  throw error;
+  }, ['due_time']);
+  return id;
 }
 
 export async function deleteAssignment(id) {
@@ -536,7 +547,7 @@ export async function deleteTimetableEntry(id) {
 // here is study and counting it as such would be the same mistake the separate
 // `planned_sessions` table exists to prevent.
 
-export async function upsertCommitment({ id, title, color, weekday, startsOn, endsOn, startTime, endTime, notes }) {
+export async function upsertCommitment({ id, title, color, weekday, startsOn, endsOn, startTime, endTime, notes, intervalWeeks }) {
   const userId = await currentUserId();
   // `weekday` null is the one-off/weekly switch, so it is normalised
   // deliberately rather than defaulted — `Number(null)` is 0, which is Sunday,
@@ -544,7 +555,11 @@ export async function upsertCommitment({ id, title, color, weekday, startsOn, en
   const wd = weekday === null || weekday === undefined || weekday === ''
     ? null
     : Math.max(0, Math.min(6, Math.round(Number(weekday))));
-  const { error } = await supabase.from('commitments').upsert({
+  // v1.14 Item 7b — null means every week, which is what every pre-v1.14 row
+  // already means, so no backfill. A one-off has no interval at all: storing
+  // one would describe a recurrence the row does not have.
+  const every = Math.round(Number(intervalWeeks));
+  await upsertTolerant('commitments', {
     id,
     user_id: userId,
     title: String(title || '').trim(),
@@ -556,10 +571,10 @@ export async function upsertCommitment({ id, title, color, weekday, startsOn, en
     ends_on: wd === null ? null : (endsOn || null),
     start_time: startTime,
     end_time: endTime,
+    interval_weeks: wd !== null && Number.isFinite(every) && every > 1 ? every : null,
     notes: (notes || '').trim() || null,
     updated_at: nowISO(),
-  });
-  if (error) throw error;
+  }, ['interval_weeks']);
   return id;
 }
 

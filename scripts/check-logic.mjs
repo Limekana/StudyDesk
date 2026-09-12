@@ -1790,3 +1790,95 @@ check('the widget leads with the soonest deadline, not the soonest day', () => {
     { id: '2', title: 'Missed', dueDate: '2026-09-15' },
   ]), 'Missed');
 });
+
+// ── commitments.js — blockers every N weeks (v1.14 Item 7b, #51) ─────────
+//
+//   > "I also have obligations that are every 2 weeks, and the blockers can
+//      only be weekly."
+//
+// The phase is the whole risk here. "Every other Thursday from the 15th" where
+// the 15th is a TUESDAY means the 17th and the 31st, and counting from the
+// 15th instead picks the 24th — the wrong Thursdays, silently, forever. The
+// other risk is the safe-direction rule: anything unreadable must show the
+// blocker, because a student who plans study into a training session is worse
+// off than one who sees a blocker on a free week.
+const commitments = await import('../src/lib/commitments.js');
+
+const THU = 4;
+const weekdayOf = (iso) => {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).getDay();
+};
+const on = (c, iso) => commitments.occursOn(c, iso, weekdayOf(iso));
+
+check('an absent, junk or 1 interval all mean every week', () => {
+  for (const v of [undefined, null, '', 0, 1, -3, NaN, 'banana']) {
+    assert.equal(commitments.intervalWeeks({ intervalWeeks: v }), 1, String(v));
+  }
+  assert.equal(commitments.intervalWeeks({ intervalWeeks: 2 }), 2);
+  assert.equal(commitments.intervalWeeks({ intervalWeeks: '3' }), 3);
+  // Clamped, not rejected: a hand-edited 99 behaves like the longest interval
+  // the app can express rather than vanishing from the calendar.
+  assert.equal(commitments.intervalWeeks({ intervalWeeks: 99 }), 4);
+});
+
+check('the series is anchored to the first occurrence, not the start date', () => {
+  // 2026-09-15 is a Tuesday. A Thursday commitment starting then first occurs
+  // on the 17th — counting from the 15th would pick the 24th.
+  const c = { weekday: THU, startsOn: '2026-09-15', intervalWeeks: 2 };
+  assert.equal(commitments.firstOccurrence(c), '2026-09-17');
+  assert.equal(on(c, '2026-09-17'), true, 'first');
+  assert.equal(on(c, '2026-09-24'), false, 'the week in between');
+  assert.equal(on(c, '2026-10-01'), true, 'second');
+  assert.equal(on(c, '2026-10-08'), false);
+  assert.equal(on(c, '2026-10-15'), true, 'third');
+  // A start date already on the weekday anchors to itself.
+  assert.equal(commitments.firstOccurrence({ weekday: THU, startsOn: '2026-09-17' }), '2026-09-17');
+});
+
+check('every week is unchanged, and one-offs are untouched by any of this', () => {
+  const weekly = { weekday: THU, startsOn: '2026-09-17' };
+  for (const iso of ['2026-09-17', '2026-09-24', '2026-10-01', '2026-10-08']) {
+    assert.equal(on(weekly, iso), true, iso);
+  }
+  const once = { weekday: null, startsOn: '2026-09-17', intervalWeeks: 3 };
+  assert.equal(on(once, '2026-09-17'), true);
+  assert.equal(on(once, '2026-09-24'), false);
+});
+
+check('an interval does not override the start and end dates', () => {
+  const c = { weekday: THU, startsOn: '2026-09-17', endsOn: '2026-10-01', intervalWeeks: 2 };
+  assert.equal(on(c, '2026-09-10'), false, 'before it starts');
+  assert.equal(on(c, '2026-09-17'), true);
+  assert.equal(on(c, '2026-10-01'), true, 'the end date itself is included');
+  assert.equal(on(c, '2026-10-15'), false, 'after it ends');
+});
+
+check('a fortnightly blocker keeps its phase across a DST transition', () => {
+  // Europe's clocks go back on 2026-10-25 and America's on 2026-11-01. An
+  // interval computed by dividing raw timestamps drifts by an hour there,
+  // which is enough to land a boundary on the wrong side and skip a week.
+  const c = { weekday: THU, startsOn: '2026-10-15', intervalWeeks: 2 };
+  const expected = [
+    ['2026-10-15', true], ['2026-10-22', false],
+    ['2026-10-29', true], ['2026-11-05', false],
+    ['2026-11-12', true], ['2026-11-19', false],
+    ['2026-11-26', true],
+  ];
+  for (const tz of ['UTC', 'Europe/Helsinki', 'America/Los_Angeles']) {
+    inTimezone(tz, () => {
+      for (const [iso, want] of expected) assert.equal(on(c, iso), want, `${tz} ${iso}`);
+    });
+  }
+});
+
+check('an unreadable row shows the blocker rather than hiding it', () => {
+  // A date that cannot be parsed must not silently remove a training session
+  // from the week the student is planning around.
+  // A start date that sorts before the day being asked about (so the existing
+  // string guard lets it through) but does not parse into a real date.
+  assert.equal(on({ weekday: THU, startsOn: '0000-xx-xx', intervalWeeks: 2 }, '2026-10-15'), true);
+  assert.equal(commitments.firstOccurrence({ weekday: THU, startsOn: '0000-xx-xx' }), null);
+  assert.equal(commitments.firstOccurrence({ weekday: THU, startsOn: '' }), null);
+  assert.equal(commitments.occursOn(null, '2026-10-15', THU), false);
+});

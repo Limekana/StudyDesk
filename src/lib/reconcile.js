@@ -290,6 +290,7 @@ export function findUnsynced(state, remote) {
         weekday: cm.weekday,
         startsOn: cm.startsOn,
         endsOn: cm.endsOn,
+        intervalWeeks: cm.intervalWeeks,
         startTime: cm.startTime,
         endTime: cm.endTime,
         notes: cm.notes,

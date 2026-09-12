@@ -626,13 +626,18 @@ function reducer(state, action) {
           : Math.max(0, Math.min(6, Math.round(Number(action.weekday)))),
         startsOn: action.startsOn || "",
         endsOn: action.endsOn || "",
+        // v1.14 Item 7b — null is every week, which is what every row written
+        // before this field means. Normalised on the way in so no reader has
+        // to cope with "1" as a string from a form.
+        intervalWeeks: Number(action.intervalWeeks) > 1 ? Math.round(Number(action.intervalWeeks)) : null,
         startTime: action.startTime,
         endTime: action.endTime,
         notes: action.notes || "",
         updatedAt: action.updatedAt || new Date().toISOString(),
       };
-      // An end date on a one-off is meaningless and the DB rejects it.
-      if (c.weekday === null) c.endsOn = "";
+      // An end date on a one-off is meaningless and the DB rejects it, and an
+      // interval describes a recurrence a one-off does not have.
+      if (c.weekday === null) { c.endsOn = ""; c.intervalWeeks = null; }
       return { ...state, commitments: [...(state.commitments || []), c] };
     }
     case "EDIT_COMMITMENT":
@@ -650,12 +655,15 @@ function reducer(state, action) {
           weekday,
           startsOn: action.startsOn !== undefined ? (action.startsOn || "") : c.startsOn,
           endsOn: action.endsOn !== undefined ? (action.endsOn || "") : c.endsOn,
+          intervalWeeks: action.intervalWeeks !== undefined
+            ? (Number(action.intervalWeeks) > 1 ? Math.round(Number(action.intervalWeeks)) : null)
+            : (c.intervalWeeks ?? null),
           startTime: action.startTime ?? c.startTime,
           endTime: action.endTime ?? c.endTime,
           notes: action.notes !== undefined ? (action.notes || "") : c.notes,
           updatedAt: new Date().toISOString(),
         };
-        if (next.weekday === null) next.endsOn = "";
+        if (next.weekday === null) { next.endsOn = ""; next.intervalWeeks = null; }
         return next;
       })};
     case "DELETE_COMMITMENT":

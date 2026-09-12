@@ -36,7 +36,7 @@ import {
   buildEvents, sortDayItems, layoutBands, layoutDayColumn, timedOn, allDayOn,
 } from '../../lib/calendar.js';
 import { lessonsOn, localTimestamp, minutesToSqlTime, timeToMinutes } from '../../lib/timetable.js';
-import { commitmentsOn } from '../../lib/commitments.js';
+import { commitmentsOn, INTERVAL_CHOICES } from '../../lib/commitments.js';
 import { shortenLabels } from '../../lib/courseLabels.js';
 import { ribbonWindow, spanPct, packRibbon, weekLoad, freeSlots, pctIn } from '../../lib/weekRibbon.js';
 import CoursePicker from '../../lib/CoursePicker.jsx';
@@ -1028,6 +1028,7 @@ function CommitmentEditor({ draft, onSave, onDelete, onClose, t }) {
   );
   const [startsOn, setStartsOn] = useState(draft.startsOn);
   const [endsOn, setEndsOn] = useState(draft.endsOn || '');
+  const [every, setEvery] = useState(String(draft.intervalWeeks || 1));
   const [start, setStart] = useState(minutesClock(draft.startMin));
   const [end, setEnd] = useState(minutesClock(draft.endMin));
   const [color, setColor] = useState(draft.color || '');
@@ -1050,6 +1051,9 @@ function CommitmentEditor({ draft, onSave, onDelete, onClose, t }) {
       weekday: weekly ? Number(weekday) : null,
       startsOn,
       endsOn: weekly ? endsOn : '',
+      // A one-off has no interval; sending one would describe a recurrence the
+      // row does not have.
+      intervalWeeks: weekly ? Number(every) || 1 : 1,
       startTime: minutesToSqlTime(s),
       endTime: minutesToSqlTime(e),
       notes: notes.trim(),
@@ -1084,14 +1088,31 @@ function CommitmentEditor({ draft, onSave, onDelete, onClose, t }) {
         </div>
 
         {weekly && (
-          <div className="input-group">
-            <div className="input-label">{t('tt.fDay')}</div>
-            <select value={weekday} onChange={(ev) => setWeekday(ev.target.value)}>
-              {labels.map((label, i) => {
-                const dayValue = (weekStart + i) % 7;
-                return <option key={dayValue} value={dayValue}>{label}</option>;
-              })}
-            </select>
+          <div className="plan-row plan-row-2">
+            <div className="input-group">
+              <div className="input-label">{t('tt.fDay')}</div>
+              <select value={weekday} onChange={(ev) => setWeekday(ev.target.value)}>
+                {labels.map((label, i) => {
+                  const dayValue = (weekStart + i) % 7;
+                  return <option key={dayValue} value={dayValue}>{label}</option>;
+                })}
+              </select>
+            </div>
+            {/* v1.14 Item 7b (#51) — "I have obligations that are every 2
+                weeks". Next to the weekday because the two together are the
+                whole sentence: "every other Thursday". Counted from the first
+                occurrence on or after the start date, not from the start date
+                itself — see commitments.js. */}
+            <div className="input-group">
+              <div className="input-label">{t('cm.fEvery')}</div>
+              <select value={every} onChange={(ev) => setEvery(ev.target.value)}>
+                {INTERVAL_CHOICES.map((n) => (
+                  <option key={n} value={n}>
+                    {n === 1 ? t('cm.everyWeek') : t('cm.everyNWeeks', { count: n })}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         )}
 
@@ -1270,6 +1291,7 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
         weekly: item.weekly,
         startsOn: c.startsOn,
         endsOn: c.endsOn || '',
+        intervalWeeks: c.intervalWeeks || 1,
         startMin: item.startMin,
         endMin: item.endMin,
         notes: c.notes || '',
@@ -1387,6 +1409,7 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
       startsOn: iso,
       endsOn: '',
       weekday: null,
+      intervalWeeks: 1,
       startMin,
       endMin: Math.min(24 * 60, startMin + DEFAULT_PLAN_MIN),
       title: '',
@@ -1435,6 +1458,7 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
         weekly: item.weekly,
         startsOn: c.startsOn,
         endsOn: c.endsOn || '',
+        intervalWeeks: c.intervalWeeks || 1,
         startMin: item.startMin,
         endMin: item.endMin,
         notes: c.notes || '',
