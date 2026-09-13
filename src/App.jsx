@@ -506,6 +506,10 @@ function reducer(state, action) {
         notes: action.notes || "",
         fulfilledBy: null,
         dismissedAt: null,
+        // v1.14 Item 7a — which repeating plan this block came from, null for
+        // a one-off. Every occurrence is an ordinary independent row; this is
+        // a label so "stop repeating" can find the rest of them, not a parent.
+        seriesId: action.seriesId || null,
         updatedAt: action.updatedAt || new Date().toISOString(),
       };
       return { ...state, plannedSessions: [...(state.plannedSessions || []), p] };
@@ -532,6 +536,14 @@ function reducer(state, action) {
         dismissedAt: action.fulfilledBy ? null : (action.dismissedAt || null),
         updatedAt: new Date().toISOString(),
       })};
+    // v1.14 Item 7a — dropping the remaining occurrences of a repeating plan.
+    // Explicit ids, like DELETE_TT_ENTRIES: the caller counted them and showed
+    // that count, so the reducer removes exactly what was confirmed.
+    case "DELETE_PLANNED_MANY": {
+      const ids = new Set(action.ids || []);
+      if (!ids.size) return state;
+      return { ...state, plannedSessions: (state.plannedSessions || []).filter(p => !ids.has(p.id)) };
+    }
     case "DELETE_PLANNED":
       return { ...state, plannedSessions: (state.plannedSessions || []).filter(p => p.id !== action.id) };
 

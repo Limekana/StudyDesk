@@ -798,7 +798,14 @@
     "thisWeek": "Esta semana",
     "ribbonSummary": "{{free}} libre · {{planned}} planificado · {{logged}} registrado",
     "freeWindows": "Ventanas libres",
-    "freeFor": "{{len}} libre"
+    "freeFor": "{{len}} libre",
+    "planRepeat": "Repetición",
+    "planRepeatNone": "No se repite",
+    "planRepeatSummary": "{{count}} bloques, hasta el {{until}}",
+    "planRepeatCapped": "Limitado a {{max}}.",
+    "planCreatedRepeat": "{{count}} bloques de estudio planificados",
+    "planStopRepeat": "Dejar de repetir ({{count}} restantes)",
+    "planRepeatStopped": "Detenido — {{count}} bloques eliminados"
   },
   "an": {
     "trends": "Tendencias",

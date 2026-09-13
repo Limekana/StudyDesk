@@ -798,7 +798,14 @@
     "thisWeek": "Cette semaine",
     "ribbonSummary": "{{free}} libre · {{planned}} planifié · {{logged}} enregistré",
     "freeWindows": "Créneaux libres",
-    "freeFor": "{{len}} libre"
+    "freeFor": "{{len}} libre",
+    "planRepeat": "Répétition",
+    "planRepeatNone": "Ne se répète pas",
+    "planRepeatSummary": "{{count}} blocs, jusqu'au {{until}}",
+    "planRepeatCapped": "Limité à {{max}}.",
+    "planCreatedRepeat": "{{count}} blocs de révision planifiés",
+    "planStopRepeat": "Arrêter la répétition ({{count}} restants)",
+    "planRepeatStopped": "Arrêté — {{count}} blocs supprimés"
   },
   "an": {
     "trends": "Tendances",

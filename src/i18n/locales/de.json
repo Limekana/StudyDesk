@@ -793,7 +793,14 @@
     "thisWeek": "Diese Woche",
     "ribbonSummary": "{{free}} frei · {{planned}} geplant · {{logged}} erfasst",
     "freeWindows": "Freie Fenster",
-    "freeFor": "{{len}} frei"
+    "freeFor": "{{len}} frei",
+    "planRepeat": "Wiederholung",
+    "planRepeatNone": "Wiederholt sich nicht",
+    "planRepeatSummary": "{{count}} Blöcke, bis {{until}}",
+    "planRepeatCapped": "Auf {{max}} begrenzt.",
+    "planCreatedRepeat": "{{count}} Lernblöcke geplant",
+    "planStopRepeat": "Wiederholung beenden (noch {{count}})",
+    "planRepeatStopped": "Beendet — {{count}} Blöcke entfernt"
   },
   "an": {
     "trends": "Verlauf",

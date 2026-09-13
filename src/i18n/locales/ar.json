@@ -813,7 +813,14 @@
     "thisWeek": "هذا الأسبوع",
     "ribbonSummary": "{{free}} متاح · {{planned}} مخطط · {{logged}} مسجل",
     "freeWindows": "أوقات متاحة",
-    "freeFor": "{{len}} متاح"
+    "freeFor": "{{len}} متاح",
+    "planRepeat": "التكرار",
+    "planRepeatNone": "لا يتكرر",
+    "planRepeatSummary": "{{count}} كتل، حتى {{until}}",
+    "planRepeatCapped": "بحد أقصى {{max}}.",
+    "planCreatedRepeat": "تم التخطيط لـ {{count}} كتل دراسة",
+    "planStopRepeat": "أوقف التكرار (بقي {{count}})",
+    "planRepeatStopped": "تم الإيقاف — أُزيلت {{count}} كتل"
   },
   "an": {
     "trends": "الاتجاهات",

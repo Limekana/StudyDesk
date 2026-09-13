@@ -191,6 +191,9 @@ function mergePlannedSession(localP, remoteRow) {
     // state — most planned blocks are still owed.
     fulfilledBy: remoteRow.fulfilled_by || null,
     dismissedAt: remoteRow.dismissed_at || null,
+    // v1.14 Item 7a. Absent means a one-off, which is what every pre-v1.14
+    // planned block is.
+    seriesId: remoteRow.series_id || null,
     updatedAt: remoteRow.updated_at || null,
     deletedAt: remoteRow.deleted_at || null,
   };

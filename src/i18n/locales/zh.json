@@ -793,7 +793,14 @@
     "thisWeek": "本周",
     "ribbonSummary": "{{free}} 空闲 · {{planned}} 已计划 · {{logged}} 已记录",
     "freeWindows": "空闲时段",
-    "freeFor": "{{len}} 空闲"
+    "freeFor": "{{len}} 空闲",
+    "planRepeat": "重复",
+    "planRepeatNone": "不重复",
+    "planRepeatSummary": "{{count}} 个时段，至 {{until}}",
+    "planRepeatCapped": "上限 {{max}} 个。",
+    "planCreatedRepeat": "已安排 {{count}} 个学习时段",
+    "planStopRepeat": "停止重复（还剩 {{count}} 个）",
+    "planRepeatStopped": "已停止 — 移除 {{count}} 个时段"
   },
   "an": {
     "trends": "趋势",

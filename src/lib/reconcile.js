@@ -274,6 +274,7 @@ export function findUnsynced(state, remote) {
         notes: ps.notes,
         fulfilledBy: ps.fulfilledBy,
         dismissedAt: ps.dismissedAt,
+        seriesId: ps.seriesId,
       },
     });
   }

@@ -793,7 +793,14 @@
     "thisWeek": "This week",
     "ribbonSummary": "{{free}} free · {{planned}} planned · {{logged}} logged",
     "freeWindows": "Free windows",
-    "freeFor": "{{len}} free"
+    "freeFor": "{{len}} free",
+    "planRepeat": "Repeat",
+    "planRepeatNone": "Does not repeat",
+    "planRepeatSummary": "{{count}} blocks, until {{until}}",
+    "planRepeatCapped": "Capped at {{max}}.",
+    "planCreatedRepeat": "{{count}} study blocks planned",
+    "planStopRepeat": "Stop repeating ({{count}} left)",
+    "planRepeatStopped": "Stopped — {{count}} blocks removed"
   },
   "an": {
     "trends": "Trends",

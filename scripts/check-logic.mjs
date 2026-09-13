@@ -2100,3 +2100,88 @@ check('an ungrouped lesson is not a series of every ungrouped lesson', () => {
   assert.deepEqual(ttSeries.entriesInSeries(entries, undefined).map((e) => e.id), []);
   assert.deepEqual(ttSeries.entriesInSeries(entries, 'S').map((e) => e.id), ['c']);
 });
+
+// ── planRepeat.js — planned blocks that repeat (v1.14 Item 7a, #51) ──────
+//
+//   > "planned study sessions can't repeat, only the blockers can"
+//
+// The recurrence is MATERIALISED — N ordinary rows at creation — because a
+// planned block, unlike a blocker, carries per-occurrence state: it is logged,
+// dismissed, or still owed. So what needs pinning is not a recurrence rule but
+// the three things that stop materialising going wrong: the horizon is bounded,
+// the series keeps its phase across a DST change, and "stop repeating" cannot
+// touch a block that already points at a real study session.
+const planRepeat = await import('../src/lib/planRepeat.js');
+
+check('a repeat runs to the end of the term it starts in', () => {
+  const terms = [
+    { id: 'y', parentId: null, name: 'Year', startsOn: '2026-08-01', endsOn: '2027-05-31', position: 0 },
+    { id: 's', parentId: 'y', name: 'Autumn', startsOn: '2026-08-01', endsOn: '2026-12-20', position: 0 },
+    { id: 'j', parentId: 's', name: 'Jakso 1', startsOn: '2026-08-01', endsOn: '2026-10-10', position: 0 },
+  ];
+  // Most specific wins — the same rule `lessonsOn` applies to timetables.
+  assert.equal(planRepeat.repeatHorizon('2026-09-15', terms), '2026-10-10');
+  // A date inside the semester but past the jakso falls back to the semester.
+  assert.equal(planRepeat.repeatHorizon('2026-11-01', terms), '2026-12-20');
+  // Outside every term: twelve weeks, a term-shaped answer to a termless
+  // question. 2026-07-01 + 84 days.
+  assert.equal(planRepeat.repeatHorizon('2026-07-01', terms), '2026-09-23');
+  assert.equal(planRepeat.repeatHorizon('2026-07-01', []), '2026-09-23');
+});
+
+check('a term with no end date cannot make an unbounded series', () => {
+  const terms = [{ id: 'y', parentId: null, name: 'Open', startsOn: '2026-08-01', position: 0 }];
+  // Falls through to the 12-week default rather than "no limit".
+  assert.equal(planRepeat.repeatHorizon('2026-09-01', terms), '2026-11-24');
+});
+
+check('the series keeps its weekday across a DST transition', () => {
+  // Europe's clocks go back 2026-10-25. Adding 7×86400000ms would drift an
+  // hour and, on a date near midnight, onto the wrong day.
+  const dates = planRepeat.occurrenceDates('2026-10-15', 1, '2026-11-12');
+  assert.deepEqual(dates, ['2026-10-15', '2026-10-22', '2026-10-29', '2026-11-05', '2026-11-12']);
+  for (const tz of ['UTC', 'Europe/Helsinki', 'America/Los_Angeles']) {
+    inTimezone(tz, () => {
+      assert.deepEqual(planRepeat.occurrenceDates('2026-10-15', 2, '2026-11-26'),
+        ['2026-10-15', '2026-10-29', '2026-11-12', '2026-11-26'], tz);
+    });
+  }
+});
+
+check('the horizon is inclusive, and a repeat always yields at least the block drawn', () => {
+  assert.deepEqual(planRepeat.occurrenceDates('2026-09-01', 1, '2026-09-08'), ['2026-09-01', '2026-09-08']);
+  assert.deepEqual(planRepeat.occurrenceDates('2026-09-01', 1, '2026-09-07'), ['2026-09-01']);
+  // A horizon before the start, or no repeat at all, still gives the one block
+  // the user actually placed on the calendar.
+  assert.deepEqual(planRepeat.occurrenceDates('2026-09-01', 1, '2026-08-01'), ['2026-09-01']);
+  assert.deepEqual(planRepeat.occurrenceDates('2026-09-01', 0, '2026-12-01'), ['2026-09-01']);
+  assert.deepEqual(planRepeat.occurrenceDates('', 1, '2026-12-01'), []);
+});
+
+check('a mistyped term end cannot mint an unbounded number of rows', () => {
+  // The horizon comes from user data. "Ends 2126" is one keystroke away, and
+  // without the cap that is a hundred thousand rows in one tap.
+  const dates = planRepeat.occurrenceDates('2026-09-01', 1, '2126-01-01');
+  assert.equal(dates.length, planRepeat.MAX_OCCURRENCES);
+});
+
+check('stop-repeating never removes a block that already happened', () => {
+  const rows = [
+    { id: 'a', seriesId: 'S', startsAt: '2026-09-01T18:00:00Z', fulfilledBy: 'sess-1' },
+    { id: 'b', seriesId: 'S', startsAt: '2026-09-08T18:00:00Z', dismissedAt: '2026-09-08T20:00:00Z' },
+    { id: 'c', seriesId: 'S', startsAt: '2026-09-15T18:00:00Z' },
+    { id: 'd', seriesId: 'S', startsAt: '2026-09-22T18:00:00Z' },
+    { id: 'e', seriesId: 'OTHER', startsAt: '2026-09-22T18:00:00Z' },
+    { id: 'f', seriesId: 'S', startsAt: '2026-09-29T18:00:00Z', deletedAt: '2026-09-01T00:00:00Z' },
+  ];
+  const later = planRepeat.laterInSeries(rows, 'S', '2026-09-08T18:00:00Z');
+  assert.deepEqual(later.map((p) => p.id), ['c', 'd'],
+    'logged and dismissed excluded, other series excluded, already-deleted excluded');
+  // Backwards is never in scope: this is "stop repeating", not "erase history".
+  assert.deepEqual(
+    planRepeat.laterInSeries(rows, 'S', '2026-09-22T18:00:00Z').map((p) => p.id), ['d'],
+  );
+  // A one-off has no series, so nothing is ever swept up with it.
+  assert.deepEqual(planRepeat.laterInSeries(rows, null, '2026-01-01T00:00:00Z'), []);
+  assert.deepEqual(planRepeat.laterInSeries(rows, undefined, '2026-01-01T00:00:00Z'), []);
+});

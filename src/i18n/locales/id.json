@@ -788,7 +788,14 @@
     "thisWeek": "Minggu ini",
     "ribbonSummary": "{{free}} kosong · {{planned}} direncanakan · {{logged}} tercatat",
     "freeWindows": "Waktu kosong",
-    "freeFor": "{{len}} kosong"
+    "freeFor": "{{len}} kosong",
+    "planRepeat": "Pengulangan",
+    "planRepeatNone": "Tidak berulang",
+    "planRepeatSummary": "{{count}} blok, sampai {{until}}",
+    "planRepeatCapped": "Dibatasi {{max}}.",
+    "planCreatedRepeat": "{{count}} blok belajar direncanakan",
+    "planStopRepeat": "Hentikan pengulangan (sisa {{count}})",
+    "planRepeatStopped": "Dihentikan — {{count}} blok dihapus"
   },
   "an": {
     "trends": "Tren",

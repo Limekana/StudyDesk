@@ -793,7 +793,14 @@
     "thisWeek": "इस सप्ताह",
     "ribbonSummary": "{{free}} खाली · {{planned}} नियोजित · {{logged}} दर्ज",
     "freeWindows": "खाली समय",
-    "freeFor": "{{len}} खाली"
+    "freeFor": "{{len}} खाली",
+    "planRepeat": "दोहराव",
+    "planRepeatNone": "दोहराता नहीं",
+    "planRepeatSummary": "{{count}} ब्लॉक, {{until}} तक",
+    "planRepeatCapped": "अधिकतम {{max}}।",
+    "planCreatedRepeat": "{{count}} अध्ययन ब्लॉक नियोजित",
+    "planStopRepeat": "दोहराना बंद करें ({{count}} बाकी)",
+    "planRepeatStopped": "बंद — {{count}} ब्लॉक हटाए गए"
   },
   "an": {
     "trends": "रुझान",

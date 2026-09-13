@@ -422,7 +422,7 @@ export async function deleteAction(id) {
 // F-Droid would keep doing so forever — old versions cannot be taught to
 // filter a column that did not exist when they shipped (`P1`).
 
-export async function upsertPlannedSession({ id, subjectId, startsAt, durationMinutes, title, notes, fulfilledBy, dismissedAt }) {
+export async function upsertPlannedSession({ id, subjectId, startsAt, durationMinutes, title, notes, fulfilledBy, dismissedAt, seriesId }) {
   const userId = await currentUserId();
   const row = {
     id,
@@ -441,8 +441,10 @@ export async function upsertPlannedSession({ id, subjectId, startsAt, durationMi
   row.fulfilled_by = fulfilledBy || null;
   row.dismissed_at = dismissedAt || null;
   if (row.fulfilled_by && row.dismissed_at) row.dismissed_at = null;
-  const { error } = await supabase.from('planned_sessions').upsert(row);
-  if (error) throw error;
+  // v1.14 Item 7a — which repeating plan this block was materialised from, or
+  // null for a one-off. Optional below, pending 20260913_planned_series_id.sql.
+  row.series_id = seriesId || null;
+  await upsertTolerant('planned_sessions', row, ['series_id']);
   return id;
 }
 

@@ -793,7 +793,14 @@
     "thisWeek": "Tällä viikolla",
     "ribbonSummary": "{{free}} vapaana · {{planned}} suunniteltu · {{logged}} kirjattu",
     "freeWindows": "Vapaat ikkunat",
-    "freeFor": "{{len}} vapaana"
+    "freeFor": "{{len}} vapaana",
+    "planRepeat": "Toisto",
+    "planRepeatNone": "Ei toistu",
+    "planRepeatSummary": "{{count}} lohkoa, {{until}} asti",
+    "planRepeatCapped": "Rajattu {{max}}:een.",
+    "planCreatedRepeat": "{{count}} opiskelulohkoa suunniteltu",
+    "planStopRepeat": "Lopeta toisto ({{count}} jäljellä)",
+    "planRepeatStopped": "Lopetettu — {{count}} lohkoa poistettu"
   },
   "an": {
     "trends": "Kehitys",
