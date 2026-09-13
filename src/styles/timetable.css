@@ -149,6 +149,28 @@
 .tt-hint { font-size: 12px; line-height: 1.5; color: var(--muted); margin: -4px 0 12px; }
 .tt-error { font-size: 12px; color: var(--danger); margin-bottom: 10px; }
 .tt-form-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+/* v1.14 Item 6a — the weekday set. Seven equal toggles rather than a
+   <select multiple>: the whole point of this control is that the days a lesson
+   runs on are visible without opening anything, and a multi-select on a phone
+   hides exactly that. Equal columns so the row reads as a week. */
+.tt-daypick { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.tt-daypick-btn {
+  padding: 8px 2px;
+  min-height: 38px;
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color .12s, border-color .12s, background .12s;
+}
+.tt-daypick-btn.on { background: var(--text); border-color: var(--text); color: var(--bg); }
 .tt-form-row:has(.input-group:nth-child(2):last-child) { grid-template-columns: repeat(2, 1fr); }
 
 /* ── Weekly grid ───────────────────────────────────────────────────────── */

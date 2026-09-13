@@ -278,6 +278,84 @@ export function flattenTerms(terms) {
   return out;
 }
 
+// ── A lesson that meets on several weekdays (v1.14 Item 6a, #51) ──────────
+//
+//   > "there's no way to say this is the same course, just also on Wednesday"
+//
+// `weekday` is one `smallint` and every shipped version reads it, so making it
+// a list is the type change `P1` rules out. The additive answer is a nullable
+// `series_id`: rows written together share one, the editor loads them as a set,
+// and an older client sees N independent lessons — which is exactly what it
+// sees today, and is correct, just without the grouping.
+//
+// ── THE RECONCILE IS KEYED ON THE WEEKDAY, NOT ON POSITION ───────────────
+//
+// This is the whole reason this function exists instead of being three lines
+// in the view. `lesson_attendance` is keyed on the ENTRY id, so a row that
+// loses its id loses its attendance history. Diffing two lists positionally —
+// "the first selected day gets the first existing row" — silently reassigns
+// ids the moment a day is added or removed in the middle, which would move one
+// lesson's attendance onto another day. Matching on the weekday cannot: a
+// Wednesday row is the Wednesday row or it is new.
+
+/**
+ * What to write when a lesson series' weekday set changes.
+ *
+ * @param {object[]} existing  live entries already in this series
+ * @param {string}   seriesId  the series' id; every upsert carries it
+ * @param {number[]} weekdays  the weekdays that should exist after this save
+ * @param {object}   base      the fields shared by every day (time, course,
+ *                             room, parity, term) — everything but the weekday
+ * @param {Function} newId     id generator, injected so this stays pure
+ * @returns {{upserts: object[], deleteIds: string[]}}
+ */
+export function planSeriesWrite({ existing = [], seriesId, weekdays = [], base = {}, newId }) {
+  // `Number(null)` is 0 and `Number('')` is 0, and 0 is Sunday — so coercing
+  // first would turn a missing value into a real weekday. `upsertCommitment`
+  // carries a comment about this exact trap for exactly this reason; it is
+  // worth the extra line in both places.
+  const wanted = [...new Set(
+    (weekdays || [])
+      .filter((v) => v !== null && v !== undefined && v !== '')
+      .map(Number)
+      .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6),
+  )].sort((a, b) => a - b);
+
+  const live = (existing || []).filter((e) => e && !e.deletedAt);
+
+  // First row wins per weekday. Two rows on the same day in one series is not
+  // a state this editor can produce, but a bad merge could deliver one, and
+  // picking arbitrarily between them would orphan the loser's attendance
+  // either way — so the loser is deleted below rather than left invisible.
+  const byWeekday = new Map();
+  for (const e of live) {
+    const w = Number(e.weekday);
+    if (!byWeekday.has(w)) byWeekday.set(w, e);
+  }
+
+  // An empty selection would delete the entire series through the save button,
+  // which is not what a save means. The form refuses it; this refuses it too,
+  // because the form is not the only possible caller.
+  if (wanted.length === 0) return { upserts: [], deleteIds: [] };
+
+  const upserts = wanted.map((w) => {
+    const kept = byWeekday.get(w);
+    return { ...base, id: kept ? kept.id : newId(), seriesId, weekday: w };
+  });
+
+  const keeping = new Set(upserts.map((u) => u.id));
+  const deleteIds = live.filter((e) => !keeping.has(e.id)).map((e) => e.id);
+  return { upserts, deleteIds };
+}
+
+/** The live entries belonging to one series. A null/absent `seriesId` is NOT a
+ *  series — it is a lesson that has never been grouped — so it never matches,
+ *  which stops every ungrouped lesson in the app from reading as one big set. */
+export function entriesInSeries(entries, seriesId) {
+  if (!seriesId) return [];
+  return (entries || []).filter((e) => e && !e.deletedAt && e.seriesId === seriesId);
+}
+
 // ── Lesson occurrences ─────────────────────────────────────────────────────
 
 /**

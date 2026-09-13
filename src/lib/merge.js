@@ -235,6 +235,9 @@ function mergeTimetableEntry(localE, remoteRow) {
     // reading it through `||` would be a silent coercion waiting for the day
     // someone adds a third value.
     weekParity: remoteRow.week_parity ?? null,
+    // v1.14 Item 6a. Absent — an older row, or a pull taken before the
+    // migration — means "not part of a set", which is what those rows are.
+    seriesId: remoteRow.series_id || null,
     updatedAt: remoteRow.updated_at || null,
     deletedAt: remoteRow.deleted_at || null,
   };

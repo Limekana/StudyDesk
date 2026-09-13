@@ -505,10 +505,10 @@ export async function deleteTerm({ id, descendantIds = [] }) {
   if (error) throw error;
 }
 
-export async function upsertTimetableEntry({ id, termId, subjectId, title, weekday, startsAt, endsAt, room, color, weekParity }) {
+export async function upsertTimetableEntry({ id, termId, subjectId, title, weekday, startsAt, endsAt, room, color, weekParity, seriesId }) {
   if (!termId) throw new Error('termId is required (a lesson must belong to a term)');
   const userId = await currentUserId();
-  const { error } = await supabase.from('timetable_entries').upsert({
+  await upsertTolerant('timetable_entries', {
     id,
     user_id: userId,
     term_id: termId,
@@ -525,9 +525,12 @@ export async function upsertTimetableEntry({ id, termId, subjectId, title, weekd
     // v1.13 — null means every week, which is what every pre-v1.13 row
     // already means, so no backfill and no special case on read.
     week_parity: weekParity === 1 || weekParity === 2 ? weekParity : null,
+    // v1.14 Item 6a — which multi-weekday set this lesson belongs to, or null
+    // for a lesson that meets on one day. Optional below, pending
+    // 20260913_timetable_series_id.sql.
+    series_id: seriesId || null,
     updated_at: nowISO(),
-  });
-  if (error) throw error;
+  }, ['series_id']);
   return id;
 }
 

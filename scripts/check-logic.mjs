@@ -1999,3 +1999,104 @@ check('a cyclic parent chain terminates instead of hanging the picker', () => {
   assert.ok(Array.isArray(flat));
   assert.ok(flat.length < 100, `bounded, got ${flat.length}`);
 });
+
+// ── timetable.js planSeriesWrite — a lesson on several weekdays (Item 6a) ─
+//
+//   > "there's no way to say this is the same course, just also on Wednesday"
+//
+// `weekday` stays one smallint per row; a nullable `series_id` says which rows
+// belong together. All the risk is in the reconcile, and all of it is the same
+// risk: `lesson_attendance` is keyed on the ENTRY id, so a row that loses its
+// id loses its attendance history. These assertions exist to pin that ids are
+// matched on the WEEKDAY and never positionally — the failure mode of a
+// positional diff is silent and moves one day's attendance onto another.
+const ttSeries = await import('../src/lib/timetable.js');
+
+let seq = 0;
+const nextId = () => `new-${++seq}`;
+const plan = (existing, weekdays, base = {}) => {
+  seq = 0;
+  return ttSeries.planSeriesWrite({ existing, seriesId: 'S', weekdays, base, newId: nextId });
+};
+const entry = (id, weekday, extra = {}) => ({ id, weekday, seriesId: 'S', ...extra });
+
+check('adding a day keeps the id of every existing row', () => {
+  const { upserts, deleteIds } = plan([entry('mon', 1)], [1, 3]);
+  assert.deepEqual(upserts.map((u) => [u.weekday, u.id]), [[1, 'mon'], [3, 'new-1']]);
+  assert.deepEqual(deleteIds, []);
+});
+
+check('a day added in the MIDDLE does not shuffle ids down the list', () => {
+  // The positional-diff failure, stated as a test. Mon and Fri exist; the user
+  // adds Wednesday. A positional match would hand Wednesday the Friday row's
+  // id and mint a new one for Friday — moving Friday's attendance to Wednesday
+  // and losing it for Friday, with nothing on screen to say so.
+  const { upserts, deleteIds } = plan([entry('mon', 1), entry('fri', 5)], [1, 3, 5]);
+  assert.deepEqual(upserts.map((u) => [u.weekday, u.id]), [[1, 'mon'], [3, 'new-1'], [5, 'fri']]);
+  assert.deepEqual(deleteIds, []);
+});
+
+check('removing a day deletes that day and leaves the others alone', () => {
+  const { upserts, deleteIds } = plan([entry('mon', 1), entry('wed', 3), entry('fri', 5)], [1, 5]);
+  assert.deepEqual(upserts.map((u) => [u.weekday, u.id]), [[1, 'mon'], [5, 'fri']]);
+  assert.deepEqual(deleteIds, ['wed']);
+});
+
+check('every day carries the shared fields, and only the weekday differs', () => {
+  const base = { termId: 'T1', subjectId: 'C1', startsAt: '08:15:00', endsAt: '09:45:00', weekParity: 2 };
+  const { upserts } = plan([], [1, 3], base);
+  for (const u of upserts) {
+    assert.equal(u.termId, 'T1');
+    assert.equal(u.startsAt, '08:15:00');
+    assert.equal(u.weekParity, 2, 'parity is a property of the lesson, not of one day');
+    assert.equal(u.seriesId, 'S');
+  }
+  assert.deepEqual(upserts.map((u) => u.weekday), [1, 3]);
+});
+
+check('saving with no days selected writes nothing at all', () => {
+  // Not "deletes the series". Save is not a delete, and planSeriesWrite is not
+  // the only possible caller of itself, so it refuses rather than trusting the
+  // form's validation to be the only guard.
+  const { upserts, deleteIds } = plan([entry('mon', 1), entry('wed', 3)], []);
+  assert.deepEqual(upserts, []);
+  assert.deepEqual(deleteIds, []);
+});
+
+check('junk weekdays are dropped and duplicates collapse', () => {
+  // `null` and `''` are the ones that matter: `Number` turns both into 0,
+  // which is Sunday, so a missing value would become a real lesson on a real
+  // day. Sunday is a legitimate answer when someone actually picks it.
+  const { upserts } = plan([], [3, 3, 1, 9, -1, null, undefined, '', 'x', 2.5]);
+  assert.deepEqual(upserts.map((u) => u.weekday), [1, 3], 'sorted, unique, 0-6 only');
+  assert.deepEqual(plan([], [0]).upserts.map((u) => u.weekday), [0], 'a chosen Sunday survives');
+});
+
+check('a duplicate row on one weekday is resolved, not left orphaned', () => {
+  // Not reachable through the editor, but a bad merge could deliver it. One
+  // row is kept and the other is deleted — leaving it would put two lessons on
+  // the same day in the grid with no way to reach the second.
+  const { upserts, deleteIds } = plan([entry('a', 1), entry('b', 1)], [1]);
+  assert.deepEqual(upserts.map((u) => u.id), ['a']);
+  assert.deepEqual(deleteIds, ['b']);
+});
+
+check('soft-deleted rows are not resurrected by a save', () => {
+  const { upserts, deleteIds } = plan(
+    [entry('mon', 1), entry('gone', 3, { deletedAt: '2026-01-01T00:00:00Z' })],
+    [1, 3],
+  );
+  assert.deepEqual(upserts.map((u) => [u.weekday, u.id]), [[1, 'mon'], [3, 'new-1']]);
+  assert.deepEqual(deleteIds, [], 'already gone, not deleted again');
+});
+
+check('an ungrouped lesson is not a series of every ungrouped lesson', () => {
+  const entries = [
+    { id: 'a', weekday: 1, seriesId: null },
+    { id: 'b', weekday: 2 },
+    { id: 'c', weekday: 3, seriesId: 'S' },
+  ];
+  assert.deepEqual(ttSeries.entriesInSeries(entries, null).map((e) => e.id), []);
+  assert.deepEqual(ttSeries.entriesInSeries(entries, undefined).map((e) => e.id), []);
+  assert.deepEqual(ttSeries.entriesInSeries(entries, 'S').map((e) => e.id), ['c']);
+});

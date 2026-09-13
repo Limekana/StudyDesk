@@ -574,6 +574,9 @@ function reducer(state, action) {
       const e = {
         id: action.id || newSyncId(),
         termId: action.termId,
+        // v1.14 Item 6a — which multi-weekday set this belongs to, null for a
+        // lesson that meets on one day.
+        seriesId: action.seriesId || null,
         subjectId: action.subjectId || null,
         title: action.title || "",
         weekday: Math.max(0, Math.min(6, Math.round(Number(action.weekday)))),
@@ -598,6 +601,7 @@ function reducer(state, action) {
         // was until the next pull contradicted the screen. Attendance is keyed
         // on the ENTRY, not the term, so a moved lesson keeps its history.
         termId: action.termId !== undefined ? (action.termId || e.termId) : e.termId,
+        seriesId: action.seriesId !== undefined ? (action.seriesId || null) : (e.seriesId ?? null),
         subjectId: action.subjectId !== undefined ? (action.subjectId || null) : e.subjectId,
         title: action.title !== undefined ? (action.title || "") : e.title,
         weekday: action.weekday !== undefined ? Math.max(0, Math.min(6, Math.round(Number(action.weekday)))) : e.weekday,
@@ -612,6 +616,15 @@ function reducer(state, action) {
       })};
     case "DELETE_TT_ENTRY":
       return { ...state, timetableEntries: (state.timetableEntries || []).filter(e => e.id !== action.id) };
+    // v1.14 Item 6a — dropping every day of a multi-weekday lesson at once.
+    // Takes explicit ids rather than a seriesId so the reducer deletes exactly
+    // what the caller counted and showed in the confirmation, with no chance of
+    // the set changing between the two.
+    case "DELETE_TT_ENTRIES": {
+      const ids = new Set(action.ids || []);
+      if (!ids.size) return state;
+      return { ...state, timetableEntries: (state.timetableEntries || []).filter(e => !ids.has(e.id)) };
+    }
 
     // ── Assignment attachments (v1.10) ──
     // ADD carries a row the upload already created server-side, so there is no

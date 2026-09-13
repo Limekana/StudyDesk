@@ -251,6 +251,7 @@ export function findUnsynced(state, remote) {
         room: te.room,
         color: te.color,
         weekParity: te.weekParity,
+        seriesId: te.seriesId,
       },
     });
   }
