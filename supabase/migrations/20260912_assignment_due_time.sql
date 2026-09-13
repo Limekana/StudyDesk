@@ -3,21 +3,19 @@
 --   > "It would also be great if you could put the time when an assignment is
 --      due, not just the date."
 --
--- ── NOT YET APPLIED ──────────────────────────────────────────────────────
--- Awaiting the owner's instruction, like 20260911_notebook_layout.sql before
--- it. Apply this before tagging v1.14.
+-- ── APPLIED 2026-09-13, on the owner's instruction ───────────────────────
+-- Live as `v114_assignment_due_time`. Verified after the fact against
+-- information_schema: `assignments.due_time`, `time without time zone`,
+-- nullable. RLS on `assignments` unchanged — still enabled, still 4 policies —
+-- and the security advisor reports nothing new.
 --
--- Unlike the notebook migration, shipping ahead of this one is NOT an outage.
--- That file warns that PostgREST rejects the whole row when an insert names a
--- column the table does not have — true, and it would have failed the push for
--- EVERY assignment, timed or not. So `upsertAssignment` catches that one error
--- code (PGRST204) and retries once without `due_time`: the user loses the
--- time, which they can see, instead of losing the assignment, which they
--- cannot. A warning in a comment is not a mechanism, and this trap has now
--- been documented twice.
---
--- The fallback is a safety net, not a plan. Until this is applied, times are
--- local-only and do not reach a second device.
+-- `upsertAssignment` keeps its PGRST204 fallback and should keep it. It exists
+-- because shipping a client ahead of its migration does not lose the FIELD, it
+-- loses the ROW: PostgREST rejects the whole insert when it names a column the
+-- table does not have, which would have failed the push for EVERY assignment,
+-- timed or not. That trap is now documented in three places and guarded in one.
+-- With the column live the fallback is dead code on this deployment, and it is
+-- the cheapest possible insurance for the next one.
 --
 -- ── Additive only, per `P1` ──────────────────────────────────────────────
 --

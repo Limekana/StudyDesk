@@ -3,16 +3,15 @@
 --   > "I also have obligations that are every 2 weeks, and the blockers can
 --      only be weekly."
 --
--- ── NOT YET APPLIED ──────────────────────────────────────────────────────
--- Awaiting the owner's instruction, like 20260912_assignment_due_time.sql
--- beside it. Apply both before tagging v1.14.
+-- ── APPLIED 2026-09-13, on the owner's instruction ───────────────────────
+-- Live as `v114_commitment_interval_weeks`. Verified after the fact:
+-- `commitments.interval_weeks`, smallint, nullable, and the CHECK below is in
+-- place as NOT VALID. RLS on `commitments` unchanged — still enabled, still 4
+-- policies — and the security advisor reports nothing new.
 --
--- Shipping ahead of it is not an outage: `upsertCommitment` goes through
--- `upsertTolerant`, which catches PostgREST's PGRST204 ("no such column") and
--- retries once without the optional columns. A user would lose the interval,
--- which they can see is missing, rather than the commitment, which they
--- cannot. That is a safety net, not a plan — until this is applied, an
--- every-other-week blocker syncs to a second device as a weekly one.
+-- `upsertCommitment` keeps its `upsertTolerant` wrapper for the same reason
+-- the assignment migration beside this one gives: it is insurance against the
+-- NEXT migration shipping after its client, not this one.
 --
 -- ── Additive only, per `P1` ──────────────────────────────────────────────
 --
