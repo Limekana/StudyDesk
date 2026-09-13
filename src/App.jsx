@@ -592,6 +592,12 @@ function reducer(state, action) {
     case "EDIT_TT_ENTRY":
       return { ...state, timetableEntries: (state.timetableEntries || []).map(e => e.id !== action.id ? e : {
         ...e,
+        // v1.14 Item 6b - the scope is editable now, which is what "move this
+        // lesson to the jakso" is. Without this line the push carried the new
+        // term and local state kept the old one, so the lesson stayed where it
+        // was until the next pull contradicted the screen. Attendance is keyed
+        // on the ENTRY, not the term, so a moved lesson keeps its history.
+        termId: action.termId !== undefined ? (action.termId || e.termId) : e.termId,
         subjectId: action.subjectId !== undefined ? (action.subjectId || null) : e.subjectId,
         title: action.title !== undefined ? (action.title || "") : e.title,
         weekday: action.weekday !== undefined ? Math.max(0, Math.min(6, Math.round(Number(action.weekday)))) : e.weekday,

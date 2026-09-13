@@ -20,7 +20,7 @@ import Attendance from './Attendance.jsx';
 import { shortenLabels } from '../../lib/courseLabels.js';
 import {
   TERM_LEVELS, childLevel, childrenOf, termIndex, resolveTermRange,
-  descendantTermIds, timeToMinutes, minutesToTime, minutesToSqlTime,
+  descendantTermIds, timeToMinutes, minutesToTime, minutesToSqlTime, flattenTerms,
 } from '../../lib/timetable.js';
 import { resolveWeekStart, weekdayLabels } from '../../lib/calendar.js';
 import { formatLocale, parseLocalDate } from '../../lib/dates.js';
@@ -173,8 +173,14 @@ function TermForm({ draft, onSave, onClose, t }) {
 
 // ── Lesson form ────────────────────────────────────────────────────────────
 
-function LessonForm({ draft, courses, onSave, onDelete, onClose, t }) {
+function LessonForm({ draft, courses, terms, onSave, onDelete, onClose, t }) {
   const [subjectId, setSubjectId] = useState(draft.subjectId || '');
+  // v1.14 Item 6b (#51) — "there's no way to move a lesson between the year,
+  // the semester and the jakso without deleting it and typing it in again".
+  // The scope is a foreign key, so moving one is an edit; what made it
+  // impossible was that the editor had no field for it and `saveLesson`
+  // hard-wired whichever term the sidebar happened to have selected.
+  const [termId, setTermId] = useState(draft.termId || '');
   const [title, setTitle] = useState(draft.title || '');
   const [weekday, setWeekday] = useState(String(draft.weekday));
   const [start, setStart] = useState(clock(draft.startMin));
@@ -188,6 +194,8 @@ function LessonForm({ draft, courses, onSave, onDelete, onClose, t }) {
   const locale = formatLocale();
   const weekStart = resolveWeekStart(locale);
   const labels = weekdayLabels(weekStart, locale);
+  const termOptions = flattenTerms(terms);
+  const moved = !!draft.id && !!termId && termId !== draft.termId;
 
   const submit = () => {
     const s = timeToMinutes(start), e = timeToMinutes(end);
@@ -198,6 +206,7 @@ function LessonForm({ draft, courses, onSave, onDelete, onClose, t }) {
     if (!subjectId && !title.trim()) { setErr(t('tt.errIdentity')); return; }
     onSave({
       ...draft,
+      termId: termId || draft.termId,
       subjectId: subjectId || null,
       title: title.trim(),
       weekday: Number(weekday),
@@ -266,6 +275,29 @@ function LessonForm({ draft, courses, onSave, onDelete, onClose, t }) {
           </select>
           {parity && <div className="tt-hint">{t('tt.repeatNote')}</div>}
         </div>
+        {/* Only when there is an existing lesson to move. On a NEW one the
+            scope is the term the user is looking at, and offering to file it
+            somewhere else invites creating a lesson that then vanishes from
+            the grid they created it on. */}
+        {draft.id && termOptions.length > 1 && (
+          <div className="input-group">
+            <div className="input-label">{t('tt.fScope')}</div>
+            <select value={termId} onChange={(e) => setTermId(e.target.value)}>
+              {termOptions.map(({ term, depth }) => (
+                <option key={term.id} value={term.id}>
+                  {`${'\u00a0\u00a0'.repeat(depth)}${depth ? '\u2514 ' : ''}${term.name}`}
+                </option>
+              ))}
+            </select>
+            {/* The one consequence that is not obvious. Parity is counted from
+                the START OF THE TERM the lesson hangs off, so the same "week
+                A" lands on different weeks under a different term — see
+                weekParityOf. Said here rather than discovered a fortnight
+                later. */}
+            {moved && parity && <div className="tt-hint">{t('tt.scopeParityNote')}</div>}
+            {moved && !parity && <div className="tt-hint">{t('tt.scopeNote')}</div>}
+          </div>
+        )}
         {err && <div className="tt-error">{err}</div>}
         <div className="plan-actions">
           <button className="btn" onClick={submit}>{t('common.save')}</button>
@@ -472,7 +504,9 @@ export default function TimetableView({ state, dispatch, session, showFlash }) {
 
   const saveLesson = (form) => {
     const payload = {
-      termId: selected.id,
+      // v1.14 Item 6b — the form's choice, when it made one. A new lesson has
+      // no `termId` in its draft and still lands in the selected term.
+      termId: form.termId || selected.id,
       subjectId: form.subjectId,
       title: form.title,
       weekday: form.weekday,
@@ -619,6 +653,7 @@ export default function TimetableView({ state, dispatch, session, showFlash }) {
       {lessonDraft && selected && (
         <LessonForm
           draft={lessonDraft}
+          terms={terms}
           courses={courses}
           onSave={saveLesson}
           onDelete={removeLesson}

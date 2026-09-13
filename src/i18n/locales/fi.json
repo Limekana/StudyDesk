@@ -880,7 +880,10 @@
     "repeatEvery": "Joka viikko",
     "repeatOdd": "Viikko A (parittomat)",
     "repeatEven": "Viikko B (parilliset)",
-    "repeatNote": "Lasketaan tämän jakson alusta, joten jakson viikko 1 on viikko A."
+    "repeatNote": "Lasketaan tämän jakson alusta, joten jakson viikko 1 on viikko A.",
+    "fScope": "Taso",
+    "scopeNote": "Siirretty. Oppitunti näkyy nyt valitsemasi jakson alla.",
+    "scopeParityNote": "Siirretty. Viikko A/B lasketaan sen jakson alusta, johon oppitunti kuuluu, joten viikot muuttuvat."
   },
   "at": {
     "title": "Liitteet",

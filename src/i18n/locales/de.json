@@ -880,7 +880,10 @@
     "repeatEvery": "Jede Woche",
     "repeatOdd": "Woche A (ungerade)",
     "repeatEven": "Woche B (gerade)",
-    "repeatNote": "Gezählt ab Beginn dieses Zeitraums — Woche 1 des Zeitraums ist Woche A."
+    "repeatNote": "Gezählt ab Beginn dieses Zeitraums — Woche 1 des Zeitraums ist Woche A.",
+    "fScope": "Ebene",
+    "scopeNote": "Verschoben. Die Stunde erscheint jetzt unter dem gewählten Zeitraum.",
+    "scopeParityNote": "Verschoben. Woche A/B zählt ab dem Beginn des Zeitraums, zu dem die Stunde gehört — die betroffenen Wochen ändern sich."
   },
   "at": {
     "title": "Anhänge",

@@ -880,7 +880,10 @@
     "repeatEvery": "Every week",
     "repeatOdd": "Week A (odd weeks)",
     "repeatEven": "Week B (even weeks)",
-    "repeatNote": "Counted from the start of this term, so week 1 of the term is week A."
+    "repeatNote": "Counted from the start of this term, so week 1 of the term is week A.",
+    "fScope": "Scope",
+    "scopeNote": "Moved. This lesson will show under the term you picked.",
+    "scopeParityNote": "Moved. Week A/B is counted from the start of the term a lesson belongs to, so the weeks it lands on will change."
   },
   "at": {
     "title": "Attachments",

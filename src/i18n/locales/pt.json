@@ -885,7 +885,10 @@
     "repeatEvery": "Todas as semanas",
     "repeatOdd": "Semana A (ímpares)",
     "repeatEven": "Semana B (pares)",
-    "repeatNote": "Contado a partir do início deste período, por isso a semana 1 do período é a semana A."
+    "repeatNote": "Contado a partir do início deste período, por isso a semana 1 do período é a semana A.",
+    "fScope": "Âmbito",
+    "scopeNote": "Movida. Esta aula passa a aparecer no período escolhido.",
+    "scopeParityNote": "Movida. A semana A/B conta-se desde o início do período a que a aula pertence, por isso as semanas vão mudar."
   },
   "at": {
     "title": "Anexos",

@@ -885,7 +885,10 @@
     "repeatEvery": "Chaque semaine",
     "repeatOdd": "Semaine A (impaires)",
     "repeatEven": "Semaine B (paires)",
-    "repeatNote": "Compté depuis le début de cette période : la semaine 1 de la période est la semaine A."
+    "repeatNote": "Compté depuis le début de cette période : la semaine 1 de la période est la semaine A.",
+    "fScope": "Rattachement",
+    "scopeNote": "Déplacé. Ce cours apparaîtra sous la période choisie.",
+    "scopeParityNote": "Déplacé. La semaine A/B se compte depuis le début de la période à laquelle le cours est rattaché : les semaines concernées vont changer."
   },
   "at": {
     "title": "Pièces jointes",

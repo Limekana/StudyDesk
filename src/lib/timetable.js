@@ -255,6 +255,29 @@ export function childrenOf(terms, parentId) {
   return out;
 }
 
+/**
+ * The whole term tree, flattened depth-first, each entry carrying its depth.
+ *
+ * v1.14 Item 6b — for a picker that has to show School Year > Semester > Jakso
+ * as one list. `childrenOf` already answers one level at a time and sorts by
+ * `position`, which is the ordinal a jakso genuinely has; this walks it.
+ *
+ * @returns {{term: object, depth: number}[]}
+ */
+export function flattenTerms(terms) {
+  const out = [];
+  const walk = (parentId, depth) => {
+    for (const term of childrenOf(terms, parentId)) {
+      out.push({ term, depth });
+      // A malformed parent chain could otherwise recurse forever. The tree is
+      // three levels by design, so anything past that is a cycle, not a term.
+      if (depth < 8) walk(term.id, depth + 1);
+    }
+  };
+  walk(null, 0);
+  return out;
+}
+
 // ── Lesson occurrences ─────────────────────────────────────────────────────
 
 /**

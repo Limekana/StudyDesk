@@ -880,7 +880,10 @@
     "repeatEvery": "每周",
     "repeatOdd": "A 周（单周）",
     "repeatEven": "B 周（双周）",
-    "repeatNote": "从本学期开始计算，因此本学期第 1 周即 A 周。"
+    "repeatNote": "从本学期开始计算，因此本学期第 1 周即 A 周。",
+    "fScope": "归属",
+    "scopeNote": "已移动。这节课将显示在你选择的学段下。",
+    "scopeParityNote": "已移动。A/B 周从课程所属学段的开始日算起，因此落在的周次会改变。"
   },
   "at": {
     "title": "附件",

@@ -875,7 +875,10 @@
     "repeatEvery": "Setiap minggu",
     "repeatOdd": "Minggu A (ganjil)",
     "repeatEven": "Minggu B (genap)",
-    "repeatNote": "Dihitung dari awal periode ini, jadi minggu 1 periode adalah minggu A."
+    "repeatNote": "Dihitung dari awal periode ini, jadi minggu 1 periode adalah minggu A.",
+    "fScope": "Cakupan",
+    "scopeNote": "Dipindahkan. Pelajaran ini akan tampil di bawah periode yang dipilih.",
+    "scopeParityNote": "Dipindahkan. Minggu A/B dihitung dari awal periode tempat pelajaran berada, jadi minggu yang kena akan berubah."
   },
   "at": {
     "title": "Lampiran",

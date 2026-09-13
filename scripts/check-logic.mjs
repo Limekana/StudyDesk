@@ -1952,3 +1952,50 @@ check('the entry mode is remembered, and the default writes nothing', () => {
   gradeWeight.setPreferredWeightMode('factor');
   assert.equal(store.store.getItem('studydesk-weight-mode'), null, 'the default stores nothing');
 });
+
+// ── timetable.js flattenTerms — the scope picker's list (v1.14 Item 6b) ──
+//
+//   > "there's no way to move a lesson between the year, the semester and the
+//      jakso without deleting it and typing it in again"
+//
+// The move itself is a foreign key edit; what needed building was a way to
+// SEE the tree as one list. Ordering is the thing worth pinning — a jakso is
+// ordinal, so `position` decides, and a parent must appear above its children
+// or the indentation lies about the structure.
+const ttFlat = await import('../src/lib/timetable.js');
+
+check('the term tree flattens depth-first, parents above their children', () => {
+  const terms = [
+    { id: 'y1', parentId: null, name: '2026-27', position: 0 },
+    { id: 's2', parentId: 'y1', name: 'Spring', position: 1 },
+    { id: 's1', parentId: 'y1', name: 'Autumn', position: 0 },
+    { id: 'j2', parentId: 's1', name: 'Jakso 2', position: 1 },
+    { id: 'j1', parentId: 's1', name: 'Jakso 1', position: 0 },
+    { id: 'y0', parentId: null, name: '2025-26', position: 1 },
+  ];
+  assert.deepEqual(
+    ttFlat.flattenTerms(terms).map(({ term, depth }) => `${depth}:${term.id}`),
+    ['0:y1', '1:s1', '2:j1', '2:j2', '1:s2', '0:y0'],
+  );
+});
+
+check('a deleted term is not offered as somewhere to move a lesson', () => {
+  const terms = [
+    { id: 'y1', parentId: null, name: 'Year', position: 0 },
+    { id: 'gone', parentId: 'y1', name: 'Deleted', position: 0, deletedAt: '2026-01-01T00:00:00Z' },
+    { id: 's1', parentId: 'y1', name: 'Autumn', position: 1 },
+  ];
+  assert.deepEqual(ttFlat.flattenTerms(terms).map(({ term }) => term.id), ['y1', 's1']);
+});
+
+check('a cyclic parent chain terminates instead of hanging the picker', () => {
+  // Not reachable through the UI, but a corrupt pull must not spin forever in
+  // a render path — the tree is three levels by design.
+  const terms = [
+    { id: 'a', parentId: 'b', name: 'A', position: 0 },
+    { id: 'b', parentId: 'a', name: 'B', position: 0 },
+  ];
+  const flat = ttFlat.flattenTerms(terms);
+  assert.ok(Array.isArray(flat));
+  assert.ok(flat.length < 100, `bounded, got ${flat.length}`);
+});

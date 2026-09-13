@@ -885,7 +885,10 @@
     "repeatEvery": "Cada semana",
     "repeatOdd": "Semana A (impares)",
     "repeatEven": "Semana B (pares)",
-    "repeatNote": "Se cuenta desde el inicio de este periodo, así que la semana 1 del periodo es la semana A."
+    "repeatNote": "Se cuenta desde el inicio de este periodo, así que la semana 1 del periodo es la semana A.",
+    "fScope": "Ámbito",
+    "scopeNote": "Movida. La clase aparecerá bajo el periodo elegido.",
+    "scopeParityNote": "Movida. La semana A/B se cuenta desde el inicio del periodo al que pertenece la clase, así que las semanas cambiarán."
   },
   "at": {
     "title": "Adjuntos",
