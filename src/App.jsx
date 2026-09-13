@@ -336,7 +336,11 @@ const INITIAL = {
 
 function reducer(state, action) {
   switch(action.type) {
-    case "ADD_COURSE":    { const id=action.id||newSyncId(); return {...state,courses:{...state.courses,[id]:{id,name:action.name,color:action.color,notes:[],credits:action.credits??1,semester:action.semester??null,schoolYear:action.schoolYear??null,archivedAt:null,updatedAt:action.updatedAt||new Date().toISOString(),deletedAt:null}}}; }
+    // v1.14 Item 8a - `archivedAt` is settable at creation. A course can be
+    // born archived: that is how a finished term's grades get entered without
+    // the course first appearing in the live GPA, the Plan tab and every
+    // course picker. Defaults to null, so every existing caller is unchanged.
+    case "ADD_COURSE":    { const id=action.id||newSyncId(); return {...state,courses:{...state.courses,[id]:{id,name:action.name,color:action.color,notes:[],credits:action.credits??1,semester:action.semester??null,schoolYear:action.schoolYear??null,archivedAt:action.archivedAt??null,updatedAt:action.updatedAt||new Date().toISOString(),deletedAt:null}}}; }
     case "EDIT_COURSE":  return {...state,courses:{...state.courses,[action.id]:{...state.courses[action.id],name:action.name,color:action.color,credits:action.credits!==undefined?action.credits:state.courses[action.id]?.credits,semester:action.semester!==undefined?action.semester:state.courses[action.id]?.semester,schoolYear:action.schoolYear!==undefined?action.schoolYear:state.courses[action.id]?.schoolYear,updatedAt:new Date().toISOString()}}};
     // v1.2 — semester archiving. ARCHIVE_SEMESTER stamps archivedAt on
     // every active course matching the semester string; RESTORE_SEMESTER

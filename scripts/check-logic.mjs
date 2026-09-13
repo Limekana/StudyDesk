@@ -1882,3 +1882,73 @@ check('an unreadable row shows the blocker rather than hiding it', () => {
   assert.equal(commitments.firstOccurrence({ weekday: THU, startsOn: '' }), null);
   assert.equal(commitments.occursOn(null, '2026-10-15', THU), false);
 });
+
+// ── gradeWeight.js — what the Weight field means (v1.14 Item 8b, #51) ────
+//
+//   > "the weight thing is a bit confusing, I don't know if I should put 0.35
+//      for something worth 35% of the grade or what"
+//
+// Storage does not change: `weight` stays the multiplicative factor and no
+// existing average moves. What is asserted here is the two rules that make
+// the conversion layer safe to put in front of it — round-tripping a value
+// through a mode change must not alter it, and the share readout must give
+// the same answer whatever units the course's weights happen to be in, since
+// that is the claim the whole control rests on.
+const gradeWeight = await import('../src/lib/gradeWeight.js');
+
+check('a weight round-trips through every entry mode unchanged', () => {
+  for (const factor of [0, 0.1, 0.35, 1, 2.5, 35, 100]) {
+    for (const mode of gradeWeight.WEIGHT_MODES) {
+      const shown = gradeWeight.fromFactor(mode, factor, 100);
+      assert.equal(gradeWeight.toFactor(mode, shown, 100), factor, `${mode} ${factor}`);
+    }
+  }
+  // The float noise this exists to hide: 0.35 * 100 is 35.000000000000004.
+  assert.equal(gradeWeight.fromFactor('percent', 0.35), 35);
+  assert.equal(gradeWeight.toFactor('percent', 35), 0.35);
+});
+
+check('each mode converts the way the user means it', () => {
+  assert.equal(gradeWeight.toFactor('factor', '0.35'), 0.35, 'unchanged behaviour');
+  assert.equal(gradeWeight.toFactor('percent', '35'), 0.35);
+  assert.equal(gradeWeight.toFactor('points', '10', 100), 0.1);
+  assert.equal(gradeWeight.toFactor('points', '30', 60), 0.5, 'a course out of 60');
+});
+
+check('an unusable weight is reported, not quietly turned into 1', () => {
+  for (const bad of ['', 'banana', -1, NaN, null, undefined]) {
+    assert.equal(gradeWeight.toFactor('factor', bad), null, String(bad));
+  }
+  // Dividing by a zero-point course would store Infinity in a numeric column.
+  assert.equal(gradeWeight.toFactor('points', '10', 0), null);
+  assert.equal(gradeWeight.toFactor('points', '10', -5), null);
+  assert.equal(gradeWeight.toFactor('points', '10', 'x'), null);
+  assert.equal(gradeWeight.fromFactor('points', 0.1, 0), null);
+});
+
+check('the share of a course reads the same in any units', () => {
+  const asShares = (ws) => ws.map((w) => gradeWeight.shareOfCourse(w, ws));
+  // 35 / 30 / 35 and 0.35 / 0.30 / 0.35 are the same course, which is exactly
+  // why the raw weight was ambiguous and the share is not.
+  assert.deepEqual(asShares([35, 30, 35]), [0.35, 0.3, 0.35]);
+  assert.deepEqual(asShares([0.35, 0.3, 0.35]), [0.35, 0.3, 0.35]);
+  assert.deepEqual(asShares([7, 6, 7]), [0.35, 0.3, 0.35]);
+  // A course carrying no weight has no shares in it — undefined, not zero.
+  assert.equal(gradeWeight.shareOfCourse(0, [0, 0]), null);
+  assert.equal(gradeWeight.shareOfCourse(1, []), null);
+  assert.equal(gradeWeight.shareOfCourse('x', [1]), null);
+  // Junk among the siblings is skipped rather than poisoning the sum.
+  assert.equal(gradeWeight.shareOfCourse(1, [1, 'x', null, 1]), 0.5);
+});
+
+check('the entry mode is remembered, and the default writes nothing', () => {
+  const store = makeStorage();
+  globalThis.localStorage = store.store;
+  assert.equal(gradeWeight.preferredWeightMode(), gradeWeight.DEFAULT_WEIGHT_MODE);
+  gradeWeight.setPreferredWeightMode('percent');
+  assert.equal(gradeWeight.preferredWeightMode(), 'percent');
+  store.store.setItem('studydesk-weight-mode', 'banana');
+  assert.equal(gradeWeight.preferredWeightMode(), gradeWeight.DEFAULT_WEIGHT_MODE, 'junk falls back');
+  gradeWeight.setPreferredWeightMode('factor');
+  assert.equal(store.store.getItem('studydesk-weight-mode'), null, 'the default stores nothing');
+});
