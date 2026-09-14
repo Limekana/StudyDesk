@@ -461,7 +461,9 @@
     "pcCreate": "Zum Archiv hinzufügen",
     "pcCreated": "{{name}} zum Archiv hinzugefügt",
     "pcErrName": "Gib dem Kurs einen Namen.",
-    "pcErrCredits": "Credits müssen null oder mehr sein."
+    "pcErrCredits": "Credits müssen null oder mehr sein.",
+    "weightBlocksAria": "Diese Note macht {{pct}} % des Kurses aus, eine von {{n}} gewichteten Noten",
+    "weightBlocksNoneAria": "{{n}} gewichtete Noten in diesem Kurs"
   },
   "sv": {
     "today": "Heute",
@@ -1091,6 +1093,8 @@
       "absent": "gefehlt",
       "cancelled": "entfallen",
       "rescheduled": "verlegt"
-    }
+    },
+    "punchAria": "{{present}} anwesend und {{absent}} abwesend bei {{total}} Stunden, älteste zuerst",
+    "punchHidden": "+{{n}} frühere"
   }
 }

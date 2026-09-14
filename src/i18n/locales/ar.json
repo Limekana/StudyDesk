@@ -477,7 +477,9 @@
     "pcCreate": "أضف إلى الأرشيف",
     "pcCreated": "تمت إضافة {{name}} إلى الأرشيف",
     "pcErrName": "اكتب اسم المقرر.",
-    "pcErrCredits": "يجب ألا تقل الساعات عن صفر."
+    "pcErrCredits": "يجب ألا تقل الساعات عن صفر.",
+    "weightBlocksAria": "هذه الدرجة تمثل {{pct}}٪ من المقرر، واحدة من {{n}} درجة مرجّحة",
+    "weightBlocksNoneAria": "{{n}} درجة مرجّحة في هذا المقرر"
   },
   "sv": {
     "today": "اليوم",
@@ -1111,6 +1113,8 @@
       "absent": "غياب",
       "cancelled": "ملغاة",
       "rescheduled": "مؤجلة"
-    }
+    },
+    "punchAria": "{{present}} حضور و{{absent}} غياب من أصل {{total}} حصة، من الأقدم إلى الأحدث",
+    "punchHidden": "+{{n}} أقدم"
   }
 }

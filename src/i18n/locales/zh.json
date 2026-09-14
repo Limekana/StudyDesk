@@ -461,7 +461,9 @@
     "pcCreate": "加入归档",
     "pcCreated": "{{name}} 已加入归档",
     "pcErrName": "请填写课程名称。",
-    "pcErrCredits": "学分不能为负。"
+    "pcErrCredits": "学分不能为负。",
+    "weightBlocksAria": "该成绩占课程的 {{pct}}%，是 {{n}} 个加权成绩之一",
+    "weightBlocksNoneAria": "本课程有 {{n}} 个加权成绩"
   },
   "sv": {
     "today": "今天",
@@ -1091,6 +1093,8 @@
       "absent": "缺勤",
       "cancelled": "取消",
       "rescheduled": "改期"
-    }
+    },
+    "punchAria": "共 {{total}} 节课，出席 {{present}} 次、缺席 {{absent}} 次，按时间先后排列",
+    "punchHidden": "+{{n}} 更早"
   }
 }

@@ -465,7 +465,9 @@
     "pcCreate": "Ajouter aux archives",
     "pcCreated": "{{name}} ajouté aux archives",
     "pcErrName": "Donnez un nom au cours.",
-    "pcErrCredits": "Les crédits doivent être positifs ou nuls."
+    "pcErrCredits": "Les crédits doivent être positifs ou nuls.",
+    "weightBlocksAria": "Cette note représente {{pct}} % du cours, l'une des {{n}} notes pondérées",
+    "weightBlocksNoneAria": "{{n}} notes pondérées dans ce cours"
   },
   "sv": {
     "today": "Aujourd’hui",
@@ -1096,6 +1098,8 @@
       "absent": "absent",
       "cancelled": "annulé",
       "rescheduled": "reporté"
-    }
+    },
+    "punchAria": "{{present}} présences et {{absent}} absences sur {{total}} cours, du plus ancien au plus récent",
+    "punchHidden": "+{{n}} plus anciens"
   }
 }

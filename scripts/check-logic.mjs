@@ -2247,3 +2247,91 @@ check('US GPA survives a round trip through normalizeScale', () => {
   assert.equal(n.passMark, 1);
   assert.equal(n.direction, 'up');
 });
+
+// ── v1.14 — the concrete-metaphor visuals (weight rail, punch card) ──────
+
+const blocks = await import('../src/lib/blocks.js');
+
+check('a weight rail is proportional, and its drawn widths fill the track', () => {
+  const { segments, total } = blocks.weightSegments(
+    [{ id: 'a', weight: 35 }, { id: 'b', weight: 30 }, { id: 'c', weight: 35 }], 'b',
+  );
+  assert.equal(total, 100);
+  assert.equal(segments.length, 3);
+  assert.equal(Math.round(segments[1].share * 100), 30);
+  assert.ok(segments[1].active && !segments[0].active);
+  // Gapless: a rail that stops short of its track reads as missing weight.
+  const drawn = segments.reduce((a, s) => a + s.width, 0);
+  assert.ok(Math.abs(drawn - 1) < 1e-9, `widths summed to ${drawn}`);
+});
+
+check('the units a course was typed in do not change its picture', () => {
+  // The same property `shareOfCourse` has, now asserted of the drawing: a
+  // course weighted 35/30/35 and one weighted 0.35/0.30/0.35 are one course.
+  const a = blocks.weightSegments([{ id: 1, weight: 35 }, { id: 2, weight: 65 }], 1);
+  const b = blocks.weightSegments([{ id: 1, weight: 0.35 }, { id: 2, weight: 0.65 }], 1);
+  assert.deepEqual(a.segments.map((s) => s.share), b.segments.map((s) => s.share));
+  assert.deepEqual(a.segments.map((s) => s.width), b.segments.map((s) => s.width));
+});
+
+check('a grade worth almost nothing is still drawn', () => {
+  // The honesty rule. A 0.5% segment rendered at zero pixels tells a student
+  // they have two assessments when they have three.
+  const { segments } = blocks.weightSegments(
+    [{ id: 'big', weight: 199 }, { id: 'tiny', weight: 1 }], 'tiny',
+  );
+  const tiny = segments.find((s) => s.id === 'tiny');
+  assert.ok(tiny.share < 0.006, 'the true share stays true');
+  assert.ok(tiny.width >= blocks.MIN_SEGMENT / 100 * 0.99,
+    'but it is drawn at no less than the floor');
+});
+
+check('no weight at all draws no rail, rather than an empty one', () => {
+  // An empty track would say "these grades exist and count for nothing",
+  // which is a different and false claim. Zero and negative weights are not
+  // weights, and a course of them has no budget to slice.
+  assert.deepEqual(blocks.weightSegments([], 'x').segments, []);
+  assert.deepEqual(blocks.weightSegments([{ id: 'a', weight: 0 }], 'a').segments, []);
+  assert.deepEqual(blocks.weightSegments([{ id: 'a', weight: -3 }], 'a').segments, []);
+  assert.deepEqual(blocks.weightSegments([{ id: 'a', weight: 'nonsense' }], 'a').segments, []);
+  assert.deepEqual(blocks.weightSegments(null, null).segments, []);
+});
+
+check('a punch card is in date order, not insertion order', () => {
+  // The entire reason to draw one. Out of order it is a bar chart of nothing.
+  const rows = [
+    { date: '2026-03-04', status: 'absent' },
+    { date: '2026-01-07', status: 'present' },
+    { date: '2026-02-11', status: 'cancelled' },
+  ];
+  const { punches, hidden } = blocks.punchRow(rows);
+  assert.deepEqual(punches.map((p) => p.date), ['2026-01-07', '2026-02-11', '2026-03-04']);
+  assert.equal(hidden, 0);
+});
+
+check('an over-long term keeps the RECENT punches, not the first ones', () => {
+  // A student asking about attendance is asking about now, so the cap has to
+  // drop the far end of the year rather than the near one.
+  const rows = [];
+  for (let i = 1; i <= 10; i += 1) {
+    rows.push({ date: `2026-01-${String(i).padStart(2, '0')}`, status: 'present' });
+  }
+  const { punches, hidden } = blocks.punchRow(rows, 4);
+  assert.equal(hidden, 6);
+  assert.deepEqual(punches.map((p) => p.date),
+    ['2026-01-07', '2026-01-08', '2026-01-09', '2026-01-10']);
+});
+
+check('unmarked and deleted lessons are not punches', () => {
+  // A lesson with no status is not a fact about attendance, and a soft-deleted
+  // row is a fact the user retracted. Either drawn as a mark would inflate the
+  // count under the percentage and make the two disagree on screen.
+  const rows = [
+    { date: '2026-01-01', status: 'present' },
+    { date: '2026-01-02', status: null },
+    { date: '2026-01-03' },
+    { date: '2026-01-04', status: 'absent', deletedAt: '2026-01-05' },
+    { status: 'present' },
+  ];
+  assert.deepEqual(blocks.punchRow(rows).punches, [{ date: '2026-01-01', status: 'present' }]);
+});

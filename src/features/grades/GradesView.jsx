@@ -4,6 +4,7 @@ import { calculateGPA, subjectEffectiveGrade, subjectsWithEffectiveGrades } from
 import { scaleFor, describeScale } from '../../lib/gradeScale.js';
 import * as outbox from '../../lib/outbox.js';
 import { enterSubmit } from '../../lib/imeSubmit.js';
+import WeightBlocks from '../../lib/WeightBlocks.jsx';
 import {
   WEIGHT_MODES, DEFAULT_POINTS_TOTAL, preferredWeightMode, setPreferredWeightMode,
   toFactor, fromFactor, shareOfCourse,
@@ -38,6 +39,19 @@ const css = `
 .gv-row{display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:center;padding:6px 0;font-size:13px;}
 .gv-row-grade{font-family:var(--font-display);font-weight:600;font-size:16px;}
 .gv-row-meta{font-family:var(--font-mono);font-size:10px;color:var(--muted);}
+/* v1.14 — the weight rail. The course's whole weight budget is the track and
+   each grade is a segment of it, so "how much does this one count" is a
+   picture rather than a number to be trusted. The active segment is solid;
+   the others are the context that makes it mean something.
+   Every segment has a floor width (see MIN_SEGMENT), which is why the
+   percentage stays beside it: a floored segment is no longer to scale. */
+.wb{display:flex;align-items:center;gap:8px;}
+.wb-rail{display:flex;flex:1 1 auto;min-width:60px;max-width:180px;height:8px;border:1px solid var(--border2);border-radius:3px;overflow:hidden;background:var(--surface2);}
+.wb-compact .wb-rail{height:6px;max-width:96px;}
+.wb-seg{height:100%;background:var(--border2);border-inline-end:1px solid var(--surface);}
+.wb-seg:last-child{border-inline-end:none;}
+.wb-seg.is-active{background:var(--text);}
+.wb-pct{font-family:var(--font-mono);font-size:10px;color:var(--muted);white-space:nowrap;}
 .gv-row-actions{display:flex;gap:4px;}
 .gv-row-actions button{background:none;border:none;color:var(--muted2);cursor:pointer;padding:2px 6px;font-size:14px;}
 .gv-row-actions button:hover{color:var(--text);}
@@ -224,15 +238,24 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
             {own.sort((a, b) => (b.date || '').localeCompare(a.date || '')).map((g) => {
               // v1.14 Item 8b — the share is the honest answer to what a
               // weight means, and it reads the same whether this course's
-              // weights were typed as 35/30/35 or 0.35/0.30/0.35.
+              // weights were typed as 35/30/35 or 0.35/0.30/0.35. v1.14's
+              // visual-language item then draws the same fact: the rail is
+              // the course's whole weight budget with this grade's slice
+              // solid, so the share has something to be a share OF.
               const share = shareOfCourse(g.weight, own.map((x) => x.weight));
               return (
               <div key={g.id} className="gv-row">
                 <span>
                   <span className="gv-row-grade">{g.grade}</span>{' '}
-                  <span className="gv-row-meta" title={t('gv.weightTitle', { w: g.weight })}>
-                    {share === null ? `× w=${g.weight}` : t('gv.shareOfCourse', { pct: Math.round(share * 100) })}
-                  </span>
+                  {share === null ? (
+                    <span className="gv-row-meta" title={t('gv.weightTitle', { w: g.weight })}>
+                      {`× w=${g.weight}`}
+                    </span>
+                  ) : (
+                    <span title={t('gv.weightTitle', { w: g.weight })}>
+                      <WeightBlocks items={own} activeId={g.id} compact />
+                    </span>
+                  )}
                 </span>
                 <span className="gv-row-meta">{g.date || '—'}</span>
                 <span />
@@ -500,6 +523,23 @@ function GradeEditModal({ mode, scale, subjects, archivedSubjects = [], allGrade
               <input
                 type="number" step="1" min="1" value={pointsTotal}
                 onChange={(e) => setPointsTotal(e.target.value)}
+              />
+            </div>
+          )}
+          {/* The same rail as the row list, live. The point of drawing it
+              HERE is that the weight being typed is the one segment that
+              moves, so the field stops being a number with no scale and
+              becomes a slice getting bigger or smaller against the course's
+              other grades. `editing` is the id so the segment is this row's
+              own, not a phantom added beside it. */}
+          {factor !== null && (
+            <div style={{ marginTop: 8 }}>
+              <WeightBlocks
+                items={[
+                  ...allGrades.filter((g) => g.subjectId === subjectId && g.id !== initial.id),
+                  { id: '__editing__', weight: factor },
+                ]}
+                activeId="__editing__"
               />
             </div>
           )}

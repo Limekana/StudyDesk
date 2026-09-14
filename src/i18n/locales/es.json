@@ -465,7 +465,9 @@
     "pcCreate": "Añadir al archivo",
     "pcCreated": "{{name}} añadida al archivo",
     "pcErrName": "Pon un nombre a la asignatura.",
-    "pcErrCredits": "Los créditos deben ser cero o más."
+    "pcErrCredits": "Los créditos deben ser cero o más.",
+    "weightBlocksAria": "Esta nota es el {{pct}} % del curso, una de {{n}} notas ponderadas",
+    "weightBlocksNoneAria": "{{n}} notas ponderadas en este curso"
   },
   "sv": {
     "today": "Hoy",
@@ -1096,6 +1098,8 @@
       "absent": "ausente",
       "cancelled": "cancelada",
       "rescheduled": "reprogramada"
-    }
+    },
+    "punchAria": "{{present}} presentes y {{absent}} ausencias en {{total}} clases, de la más antigua a la más reciente",
+    "punchHidden": "+{{n}} anteriores"
   }
 }

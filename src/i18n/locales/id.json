@@ -457,7 +457,9 @@
     "pcCreate": "Tambahkan ke arsip",
     "pcCreated": "{{name}} ditambahkan ke arsip",
     "pcErrName": "Beri nama mata kuliahnya.",
-    "pcErrCredits": "SKS harus nol atau lebih."
+    "pcErrCredits": "SKS harus nol atau lebih.",
+    "weightBlocksAria": "Nilai ini {{pct}}% dari kursus, satu dari {{n}} nilai berbobot",
+    "weightBlocksNoneAria": "{{n}} nilai berbobot di kursus ini"
   },
   "sv": {
     "today": "Hari ini",
@@ -1086,6 +1088,8 @@
       "absent": "absen",
       "cancelled": "dibatalkan",
       "rescheduled": "dijadwal ulang"
-    }
+    },
+    "punchAria": "{{present}} hadir dan {{absent}} absen dari {{total}} pelajaran, terlama dulu",
+    "punchHidden": "+{{n}} sebelumnya"
   }
 }

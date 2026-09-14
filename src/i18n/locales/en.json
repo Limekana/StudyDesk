@@ -461,7 +461,9 @@
     "pcCreate": "Add to archive",
     "pcCreated": "{{name}} added to the archive",
     "pcErrName": "Give the course a name.",
-    "pcErrCredits": "Credits must be zero or more."
+    "pcErrCredits": "Credits must be zero or more.",
+    "weightBlocksAria": "This grade is {{pct}}% of the course, one of {{n}} weighted grades",
+    "weightBlocksNoneAria": "{{n}} weighted grades in this course"
   },
   "sv": {
     "today": "Today",
@@ -1091,6 +1093,8 @@
       "absent": "absent",
       "cancelled": "cancelled",
       "rescheduled": "rescheduled"
-    }
+    },
+    "punchAria": "{{present}} present and {{absent}} absent across {{total}} lessons, oldest first",
+    "punchHidden": "+{{n}} earlier"
   }
 }

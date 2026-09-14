@@ -307,6 +307,25 @@
 .at-uncounted{color:var(--muted2);opacity:0.85;}
 .at-note{margin-top:8px;font-size:11.5px;line-height:1.5;color:var(--muted2);}
 
+/* The punch card. One mark per lesson, oldest first, so the SHAPE of a term
+   is visible — a percentage cannot show that the misses were all in March.
+   Marks wrap and shrink rather than scroll: a row you have to drag is a row
+   whose pattern you cannot see, which is the entire point of drawing it.
+
+   Present is solid, absent is an outline. Cancelled and rescheduled are
+   drawn — they happened to the timetable — but hollow and dimmed, matching
+   `.at-uncounted` above, because they are in neither half of the fraction.
+   Status is carried by FILL and BORDER STYLE, never by hue alone. */
+.pr{margin-top:12px;}
+.pr-row{display:flex;flex-wrap:wrap;gap:3px;}
+.pr-punch{width:9px;height:9px;border-radius:2px;border:1px solid var(--border2);background:transparent;flex:0 0 auto;}
+.pr-punch.is-present{background:var(--text);border-color:var(--text);}
+.pr-punch.is-absent{background:transparent;border-color:var(--text);}
+.pr-punch.is-cancelled{border-style:dashed;opacity:0.55;}
+.pr-punch.is-rescheduled{border-style:dotted;opacity:0.55;}
+.pr-punch.is-unknown{opacity:0.3;}
+.pr-more{margin-top:6px;font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted2);}
+
 .at-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;}
 .at-day{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 6px;min-height:80px;display:flex;flex-direction:column;gap:4px;}
 .at-day.is-today{border-color:var(--text);}

@@ -461,7 +461,9 @@
     "pcCreate": "Lisää arkistoon",
     "pcCreated": "{{name}} lisätty arkistoon",
     "pcErrName": "Anna kurssille nimi.",
-    "pcErrCredits": "Opintopisteiden on oltava vähintään nolla."
+    "pcErrCredits": "Opintopisteiden on oltava vähintään nolla.",
+    "weightBlocksAria": "Tämä arvosana on {{pct}} % kurssista, yksi {{n}} painotetusta arvosanasta",
+    "weightBlocksNoneAria": "{{n}} painotettua arvosanaa tällä kurssilla"
   },
   "sv": {
     "today": "Tänään",
@@ -1091,6 +1093,8 @@
       "absent": "poissa",
       "cancelled": "peruttu",
       "rescheduled": "siirretty"
-    }
+    },
+    "punchAria": "{{present}} läsnä ja {{absent}} poissa {{total}} oppitunnilla, vanhimmat ensin",
+    "punchHidden": "+{{n}} aiempaa"
   }
 }

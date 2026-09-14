@@ -26,6 +26,7 @@ import {
   ATTENDANCE, indexAttendance, statusFor, nextStatus, attendanceKey,
   summariseTerm, summariseByCourse,
 } from '../../lib/attendance.js';
+import PunchRow from '../../lib/PunchRow.jsx';
 import * as outbox from '../../lib/outbox.js';
 
 // One glyph per state. Text rather than icons: these sit inside a dense week
@@ -87,11 +88,18 @@ export default function Attendance({ state, dispatch, session, term }) {
   );
 
   const termSummary = useMemo(() => summariseTerm(rows, term, covers), [rows, term, covers]);
+  // The rows the headline figure is computed from. With no term selected that
+  // is everything, which matches `summariseTerm`'s own all-time behaviour —
+  // the punch card has to be drawn from the same set as the percentage it
+  // sits under, or the two disagree on screen.
+  const inTermRows = useMemo(
+    () => (term ? rows.filter((r) => covers(term, r.date)) : rows),
+    [rows, term, covers],
+  );
   const courseSummary = useMemo(() => {
     if (!term) return [];
-    const inTerm = rows.filter((r) => covers(term, r.date));
-    return summariseByCourse(inTerm, entriesById);
-  }, [rows, term, covers, entriesById]);
+    return summariseByCourse(inTermRows, entriesById);
+  }, [inTermRows, term, entriesById]);
 
   // Every attendance row in local state, including soft-deleted ones, keyed by
   // the natural key. `index` (from `indexAttendance`) deliberately drops
@@ -198,6 +206,11 @@ export default function Attendance({ state, dispatch, session, term }) {
             <span className="at-uncounted">{t('att.rescheduled', { n: termSummary.rescheduled })}</span>
           )}
         </div>
+        {/* v1.14 — the punch card. The percentage above is the answer; this
+            is the working, and it carries the one thing a percentage cannot:
+            WHEN. A term that went wrong in March looks nothing like one that
+            went wrong throughout, and both can read 84%. */}
+        <PunchRow rows={inTermRows} summary={termSummary} />
         {(termSummary.cancelled > 0 || termSummary.rescheduled > 0) && (
           <div className="at-note">{t('att.uncountedNote')}</div>
         )}
