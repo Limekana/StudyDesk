@@ -367,6 +367,10 @@
     "scalePresets": "Start from",
     "scalePresetFr": "France · 0–20",
     "scalePresetFi": "Finland · 4–10",
+    "scalePresetUsGpa": "US GPA · 0–4",
+    "scalePresetIb": "IB · 1–7",
+    "scalePresetPct": "Percentage · 0–100",
+    "scaleSwitchTo": "Or switch to",
     "gradeCustomHint": "On another scale — /20, 4–10, 1–6? Pick Custom and set your own bounds."
   },
   "sdob": {

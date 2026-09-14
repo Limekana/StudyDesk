@@ -365,6 +365,10 @@
     "scalePresets": "Mulai dari",
     "scalePresetFr": "Prancis · 0–20",
     "scalePresetFi": "Finlandia · 4–10",
+    "scalePresetUsGpa": "GPA AS · 0–4",
+    "scalePresetIb": "IB · 1–7",
+    "scalePresetPct": "Persentase · 0–100",
+    "scaleSwitchTo": "Atau beralih ke",
     "gradeCustomHint": "Skala lain — /20, 4–10, 1–6? Pilih Khusus dan tentukan batas Anda sendiri."
   },
   "sdob": {

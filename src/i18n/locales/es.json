@@ -369,6 +369,10 @@
     "scalePresets": "Partir de",
     "scalePresetFr": "Francia · 0–20",
     "scalePresetFi": "Finlandia · 4–10",
+    "scalePresetUsGpa": "GPA de EE. UU. · 0–4",
+    "scalePresetIb": "IB · 1–7",
+    "scalePresetPct": "Porcentaje · 0–100",
+    "scaleSwitchTo": "O cambiar a",
     "gradeCustomHint": "¿Otra escala — /20, 4–10, 1–6? Elige Propia y define tus propios límites."
   },
   "sdob": {

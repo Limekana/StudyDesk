@@ -367,6 +367,10 @@
     "scalePresets": "इससे शुरू करें",
     "scalePresetFr": "फ़्रांस · 0–20",
     "scalePresetFi": "फ़िनलैंड · 4–10",
+    "scalePresetUsGpa": "यूएस GPA · 0–4",
+    "scalePresetIb": "IB · 1–7",
+    "scalePresetPct": "प्रतिशत · 0–100",
+    "scaleSwitchTo": "या बदलें",
     "gradeCustomHint": "कोई और स्केल — /20, 4–10, 1–6? कस्टम चुनें और अपनी सीमाएँ तय करें।"
   },
   "sdob": {

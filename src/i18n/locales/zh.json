@@ -367,6 +367,10 @@
     "scalePresets": "从模板开始",
     "scalePresetFr": "法国 · 0–20",
     "scalePresetFi": "芬兰 · 4–10",
+    "scalePresetUsGpa": "美国 GPA · 0–4",
+    "scalePresetIb": "IB · 1–7",
+    "scalePresetPct": "百分制 · 0–100",
+    "scaleSwitchTo": "或切换到",
     "gradeCustomHint": "使用其他量表 — /20、4–10、1–6？选择「自定义」并设置自己的范围。"
   },
   "sdob": {

@@ -2185,3 +2185,65 @@ check('stop-repeating never removes a block that already happened', () => {
   assert.deepEqual(planRepeat.laterInSeries(rows, null, '2026-01-01T00:00:00Z'), []);
   assert.deepEqual(planRepeat.laterInSeries(rows, undefined, '2026-01-01T00:00:00Z'), []);
 });
+
+// ── v1.14 Item 2 (CTO's 2026-09-14 preset decision) ──────────────────────
+
+const gradeScale = await import('../src/lib/gradeScale.js');
+
+check('every scale chip is EITHER a scale to start from OR a mode to switch to', () => {
+  for (const p of gradeScale.SCALE_PRESETS) {
+    const isScale = !!p.scale;
+    const isMode = !!p.mode;
+    assert.ok(isScale !== isMode,
+      `preset ${p.id} must carry exactly one of scale/mode, not both or neither`);
+    assert.ok(p.labelKey, `preset ${p.id} needs a translated label`);
+  }
+});
+
+check('a mode chip names a real grade mode, never a made-up one', () => {
+  // The whole point of a mode chip is that it hands the user the built-in
+  // scale rather than a copy of its numbers. A typo here would silently do
+  // the opposite — SET_GRADE_MODE with a value isGradeMode rejects.
+  for (const p of gradeScale.SCALE_PRESETS.filter((x) => x.mode)) {
+    assert.ok(gradeScale.isGradeMode(p.mode), `${p.id} -> ${p.mode} is not a grade mode`);
+    assert.notEqual(p.mode, 'custom', `${p.id} switching to custom would be a no-op`);
+  }
+});
+
+check('no scale chip duplicates a built-in mode', () => {
+  // This is the rule the two-front-doors problem comes down to. If a chip
+  // that WRITES numbers ever matches what a built-in mode already means, the
+  // app has two ways to express one scale and they can drift apart.
+  const builtin = [
+    gradeScale.scaleFor('ib'),
+    gradeScale.scaleFor('us'),
+  ].map((s) => `${s.min}-${s.max}-${s.passMark}-${s.direction}`);
+  for (const p of gradeScale.SCALE_PRESETS.filter((x) => x.scale)) {
+    const n = gradeScale.normalizeScale(p.scale);
+    const sig = `${n.min}-${n.max}-${n.passMark}-${n.direction}`;
+    assert.ok(!builtin.includes(sig),
+      `${p.id} has the same bounds as a built-in mode — make it a mode chip instead`);
+  }
+});
+
+check('the four the CTO asked for are all reachable', () => {
+  const ids = gradeScale.SCALE_PRESETS.map((p) => p.id);
+  for (const id of ['fr20', 'usgpa', 'ib', 'pct']) {
+    assert.ok(ids.includes(id), `missing preset ${id}`);
+  }
+  // Kept deliberately: Finland is not on the CTO's list, but it shipped, and
+  // it is still DEFAULT_CUSTOM_SCALE. Asserted so removing it is a decision.
+  assert.ok(ids.includes('fi410'), 'the shipped Finland chip was dropped silently');
+});
+
+check('US GPA survives a round trip through normalizeScale', () => {
+  // normalizeScale is total and rewrites anything it dislikes, so a preset
+  // that it quietly "fixes" would put different numbers on screen than the
+  // ones written here.
+  const raw = gradeScale.SCALE_PRESETS.find((p) => p.id === 'usgpa').scale;
+  const n = gradeScale.normalizeScale(raw);
+  assert.equal(n.min, 0);
+  assert.equal(n.max, 4);
+  assert.equal(n.passMark, 1);
+  assert.equal(n.direction, 'up');
+});

@@ -367,6 +367,10 @@
     "scalePresets": "Valmis pohja",
     "scalePresetFr": "Ranska · 0–20",
     "scalePresetFi": "Suomi · 4–10",
+    "scalePresetUsGpa": "USA:n GPA · 0–4",
+    "scalePresetIb": "IB · 1–7",
+    "scalePresetPct": "Prosentit · 0–100",
+    "scaleSwitchTo": "Tai vaihda",
     "gradeCustomHint": "Eri asteikko — /20, 4–10, 1–6? Valitse Oma ja aseta omat rajasi."
   },
   "sdob": {

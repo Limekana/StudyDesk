@@ -375,6 +375,10 @@
     "scalePresets": "ابدأ من",
     "scalePresetFr": "فرنسا · 0–20",
     "scalePresetFi": "فنلندا · 4–10",
+    "scalePresetUsGpa": "المعدل الأمريكي · 0–4",
+    "scalePresetIb": "IB · 1–7",
+    "scalePresetPct": "النسبة المئوية · 0–100",
+    "scaleSwitchTo": "أو التبديل إلى",
     "gradeCustomHint": "مقياس آخر — /20 أو 4–10 أو 1–6؟ اختر مخصّص وحدّد حدودك."
   },
   "sdob": {

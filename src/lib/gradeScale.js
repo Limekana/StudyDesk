@@ -32,24 +32,49 @@ export const DEFAULT_CUSTOM_SCALE = { min: 4, max: 10, passMark: 5, direction: '
 // not capability — a chip that fills the fields in and lets them see the answer
 // rather than construct it.
 //
-// These are STARTING POINTS, not locked presets: tapping one writes the four
-// numbers into the same draft the fields edit, and every one stays editable
-// afterwards. There is deliberately no "which preset am I on" state to keep in
-// sync with the numbers — the numbers are the truth.
+// The scale chips are STARTING POINTS, not locked presets — see the note on
+// SCALE_PRESETS below for what each kind of chip does.
 //
 // `name` is NOT set by a preset. It is a stored, user-visible string, and
 // writing a country into it would freeze one language into the saved scale for
 // exactly the reason `normalizeScale` gives below. The chip's own label is
 // translated; the field underneath stays the user's to fill in.
 //
-// Two entries, both with evidence behind them: /20 is this issue, and 4–10 is
-// the Finnish scale that prompted the Custom mode in the first place (it is
-// already DEFAULT_CUSTOM_SCALE — the chip only gives it a name). More can be
-// added when more are actually asked for; a full country picker on the strength
-// of one request would be building a menu for an audience we have not met.
+// ── A CHIP EITHER FILLS THE FIELDS IN OR LEAVES CUSTOM ENTIRELY ──────────
+//
+// 2026-09-14, the CTO's fixed set: France /20, IB 1–7, US GPA 4.0, Percentage
+// 0–100. Two of those four are not custom scales at all — `ib` (1–7, pass 4)
+// and `us` (0–100, pass 60) are already top-level `gradeMode` values with
+// their own buttons one row up.
+//
+// Writing their numbers into the Custom draft would give the same two scales
+// two different front doors, and the wrong one would be the door people found:
+// a student who tapped "IB · 1–7" would land on gradeMode `custom` holding
+// hand-typed IB numbers, and every later question about their scale would be
+// answered by a copy rather than by the real thing. So a chip carrying `mode`
+// switches to that mode instead, which is what "a named shortcut into what
+// exists" has to mean if the thing already exists.
+//
+// The custom-scale chips stay what they were: they write into the same draft
+// the four fields edit, and every number stays editable afterwards. There is
+// deliberately no "which preset am I on" state — the numbers are the truth.
+//
+// Finland is kept. It is not on the CTO's list, but it is the scale that
+// prompted Custom mode in the first place, it is still DEFAULT_CUSTOM_SCALE,
+// and it has shipped — removing a working chip needs a reason beyond not
+// having been mentioned.
 export const SCALE_PRESETS = [
   { id: 'fr20', labelKey: 'settings.scalePresetFr', scale: { min: 0, max: 20, passMark: 10, direction: 'up' } },
+  // A = 4, B = 3, C = 2, D = 1, F = 0. The pass mark is 1, because D passes
+  // the course; 2.0 is the usual *good standing* threshold, which is a
+  // different question and is one edit away for anyone whose school uses it.
+  { id: 'usgpa', labelKey: 'settings.scalePresetUsGpa', scale: { min: 0, max: 4, passMark: 1, direction: 'up' } },
   { id: 'fi410', labelKey: 'settings.scalePresetFi', scale: { min: 4, max: 10, passMark: 5, direction: 'up' } },
+  // Mode shortcuts, not scales. Tapping one leaves Custom — and the chip row
+  // with it, since the row only renders in Custom. That disappearance is the
+  // feedback: you are on the built-in scale now, not a copy of it.
+  { id: 'ib', labelKey: 'settings.scalePresetIb', mode: 'ib' },
+  { id: 'pct', labelKey: 'settings.scalePresetPct', mode: 'us' },
 ];
 
 // Built-in scales, expressed in the same shape as a custom one so every

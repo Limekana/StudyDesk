@@ -109,6 +109,11 @@ const css = `
 .sv2-scale-presets{flex:1 1 100%;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .sv2-preset{background:transparent;border:1px solid var(--border2);border-radius:20px;padding:5px 12px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.06em;color:var(--muted);cursor:pointer;transition:color .15s,border-color .15s;}
 .sv2-preset:hover{color:var(--text);border-color:var(--text);}
+/* A dashed rim marks the chips that LEAVE Custom rather than filling it in.
+   The row label says so too — this is the at-a-glance half of the same fact,
+   and it is a border style rather than a colour so it survives both themes
+   and does not lean on hue to carry meaning. */
+.sv2-preset-mode{border-style:dashed;}
 .sv2-scale-dir{flex:1 1 100%;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
 .sv2-scale .sv2-note{flex:1 1 100%;margin:0;}
 .sv2-action{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;}
@@ -994,14 +999,32 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
             <div className="sv2-scale">
               {/* v1.14 Item 2 — above the fields, not below them: the point is
                   to be seen before someone starts typing four numbers. */}
+              {/* Two groups under two labels, because one label cannot be
+                  honest about both. A scale chip is something you START FROM
+                  and then edit; a mode chip SWITCHES AWAY from Custom to a
+                  scale that already exists in its own right, and calling that
+                  "start from" would describe the opposite of what it does. */}
               <div className="sv2-scale-presets">
                 <span className="sv2-row-label">{t('settings.scalePresets')}</span>
-                {SCALE_PRESETS.map((p) => (
+                {SCALE_PRESETS.filter((p) => !p.mode).map((p) => (
                   <button
                     key={p.id}
                     type="button"
                     className="sv2-preset"
                     onClick={() => setScale(p.scale)}
+                  >
+                    {t(p.labelKey)}
+                  </button>
+                ))}
+              </div>
+              <div className="sv2-scale-presets">
+                <span className="sv2-row-label">{t('settings.scaleSwitchTo')}</span>
+                {SCALE_PRESETS.filter((p) => p.mode).map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className="sv2-preset sv2-preset-mode"
+                    onClick={() => dispatch({ type: 'SET_GRADE_MODE', mode: p.mode })}
                   >
                     {t(p.labelKey)}
                   </button>
