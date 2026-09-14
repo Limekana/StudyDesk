@@ -67,6 +67,7 @@ import StatsView from "./features/stats/StatsView.jsx";
 import CalendarView from "./features/calendar/CalendarView.jsx";
 import AnalyticsView from "./features/analytics/AnalyticsView.jsx";
 import TimetableView from "./features/timetable/TimetableView.jsx";
+import FirstSteps from "./features/onboarding/FirstSteps.jsx";
 import AttachmentList from "./features/plan/Attachments.jsx";
 import { useAttachmentDrop } from "./features/plan/useAttachmentDrop.js";
 import SettingsView from "./features/settings/SettingsView.jsx";
@@ -1973,6 +1974,17 @@ export default function App() {
   // being pinned to whatever tier they first loaded at.
   const planSub = planSubPref ?? (shellTier === "desktop" ? "calendar" : "list");
 
+  // v1.14 — where each first-step suggestion goes. It lives here because the
+  // timetable is a SUB-TAB of Plan, and `SET_VIEW` alone would drop the user
+  // on whichever Plan sub-tab they last used — usually the list, which is not
+  // the thing the card just offered to show them. Routing knowledge stays in
+  // the one file that already has it.
+  const goFirstStep = useCallback((step) => {
+    if (step === "timetable") { dispatch({type:"SET_VIEW",view:"plan"}); choosePlanSub("timetable"); return; }
+    if (step === "session") { dispatch({type:"SET_VIEW",view:"timer"}); return; }
+    if (step === "grade") dispatch({type:"SET_VIEW",view:"grades"});
+  }, [dispatch, choosePlanSub]);
+
   // v1.9 (Item 6) — icons are back, but not the ones that were dropped.
   // SD-F2 removed a set of emoji/text glyphs in v1.6.0 because they were
   // inconsistent and crowded the label. These are lucide line icons at the
@@ -2183,7 +2195,7 @@ export default function App() {
               the course-detail pane of the three-pane layout, so it lands here
               rather than being patched out of the sidebar. */}
           {state.view==="status" &&<CourseDetailView state={state} dispatch={dispatch} session={session} showFlash={showFlash} tier={shellTier} onAddAsgn={()=>setShowAddAsgn(true)} onAddExam={()=>setShowAddExam(true)} onEditCourse={(c)=>setEditingCourse(c)}/>}
-          {state.view==="actions" &&<ActionsView state={state} dispatch={dispatch} showFlash={showFlash} onAddCourse={()=>setShowAddCourse(true)}/>}
+          {state.view==="actions" &&<ActionsView state={state} dispatch={dispatch} showFlash={showFlash} onAddCourse={()=>setShowAddCourse(true)} onFirstStep={goFirstStep}/>}
           {/* v1.9 Item 14a — Grades gains a Trends sub-tab. The analytics read
               grades AND study sessions together, and "how am I doing" is the
               question this screen already answers, so it belongs here rather
@@ -2832,7 +2844,7 @@ function ExamCard({ exam, courses, dispatch }) {
 }
 
 // ── ActionsView — Next Up ─────────────────────────────────────────────────────
-function ActionsView({ state, dispatch, showFlash, onAddCourse }) {
+function ActionsView({ state, dispatch, showFlash, onAddCourse, onFirstStep }) {
   const { t, i18n } = useTranslation();
   const currentLang = (i18n.language || "en").split("-")[0];
   const langRef = useScrollSelectedIntoView();
@@ -2937,6 +2949,13 @@ function ActionsView({ state, dispatch, showFlash, onAddCourse }) {
   // This week / Later are a natural three-column read, and stacking them is
   // what made this screen a long thin ribbon in a 1600px window.
   return <div className="sd-page-actions sd-bucket-tile">
+    {/* v1.14 — the funnel gap. Above the buckets rather than below them: a
+        suggestion under a screenful of content is a suggestion nobody sees,
+        and this one self-hides the moment it stops applying. It renders only
+        here, on the landing view, because the two empty states above already
+        carry their own prompt and stacking a second would be the wizard this
+        deliberately is not. */}
+    <FirstSteps state={state} onGo={onFirstStep}/>
     {BUCKETS.map(bucket=>{
       const items=allActions.filter(a=>a.bucket===bucket);
       if(items.length===0) return null;

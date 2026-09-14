@@ -1096,5 +1096,19 @@
     },
     "punchAria": "{{present}} anwesend und {{absent}} abwesend bei {{total}} Stunden, älteste zuerst",
     "punchHidden": "+{{n}} frühere"
+  },
+  "firstSteps": {
+    "title": "Nächste Schritte",
+    "timetableTitle": "Trage deine Kurse in den Stundenplan ein",
+    "timetableSub": "Sobald die App deine Unterrichtszeiten kennt, kann sie das Lernen darum herum planen und Anwesenheit erfassen.",
+    "timetableCta": "Stundenplan erstellen",
+    "sessionTitle": "Erfasse deine erste Lerneinheit",
+    "sessionSub": "Nutze den Timer oder trage eine bereits erledigte Einheit nach. Serien und Statistiken beginnen hier.",
+    "sessionCta": "Timer öffnen",
+    "gradeTitle": "Note hinzufügen",
+    "gradeSub": "Eine Note genügt für den Anfang eines Durchschnitts. Gewichtungen können warten.",
+    "gradeCta": "Zu den Noten",
+    "dismiss": "Überspringen",
+    "dismissAria": "Diesen Vorschlag überspringen: {{what}}. Er kommt nicht zurück."
   }
 }

@@ -2335,3 +2335,76 @@ check('unmarked and deleted lessons are not punches', () => {
   ];
   assert.deepEqual(blocks.punchRow(rows).punches, [{ date: '2026-01-01', status: 'present' }]);
 });
+
+// ── v1.14 — the funnel gap: first-step suggestions ───────────────────────
+
+const firstSteps = await import('../src/lib/firstSteps.js');
+
+const withCourse = (extra = {}) => ({
+  courses: { c1: { id: 'c1', name: 'Maths' } },
+  timetableEntries: [], studySessions: [], grades: [], ...extra,
+});
+
+check('a brand-new user with one course is offered all three', () => {
+  assert.deepEqual(firstSteps.outstandingSteps(withCourse(), []),
+    ['timetable', 'session', 'grade']);
+});
+
+check('nothing is suggested before there is a course to suggest it for', () => {
+  // Suggesting a timetable with no courses would be suggesting an empty grid,
+  // and there is already an earlier prompt for "add a course".
+  assert.deepEqual(firstSteps.outstandingSteps({ courses: {} }, []), []);
+  assert.deepEqual(firstSteps.outstandingSteps({}, []), []);
+  // A soft-deleted course is not a course.
+  assert.deepEqual(
+    firstSteps.outstandingSteps({ courses: { c1: { id: 'c1', deletedAt: 'x' } } }, []), []);
+});
+
+check('finishing a step drops it without touching the others', () => {
+  const state = withCourse({ studySessions: [{ id: 's1', minutes: 25 }] });
+  assert.deepEqual(firstSteps.outstandingSteps(state, []), ['timetable', 'grade']);
+});
+
+check('an established user is never nagged, however much they skipped', () => {
+  // THE rule. Two of three done means the user found their way around, so the
+  // third is a preference. Someone two years in with four hundred sessions and
+  // no timetable does not want to be told to add one on every launch.
+  const settled = withCourse({
+    studySessions: [{ id: 's1' }],
+    grades: [{ id: 'g1' }],
+  });
+  assert.deepEqual(firstSteps.outstandingSteps(settled, []), []);
+  const allThree = withCourse({
+    timetableEntries: [{ id: 't1' }], studySessions: [{ id: 's1' }], grades: [{ id: 'g1' }],
+  });
+  assert.deepEqual(firstSteps.outstandingSteps(allThree, []), []);
+});
+
+check('a dismissed step stays dismissed, and only that one', () => {
+  const state = withCourse();
+  assert.deepEqual(firstSteps.outstandingSteps(state, ['timetable']), ['session', 'grade']);
+  assert.deepEqual(firstSteps.outstandingSteps(state, ['timetable', 'session', 'grade']), []);
+});
+
+check('a corrupt dismissal list shows the prompts rather than hiding them', () => {
+  // One unreadable key must not turn a feature off permanently and silently.
+  const state = withCourse();
+  assert.deepEqual(firstSteps.outstandingSteps(state, null), ['timetable', 'session', 'grade']);
+  assert.deepEqual(firstSteps.outstandingSteps(state, ['nonsense']),
+    ['timetable', 'session', 'grade']);
+});
+
+check('dismissStep is idempotent and rejects steps that do not exist', () => {
+  const once = firstSteps.dismissStep('grade', []);
+  assert.deepEqual(once, ['grade']);
+  assert.deepEqual(firstSteps.dismissStep('grade', once), ['grade']);
+  assert.deepEqual(firstSteps.dismissStep('made-up', once), ['grade']);
+});
+
+check('soft-deleted rows do not count as having done a step', () => {
+  // The state keeps tombstones for sync, and a deleted-everything user is
+  // back where they started rather than finished.
+  const state = withCourse({ grades: [{ id: 'g1', deletedAt: '2026-01-01' }] });
+  assert.deepEqual(firstSteps.outstandingSteps(state, []),
+    ['timetable', 'session', 'grade']);
+});

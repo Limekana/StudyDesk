@@ -1091,5 +1091,19 @@
     },
     "punchAria": "{{present}} hadir dan {{absent}} absen dari {{total}} pelajaran, terlama dulu",
     "punchHidden": "+{{n}} sebelumnya"
+  },
+  "firstSteps": {
+    "title": "Langkah berikutnya",
+    "timetableTitle": "Tambahkan kelasmu ke jadwal",
+    "timetableSub": "Begitu aplikasi tahu jadwal pelajaranmu, ia bisa merencanakan belajar di sekitarnya dan mencatat kehadiran.",
+    "timetableCta": "Buat jadwal saya",
+    "sessionTitle": "Catat sesi belajar pertamamu",
+    "sessionSub": "Pakai pengatur waktu, atau masukkan sesi yang sudah kamu jalani. Runtutan dan statistik dimulai dari sini.",
+    "sessionCta": "Buka pengatur waktu",
+    "gradeTitle": "Tambahkan nilai",
+    "gradeSub": "Satu nilai sudah cukup untuk memulai rata-rata. Bobot bisa menyusul.",
+    "gradeCta": "Ke Nilai",
+    "dismiss": "Lewati",
+    "dismissAria": "Lewati saran ini: {{what}}. Saran ini tidak akan muncul lagi."
   }
 }

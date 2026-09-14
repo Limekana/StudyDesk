@@ -1096,5 +1096,19 @@
     },
     "punchAria": "共 {{total}} 节课，出席 {{present}} 次、缺席 {{absent}} 次，按时间先后排列",
     "punchHidden": "+{{n}} 更早"
+  },
+  "firstSteps": {
+    "title": "接下来",
+    "timetableTitle": "把课程加入课表",
+    "timetableSub": "应用知道上课时间后，就能围绕它安排学习并记录出勤。",
+    "timetableCta": "创建课表",
+    "sessionTitle": "记录第一次学习",
+    "sessionSub": "使用计时器，或补录一次已完成的学习。连续天数和统计从这里开始。",
+    "sessionCta": "打开计时器",
+    "gradeTitle": "添加成绩",
+    "gradeSub": "一个成绩就能开始计算平均分。权重和过往学期可以以后再说。",
+    "gradeCta": "前往成绩",
+    "dismiss": "跳过",
+    "dismissAria": "跳过此建议：{{what}}。它不会再出现。"
   }
 }

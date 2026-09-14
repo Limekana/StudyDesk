@@ -1101,5 +1101,19 @@
     },
     "punchAria": "{{present}} présences et {{absent}} absences sur {{total}} cours, du plus ancien au plus récent",
     "punchHidden": "+{{n}} plus anciens"
+  },
+  "firstSteps": {
+    "title": "Prochaines étapes",
+    "timetableTitle": "Ajoutez vos cours à l'emploi du temps",
+    "timetableSub": "Une fois les horaires connus, l'app peut organiser vos révisions autour et suivre votre assiduité.",
+    "timetableCta": "Créer mon emploi du temps",
+    "sessionTitle": "Enregistrez votre première session",
+    "sessionSub": "Utilisez le minuteur, ou saisissez une session déjà faite. Séries et statistiques partent de là.",
+    "sessionCta": "Ouvrir le minuteur",
+    "gradeTitle": "Ajoutez une note",
+    "gradeSub": "Une seule note suffit pour démarrer une moyenne. Les coefficients viendront plus tard.",
+    "gradeCta": "Aller aux notes",
+    "dismiss": "Passer",
+    "dismissAria": "Passer cette suggestion : {{what}}. Elle ne reviendra pas."
   }
 }

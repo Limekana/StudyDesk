@@ -1096,5 +1096,19 @@
     },
     "punchAria": "{{present}} läsnä ja {{absent}} poissa {{total}} oppitunnilla, vanhimmat ensin",
     "punchHidden": "+{{n}} aiempaa"
+  },
+  "firstSteps": {
+    "title": "Seuraavat askeleet",
+    "timetableTitle": "Lisää tuntisi lukujärjestykseen",
+    "timetableSub": "Kun sovellus tietää tuntiesi ajat, se voi suunnitella opiskelun niiden ympärille ja seurata läsnäoloa.",
+    "timetableCta": "Tee lukujärjestys",
+    "sessionTitle": "Kirjaa ensimmäinen opiskelukerta",
+    "sessionSub": "Käytä ajastinta tai kirjaa jo pidetty kerta. Putket ja tilastot alkavat tästä.",
+    "sessionCta": "Avaa ajastin",
+    "gradeTitle": "Lisää arvosana",
+    "gradeSub": "Yksi arvosana riittää keskiarvon aloittamiseen. Painot ja menneet jaksot voivat odottaa.",
+    "gradeCta": "Siirry arvosanoihin",
+    "dismiss": "Ohita",
+    "dismissAria": "Ohita tämä ehdotus: {{what}}. Se ei palaa."
   }
 }

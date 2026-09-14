@@ -1101,5 +1101,19 @@
     },
     "punchAria": "{{present}} presenças e {{absent}} faltas em {{total}} aulas, da mais antiga à mais recente",
     "punchHidden": "+{{n}} anteriores"
+  },
+  "firstSteps": {
+    "title": "Próximos passos",
+    "timetableTitle": "Adiciona as tuas aulas ao horário",
+    "timetableSub": "Quando a app souber os horários, pode planear o estudo à volta deles e registar a assiduidade.",
+    "timetableCta": "Criar o meu horário",
+    "sessionTitle": "Regista a tua primeira sessão de estudo",
+    "sessionSub": "Usa o cronómetro ou regista uma sessão já feita. As sequências e estatísticas começam aqui.",
+    "sessionCta": "Abrir o cronómetro",
+    "gradeTitle": "Adiciona uma nota",
+    "gradeSub": "Uma nota chega para começar uma média. Os pesos podem esperar.",
+    "gradeCta": "Ir para Notas",
+    "dismiss": "Ignorar",
+    "dismissAria": "Ignorar esta sugestão: {{what}}. Não voltará a aparecer."
   }
 }

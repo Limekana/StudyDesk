@@ -1101,5 +1101,19 @@
     },
     "punchAria": "{{present}} presentes y {{absent}} ausencias en {{total}} clases, de la más antigua a la más reciente",
     "punchHidden": "+{{n}} anteriores"
+  },
+  "firstSteps": {
+    "title": "Siguientes pasos",
+    "timetableTitle": "Añade tus clases al horario",
+    "timetableSub": "Cuando la app sepa cuándo son tus clases, podrá planificar el estudio y registrar la asistencia.",
+    "timetableCta": "Crear mi horario",
+    "sessionTitle": "Registra tu primera sesión de estudio",
+    "sessionSub": "Usa el temporizador o añade una sesión que ya hiciste. Las rachas y las estadísticas empiezan aquí.",
+    "sessionCta": "Abrir el temporizador",
+    "gradeTitle": "Añade una nota",
+    "gradeSub": "Con una nota basta para empezar una media. Los pesos pueden esperar.",
+    "gradeCta": "Ir a Notas",
+    "dismiss": "Omitir",
+    "dismissAria": "Omitir esta sugerencia: {{what}}. No volverá a aparecer."
   }
 }

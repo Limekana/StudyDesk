@@ -1096,5 +1096,19 @@
     },
     "punchAria": "{{present}} present and {{absent}} absent across {{total}} lessons, oldest first",
     "punchHidden": "+{{n}} earlier"
+  },
+  "firstSteps": {
+    "title": "Next steps",
+    "timetableTitle": "Add your classes to the timetable",
+    "timetableSub": "Once the app knows when your lessons are, it can plan study around them and track attendance.",
+    "timetableCta": "Build my timetable",
+    "sessionTitle": "Log your first study session",
+    "sessionSub": "Use the timer, or enter a session you've already done. Streaks and stats start from here.",
+    "sessionCta": "Open the timer",
+    "gradeTitle": "Add a grade",
+    "gradeSub": "One grade is enough to start an average. Weights and past terms can come later.",
+    "gradeCta": "Go to Grades",
+    "dismiss": "Skip",
+    "dismissAria": "Skip this suggestion: {{what}}. It won't come back."
   }
 }
