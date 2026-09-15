@@ -20,6 +20,9 @@ import { downloadExport } from "./lib/dataRights.js";
 import StorageAlert from "./features/settings/StorageAlert.jsx";
 import TimerPill from "./features/timer/TimerPill.jsx";
 import { useAccountAvatar } from "./lib/useAccountAvatar.js";
+import { readCollapsed, writeCollapsed } from "./lib/planSections.js";
+import { preferredDueWindow, countsAsDue } from "./lib/dueWindow.js";
+import { normalizeDueTime, byDueAsc, byDueDesc, dueDayReminderAt } from "./lib/dueAt.js";
 import ReferralPrompt from "./features/referral/ReferralPrompt.jsx";
 import { inheritFromNexus } from "./lib/suiteSso.js";
 import { hydrateOnboardedFromCloud, markOnboardedCloud } from "./lib/onboardingCloud.js";
@@ -64,6 +67,7 @@ import StatsView from "./features/stats/StatsView.jsx";
 import CalendarView from "./features/calendar/CalendarView.jsx";
 import AnalyticsView from "./features/analytics/AnalyticsView.jsx";
 import TimetableView from "./features/timetable/TimetableView.jsx";
+import FirstSteps from "./features/onboarding/FirstSteps.jsx";
 import AttachmentList from "./features/plan/Attachments.jsx";
 import { useAttachmentDrop } from "./features/plan/useAttachmentDrop.js";
 import SettingsView from "./features/settings/SettingsView.jsx";
@@ -205,16 +209,24 @@ async function scheduleNotifications(exams, assignments, courses, plannedSession
     assignments.forEach(asgn => {
       if (asgn.done || !asgn.dueDate) return;
       const c = courses[asgn.courseId];
-      const label = c ? `${asgn.title} — ${c.name}` : asgn.title;
+      // v1.14 Item 5 — the deadline's own time, when it has one, goes in the
+      // body. A reminder that says "Essay — History" is a different message
+      // from "Essay — History · 09:00" at eight in the morning.
+      const base = c ? `${asgn.title} — ${c.name}` : asgn.title;
+      const label = asgn.dueTime ? `${base} · ${asgn.dueTime}` : base;
       // Day before at 6pm. Action button "Mark done" → TOGGLE_ASSIGNMENT
       // (see App-level useEffect listener). extra.assignmentId carries the
       // target id; both reminders for the same assignment share that id so
       // either notification can mark it done.
       const dayBefore = parseLocalDate(addDays(asgn.dueDate,-1)); dayBefore.setHours(18,0,0,0);
       if (dayBefore.getTime() > now) notes.push({ id: id++, title: "📋 Due tomorrow", body: label, schedule: { at: dayBefore }, smallIcon: "ic_stat_studydesk", iconColor: "#8b4a62", actionTypeId: ASSIGNMENT_ACTION_TYPE, extra: { assignmentId: asgn.id } });
-      // Due day at 9am
-      const dueDay = parseLocalDate(asgn.dueDate); dueDay.setHours(9,0,0,0);
-      if (dueDay.getTime() > now) notes.push({ id: id++, title: "📋 Due today", body: label, schedule: { at: dueDay }, smallIcon: "ic_stat_studydesk", iconColor: "#8b4a62", actionTypeId: ASSIGNMENT_ACTION_TYPE, extra: { assignmentId: asgn.id } });
+      // Due day — 9am, or an hour before the deadline when that is earlier.
+      // 9am was always fine for an evening deadline and useless for an 08:00
+      // one, which is the case this item makes expressible. `null` means the
+      // deadline is early enough that an hour's warning lands yesterday, where
+      // the 6pm reminder above already covers it.
+      const dueDay = dueDayReminderAt(asgn.dueDate, asgn.dueTime);
+      if (dueDay && dueDay.getTime() > now) notes.push({ id: id++, title: "📋 Due today", body: label, schedule: { at: dueDay }, smallIcon: "ic_stat_studydesk", iconColor: "#8b4a62", actionTypeId: ASSIGNMENT_ACTION_TYPE, extra: { assignmentId: asgn.id } });
     });
 
     // ── Planned study sessions (v1.10) ──────────────────────────────────
@@ -325,7 +337,11 @@ const INITIAL = {
 
 function reducer(state, action) {
   switch(action.type) {
-    case "ADD_COURSE":    { const id=action.id||newSyncId(); return {...state,courses:{...state.courses,[id]:{id,name:action.name,color:action.color,notes:[],credits:action.credits??1,semester:action.semester??null,schoolYear:action.schoolYear??null,archivedAt:null,updatedAt:action.updatedAt||new Date().toISOString(),deletedAt:null}}}; }
+    // v1.14 Item 8a - `archivedAt` is settable at creation. A course can be
+    // born archived: that is how a finished term's grades get entered without
+    // the course first appearing in the live GPA, the Plan tab and every
+    // course picker. Defaults to null, so every existing caller is unchanged.
+    case "ADD_COURSE":    { const id=action.id||newSyncId(); return {...state,courses:{...state.courses,[id]:{id,name:action.name,color:action.color,notes:[],credits:action.credits??1,semester:action.semester??null,schoolYear:action.schoolYear??null,archivedAt:action.archivedAt??null,updatedAt:action.updatedAt||new Date().toISOString(),deletedAt:null}}}; }
     case "EDIT_COURSE":  return {...state,courses:{...state.courses,[action.id]:{...state.courses[action.id],name:action.name,color:action.color,credits:action.credits!==undefined?action.credits:state.courses[action.id]?.credits,semester:action.semester!==undefined?action.semester:state.courses[action.id]?.semester,schoolYear:action.schoolYear!==undefined?action.schoolYear:state.courses[action.id]?.schoolYear,updatedAt:new Date().toISOString()}}};
     // v1.2 — semester archiving. ARCHIVE_SEMESTER stamps archivedAt on
     // every active course matching the semester string; RESTORE_SEMESTER
@@ -386,9 +402,9 @@ function reducer(state, action) {
     // LWW and use newSyncId() (a real UUID) instead of uid(). Deletes stay hard
     // removals: applyRemotePull drops remotely-deleted rows the same way, so
     // local state never holds a tombstone and no render site needs a new guard.
-    case "ADD_ASSIGNMENT":  { const a={id:action.id||newSyncId(),courseId:action.courseId,title:action.title,type:action.assignType,dueDate:action.dueDate,notes:action.notes||"",done:false,updatedAt:action.updatedAt||new Date().toISOString()}; return {...state,assignments:[...state.assignments,a]}; }
+    case "ADD_ASSIGNMENT":  { const a={id:action.id||newSyncId(),courseId:action.courseId,title:action.title,type:action.assignType,dueDate:action.dueDate,dueTime:normalizeDueTime(action.dueTime),notes:action.notes||"",done:false,updatedAt:action.updatedAt||new Date().toISOString()}; return {...state,assignments:[...state.assignments,a]}; }
     case "TOGGLE_ASSIGNMENT": return {...state,assignments:state.assignments.map(a=>a.id===action.id?{...a,done:!a.done,updatedAt:new Date().toISOString()}:a)};
-    case "EDIT_ASSIGNMENT":   return {...state,assignments:state.assignments.map(a=>a.id===action.id?{...a,title:action.title,dueDate:action.dueDate,notes:action.notes,updatedAt:new Date().toISOString()}:a)};
+    case "EDIT_ASSIGNMENT":   return {...state,assignments:state.assignments.map(a=>a.id===action.id?{...a,title:action.title,dueDate:action.dueDate,dueTime:normalizeDueTime(action.dueTime),notes:action.notes,updatedAt:new Date().toISOString()}:a)};
     case "DELETE_ASSIGNMENT": return {...state,assignments:state.assignments.filter(a=>a.id!==action.id)};
     // v1.13 Tier 3 — upsert by id, for the calendar feed.
     //
@@ -413,6 +429,10 @@ function reducer(state, action) {
         title: row.title || "",
         type: row.type || null,
         dueDate: row.dueDate || null,
+        // The calendar feed carries a real start time when the source event
+        // has one (VEVENT DTSTART), which is exactly a due time — so an
+        // imported deadline is timed without the user retyping it.
+        dueTime: normalizeDueTime(row.dueTime),
         notes: row.notes || "",
         // `done` is preserved on an existing row. A student who ticked off an
         // imported assignment must not have it un-ticked by the next poll —
@@ -487,6 +507,10 @@ function reducer(state, action) {
         notes: action.notes || "",
         fulfilledBy: null,
         dismissedAt: null,
+        // v1.14 Item 7a — which repeating plan this block came from, null for
+        // a one-off. Every occurrence is an ordinary independent row; this is
+        // a label so "stop repeating" can find the rest of them, not a parent.
+        seriesId: action.seriesId || null,
         updatedAt: action.updatedAt || new Date().toISOString(),
       };
       return { ...state, plannedSessions: [...(state.plannedSessions || []), p] };
@@ -513,6 +537,14 @@ function reducer(state, action) {
         dismissedAt: action.fulfilledBy ? null : (action.dismissedAt || null),
         updatedAt: new Date().toISOString(),
       })};
+    // v1.14 Item 7a — dropping the remaining occurrences of a repeating plan.
+    // Explicit ids, like DELETE_TT_ENTRIES: the caller counted them and showed
+    // that count, so the reducer removes exactly what was confirmed.
+    case "DELETE_PLANNED_MANY": {
+      const ids = new Set(action.ids || []);
+      if (!ids.size) return state;
+      return { ...state, plannedSessions: (state.plannedSessions || []).filter(p => !ids.has(p.id)) };
+    }
     case "DELETE_PLANNED":
       return { ...state, plannedSessions: (state.plannedSessions || []).filter(p => p.id !== action.id) };
 
@@ -555,6 +587,9 @@ function reducer(state, action) {
       const e = {
         id: action.id || newSyncId(),
         termId: action.termId,
+        // v1.14 Item 6a — which multi-weekday set this belongs to, null for a
+        // lesson that meets on one day.
+        seriesId: action.seriesId || null,
         subjectId: action.subjectId || null,
         title: action.title || "",
         weekday: Math.max(0, Math.min(6, Math.round(Number(action.weekday)))),
@@ -573,6 +608,13 @@ function reducer(state, action) {
     case "EDIT_TT_ENTRY":
       return { ...state, timetableEntries: (state.timetableEntries || []).map(e => e.id !== action.id ? e : {
         ...e,
+        // v1.14 Item 6b - the scope is editable now, which is what "move this
+        // lesson to the jakso" is. Without this line the push carried the new
+        // term and local state kept the old one, so the lesson stayed where it
+        // was until the next pull contradicted the screen. Attendance is keyed
+        // on the ENTRY, not the term, so a moved lesson keeps its history.
+        termId: action.termId !== undefined ? (action.termId || e.termId) : e.termId,
+        seriesId: action.seriesId !== undefined ? (action.seriesId || null) : (e.seriesId ?? null),
         subjectId: action.subjectId !== undefined ? (action.subjectId || null) : e.subjectId,
         title: action.title !== undefined ? (action.title || "") : e.title,
         weekday: action.weekday !== undefined ? Math.max(0, Math.min(6, Math.round(Number(action.weekday)))) : e.weekday,
@@ -587,6 +629,15 @@ function reducer(state, action) {
       })};
     case "DELETE_TT_ENTRY":
       return { ...state, timetableEntries: (state.timetableEntries || []).filter(e => e.id !== action.id) };
+    // v1.14 Item 6a — dropping every day of a multi-weekday lesson at once.
+    // Takes explicit ids rather than a seriesId so the reducer deletes exactly
+    // what the caller counted and showed in the confirmation, with no chance of
+    // the set changing between the two.
+    case "DELETE_TT_ENTRIES": {
+      const ids = new Set(action.ids || []);
+      if (!ids.size) return state;
+      return { ...state, timetableEntries: (state.timetableEntries || []).filter(e => !ids.has(e.id)) };
+    }
 
     // ── Assignment attachments (v1.10) ──
     // ADD carries a row the upload already created server-side, so there is no
@@ -611,13 +662,18 @@ function reducer(state, action) {
           : Math.max(0, Math.min(6, Math.round(Number(action.weekday)))),
         startsOn: action.startsOn || "",
         endsOn: action.endsOn || "",
+        // v1.14 Item 7b — null is every week, which is what every row written
+        // before this field means. Normalised on the way in so no reader has
+        // to cope with "1" as a string from a form.
+        intervalWeeks: Number(action.intervalWeeks) > 1 ? Math.round(Number(action.intervalWeeks)) : null,
         startTime: action.startTime,
         endTime: action.endTime,
         notes: action.notes || "",
         updatedAt: action.updatedAt || new Date().toISOString(),
       };
-      // An end date on a one-off is meaningless and the DB rejects it.
-      if (c.weekday === null) c.endsOn = "";
+      // An end date on a one-off is meaningless and the DB rejects it, and an
+      // interval describes a recurrence a one-off does not have.
+      if (c.weekday === null) { c.endsOn = ""; c.intervalWeeks = null; }
       return { ...state, commitments: [...(state.commitments || []), c] };
     }
     case "EDIT_COMMITMENT":
@@ -635,12 +691,15 @@ function reducer(state, action) {
           weekday,
           startsOn: action.startsOn !== undefined ? (action.startsOn || "") : c.startsOn,
           endsOn: action.endsOn !== undefined ? (action.endsOn || "") : c.endsOn,
+          intervalWeeks: action.intervalWeeks !== undefined
+            ? (Number(action.intervalWeeks) > 1 ? Math.round(Number(action.intervalWeeks)) : null)
+            : (c.intervalWeeks ?? null),
           startTime: action.startTime ?? c.startTime,
           endTime: action.endTime ?? c.endTime,
           notes: action.notes !== undefined ? (action.notes || "") : c.notes,
           updatedAt: new Date().toISOString(),
         };
-        if (next.weekday === null) next.endsOn = "";
+        if (next.weekday === null) { next.endsOn = ""; next.intervalWeeks = null; }
         return next;
       })};
     case "DELETE_COMMITMENT":
@@ -1736,7 +1795,7 @@ export default function App() {
         if (cancelled) return;
         if (!a.courseId || !state.courses[a.courseId]) continue;
         try {
-          await sync.upsertAssignment({ id: a.id, courseId: a.courseId, title: a.title, type: a.type, dueDate: a.dueDate, notes: a.notes, done: a.done });
+          await sync.upsertAssignment({ id: a.id, courseId: a.courseId, title: a.title, type: a.type, dueDate: a.dueDate, dueTime: a.dueTime, notes: a.notes, done: a.done });
           pushed++;
         } catch (e) { failed++; console.error("[StudyDesk] initial push assignment failed:", a.id, e); }
       }
@@ -1817,7 +1876,7 @@ export default function App() {
       if (prev.assignments.get(id) === s) continue;
       const a = assignmentsById.get(id);
       if (!a?.courseId) continue;
-      outbox.enqueue('upsert_assignment', { id, courseId: a.courseId, title: a.title, type: a.type, dueDate: a.dueDate, notes: a.notes, done: a.done });
+      outbox.enqueue('upsert_assignment', { id, courseId: a.courseId, title: a.title, type: a.type, dueDate: a.dueDate, dueTime: a.dueTime, notes: a.notes, done: a.done });
     }
     for (const id of prev.assignments.keys()) {
       if (!next.assignments.has(id)) outbox.enqueue('delete_assignment', { id });
@@ -1914,6 +1973,17 @@ export default function App() {
   // the tier as it changes (resizing a window, rotating a tablet) instead of
   // being pinned to whatever tier they first loaded at.
   const planSub = planSubPref ?? (shellTier === "desktop" ? "calendar" : "list");
+
+  // v1.14 — where each first-step suggestion goes. It lives here because the
+  // timetable is a SUB-TAB of Plan, and `SET_VIEW` alone would drop the user
+  // on whichever Plan sub-tab they last used — usually the list, which is not
+  // the thing the card just offered to show them. Routing knowledge stays in
+  // the one file that already has it.
+  const goFirstStep = useCallback((step) => {
+    if (step === "timetable") { dispatch({type:"SET_VIEW",view:"plan"}); choosePlanSub("timetable"); return; }
+    if (step === "session") { dispatch({type:"SET_VIEW",view:"timer"}); return; }
+    if (step === "grade") dispatch({type:"SET_VIEW",view:"grades"});
+  }, [dispatch, choosePlanSub]);
 
   // v1.9 (Item 6) — icons are back, but not the ones that were dropped.
   // SD-F2 removed a set of emoji/text glyphs in v1.6.0 because they were
@@ -2061,7 +2131,11 @@ export default function App() {
               className={"topbar-avatar"+(state.view==="settings"?" active":"")}
               style={state.view==="settings"?undefined:accountAvatar.tintStyle}
               onClick={()=>dispatch({type:"SET_VIEW",view:"settings"})}
-              title={session?.user?.email ? t('av.chrome.settingsWith', { email: session.user.email }) : t('av.chrome.settings')}
+              /* v1.14 Item 12 — the name the user chose, when they have chosen
+                 one; the address only as the fallback it always was. */
+              title={(accountAvatar.displayName || session?.user?.email)
+                ? t('av.chrome.settingsWith', { who: accountAvatar.displayName || session.user.email })
+                : t('av.chrome.settings')}
               aria-label={t('av.chrome.openSettings')}>
               <AccountAvatar avatar={accountAvatar} session={session} />
             </button>
@@ -2121,7 +2195,7 @@ export default function App() {
               the course-detail pane of the three-pane layout, so it lands here
               rather than being patched out of the sidebar. */}
           {state.view==="status" &&<CourseDetailView state={state} dispatch={dispatch} session={session} showFlash={showFlash} tier={shellTier} onAddAsgn={()=>setShowAddAsgn(true)} onAddExam={()=>setShowAddExam(true)} onEditCourse={(c)=>setEditingCourse(c)}/>}
-          {state.view==="actions" &&<ActionsView state={state} dispatch={dispatch} showFlash={showFlash} onAddCourse={()=>setShowAddCourse(true)}/>}
+          {state.view==="actions" &&<ActionsView state={state} dispatch={dispatch} showFlash={showFlash} onAddCourse={()=>setShowAddCourse(true)} onFirstStep={goFirstStep}/>}
           {/* v1.9 Item 14a — Grades gains a Trends sub-tab. The analytics read
               grades AND study sessions together, and "how am I doing" is the
               question this screen already answers, so it belongs here rather
@@ -2194,7 +2268,7 @@ export default function App() {
       <div style={{marginBottom:16}}><CoursePicker value={newCourseColor} onChange={setNewCourseColor}/></div>
       <div style={{display:"flex",gap:8}}><button className="btn" onClick={addCourse}>{t('av.chrome.addCourse')}</button><button className="btn-outline" onClick={()=>setShowAddCourse(false)}>{t('common.cancel')}</button></div>
     </div></div>}
-    {showAddAsgn&&<AddAsgnModal courses={courses} activeCourse={state.activeCourse} onAdd={(data)=>{dispatch({type:"ADD_ASSIGNMENT",title:data.title,courseId:data.courseId,assignType:data.type,dueDate:data.dueDate,notes:data.notes});setShowAddAsgn(false);showFlash(t('av.flash.assignmentAdded'));}} onClose={()=>setShowAddAsgn(false)}/>}
+    {showAddAsgn&&<AddAsgnModal courses={courses} activeCourse={state.activeCourse} onAdd={(data)=>{dispatch({type:"ADD_ASSIGNMENT",title:data.title,courseId:data.courseId,assignType:data.type,dueDate:data.dueDate,dueTime:data.dueTime,notes:data.notes});setShowAddAsgn(false);showFlash(t('av.flash.assignmentAdded'));}} onClose={()=>setShowAddAsgn(false)}/>}
     {showAddExam&&<AddExamModal courses={courses} activeCourse={state.activeCourse} onAdd={(data)=>{dispatch({type:"ADD_EXAM",...data});setShowAddExam(false);showFlash(t('av.flash.examAdded'));}} onClose={()=>setShowAddExam(false)}/>}
     {editingCourse&&<EditCourseModal
       course={state.courses[editingCourse.id] || editingCourse}
@@ -2370,9 +2444,9 @@ function CourseDetailView({ state, dispatch, session, showFlash, tier, onAddAsgn
 
   const assignments = state.assignments.filter(a => a.courseId === ac);
   const open = assignments.filter(a => !a.done)
-    .sort((a, b) => new Date(a.dueDate || "9999-12-31") - new Date(b.dueDate || "9999-12-31"));
+    .sort(byDueAsc);
   const done = assignments.filter(a => a.done)
-    .sort((a, b) => new Date(b.dueDate || "1970-01-01") - new Date(a.dueDate || "1970-01-01"));
+    .sort(byDueDesc);
   const exams = state.exams.filter(e => e.courseId === ac);
   const openExams = exams.filter(e => !e.done).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
 
@@ -2489,11 +2563,17 @@ function AsgnItem({ asgn, courses, dispatch, attachments = [], session, showFlas
   const mine=attachments.filter(a=>a.assignmentId===asgn.id&&!a.deletedAt);
   const [editTitle,setEditTitle]=useState(asgn.title);
   const [editDate,setEditDate]=useState(asgn.dueDate||"");
+  const [editTime,setEditTime]=useState(asgn.dueTime||"");
   const [editNotes,setEditNotes]=useState(asgn.notes||"");
-  const save=()=>{ dispatch({type:"EDIT_ASSIGNMENT",id:asgn.id,title:editTitle.trim()||asgn.title,dueDate:editDate,notes:editNotes}); setEditing(false); };
+  // Clearing the date clears the time with it: a time with no day is not a
+  // deadline, and leaving it behind would resurrect it if a date came back.
+  const save=()=>{ dispatch({type:"EDIT_ASSIGNMENT",id:asgn.id,title:editTitle.trim()||asgn.title,dueDate:editDate,dueTime:editDate?editTime:"",notes:editNotes}); setEditing(false); };
   if(editing) return <div className="asgn-item" style={{flexDirection:"column",gap:10}}>
     <input type="text" value={editTitle} onChange={e=>setEditTitle(e.target.value)} style={{fontWeight:500}} autoFocus/>
-    <input type="date" value={editDate} onChange={e=>setEditDate(e.target.value)}/>
+    <div style={{display:"flex",gap:8}}>
+      <input type="date" value={editDate} onChange={e=>setEditDate(e.target.value)} style={{flex:"1 1 auto"}}/>
+      <input type="time" value={editTime} disabled={!editDate} onChange={e=>setEditTime(e.target.value)} style={{flex:"0 1 auto"}} aria-label={t('av.md.dueTimeOpt')}/>
+    </div>
     <textarea value={editNotes} onChange={e=>setEditNotes(e.target.value)} placeholder={t('sv.fNotes')+"…"} style={{minHeight:48,fontSize:12}}/>
     <div style={{display:"flex",gap:8}}><button className="btn btn-sm" onClick={save}>{t('common.save')}</button><button className="btn-outline btn-sm" onClick={()=>setEditing(false)}>{t('common.cancel')}</button></div>
   </div>;
@@ -2508,7 +2588,7 @@ function AsgnItem({ asgn, courses, dispatch, attachments = [], session, showFlas
       <div className="asgn-meta">
         {course&&<span className="asgn-course" style={{background:course.color+"18",color:course.color}}>{course.name}</span>}
         {asgn.type&&<span className="asgn-type">{t(`av.assignType.${asgn.type}`,{defaultValue:asgn.type})}</span>}
-        {asgn.dueDate&&<span className="asgn-due" style={{color:asgn.done?"var(--muted2)":urgencyColor(days)}}>{fmtDate(asgn.dueDate,t)} · {urgencyLabel(days,t)}</span>}
+        {asgn.dueDate&&<span className="asgn-due" style={{color:asgn.done?"var(--muted2)":urgencyColor(days)}}>{fmtDate(asgn.dueDate,t)}{asgn.dueTime&&` ${asgn.dueTime}`} · {urgencyLabel(days,t)}</span>}
       </div>
       {asgn.notes&&<div className="asgn-notes">{asgn.notes}</div>}
     </div>
@@ -2534,12 +2614,60 @@ function AsgnItem({ asgn, courses, dispatch, attachments = [], session, showFlas
   </div>;
 }
 
+// ── PlanSectionHead ───────────────────────────────────────────────────────────
+//
+// v1.14 Item 3 (#51) — the LIST view's three section headings, now foldable.
+//
+// The chevron is `course-card-chevron`, the same mark the course cards below
+// already use for exactly this gesture, rather than a second one that means the
+// same thing: the tab teaches the affordance once. It also inherits the RTL
+// mirroring rule those cards already carry.
+//
+// The heading text becomes the button and the Add button stays a sibling, so
+// `.section-label`'s ordering rules — hairline at order 1, action at order 2 —
+// keep working untouched, and the Add buttons stay aligned down the right edge
+// whether a section is open or shut.
+function PlanSectionHead({ id, label, open, onToggle, children }) {
+  return (
+    <div className="section-label">
+      {/* No aria-controls: the section body is a fragment of siblings rather
+          than one element, so there is nothing honest to point at.
+          aria-expanded alone is valid and is what gets announced. */}
+      <button
+        type="button"
+        className="section-toggle"
+        onClick={() => onToggle(id)}
+        aria-expanded={open}
+      >
+        <span className={"course-card-chevron" + (open ? " open" : "")} aria-hidden="true">▶</span>
+        {label}
+      </button>
+      {children}
+    </div>
+  );
+}
+
 function PlanView({ state, dispatch, session, showFlash, onAddAsgn, onAddExam, onAddCourse, onEditCourse }) {
   const { t, i18n } = useTranslation();
   const lang = (i18n.language || "en").split("-")[0];
   const courses = Object.values(state.courses).filter(c => !c.deletedAt);
   const [calMonth, setCalMonth] = useState(()=>{const d=new Date(); return {year:d.getFullYear(),month:d.getMonth()};});
   const [expandedCourse, setExpandedCourse] = useState({});
+  // Read once at mount, not on every render: the value only ever changes
+  // through the toggle below, and reading localStorage per render would make
+  // scrolling this tab hit storage.
+  const [collapsed, setCollapsed] = useState(readCollapsed);
+  // Read at render, like `resolveWeekStart` and `preferredDayStart` elsewhere:
+  // a localStorage write is invisible to React, and this view remounts when the
+  // user comes back from Settings, which is the only place it can change.
+  const dueWindow = preferredDueWindow();
+  const toggleSection = useCallback((id) => {
+    setCollapsed((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      writeCollapsed(next);
+      return next;
+    });
+  }, []);
   const firstDay = new Date(calMonth.year,calMonth.month,1);
   const lastDay  = new Date(calMonth.year,calMonth.month+1,0);
   const startPad = firstDay.getDay();
@@ -2561,18 +2689,25 @@ function PlanView({ state, dispatch, session, showFlash, onAddAsgn, onAddExam, o
   const agendaEvents=[];
   const _agendaBase=todayMidnight();
   for(let i=0;i<60;i++){const d=new Date(_agendaBase);d.setDate(_agendaBase.getDate()+i);const ev=eventsOnDay(d);if(ev.length>0)agendaEvents.push({date:d,events:ev});}
-  const openAsgns=state.assignments.filter(a=>!a.done).sort((a,b)=>new Date(a.dueDate||"9999-12-31")-new Date(b.dueDate||"9999-12-31"));
+  const openAsgns=state.assignments.filter(a=>!a.done).sort(byDueAsc);
   const openExams=state.exams.filter(e=>!e.done).sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));
   // The root is NOT a tiling grid: this view also holds the month grid, the
   // agenda and the course cards, and tiling those would break each of them.
   // Only the flat lists tile, which is where the vertical length comes from.
   return <div className="sd-page-plan">
-    <div className="section-label">{t('av.pl.assignments')}<button className="btn btn-sm" onClick={onAddAsgn}>{t('av.pl.add')}</button></div>
+    <PlanSectionHead id="assignments" label={t('av.pl.assignments')} open={!collapsed.assignments} onToggle={toggleSection}>
+      <button className="btn btn-sm" onClick={onAddAsgn}>{t('av.pl.add')}</button>
+    </PlanSectionHead>
+    {!collapsed.assignments && <>
     {openAsgns.length===0&&<div className="empty">{t('av.pl.noOpenAsgn')}</div>}
     <div className="sd-list-tile">{openAsgns.map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch} attachments={state.attachments} session={session} showFlash={showFlash}/>)}</div>
-    {state.assignments.filter(a=>a.done).length>0&&<details style={{marginBottom:16}}><summary style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",cursor:"pointer",padding:"8px 0"}}>{t('av.pl.completed',{count:state.assignments.filter(a=>a.done).length})}</summary>{state.assignments.filter(a=>a.done).sort((a,b)=>new Date(b.dueDate||"1970-01-01")-new Date(a.dueDate||"1970-01-01")).map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch} attachments={state.attachments} session={session} showFlash={showFlash}/>)}</details>}
+    {state.assignments.filter(a=>a.done).length>0&&<details style={{marginBottom:16}}><summary style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",cursor:"pointer",padding:"8px 0"}}>{t('av.pl.completed',{count:state.assignments.filter(a=>a.done).length})}</summary>{state.assignments.filter(a=>a.done).sort(byDueDesc).map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch} attachments={state.attachments} session={session} showFlash={showFlash}/>)}</details>}
+    </>}
     <div className="divider"/>
-    <div className="section-label">{t('av.pl.examsCalendar')}<button className="btn btn-sm" onClick={onAddExam}>{t('av.pl.add')}</button></div>
+    <PlanSectionHead id="exams" label={t('av.pl.examsCalendar')} open={!collapsed.exams} onToggle={toggleSection}>
+      <button className="btn btn-sm" onClick={onAddExam}>{t('av.pl.add')}</button>
+    </PlanSectionHead>
+    {!collapsed.exams && <>
     <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
       <button className="btn-outline btn-sm" onClick={prevMonth}><span className="rtl-mirror" aria-hidden>←</span></button>
       <span style={{fontFamily:"var(--font-display)",fontSize:16,flex:1}}>{monthName}</span>
@@ -2589,12 +2724,17 @@ function PlanView({ state, dispatch, session, showFlash, onAddAsgn, onAddExam, o
     {openExams.map(e=><ExamCard key={e.id} exam={e} courses={state.courses} dispatch={dispatch}/>)}
     {openExams.length===0&&<div className="empty">{t('av.pl.noExams')}</div>}
     {state.exams.filter(e=>e.done).length>0&&<details style={{marginBottom:16}}><summary style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",cursor:"pointer",padding:"8px 0"}}>{t('av.pl.completedExams',{count:state.exams.filter(e=>e.done).length})}</summary>{state.exams.filter(e=>e.done).map(e=><ExamCard key={e.id} exam={e} courses={state.courses} dispatch={dispatch}/>)}</details>}
+    </>}
     <div className="divider"/>
-    <div className="section-label">{t('av.pl.courses')}<button className="btn btn-sm" onClick={onAddCourse}>{t('av.pl.add')}</button></div>
+    <PlanSectionHead id="courses" label={t('av.pl.courses')} open={!collapsed.courses} onToggle={toggleSection}>
+      <button className="btn btn-sm" onClick={onAddCourse}>{t('av.pl.add')}</button>
+    </PlanSectionHead>
+    {!collapsed.courses && <>
     {courses.length===0&&<div className="empty">{t('av.pl.noCourses')}</div>}
     <div className="home-grid">
-      {courses.map(c=>{const openA=state.assignments.filter(a=>a.courseId===c.id&&!a.done);const openE=state.exams.filter(e=>e.courseId===c.id&&!e.done);const isOpen=!!expandedCourse[c.id];const nextA=openA.filter(a=>a.dueDate).sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate))[0];const nextE=[...openE].sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate))[0];const hasUrgent=openA.some(a=>{const d=daysUntil(a.dueDate);return d!==null&&d<=2;})||openE.some(e=>{const d=daysUntil(e.dueDate);return d!==null&&d<=5;});return <div key={c.id} className="course-card" style={{borderInlineStartColor:c.color}}><div role="button" tabIndex={0} className="course-card-compact" onClick={()=>setExpandedCourse(x=>({...x,[c.id]:!x[c.id]}))} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&setExpandedCourse(x=>({...x,[c.id]:!x[c.id]}))}><div className="course-card-left"><div className="course-card-name">{c.name}</div><div className="course-card-pills">{openA.length>0&&<span className={"course-card-pill"+(hasUrgent?" urgent":"")}>{t('av.pl.due',{count:openA.length})}</span>}{openE.length>0&&<span className="course-card-pill" style={{background:"rgba(109,63,160,0.08)",color:"#6d3fa0",borderColor:"rgba(109,63,160,0.18)"}}>{t('av.pl.exam',{count:openE.length})}</span>}{openA.length===0&&openE.length===0&&<span className="course-card-pill" style={{color:"#2e7d52",borderColor:"rgba(46,125,82,0.2)"}}>{t('av.pl.clear')}</span>}</div></div><span className={"course-card-chevron"+(isOpen?" open":"")}>▶</span></div>{isOpen&&<div className="course-card-detail"><div className="course-card-next">{nextE&&<div style={{color:"#6d3fa0",marginBottom:5,fontFamily:"var(--font-mono)",fontSize:11}}>📝 <strong>{nextE.title}</strong> — {urgencyLabel(daysUntil(nextE.dueDate),t)}</div>}{nextA&&<div style={{marginBottom:5}}>{t('av.pl.next')} <strong>{nextA.title}</strong><span style={{color:urgencyColor(daysUntil(nextA.dueDate)),marginLeft:6,fontFamily:"var(--font-mono)",fontSize:11}}>{urgencyLabel(daysUntil(nextA.dueDate),t)}</span></div>}{!nextA&&!nextE&&<span style={{color:"var(--muted2)",fontFamily:"var(--font-mono)",fontSize:11}}>{t('av.pl.nothingDue')}</span>}</div><div className="course-card-actions"><button className="btn-outline btn-sm" onClick={()=>onEditCourse({id:c.id,name:c.name,color:c.color})}>{t('av.pl.edit')}</button></div></div>}</div>;})}
+      {courses.map(c=>{const openA=state.assignments.filter(a=>a.courseId===c.id&&!a.done);const openE=state.exams.filter(e=>e.courseId===c.id&&!e.done);const isOpen=!!expandedCourse[c.id];const dueA=openA.filter(a=>countsAsDue(daysUntil(a.dueDate),a.type,dueWindow));const nextA=openA.filter(a=>a.dueDate).sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate))[0];const nextE=[...openE].sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate))[0];const hasUrgent=openA.some(a=>{const d=daysUntil(a.dueDate);return d!==null&&d<=2;})||openE.some(e=>{const d=daysUntil(e.dueDate);return d!==null&&d<=5;});return <div key={c.id} className="course-card" style={{borderInlineStartColor:c.color}}><div role="button" tabIndex={0} className="course-card-compact" onClick={()=>setExpandedCourse(x=>({...x,[c.id]:!x[c.id]}))} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&setExpandedCourse(x=>({...x,[c.id]:!x[c.id]}))}><div className="course-card-left"><div className="course-card-name">{c.name}</div><div className="course-card-pills">{dueA.length>0&&<span className={"course-card-pill"+(hasUrgent?" urgent":"")} title={t('av.pl.dueTitle',{due:dueA.length,open:openA.length})}>{t('av.pl.due',{count:dueA.length})}</span>}{dueA.length===0&&openA.length>0&&<span className="course-card-pill" title={t('av.pl.openTitle',{count:openA.length})}>{t('av.pl.open',{count:openA.length})}</span>}{openE.length>0&&<span className="course-card-pill" style={{background:"rgba(109,63,160,0.08)",color:"#6d3fa0",borderColor:"rgba(109,63,160,0.18)"}}>{t('av.pl.exam',{count:openE.length})}</span>}{openA.length===0&&openE.length===0&&<span className="course-card-pill" style={{color:"#2e7d52",borderColor:"rgba(46,125,82,0.2)"}}>{t('av.pl.clear')}</span>}</div></div><span className={"course-card-chevron"+(isOpen?" open":"")}>▶</span></div>{isOpen&&<div className="course-card-detail"><div className="course-card-next">{nextE&&<div style={{color:"#6d3fa0",marginBottom:5,fontFamily:"var(--font-mono)",fontSize:11}}>📝 <strong>{nextE.title}</strong> — {urgencyLabel(daysUntil(nextE.dueDate),t)}</div>}{nextA&&<div style={{marginBottom:5}}>{t('av.pl.next')} <strong>{nextA.title}</strong><span style={{color:urgencyColor(daysUntil(nextA.dueDate)),marginLeft:6,fontFamily:"var(--font-mono)",fontSize:11}}>{urgencyLabel(daysUntil(nextA.dueDate),t)}</span></div>}{!nextA&&!nextE&&<span style={{color:"var(--muted2)",fontFamily:"var(--font-mono)",fontSize:11}}>{t('av.pl.nothingDue')}</span>}</div><div className="course-card-actions"><button className="btn-outline btn-sm" onClick={()=>onEditCourse({id:c.id,name:c.name,color:c.color})}>{t('av.pl.edit')}</button></div></div>}</div>;})}
     </div>
+    </>}
   </div>;
 }
 
@@ -2704,7 +2844,7 @@ function ExamCard({ exam, courses, dispatch }) {
 }
 
 // ── ActionsView — Next Up ─────────────────────────────────────────────────────
-function ActionsView({ state, dispatch, showFlash, onAddCourse }) {
+function ActionsView({ state, dispatch, showFlash, onAddCourse, onFirstStep }) {
   const { t, i18n } = useTranslation();
   const currentLang = (i18n.language || "en").split("-")[0];
   const langRef = useScrollSelectedIntoView();
@@ -2809,6 +2949,13 @@ function ActionsView({ state, dispatch, showFlash, onAddCourse }) {
   // This week / Later are a natural three-column read, and stacking them is
   // what made this screen a long thin ribbon in a 1600px window.
   return <div className="sd-page-actions sd-bucket-tile">
+    {/* v1.14 — the funnel gap. Above the buckets rather than below them: a
+        suggestion under a screenful of content is a suggestion nobody sees,
+        and this one self-hides the moment it stops applying. It renders only
+        here, on the landing view, because the two empty states above already
+        carry their own prompt and stacking a second would be the wizard this
+        deliberately is not. */}
+    <FirstSteps state={state} onGo={onFirstStep}/>
     {BUCKETS.map(bucket=>{
       const items=allActions.filter(a=>a.bucket===bucket);
       if(items.length===0) return null;

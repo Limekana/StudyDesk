@@ -1538,3 +1538,873 @@ check('the hash notices any edit, including a reordering', () => {
   assert.notEqual(h(''), h('x'));
   assert.equal(h('same'), h('same'), 'stable');
 });
+
+// ── dueWindow.js — what the course badge calls "due" (v1.14 Item 4, #51) ──
+//
+//   > "if you have put in all your assignments for the semester it says you
+//      have like 20 assignments due which looks kind of alarming"
+//
+// The badge counted every open assignment that had a date at all and then
+// painted itself red. The number was right; the word was not. These assertions
+// pin the two rules that make the new count defensible rather than merely
+// smaller — overdue work is NEVER dropped from the count, and an item nobody
+// has given a date is not due — because both are the kind of thing a later
+// "simplification" quietly loses.
+const dueWindow = await import('../src/lib/dueWindow.js');
+
+check('a fixed horizon counts up to and including its last day', () => {
+  assert.equal(dueWindow.countsAsDue(0, 'Essay', 7), true, 'today');
+  assert.equal(dueWindow.countsAsDue(7, 'Essay', 7), true, 'the boundary itself');
+  assert.equal(dueWindow.countsAsDue(8, 'Essay', 7), false);
+});
+
+check('overdue always counts, at every setting', () => {
+  for (const w of dueWindow.DUE_WINDOW_CHOICES) {
+    assert.equal(dueWindow.countsAsDue(-1, 'Reading', w), true, `window ${w}`);
+    assert.equal(dueWindow.countsAsDue(-90, 'Essay', w), true, `window ${w}`);
+  }
+});
+
+check('an item with no due date is not due — it was counted before', () => {
+  for (const w of dueWindow.DUE_WINDOW_CHOICES) {
+    assert.equal(dueWindow.countsAsDue(null, 'Essay', w), false, `window ${w}`);
+    assert.equal(dueWindow.countsAsDue(undefined, 'Essay', w), false, `window ${w}`);
+  }
+});
+
+check('"by type" gives readings a shorter horizon than everything else', () => {
+  assert.equal(dueWindow.horizonFor('Reading', 'smart'), 3);
+  assert.equal(dueWindow.horizonFor('Essay', 'smart'), 14);
+  assert.equal(dueWindow.horizonFor('Project', 'smart'), 14);
+  // Free-text types come from the "Other" field, so the default has to catch
+  // anything at all, including a name that collides with an Object prototype
+  // key — `hasOwnProperty` rather than a bare lookup is what makes that true.
+  assert.equal(dueWindow.horizonFor('Väitöskirja', 'smart'), 14);
+  assert.equal(dueWindow.horizonFor('constructor', 'smart'), 14);
+  assert.equal(dueWindow.horizonFor(undefined, 'smart'), 14);
+  assert.equal(dueWindow.countsAsDue(5, 'Reading', 'smart'), false);
+  assert.equal(dueWindow.countsAsDue(5, 'Essay', 'smart'), true);
+});
+
+check('"everything" is the behaviour this item changed, kept reachable', () => {
+  assert.equal(dueWindow.horizonFor('Reading', 'all'), Infinity);
+  assert.equal(dueWindow.countsAsDue(3650, 'Reading', 'all'), true);
+  // Still not "everything open" — a dateless item has no due date to be past.
+  assert.equal(dueWindow.countsAsDue(null, 'Reading', 'all'), false);
+});
+
+check('a junk stored preference falls back, it does not blank the badge', () => {
+  const store = makeStorage();
+  globalThis.localStorage = store.store;
+  store.store.setItem('studydesk-due-window', 'banana');
+  assert.equal(dueWindow.preferredDueWindow(), dueWindow.DEFAULT_DUE_WINDOW);
+  store.store.setItem('studydesk-due-window', '9999');
+  assert.equal(dueWindow.preferredDueWindow(), dueWindow.DEFAULT_DUE_WINDOW);
+  // A number survives the string round trip localStorage forces on it.
+  dueWindow.setPreferredDueWindow(14);
+  assert.equal(dueWindow.preferredDueWindow(), 14);
+  dueWindow.setPreferredDueWindow('all');
+  assert.equal(dueWindow.preferredDueWindow(), 'all');
+  // The default writes nothing, so the key only exists for people who chose.
+  dueWindow.setPreferredDueWindow('smart');
+  assert.equal(store.store.getItem('studydesk-due-window'), null);
+});
+
+// ── planSections.js — which Plan sections are folded (v1.14 Item 3, #51) ──
+//
+// A view preference, so the only behaviour worth pinning is what happens when
+// the stored value is absent or wrong: every section must come back OPEN,
+// because a fold nobody asked for looks exactly like a tab that lost its data.
+const planSections = await import('../src/lib/planSections.js');
+
+check('nothing folds itself — an absent or corrupt value reads as all open', () => {
+  const store = makeStorage();
+  globalThis.localStorage = store.store;
+  for (const raw of [null, '', 'not json', '[]', '"assignments"', '{"assignments":"yes"}']) {
+    if (raw === null) store.store.removeItem('studydesk-plan-collapsed');
+    else store.store.setItem('studydesk-plan-collapsed', raw);
+    const state = planSections.readCollapsed();
+    for (const id of planSections.PLAN_SECTIONS) {
+      assert.equal(state[id], false, `${id} after ${JSON.stringify(raw)}`);
+    }
+  }
+});
+
+check('a fold round-trips, and unfolding everything removes the key', () => {
+  const store = makeStorage();
+  globalThis.localStorage = store.store;
+  planSections.writeCollapsed({ assignments: false, exams: true, courses: false });
+  assert.deepEqual(planSections.readCollapsed(), { assignments: false, exams: true, courses: false });
+  planSections.writeCollapsed({ assignments: false, exams: false, courses: false });
+  assert.equal(store.store.getItem('studydesk-plan-collapsed'), null);
+});
+
+// ── dueAt.js — a deadline has a time now (v1.14 Item 5, #51) ─────────────
+//
+// Three things here are load-bearing and none of them is the feature itself.
+//
+// 1. An untimed assignment is END OF its day, not the start of it. Every one
+//    of the 317 live assignment rows is untimed, so getting this backwards
+//    would resort every existing list the first time anyone typed a 09:00.
+// 2. The sort key is a STRING. `new Date('2026-09-14')` is UTC midnight and
+//    `new Date('2026-09-14T09:00')` is LOCAL — mixing timed and untimed items
+//    through the Date constructor sorts them on two different clocks, and the
+//    TZ switching below is what makes that visible on a UTC CI runner.
+// 3. The due-day reminder may move EARLIER but never later, and never lands
+//    on the day before.
+const dueAt = await import('../src/lib/dueAt.js');
+
+check('a Postgres time, an input value and junk all normalise to HH:MM', () => {
+  assert.equal(dueAt.normalizeDueTime('09:00:00'), '09:00', 'the column shape');
+  assert.equal(dueAt.normalizeDueTime('09:00'), '09:00', 'the input shape');
+  assert.equal(dueAt.normalizeDueTime('9:05'), '09:05', 'unpadded');
+  assert.equal(dueAt.normalizeDueTime(''), '');
+  assert.equal(dueAt.normalizeDueTime(null), '');
+  assert.equal(dueAt.normalizeDueTime(undefined), '', 'the column not existing yet');
+  assert.equal(dueAt.normalizeDueTime('banana'), '');
+  assert.equal(dueAt.normalizeDueTime('99:99'), '');
+  // Postgres accepts 24:00 in a `time`; there is no such reading on a clock,
+  // so it reads as "no time given" — which already sorts at end of day, which
+  // is what 24:00 meant. Nothing in the app writes one.
+  assert.equal(dueAt.normalizeDueTime('24:00:00'), '');
+  assert.equal(dueAt.dueSortKey('2026-09-14', '24:00:00'), `2026-09-14T${dueAt.END_OF_DAY}`);
+  assert.equal(dueAt.dueTimeToSql('09:00'), '09:00:00');
+  assert.equal(dueAt.dueTimeToSql(''), null, 'a `time` column rejects the empty string');
+});
+
+check('an untimed assignment is the END of its day, never the start', () => {
+  assert.equal(dueAt.dueSortKey('2026-09-14', ''), '2026-09-14T23:59');
+  assert.equal(dueAt.dueSortKey('2026-09-14', '09:00'), '2026-09-14T09:00');
+  // The whole point: 09:00 comes FIRST on the same day.
+  assert.ok(dueAt.dueSortKey('2026-09-14', '09:00') < dueAt.dueSortKey('2026-09-14', ''));
+  // Undated last, as the "9999-12-31" fallback it replaces did.
+  assert.ok(dueAt.dueSortKey('', '') > dueAt.dueSortKey('2099-01-01', '23:59'));
+});
+
+check('the sort is timezone-independent, timed and untimed items together', () => {
+  const items = [
+    { id: 'none' },
+    { id: 'fri-late', dueDate: '2026-09-18', dueTime: '17:00' },
+    { id: 'fri-none', dueDate: '2026-09-18' },
+    { id: 'fri-9am', dueDate: '2026-09-18', dueTime: '09:00' },
+    { id: 'thu', dueDate: '2026-09-17', dueTime: '23:30' },
+  ];
+  const expected = ['thu', 'fri-9am', 'fri-late', 'fri-none', 'none'];
+  for (const tz of ['UTC', 'America/Los_Angeles', 'Asia/Tokyo', 'Pacific/Kiritimati']) {
+    inTimezone(tz, () => {
+      assert.deepEqual([...items].sort(dueAt.byDueAsc).map((x) => x.id), expected, tz);
+    });
+  }
+});
+
+check('descending keeps undated LAST too, rather than floating it to the top', () => {
+  const items = [
+    { id: 'none' },
+    { id: 'old', dueDate: '2026-01-05' },
+    { id: 'new', dueDate: '2026-09-18', dueTime: '09:00' },
+  ];
+  assert.deepEqual([...items].sort(dueAt.byDueDesc).map((x) => x.id), ['new', 'old', 'none']);
+});
+
+check('the deadline instant is local, not UTC', () => {
+  inTimezone('America/Los_Angeles', () => {
+    const d = dueAt.dueMoment('2026-09-18', '09:00');
+    assert.equal(d.getFullYear(), 2026);
+    assert.equal(d.getMonth(), 8);
+    assert.equal(d.getDate(), 18, 'the 18th in Los Angeles, not the 17th');
+    assert.equal(d.getHours(), 9);
+  });
+  assert.equal(dueAt.dueMoment('', '09:00'), null);
+  assert.equal(dueAt.dueMoment(null, null), null);
+  // No time means the end of the day, the same rule the sort key uses.
+  const untimed = dueAt.dueMoment('2026-09-18', '');
+  assert.equal(untimed.getHours(), 23);
+  assert.equal(untimed.getMinutes(), 59);
+});
+
+check('the due-day reminder moves earlier when it must, and never later', () => {
+  const at = (date, time) => dueAt.dueDayReminderAt(date, time);
+  // Untimed: unchanged from before this item — 9am.
+  const untimed = at('2026-09-18', '');
+  assert.equal(untimed.getHours(), 9);
+  assert.equal(untimed.getMinutes(), 0);
+  // An evening deadline keeps 9am; moving it later would be a regression.
+  assert.equal(at('2026-09-18', '17:00').getHours(), 9);
+  assert.equal(at('2026-09-18', '10:00').getHours(), 9, 'exactly an hour after 9 still gets 9');
+  // An early deadline pulls it forward to an hour before.
+  const early = at('2026-09-18', '08:00');
+  assert.equal(early.getHours(), 7);
+  assert.equal(early.getDate(), 18, 'still the due day');
+  // Too early to warn on the day at all — the 6pm day-before reminder has it.
+  assert.equal(at('2026-09-18', '00:30'), null);
+  assert.equal(at('2026-09-18', '00:00'), null);
+  // 01:00 is the boundary: an hour before is exactly midnight, which is still
+  // the due day, so the reminder fires rather than being dropped. Anything
+  // earlier than 01:00 pushes it into yesterday and is dropped.
+  const boundary = at('2026-09-18', '01:00');
+  assert.equal(boundary.getDate(), 18);
+  assert.equal(boundary.getHours(), 0);
+  assert.equal(boundary.getMinutes(), 0);
+  assert.equal(at('2026-09-18', '00:59'), null, 'one minute earlier lands yesterday');
+  assert.equal(at('', '09:00'), null);
+});
+
+// ── widget/glance.js — the one assignment the widget leads with ───────────
+//
+// The widget has room for exactly one, so its tie-break is the whole feature.
+// Before due times existed, two things due the same day were a genuine tie and
+// the name decided; now one of them may carry a time the user typed and the
+// other may not, and the untimed one must not win on alphabetical order.
+const glance = await import('../src/widget/glance.js');
+
+check('the widget leads with the soonest deadline, not the soonest day', () => {
+  const courses = {};
+  const pick = (assignments) => glance.nextDue({ assignments, courses }, '2026-09-18')?.title;
+
+  assert.equal(pick([
+    { id: '1', title: 'Zebra', dueDate: '2026-09-18', dueTime: '09:00' },
+    { id: '2', title: 'Apple', dueDate: '2026-09-18' },
+  ]), 'Zebra', 'a typed 09:00 beats an untimed one, alphabet notwithstanding');
+
+  assert.equal(pick([
+    { id: '1', title: 'Later', dueDate: '2026-09-18', dueTime: '17:00' },
+    { id: '2', title: 'Earlier', dueDate: '2026-09-18', dueTime: '08:00' },
+  ]), 'Earlier');
+
+  // An earlier DAY still wins outright, however late in it.
+  assert.equal(pick([
+    { id: '1', title: 'Tomorrow 8am', dueDate: '2026-09-19', dueTime: '08:00' },
+    { id: '2', title: 'Tonight', dueDate: '2026-09-18', dueTime: '23:30' },
+  ]), 'Tonight');
+
+  // Same instant: the name decides, as it always did, so the widget does not
+  // reshuffle between polls.
+  assert.equal(pick([
+    { id: '1', title: 'Beta', dueDate: '2026-09-18', dueTime: '09:00' },
+    { id: '2', title: 'Alpha', dueDate: '2026-09-18', dueTime: '09:00' },
+  ]), 'Alpha');
+
+  // Overdue still outranks everything — unchanged by this item.
+  assert.equal(pick([
+    { id: '1', title: 'Today 8am', dueDate: '2026-09-18', dueTime: '08:00' },
+    { id: '2', title: 'Missed', dueDate: '2026-09-15' },
+  ]), 'Missed');
+});
+
+// ── commitments.js — blockers every N weeks (v1.14 Item 7b, #51) ─────────
+//
+//   > "I also have obligations that are every 2 weeks, and the blockers can
+//      only be weekly."
+//
+// The phase is the whole risk here. "Every other Thursday from the 15th" where
+// the 15th is a TUESDAY means the 17th and the 31st, and counting from the
+// 15th instead picks the 24th — the wrong Thursdays, silently, forever. The
+// other risk is the safe-direction rule: anything unreadable must show the
+// blocker, because a student who plans study into a training session is worse
+// off than one who sees a blocker on a free week.
+const commitments = await import('../src/lib/commitments.js');
+
+const THU = 4;
+const weekdayOf = (iso) => {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).getDay();
+};
+const on = (c, iso) => commitments.occursOn(c, iso, weekdayOf(iso));
+
+check('an absent, junk or 1 interval all mean every week', () => {
+  for (const v of [undefined, null, '', 0, 1, -3, NaN, 'banana']) {
+    assert.equal(commitments.intervalWeeks({ intervalWeeks: v }), 1, String(v));
+  }
+  assert.equal(commitments.intervalWeeks({ intervalWeeks: 2 }), 2);
+  assert.equal(commitments.intervalWeeks({ intervalWeeks: '3' }), 3);
+  // Clamped, not rejected: a hand-edited 99 behaves like the longest interval
+  // the app can express rather than vanishing from the calendar.
+  assert.equal(commitments.intervalWeeks({ intervalWeeks: 99 }), 4);
+});
+
+check('the series is anchored to the first occurrence, not the start date', () => {
+  // 2026-09-15 is a Tuesday. A Thursday commitment starting then first occurs
+  // on the 17th — counting from the 15th would pick the 24th.
+  const c = { weekday: THU, startsOn: '2026-09-15', intervalWeeks: 2 };
+  assert.equal(commitments.firstOccurrence(c), '2026-09-17');
+  assert.equal(on(c, '2026-09-17'), true, 'first');
+  assert.equal(on(c, '2026-09-24'), false, 'the week in between');
+  assert.equal(on(c, '2026-10-01'), true, 'second');
+  assert.equal(on(c, '2026-10-08'), false);
+  assert.equal(on(c, '2026-10-15'), true, 'third');
+  // A start date already on the weekday anchors to itself.
+  assert.equal(commitments.firstOccurrence({ weekday: THU, startsOn: '2026-09-17' }), '2026-09-17');
+});
+
+check('every week is unchanged, and one-offs are untouched by any of this', () => {
+  const weekly = { weekday: THU, startsOn: '2026-09-17' };
+  for (const iso of ['2026-09-17', '2026-09-24', '2026-10-01', '2026-10-08']) {
+    assert.equal(on(weekly, iso), true, iso);
+  }
+  const once = { weekday: null, startsOn: '2026-09-17', intervalWeeks: 3 };
+  assert.equal(on(once, '2026-09-17'), true);
+  assert.equal(on(once, '2026-09-24'), false);
+});
+
+check('an interval does not override the start and end dates', () => {
+  const c = { weekday: THU, startsOn: '2026-09-17', endsOn: '2026-10-01', intervalWeeks: 2 };
+  assert.equal(on(c, '2026-09-10'), false, 'before it starts');
+  assert.equal(on(c, '2026-09-17'), true);
+  assert.equal(on(c, '2026-10-01'), true, 'the end date itself is included');
+  assert.equal(on(c, '2026-10-15'), false, 'after it ends');
+});
+
+check('a fortnightly blocker keeps its phase across a DST transition', () => {
+  // Europe's clocks go back on 2026-10-25 and America's on 2026-11-01. An
+  // interval computed by dividing raw timestamps drifts by an hour there,
+  // which is enough to land a boundary on the wrong side and skip a week.
+  const c = { weekday: THU, startsOn: '2026-10-15', intervalWeeks: 2 };
+  const expected = [
+    ['2026-10-15', true], ['2026-10-22', false],
+    ['2026-10-29', true], ['2026-11-05', false],
+    ['2026-11-12', true], ['2026-11-19', false],
+    ['2026-11-26', true],
+  ];
+  for (const tz of ['UTC', 'Europe/Helsinki', 'America/Los_Angeles']) {
+    inTimezone(tz, () => {
+      for (const [iso, want] of expected) assert.equal(on(c, iso), want, `${tz} ${iso}`);
+    });
+  }
+});
+
+check('an unreadable row shows the blocker rather than hiding it', () => {
+  // A date that cannot be parsed must not silently remove a training session
+  // from the week the student is planning around.
+  // A start date that sorts before the day being asked about (so the existing
+  // string guard lets it through) but does not parse into a real date.
+  assert.equal(on({ weekday: THU, startsOn: '0000-xx-xx', intervalWeeks: 2 }, '2026-10-15'), true);
+  assert.equal(commitments.firstOccurrence({ weekday: THU, startsOn: '0000-xx-xx' }), null);
+  assert.equal(commitments.firstOccurrence({ weekday: THU, startsOn: '' }), null);
+  assert.equal(commitments.occursOn(null, '2026-10-15', THU), false);
+});
+
+// ── gradeWeight.js — what the Weight field means (v1.14 Item 8b, #51) ────
+//
+//   > "the weight thing is a bit confusing, I don't know if I should put 0.35
+//      for something worth 35% of the grade or what"
+//
+// Storage does not change: `weight` stays the multiplicative factor and no
+// existing average moves. What is asserted here is the two rules that make
+// the conversion layer safe to put in front of it — round-tripping a value
+// through a mode change must not alter it, and the share readout must give
+// the same answer whatever units the course's weights happen to be in, since
+// that is the claim the whole control rests on.
+const gradeWeight = await import('../src/lib/gradeWeight.js');
+
+check('a weight round-trips through every entry mode unchanged', () => {
+  for (const factor of [0, 0.1, 0.35, 1, 2.5, 35, 100]) {
+    for (const mode of gradeWeight.WEIGHT_MODES) {
+      const shown = gradeWeight.fromFactor(mode, factor, 100);
+      assert.equal(gradeWeight.toFactor(mode, shown, 100), factor, `${mode} ${factor}`);
+    }
+  }
+  // The float noise this exists to hide: 0.35 * 100 is 35.000000000000004.
+  assert.equal(gradeWeight.fromFactor('percent', 0.35), 35);
+  assert.equal(gradeWeight.toFactor('percent', 35), 0.35);
+});
+
+check('each mode converts the way the user means it', () => {
+  assert.equal(gradeWeight.toFactor('factor', '0.35'), 0.35, 'unchanged behaviour');
+  assert.equal(gradeWeight.toFactor('percent', '35'), 0.35);
+  assert.equal(gradeWeight.toFactor('points', '10', 100), 0.1);
+  assert.equal(gradeWeight.toFactor('points', '30', 60), 0.5, 'a course out of 60');
+});
+
+check('an unusable weight is reported, not quietly turned into 1', () => {
+  for (const bad of ['', 'banana', -1, NaN, null, undefined]) {
+    assert.equal(gradeWeight.toFactor('factor', bad), null, String(bad));
+  }
+  // Dividing by a zero-point course would store Infinity in a numeric column.
+  assert.equal(gradeWeight.toFactor('points', '10', 0), null);
+  assert.equal(gradeWeight.toFactor('points', '10', -5), null);
+  assert.equal(gradeWeight.toFactor('points', '10', 'x'), null);
+  assert.equal(gradeWeight.fromFactor('points', 0.1, 0), null);
+});
+
+check('the share of a course reads the same in any units', () => {
+  const asShares = (ws) => ws.map((w) => gradeWeight.shareOfCourse(w, ws));
+  // 35 / 30 / 35 and 0.35 / 0.30 / 0.35 are the same course, which is exactly
+  // why the raw weight was ambiguous and the share is not.
+  assert.deepEqual(asShares([35, 30, 35]), [0.35, 0.3, 0.35]);
+  assert.deepEqual(asShares([0.35, 0.3, 0.35]), [0.35, 0.3, 0.35]);
+  assert.deepEqual(asShares([7, 6, 7]), [0.35, 0.3, 0.35]);
+  // A course carrying no weight has no shares in it — undefined, not zero.
+  assert.equal(gradeWeight.shareOfCourse(0, [0, 0]), null);
+  assert.equal(gradeWeight.shareOfCourse(1, []), null);
+  assert.equal(gradeWeight.shareOfCourse('x', [1]), null);
+  // Junk among the siblings is skipped rather than poisoning the sum.
+  assert.equal(gradeWeight.shareOfCourse(1, [1, 'x', null, 1]), 0.5);
+});
+
+check('the entry mode is remembered, and the default writes nothing', () => {
+  const store = makeStorage();
+  globalThis.localStorage = store.store;
+  assert.equal(gradeWeight.preferredWeightMode(), gradeWeight.DEFAULT_WEIGHT_MODE);
+  gradeWeight.setPreferredWeightMode('percent');
+  assert.equal(gradeWeight.preferredWeightMode(), 'percent');
+  store.store.setItem('studydesk-weight-mode', 'banana');
+  assert.equal(gradeWeight.preferredWeightMode(), gradeWeight.DEFAULT_WEIGHT_MODE, 'junk falls back');
+  gradeWeight.setPreferredWeightMode('factor');
+  assert.equal(store.store.getItem('studydesk-weight-mode'), null, 'the default stores nothing');
+});
+
+// ── timetable.js flattenTerms — the scope picker's list (v1.14 Item 6b) ──
+//
+//   > "there's no way to move a lesson between the year, the semester and the
+//      jakso without deleting it and typing it in again"
+//
+// The move itself is a foreign key edit; what needed building was a way to
+// SEE the tree as one list. Ordering is the thing worth pinning — a jakso is
+// ordinal, so `position` decides, and a parent must appear above its children
+// or the indentation lies about the structure.
+const ttFlat = await import('../src/lib/timetable.js');
+
+check('the term tree flattens depth-first, parents above their children', () => {
+  const terms = [
+    { id: 'y1', parentId: null, name: '2026-27', position: 0 },
+    { id: 's2', parentId: 'y1', name: 'Spring', position: 1 },
+    { id: 's1', parentId: 'y1', name: 'Autumn', position: 0 },
+    { id: 'j2', parentId: 's1', name: 'Jakso 2', position: 1 },
+    { id: 'j1', parentId: 's1', name: 'Jakso 1', position: 0 },
+    { id: 'y0', parentId: null, name: '2025-26', position: 1 },
+  ];
+  assert.deepEqual(
+    ttFlat.flattenTerms(terms).map(({ term, depth }) => `${depth}:${term.id}`),
+    ['0:y1', '1:s1', '2:j1', '2:j2', '1:s2', '0:y0'],
+  );
+});
+
+check('a deleted term is not offered as somewhere to move a lesson', () => {
+  const terms = [
+    { id: 'y1', parentId: null, name: 'Year', position: 0 },
+    { id: 'gone', parentId: 'y1', name: 'Deleted', position: 0, deletedAt: '2026-01-01T00:00:00Z' },
+    { id: 's1', parentId: 'y1', name: 'Autumn', position: 1 },
+  ];
+  assert.deepEqual(ttFlat.flattenTerms(terms).map(({ term }) => term.id), ['y1', 's1']);
+});
+
+check('a cyclic parent chain terminates instead of hanging the picker', () => {
+  // Not reachable through the UI, but a corrupt pull must not spin forever in
+  // a render path — the tree is three levels by design.
+  const terms = [
+    { id: 'a', parentId: 'b', name: 'A', position: 0 },
+    { id: 'b', parentId: 'a', name: 'B', position: 0 },
+  ];
+  const flat = ttFlat.flattenTerms(terms);
+  assert.ok(Array.isArray(flat));
+  assert.ok(flat.length < 100, `bounded, got ${flat.length}`);
+});
+
+// ── timetable.js planSeriesWrite — a lesson on several weekdays (Item 6a) ─
+//
+//   > "there's no way to say this is the same course, just also on Wednesday"
+//
+// `weekday` stays one smallint per row; a nullable `series_id` says which rows
+// belong together. All the risk is in the reconcile, and all of it is the same
+// risk: `lesson_attendance` is keyed on the ENTRY id, so a row that loses its
+// id loses its attendance history. These assertions exist to pin that ids are
+// matched on the WEEKDAY and never positionally — the failure mode of a
+// positional diff is silent and moves one day's attendance onto another.
+const ttSeries = await import('../src/lib/timetable.js');
+
+let seq = 0;
+const nextId = () => `new-${++seq}`;
+const plan = (existing, weekdays, base = {}) => {
+  seq = 0;
+  return ttSeries.planSeriesWrite({ existing, seriesId: 'S', weekdays, base, newId: nextId });
+};
+const entry = (id, weekday, extra = {}) => ({ id, weekday, seriesId: 'S', ...extra });
+
+check('adding a day keeps the id of every existing row', () => {
+  const { upserts, deleteIds } = plan([entry('mon', 1)], [1, 3]);
+  assert.deepEqual(upserts.map((u) => [u.weekday, u.id]), [[1, 'mon'], [3, 'new-1']]);
+  assert.deepEqual(deleteIds, []);
+});
+
+check('a day added in the MIDDLE does not shuffle ids down the list', () => {
+  // The positional-diff failure, stated as a test. Mon and Fri exist; the user
+  // adds Wednesday. A positional match would hand Wednesday the Friday row's
+  // id and mint a new one for Friday — moving Friday's attendance to Wednesday
+  // and losing it for Friday, with nothing on screen to say so.
+  const { upserts, deleteIds } = plan([entry('mon', 1), entry('fri', 5)], [1, 3, 5]);
+  assert.deepEqual(upserts.map((u) => [u.weekday, u.id]), [[1, 'mon'], [3, 'new-1'], [5, 'fri']]);
+  assert.deepEqual(deleteIds, []);
+});
+
+check('removing a day deletes that day and leaves the others alone', () => {
+  const { upserts, deleteIds } = plan([entry('mon', 1), entry('wed', 3), entry('fri', 5)], [1, 5]);
+  assert.deepEqual(upserts.map((u) => [u.weekday, u.id]), [[1, 'mon'], [5, 'fri']]);
+  assert.deepEqual(deleteIds, ['wed']);
+});
+
+check('every day carries the shared fields, and only the weekday differs', () => {
+  const base = { termId: 'T1', subjectId: 'C1', startsAt: '08:15:00', endsAt: '09:45:00', weekParity: 2 };
+  const { upserts } = plan([], [1, 3], base);
+  for (const u of upserts) {
+    assert.equal(u.termId, 'T1');
+    assert.equal(u.startsAt, '08:15:00');
+    assert.equal(u.weekParity, 2, 'parity is a property of the lesson, not of one day');
+    assert.equal(u.seriesId, 'S');
+  }
+  assert.deepEqual(upserts.map((u) => u.weekday), [1, 3]);
+});
+
+check('saving with no days selected writes nothing at all', () => {
+  // Not "deletes the series". Save is not a delete, and planSeriesWrite is not
+  // the only possible caller of itself, so it refuses rather than trusting the
+  // form's validation to be the only guard.
+  const { upserts, deleteIds } = plan([entry('mon', 1), entry('wed', 3)], []);
+  assert.deepEqual(upserts, []);
+  assert.deepEqual(deleteIds, []);
+});
+
+check('junk weekdays are dropped and duplicates collapse', () => {
+  // `null` and `''` are the ones that matter: `Number` turns both into 0,
+  // which is Sunday, so a missing value would become a real lesson on a real
+  // day. Sunday is a legitimate answer when someone actually picks it.
+  const { upserts } = plan([], [3, 3, 1, 9, -1, null, undefined, '', 'x', 2.5]);
+  assert.deepEqual(upserts.map((u) => u.weekday), [1, 3], 'sorted, unique, 0-6 only');
+  assert.deepEqual(plan([], [0]).upserts.map((u) => u.weekday), [0], 'a chosen Sunday survives');
+});
+
+check('a duplicate row on one weekday is resolved, not left orphaned', () => {
+  // Not reachable through the editor, but a bad merge could deliver it. One
+  // row is kept and the other is deleted — leaving it would put two lessons on
+  // the same day in the grid with no way to reach the second.
+  const { upserts, deleteIds } = plan([entry('a', 1), entry('b', 1)], [1]);
+  assert.deepEqual(upserts.map((u) => u.id), ['a']);
+  assert.deepEqual(deleteIds, ['b']);
+});
+
+check('soft-deleted rows are not resurrected by a save', () => {
+  const { upserts, deleteIds } = plan(
+    [entry('mon', 1), entry('gone', 3, { deletedAt: '2026-01-01T00:00:00Z' })],
+    [1, 3],
+  );
+  assert.deepEqual(upserts.map((u) => [u.weekday, u.id]), [[1, 'mon'], [3, 'new-1']]);
+  assert.deepEqual(deleteIds, [], 'already gone, not deleted again');
+});
+
+check('an ungrouped lesson is not a series of every ungrouped lesson', () => {
+  const entries = [
+    { id: 'a', weekday: 1, seriesId: null },
+    { id: 'b', weekday: 2 },
+    { id: 'c', weekday: 3, seriesId: 'S' },
+  ];
+  assert.deepEqual(ttSeries.entriesInSeries(entries, null).map((e) => e.id), []);
+  assert.deepEqual(ttSeries.entriesInSeries(entries, undefined).map((e) => e.id), []);
+  assert.deepEqual(ttSeries.entriesInSeries(entries, 'S').map((e) => e.id), ['c']);
+});
+
+// ── planRepeat.js — planned blocks that repeat (v1.14 Item 7a, #51) ──────
+//
+//   > "planned study sessions can't repeat, only the blockers can"
+//
+// The recurrence is MATERIALISED — N ordinary rows at creation — because a
+// planned block, unlike a blocker, carries per-occurrence state: it is logged,
+// dismissed, or still owed. So what needs pinning is not a recurrence rule but
+// the three things that stop materialising going wrong: the horizon is bounded,
+// the series keeps its phase across a DST change, and "stop repeating" cannot
+// touch a block that already points at a real study session.
+const planRepeat = await import('../src/lib/planRepeat.js');
+
+check('a repeat runs to the end of the term it starts in', () => {
+  const terms = [
+    { id: 'y', parentId: null, name: 'Year', startsOn: '2026-08-01', endsOn: '2027-05-31', position: 0 },
+    { id: 's', parentId: 'y', name: 'Autumn', startsOn: '2026-08-01', endsOn: '2026-12-20', position: 0 },
+    { id: 'j', parentId: 's', name: 'Jakso 1', startsOn: '2026-08-01', endsOn: '2026-10-10', position: 0 },
+  ];
+  // Most specific wins — the same rule `lessonsOn` applies to timetables.
+  assert.equal(planRepeat.repeatHorizon('2026-09-15', terms), '2026-10-10');
+  // A date inside the semester but past the jakso falls back to the semester.
+  assert.equal(planRepeat.repeatHorizon('2026-11-01', terms), '2026-12-20');
+  // Outside every term: twelve weeks, a term-shaped answer to a termless
+  // question. 2026-07-01 + 84 days.
+  assert.equal(planRepeat.repeatHorizon('2026-07-01', terms), '2026-09-23');
+  assert.equal(planRepeat.repeatHorizon('2026-07-01', []), '2026-09-23');
+});
+
+check('a term with no end date cannot make an unbounded series', () => {
+  const terms = [{ id: 'y', parentId: null, name: 'Open', startsOn: '2026-08-01', position: 0 }];
+  // Falls through to the 12-week default rather than "no limit".
+  assert.equal(planRepeat.repeatHorizon('2026-09-01', terms), '2026-11-24');
+});
+
+check('the series keeps its weekday across a DST transition', () => {
+  // Europe's clocks go back 2026-10-25. Adding 7×86400000ms would drift an
+  // hour and, on a date near midnight, onto the wrong day.
+  const dates = planRepeat.occurrenceDates('2026-10-15', 1, '2026-11-12');
+  assert.deepEqual(dates, ['2026-10-15', '2026-10-22', '2026-10-29', '2026-11-05', '2026-11-12']);
+  for (const tz of ['UTC', 'Europe/Helsinki', 'America/Los_Angeles']) {
+    inTimezone(tz, () => {
+      assert.deepEqual(planRepeat.occurrenceDates('2026-10-15', 2, '2026-11-26'),
+        ['2026-10-15', '2026-10-29', '2026-11-12', '2026-11-26'], tz);
+    });
+  }
+});
+
+check('the horizon is inclusive, and a repeat always yields at least the block drawn', () => {
+  assert.deepEqual(planRepeat.occurrenceDates('2026-09-01', 1, '2026-09-08'), ['2026-09-01', '2026-09-08']);
+  assert.deepEqual(planRepeat.occurrenceDates('2026-09-01', 1, '2026-09-07'), ['2026-09-01']);
+  // A horizon before the start, or no repeat at all, still gives the one block
+  // the user actually placed on the calendar.
+  assert.deepEqual(planRepeat.occurrenceDates('2026-09-01', 1, '2026-08-01'), ['2026-09-01']);
+  assert.deepEqual(planRepeat.occurrenceDates('2026-09-01', 0, '2026-12-01'), ['2026-09-01']);
+  assert.deepEqual(planRepeat.occurrenceDates('', 1, '2026-12-01'), []);
+});
+
+check('a mistyped term end cannot mint an unbounded number of rows', () => {
+  // The horizon comes from user data. "Ends 2126" is one keystroke away, and
+  // without the cap that is a hundred thousand rows in one tap.
+  const dates = planRepeat.occurrenceDates('2026-09-01', 1, '2126-01-01');
+  assert.equal(dates.length, planRepeat.MAX_OCCURRENCES);
+});
+
+check('stop-repeating never removes a block that already happened', () => {
+  const rows = [
+    { id: 'a', seriesId: 'S', startsAt: '2026-09-01T18:00:00Z', fulfilledBy: 'sess-1' },
+    { id: 'b', seriesId: 'S', startsAt: '2026-09-08T18:00:00Z', dismissedAt: '2026-09-08T20:00:00Z' },
+    { id: 'c', seriesId: 'S', startsAt: '2026-09-15T18:00:00Z' },
+    { id: 'd', seriesId: 'S', startsAt: '2026-09-22T18:00:00Z' },
+    { id: 'e', seriesId: 'OTHER', startsAt: '2026-09-22T18:00:00Z' },
+    { id: 'f', seriesId: 'S', startsAt: '2026-09-29T18:00:00Z', deletedAt: '2026-09-01T00:00:00Z' },
+  ];
+  const later = planRepeat.laterInSeries(rows, 'S', '2026-09-08T18:00:00Z');
+  assert.deepEqual(later.map((p) => p.id), ['c', 'd'],
+    'logged and dismissed excluded, other series excluded, already-deleted excluded');
+  // Backwards is never in scope: this is "stop repeating", not "erase history".
+  assert.deepEqual(
+    planRepeat.laterInSeries(rows, 'S', '2026-09-22T18:00:00Z').map((p) => p.id), ['d'],
+  );
+  // A one-off has no series, so nothing is ever swept up with it.
+  assert.deepEqual(planRepeat.laterInSeries(rows, null, '2026-01-01T00:00:00Z'), []);
+  assert.deepEqual(planRepeat.laterInSeries(rows, undefined, '2026-01-01T00:00:00Z'), []);
+});
+
+// ── v1.14 Item 2 (CTO's 2026-09-14 preset decision) ──────────────────────
+
+const gradeScale = await import('../src/lib/gradeScale.js');
+
+check('every scale chip is EITHER a scale to start from OR a mode to switch to', () => {
+  for (const p of gradeScale.SCALE_PRESETS) {
+    const isScale = !!p.scale;
+    const isMode = !!p.mode;
+    assert.ok(isScale !== isMode,
+      `preset ${p.id} must carry exactly one of scale/mode, not both or neither`);
+    assert.ok(p.labelKey, `preset ${p.id} needs a translated label`);
+  }
+});
+
+check('a mode chip names a real grade mode, never a made-up one', () => {
+  // The whole point of a mode chip is that it hands the user the built-in
+  // scale rather than a copy of its numbers. A typo here would silently do
+  // the opposite — SET_GRADE_MODE with a value isGradeMode rejects.
+  for (const p of gradeScale.SCALE_PRESETS.filter((x) => x.mode)) {
+    assert.ok(gradeScale.isGradeMode(p.mode), `${p.id} -> ${p.mode} is not a grade mode`);
+    assert.notEqual(p.mode, 'custom', `${p.id} switching to custom would be a no-op`);
+  }
+});
+
+check('no scale chip duplicates a built-in mode', () => {
+  // This is the rule the two-front-doors problem comes down to. If a chip
+  // that WRITES numbers ever matches what a built-in mode already means, the
+  // app has two ways to express one scale and they can drift apart.
+  const builtin = [
+    gradeScale.scaleFor('ib'),
+    gradeScale.scaleFor('us'),
+  ].map((s) => `${s.min}-${s.max}-${s.passMark}-${s.direction}`);
+  for (const p of gradeScale.SCALE_PRESETS.filter((x) => x.scale)) {
+    const n = gradeScale.normalizeScale(p.scale);
+    const sig = `${n.min}-${n.max}-${n.passMark}-${n.direction}`;
+    assert.ok(!builtin.includes(sig),
+      `${p.id} has the same bounds as a built-in mode — make it a mode chip instead`);
+  }
+});
+
+check('the four the CTO asked for are all reachable', () => {
+  const ids = gradeScale.SCALE_PRESETS.map((p) => p.id);
+  for (const id of ['fr20', 'usgpa', 'ib', 'pct']) {
+    assert.ok(ids.includes(id), `missing preset ${id}`);
+  }
+  // Kept deliberately: Finland is not on the CTO's list, but it shipped, and
+  // it is still DEFAULT_CUSTOM_SCALE. Asserted so removing it is a decision.
+  assert.ok(ids.includes('fi410'), 'the shipped Finland chip was dropped silently');
+});
+
+check('US GPA survives a round trip through normalizeScale', () => {
+  // normalizeScale is total and rewrites anything it dislikes, so a preset
+  // that it quietly "fixes" would put different numbers on screen than the
+  // ones written here.
+  const raw = gradeScale.SCALE_PRESETS.find((p) => p.id === 'usgpa').scale;
+  const n = gradeScale.normalizeScale(raw);
+  assert.equal(n.min, 0);
+  assert.equal(n.max, 4);
+  assert.equal(n.passMark, 1);
+  assert.equal(n.direction, 'up');
+});
+
+// ── v1.14 — the concrete-metaphor visuals (weight rail, punch card) ──────
+
+const blocks = await import('../src/lib/blocks.js');
+
+check('a weight rail is proportional, and its drawn widths fill the track', () => {
+  const { segments, total } = blocks.weightSegments(
+    [{ id: 'a', weight: 35 }, { id: 'b', weight: 30 }, { id: 'c', weight: 35 }], 'b',
+  );
+  assert.equal(total, 100);
+  assert.equal(segments.length, 3);
+  assert.equal(Math.round(segments[1].share * 100), 30);
+  assert.ok(segments[1].active && !segments[0].active);
+  // Gapless: a rail that stops short of its track reads as missing weight.
+  const drawn = segments.reduce((a, s) => a + s.width, 0);
+  assert.ok(Math.abs(drawn - 1) < 1e-9, `widths summed to ${drawn}`);
+});
+
+check('the units a course was typed in do not change its picture', () => {
+  // The same property `shareOfCourse` has, now asserted of the drawing: a
+  // course weighted 35/30/35 and one weighted 0.35/0.30/0.35 are one course.
+  const a = blocks.weightSegments([{ id: 1, weight: 35 }, { id: 2, weight: 65 }], 1);
+  const b = blocks.weightSegments([{ id: 1, weight: 0.35 }, { id: 2, weight: 0.65 }], 1);
+  assert.deepEqual(a.segments.map((s) => s.share), b.segments.map((s) => s.share));
+  assert.deepEqual(a.segments.map((s) => s.width), b.segments.map((s) => s.width));
+});
+
+check('a grade worth almost nothing is still drawn', () => {
+  // The honesty rule. A 0.5% segment rendered at zero pixels tells a student
+  // they have two assessments when they have three.
+  const { segments } = blocks.weightSegments(
+    [{ id: 'big', weight: 199 }, { id: 'tiny', weight: 1 }], 'tiny',
+  );
+  const tiny = segments.find((s) => s.id === 'tiny');
+  assert.ok(tiny.share < 0.006, 'the true share stays true');
+  assert.ok(tiny.width >= blocks.MIN_SEGMENT / 100 * 0.99,
+    'but it is drawn at no less than the floor');
+});
+
+check('no weight at all draws no rail, rather than an empty one', () => {
+  // An empty track would say "these grades exist and count for nothing",
+  // which is a different and false claim. Zero and negative weights are not
+  // weights, and a course of them has no budget to slice.
+  assert.deepEqual(blocks.weightSegments([], 'x').segments, []);
+  assert.deepEqual(blocks.weightSegments([{ id: 'a', weight: 0 }], 'a').segments, []);
+  assert.deepEqual(blocks.weightSegments([{ id: 'a', weight: -3 }], 'a').segments, []);
+  assert.deepEqual(blocks.weightSegments([{ id: 'a', weight: 'nonsense' }], 'a').segments, []);
+  assert.deepEqual(blocks.weightSegments(null, null).segments, []);
+});
+
+check('a punch card is in date order, not insertion order', () => {
+  // The entire reason to draw one. Out of order it is a bar chart of nothing.
+  const rows = [
+    { date: '2026-03-04', status: 'absent' },
+    { date: '2026-01-07', status: 'present' },
+    { date: '2026-02-11', status: 'cancelled' },
+  ];
+  const { punches, hidden } = blocks.punchRow(rows);
+  assert.deepEqual(punches.map((p) => p.date), ['2026-01-07', '2026-02-11', '2026-03-04']);
+  assert.equal(hidden, 0);
+});
+
+check('an over-long term keeps the RECENT punches, not the first ones', () => {
+  // A student asking about attendance is asking about now, so the cap has to
+  // drop the far end of the year rather than the near one.
+  const rows = [];
+  for (let i = 1; i <= 10; i += 1) {
+    rows.push({ date: `2026-01-${String(i).padStart(2, '0')}`, status: 'present' });
+  }
+  const { punches, hidden } = blocks.punchRow(rows, 4);
+  assert.equal(hidden, 6);
+  assert.deepEqual(punches.map((p) => p.date),
+    ['2026-01-07', '2026-01-08', '2026-01-09', '2026-01-10']);
+});
+
+check('unmarked and deleted lessons are not punches', () => {
+  // A lesson with no status is not a fact about attendance, and a soft-deleted
+  // row is a fact the user retracted. Either drawn as a mark would inflate the
+  // count under the percentage and make the two disagree on screen.
+  const rows = [
+    { date: '2026-01-01', status: 'present' },
+    { date: '2026-01-02', status: null },
+    { date: '2026-01-03' },
+    { date: '2026-01-04', status: 'absent', deletedAt: '2026-01-05' },
+    { status: 'present' },
+  ];
+  assert.deepEqual(blocks.punchRow(rows).punches, [{ date: '2026-01-01', status: 'present' }]);
+});
+
+// ── v1.14 — the funnel gap: first-step suggestions ───────────────────────
+
+const firstSteps = await import('../src/lib/firstSteps.js');
+
+const withCourse = (extra = {}) => ({
+  courses: { c1: { id: 'c1', name: 'Maths' } },
+  timetableEntries: [], studySessions: [], grades: [], ...extra,
+});
+
+check('a brand-new user with one course is offered all three', () => {
+  assert.deepEqual(firstSteps.outstandingSteps(withCourse(), []),
+    ['timetable', 'session', 'grade']);
+});
+
+check('nothing is suggested before there is a course to suggest it for', () => {
+  // Suggesting a timetable with no courses would be suggesting an empty grid,
+  // and there is already an earlier prompt for "add a course".
+  assert.deepEqual(firstSteps.outstandingSteps({ courses: {} }, []), []);
+  assert.deepEqual(firstSteps.outstandingSteps({}, []), []);
+  // A soft-deleted course is not a course.
+  assert.deepEqual(
+    firstSteps.outstandingSteps({ courses: { c1: { id: 'c1', deletedAt: 'x' } } }, []), []);
+});
+
+check('finishing a step drops it without touching the others', () => {
+  const state = withCourse({ studySessions: [{ id: 's1', minutes: 25 }] });
+  assert.deepEqual(firstSteps.outstandingSteps(state, []), ['timetable', 'grade']);
+});
+
+check('an established user is never nagged, however much they skipped', () => {
+  // THE rule. Two of three done means the user found their way around, so the
+  // third is a preference. Someone two years in with four hundred sessions and
+  // no timetable does not want to be told to add one on every launch.
+  const settled = withCourse({
+    studySessions: [{ id: 's1' }],
+    grades: [{ id: 'g1' }],
+  });
+  assert.deepEqual(firstSteps.outstandingSteps(settled, []), []);
+  const allThree = withCourse({
+    timetableEntries: [{ id: 't1' }], studySessions: [{ id: 's1' }], grades: [{ id: 'g1' }],
+  });
+  assert.deepEqual(firstSteps.outstandingSteps(allThree, []), []);
+});
+
+check('a dismissed step stays dismissed, and only that one', () => {
+  const state = withCourse();
+  assert.deepEqual(firstSteps.outstandingSteps(state, ['timetable']), ['session', 'grade']);
+  assert.deepEqual(firstSteps.outstandingSteps(state, ['timetable', 'session', 'grade']), []);
+});
+
+check('a corrupt dismissal list shows the prompts rather than hiding them', () => {
+  // One unreadable key must not turn a feature off permanently and silently.
+  const state = withCourse();
+  assert.deepEqual(firstSteps.outstandingSteps(state, null), ['timetable', 'session', 'grade']);
+  assert.deepEqual(firstSteps.outstandingSteps(state, ['nonsense']),
+    ['timetable', 'session', 'grade']);
+});
+
+check('dismissStep is idempotent and rejects steps that do not exist', () => {
+  const once = firstSteps.dismissStep('grade', []);
+  assert.deepEqual(once, ['grade']);
+  assert.deepEqual(firstSteps.dismissStep('grade', once), ['grade']);
+  assert.deepEqual(firstSteps.dismissStep('made-up', once), ['grade']);
+});
+
+check('soft-deleted rows do not count as having done a step', () => {
+  // The state keeps tombstones for sync, and a deleted-everything user is
+  // back where they started rather than finished.
+  const state = withCourse({ grades: [{ id: 'g1', deletedAt: '2026-01-01' }] });
+  assert.deepEqual(firstSteps.outstandingSteps(state, []),
+    ['timetable', 'session', 'grade']);
+});

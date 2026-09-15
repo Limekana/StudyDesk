@@ -14,6 +14,7 @@
 
 import { lessonsOn, dayAndMinuteOf } from '../lib/timetable.js';
 import { parseLocalDate } from '../lib/dates.js';
+import { dueSortKey } from '../lib/dueAt.js';
 
 /** Whole days from `fromIso` to `toIso`. Negative when `toIso` is in the past. */
 export function daysUntil(fromIso, toIso) {
@@ -36,10 +37,15 @@ export function nextDue(state, todayIso) {
   if (!open.length) return null;
 
   const soonest = open.reduce((best, a) => {
-    const c = String(a.dueDate).localeCompare(String(best.dueDate));
+    // v1.14 Item 5 — by the whole deadline, not just the day. Two things due
+    // Friday, one at 09:00 and one at 23:00, are not a tie, and the widget is
+    // the one surface with room for exactly one of them. An untimed one counts
+    // as end-of-day, per dueAt.js, so it yields to a time the user actually
+    // typed rather than winning on alphabetical order.
+    const c = dueSortKey(a.dueDate, a.dueTime).localeCompare(dueSortKey(best.dueDate, best.dueTime));
     if (c !== 0) return c < 0 ? a : best;
-    // Same date: stable, name-ordered, so the widget doesn't reshuffle between
-    // polls when two things are due the same day.
+    // Genuinely the same instant: stable, name-ordered, so the widget doesn't
+    // reshuffle between polls.
     return String(a.title || '').localeCompare(String(best.title || '')) < 0 ? a : best;
   });
 
@@ -49,6 +55,7 @@ export function nextDue(state, todayIso) {
     id: soonest.id,
     title: soonest.title || '',
     dueDate: soonest.dueDate,
+    dueTime: soonest.dueTime || null,
     daysAway: daysUntil(todayIso, soonest.dueDate),
     courseName: liveCourse?.name || null,
     color: liveCourse?.color || null,

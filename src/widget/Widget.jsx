@@ -114,7 +114,11 @@ export default function Widget() {
                 </>
               )}
               <span className={`wg-urgency${due.daysAway < 0 ? ' is-overdue' : ''}`}>
+                {/* v1.14 Item 5 — the time only when it is today or tomorrow.
+                    "09:00" is what you act on this morning; on something nine
+                    days out it is noise in a line with room for one fact. */}
                 {urgencyLabel(t, due.daysAway)}
+                {due.dueTime && due.daysAway >= 0 && due.daysAway <= 1 ? ` · ${due.dueTime}` : ''}
               </span>
             </p>
           </>

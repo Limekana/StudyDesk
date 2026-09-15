@@ -18,6 +18,15 @@
 // call, but it should not be the easy one.
 //
 // COURSE_COLORS lives in ./courseColors.js — see the note there.
+//
+// v1.14 Item 1 — the calendar's blocker editor asked for the same escape hatch
+// (issue #47: "I want to pick my own colour for a blocker"), and it had its own
+// near-identical swatch row, closed over the same eight values. That is the
+// fourth copy this component exists to prevent, so it is folded in here rather
+// than given a free picker of its own. The one thing it needs that a course
+// does not is NO colour: a course is always colour-coded, a blocker may just be
+// a grey block on the grid. Hence `allowNone`, off by default so the three
+// course call sites are unchanged.
 
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -31,13 +40,19 @@ const css = `
   background:conic-gradient(#c0392b,#d4860a,#2e7d52,#1e7d7d,#1a5c9e,#6d3fa0,#8b4a62,#c0392b);}
 .cp-custom input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;padding:0;border:none;}
 .cp-custom-dot{width:9px;height:9px;border-radius:50%;background:var(--surface);pointer-events:none;}
+/* "No colour" reads as an empty slot rather than as white, which on cream
+   would look like a colour someone deliberately picked. Same treatment the
+   blocker editor's own swatch used, moved here with it. */
+.cp-none{width:24px;height:24px;border-radius:50%;cursor:pointer;padding:0;border:1px solid var(--border2);outline-offset:2px;
+  background:linear-gradient(45deg,transparent 45%,var(--border2) 45%,var(--border2) 55%,transparent 55%);}
 `;
 
 /**
- * @param {string}   value     currently selected hex
- * @param {Function} onChange  called with the new hex
+ * @param {string}   value      currently selected hex, or '' for none
+ * @param {Function} onChange   called with the new hex, or '' when cleared
+ * @param {boolean}  allowNone  offer a "no colour" slot first (blockers)
  */
-export default function CoursePicker({ value, onChange }) {
+export default function CoursePicker({ value, onChange, allowNone = false }) {
   const { t } = useTranslation();
   const inputId = useId();
   const isPreset = COURSE_COLORS.includes(value);
@@ -46,6 +61,19 @@ export default function CoursePicker({ value, onChange }) {
     <>
       <style>{css}</style>
       <div className="cp-row">
+        {/* First, so clearing a colour is the same gesture as picking one and
+            does not hide behind the wheel at the end of the row. */}
+        {allowNone && (
+          <button
+            type="button"
+            className="cp-none"
+            style={{ outline: value ? '2px solid transparent' : '3px solid var(--text)' }}
+            onClick={() => onChange('')}
+            aria-label={t('course.colorNone')}
+            title={t('course.colorNone')}
+            aria-pressed={!value}
+          />
+        )}
         {COURSE_COLORS.map((c) => (
           <button
             key={c}
