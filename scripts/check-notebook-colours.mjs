@@ -27,8 +27,12 @@
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = new URL('..', import.meta.url).pathname;
+// fileURLToPath, not `.pathname`: on Windows `.pathname` is `/D:/…`, which
+// statSync rejects, so the walk found nothing and the gate failed on every
+// Windows checkout while staying green on Linux CI.
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const TARGETS = ['src/features/notebook', 'src/styles/notebook.css'];
 
 function walk(p, out = []) {
