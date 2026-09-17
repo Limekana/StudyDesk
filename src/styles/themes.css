@@ -320,7 +320,7 @@
 
 /* There are no cards, panels or row backgrounds in this theme. Items sit
    directly on the slate, grouped by a written heading and a ruled line. */
-html[data-theme="slate"] :where(.course-card, .exam-card, .cal-agenda-item) {
+html[data-theme="slate"] :where(.course-card, .exam-card) {
   background: transparent;
   border-color: var(--border);
   box-shadow: none;
@@ -737,12 +737,6 @@ html[data-theme="slate"] :where(.btn, button):disabled { color: var(--dust-far);
    inline styles from data, so CSS is the only place to answer them. Rather
    than tint each one, the wash is dropped to a chalk-neutral: a board does
    not colour-code, it labels. */
-html[data-theme="slate"] .cal-agenda-item,
-html[data-theme="slate"] .cal-event {
-  background: transparent !important;
-  border-left: 2px solid var(--border2);
-}
-html[data-theme="slate"] .cal-agenda-pill,
 html[data-theme="slate"] .tag {
   background: transparent !important;
   color: var(--muted) !important;
@@ -751,12 +745,6 @@ html[data-theme="slate"] .tag {
 
 /* Stacks suppresses colour for the same reason the spine exists: a course is
    identified by its code. Washes become card stock with a hairline. */
-html[data-theme="stacks"] .cal-agenda-item,
-html[data-theme="stacks"] .cal-event {
-  background: var(--row-surface) !important;
-  border: 1px solid var(--border);
-}
-html[data-theme="stacks"] .cal-agenda-pill,
 html[data-theme="stacks"] .tag {
   background: transparent !important;
   color: var(--warning) !important;

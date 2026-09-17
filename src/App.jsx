@@ -2205,7 +2205,7 @@ export default function App() {
                 {planSub==="timetable" &&
                   <TimetableView state={state} dispatch={dispatch} session={session} showFlash={showFlash}/>}
                 {planSub==="list" &&
-                  <PlanView state={state} dispatch={dispatch} session={session} showFlash={showFlash} onAddAsgn={()=>setShowAddAsgn(true)} onAddExam={()=>setShowAddExam(true)} onAddCourse={()=>setShowAddCourse(true)} onEditCourse={(c)=>setEditingCourse(c)}/>}
+                  <PlanView state={state} dispatch={dispatch} session={session} showFlash={showFlash} onAddAsgn={()=>setShowAddAsgn(true)} onAddExam={()=>setShowAddExam(true)} onAddCourse={()=>setShowAddCourse(true)} onEditCourse={(c)=>setEditingCourse(c)} onOpenCalendar={()=>choosePlanSub("calendar")}/>}
               </div>
             </>
           )}
@@ -2670,11 +2670,9 @@ function PlanSectionHead({ id, label, open, onToggle, children }) {
   );
 }
 
-function PlanView({ state, dispatch, session, showFlash, onAddAsgn, onAddExam, onAddCourse, onEditCourse }) {
-  const { t, i18n } = useTranslation();
-  const lang = (i18n.language || "en").split("-")[0];
+function PlanView({ state, dispatch, session, showFlash, onAddAsgn, onAddExam, onAddCourse, onEditCourse, onOpenCalendar }) {
+  const { t } = useTranslation();
   const courses = Object.values(state.courses).filter(c => !c.deletedAt);
-  const [calMonth, setCalMonth] = useState(()=>{const d=new Date(); return {year:d.getFullYear(),month:d.getMonth()};});
   const [expandedCourse, setExpandedCourse] = useState({});
   // Read once at mount, not on every render: the value only ever changes
   // through the toggle below, and reading localStorage per render would make
@@ -2691,31 +2689,10 @@ function PlanView({ state, dispatch, session, showFlash, onAddAsgn, onAddExam, o
       return next;
     });
   }, []);
-  const firstDay = new Date(calMonth.year,calMonth.month,1);
-  const lastDay  = new Date(calMonth.year,calMonth.month+1,0);
-  const startPad = firstDay.getDay();
-  const days = [];
-  for(let i=0;i<startPad;i++){const d=new Date(calMonth.year,calMonth.month,-(startPad-1-i));days.push({date:d,current:false});}
-  for(let i=1;i<=lastDay.getDate();i++) days.push({date:new Date(calMonth.year,calMonth.month,i),current:true});
-  while(days.length%7!==0){const d=new Date(calMonth.year,calMonth.month+1,days.length-lastDay.getDate()-startPad+1);days.push({date:d,current:false});}
-  const eventsOnDay=(date)=>{
-    const ds=toLocalISO(date);
-    const examEvents=state.exams.filter(e=>e.dueDate===ds).map(e=>({type:"exam",exam:e,course:state.courses[e.courseId]}));
-    const studyEvents=state.exams.filter(e=>!e.done&&studyStartDate(e)===ds).map(e=>({type:"study",exam:e,course:state.courses[e.courseId]}));
-    const asgnEvents=state.assignments.filter(a=>!a.done&&a.dueDate===ds).map(a=>({type:"assignment",asgn:a,course:state.courses[a.courseId]}));
-    return [...examEvents,...studyEvents,...asgnEvents];
-  };
-  const dayIsToday=(date)=>toLocalISO(date)===toLocalISO(todayMidnight());
-  const monthName=firstDay.toLocaleDateString(lang||"en",{month:"long",year:"numeric"});
-  const prevMonth=()=>setCalMonth(m=>m.month===0?{year:m.year-1,month:11}:{year:m.year,month:m.month-1});
-  const nextMonth=()=>setCalMonth(m=>m.month===11?{year:m.year+1,month:0}:{year:m.year,month:m.month+1});
-  const agendaEvents=[];
-  const _agendaBase=todayMidnight();
-  for(let i=0;i<60;i++){const d=new Date(_agendaBase);d.setDate(_agendaBase.getDate()+i);const ev=eventsOnDay(d);if(ev.length>0)agendaEvents.push({date:d,events:ev});}
   const openAsgns=state.assignments.filter(a=>!a.done).sort(byDueAsc);
   const openExams=state.exams.filter(e=>!e.done).sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));
-  // The root is NOT a tiling grid: this view also holds the month grid, the
-  // agenda and the course cards, and tiling those would break each of them.
+  // The root is NOT a tiling grid: this view also holds the course cards,
+  // and tiling those would break them.
   // Only the flat lists tile, which is where the vertical length comes from.
   return <div className="sd-page-plan">
     <PlanSectionHead id="assignments" label={t('av.pl.assignments')} open={!collapsed.assignments} onToggle={toggleSection}>
@@ -2727,23 +2704,17 @@ function PlanView({ state, dispatch, session, showFlash, onAddAsgn, onAddExam, o
     {state.assignments.filter(a=>a.done).length>0&&<details style={{marginBottom:16}}><summary style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",cursor:"pointer",padding:"8px 0"}}>{t('av.pl.completed',{count:state.assignments.filter(a=>a.done).length})}</summary>{state.assignments.filter(a=>a.done).sort(byDueDesc).map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch} attachments={state.attachments} session={session} showFlash={showFlash}/>)}</details>}
     </>}
     <div className="divider"/>
-    <PlanSectionHead id="exams" label={t('av.pl.examsCalendar')} open={!collapsed.exams} onToggle={toggleSection}>
+    <PlanSectionHead id="exams" label={t('cal.statExams')} open={!collapsed.exams} onToggle={toggleSection}>
       <button className="btn btn-sm" onClick={onAddExam}>{t('av.pl.add')}</button>
     </PlanSectionHead>
     {!collapsed.exams && <>
-    <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
-      <button className="btn-outline btn-sm" onClick={prevMonth}><span className="rtl-mirror" aria-hidden>←</span></button>
-      <span style={{fontFamily:"var(--font-display)",fontSize:16,flex:1}}>{monthName}</span>
-      <button className="btn-outline btn-sm" onClick={nextMonth}><span className="rtl-mirror" aria-hidden>→</span></button>
-    </div>
-    <div className="calendar-grid cal-header-row" style={{marginBottom:0,gap:4}}>{["sun","mon","tue","wed","thu","fri","sat"].map(d=><div key={d} className="cal-header">{t(`av.cal.${d}`)}</div>)}</div>
-    <div className="calendar-grid" style={{marginBottom:16}}>
-      {days.map((day,i)=>{const events=eventsOnDay(day.date);return <div key={i} className={"cal-day"+(dayIsToday(day.date)?" today":"")+(day.current?"":" other-month")}><div className="cal-day-num">{day.date.getDate()}</div>{events.map((ev,j)=>{if(ev.type==="exam") return <div key={j} className="cal-event cal-exam" title={t('av.chrome.examPrefix',{title:ev.exam.title})}>📝 {ev.exam.title}</div>;if(ev.type==="study") return <div key={j} className="cal-event cal-study" title={t('av.ec.studyStart')+" "+ev.exam.title}>📚 {ev.exam.title}</div>;const col=ev.course?.color||"#8a8278";return <div key={j} className="cal-event" style={{background:col+"22",color:col}} title={ev.asgn.title}>◷ {ev.asgn.title}</div>;})}</div>;})}
-    </div>
-    <div className="cal-agenda" style={{marginBottom:16}}>
-      {agendaEvents.length===0&&<div className="empty">{t('av.pl.nothingComingUp')}</div>}
-      {agendaEvents.map((entry,i)=>{const label=entry.date.toLocaleDateString(lang||"en",{weekday:"short",day:"numeric",month:"short"});return <div key={i} className="cal-agenda-item"><div className="cal-agenda-date">{label}</div><div className="cal-agenda-pills">{entry.events.map((ev,j)=>{if(ev.type==="exam"||ev.type==="study"){const c=ev.course;return <div key={j} className="cal-agenda-pill" style={{background:ev.type==="exam"?"rgba(109,63,160,0.10)":"rgba(26,92,158,0.08)"}}><span>{ev.type==="exam"?"📝":"📚"}</span><span style={{fontFamily:"var(--font-mono)",fontSize:11,color:ev.type==="exam"?"#6d3fa0":"#1a5c9e"}}>{ev.type==="exam"?t('av.pl.examWord'):t('av.pl.studyWord')}</span><span style={{fontSize:13}}>{ev.exam.title}</span>{c&&<span className="asgn-course" style={{background:c.color+"18",color:c.color}}>{c.name}</span>}</div>;}const c=ev.course;return <div key={j} className="cal-agenda-pill" style={{background:c?c.color+"18":"var(--surface2)"}}><span>◷</span><span style={{fontFamily:"var(--font-mono)",fontSize:11,color:c?.color||"var(--muted)"}}>{t('av.pl.dueWord')}</span><span style={{fontSize:13}}>{ev.asgn.title}</span>{c&&<span className="asgn-course" style={{background:c.color+"18",color:c.color}}>{c.name}</span>}</div>;})}</div></div>;})}
-    </div>
+    {/* v1.15 Item 1 — this section used to carry its own month grid and a
+        60-day agenda: a second calendar with separate logic from the Calendar
+        tab beside it, and the source of "three different calendars". The one
+        calendar is a tap away; the exam cards below are the summary. */}
+    <button type="button" className="btn-outline btn-sm plan-open-cal" onClick={onOpenCalendar}>
+      {t('cal.planCalendar')} <span className="rtl-mirror" aria-hidden>→</span>
+    </button>
     {openExams.map(e=><ExamCard key={e.id} exam={e} courses={state.courses} dispatch={dispatch}/>)}
     {openExams.length===0&&<div className="empty">{t('av.pl.noExams')}</div>}
     {state.exams.filter(e=>e.done).length>0&&<details style={{marginBottom:16}}><summary style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",cursor:"pointer",padding:"8px 0"}}>{t('av.pl.completedExams',{count:state.exams.filter(e=>e.done).length})}</summary>{state.exams.filter(e=>e.done).map(e=><ExamCard key={e.id} exam={e} courses={state.courses} dispatch={dispatch}/>)}</details>}
