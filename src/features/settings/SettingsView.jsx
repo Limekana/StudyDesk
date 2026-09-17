@@ -537,6 +537,69 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
           </div>
         </div>
 
+        {/* ── Feedback (v1.10) ──
+            Deliberately in the app rather than a survey link: a link leaves
+            the app, cannot work offline, and arrives without the app version
+            or platform, which is most of what makes a report actionable.
+            v1.15 Item 4 — moved up from sixteenth of eighteen sections, below
+            Your data, to right under Language. Same fix NCC got in v1.13: a
+            form nobody scrolls down to is hardly easier to reach than no form
+            at all. Nothing else in it changed. */}
+        <div className="sv2-section">
+          <div className="sv2-section-title">{t('settings.feedback')}</div>
+          <div className="sv2-note">{t('settings.feedbackBlurb')}</div>
+
+          <div className="sv2-fb-cats" role="group" aria-label={t('settings.feedbackCategory')}>
+            {FEEDBACK_CATEGORIES.map((c) => (
+              <button
+                key={c}
+                type="button"
+                className={`sv2-fb-cat${fbCategory === c ? ' sv2-fb-cat--on' : ''}`}
+                onClick={() => setFbCategory(c)}
+                aria-pressed={fbCategory === c}
+              >
+                {t(`settings.fbCat.${c}`)}
+              </button>
+            ))}
+          </div>
+
+          <div className="sv2-fb-stars" role="group" aria-label={t('settings.feedbackRating')}>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                className={`sv2-fb-star${n <= fbRating ? ' sv2-fb-star--on' : ''}`}
+                onClick={() => setFbRating(n === fbRating ? 0 : n)}
+                aria-label={t('settings.feedbackRatingN', { n })}
+                aria-pressed={n <= fbRating}
+              >
+                {n <= fbRating ? '★' : '☆'}
+              </button>
+            ))}
+          </div>
+
+          <textarea
+            className="sv2-fb-text"
+            value={fbMessage}
+            maxLength={FEEDBACK_MAX}
+            onChange={(e) => setFbMessage(e.target.value)}
+            placeholder={t('settings.feedbackPlaceholder')}
+            aria-label={t('settings.feedback')}
+          />
+          <div className="sv2-fb-count">{fbMessage.length}/{FEEDBACK_MAX}</div>
+
+          <div className="sv2-action">
+            <button
+              className="btn-outline"
+              onClick={handleSendFeedback}
+              disabled={!fbMessage.trim()}
+            >
+              {t('settings.feedbackSend')}
+            </button>
+          </div>
+          <div className="sv2-note">{t('settings.feedbackMeta', { app: 'StudyDesk', version: appVersion })}</div>
+        </div>
+
         {/* ── Week start (v1.13 Tier 2) ──
              The locale answer is already correct — `resolveWeekStart` reads
              CLDR via Intl.Locale.weekInfo, so ar-EG gets Saturday and en-GB
@@ -1154,65 +1217,6 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
               {deleting ? t('settings.deletingAccount') : t('settings.deleteAccount')}
             </button>
           </div>
-        </div>
-
-        {/* ── Feedback (v1.10) ──
-            Deliberately in the app rather than a survey link: a link leaves
-            the app, cannot work offline, and arrives without the app version
-            or platform, which is most of what makes a report actionable. */}
-        <div className="sv2-section">
-          <div className="sv2-section-title">{t('settings.feedback')}</div>
-          <div className="sv2-note">{t('settings.feedbackBlurb')}</div>
-
-          <div className="sv2-fb-cats" role="group" aria-label={t('settings.feedbackCategory')}>
-            {FEEDBACK_CATEGORIES.map((c) => (
-              <button
-                key={c}
-                type="button"
-                className={`sv2-fb-cat${fbCategory === c ? ' sv2-fb-cat--on' : ''}`}
-                onClick={() => setFbCategory(c)}
-                aria-pressed={fbCategory === c}
-              >
-                {t(`settings.fbCat.${c}`)}
-              </button>
-            ))}
-          </div>
-
-          <div className="sv2-fb-stars" role="group" aria-label={t('settings.feedbackRating')}>
-            {[1, 2, 3, 4, 5].map((n) => (
-              <button
-                key={n}
-                type="button"
-                className={`sv2-fb-star${n <= fbRating ? ' sv2-fb-star--on' : ''}`}
-                onClick={() => setFbRating(n === fbRating ? 0 : n)}
-                aria-label={t('settings.feedbackRatingN', { n })}
-                aria-pressed={n <= fbRating}
-              >
-                {n <= fbRating ? '★' : '☆'}
-              </button>
-            ))}
-          </div>
-
-          <textarea
-            className="sv2-fb-text"
-            value={fbMessage}
-            maxLength={FEEDBACK_MAX}
-            onChange={(e) => setFbMessage(e.target.value)}
-            placeholder={t('settings.feedbackPlaceholder')}
-            aria-label={t('settings.feedback')}
-          />
-          <div className="sv2-fb-count">{fbMessage.length}/{FEEDBACK_MAX}</div>
-
-          <div className="sv2-action">
-            <button
-              className="btn-outline"
-              onClick={handleSendFeedback}
-              disabled={!fbMessage.trim()}
-            >
-              {t('settings.feedbackSend')}
-            </button>
-          </div>
-          <div className="sv2-note">{t('settings.feedbackMeta', { app: 'StudyDesk', version: appVersion })}</div>
         </div>
 
         {/* ── Support ──

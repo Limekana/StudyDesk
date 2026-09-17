@@ -2161,6 +2161,26 @@ export default function App() {
               {urgent.map((a,i)=><span key={a.id}>{a.title}{i<urgent.length-1?", ":""}</span>)}
             </div></div>
           )}
+          {/* v1.15 Item 2 — the phone had no equivalent of the sidebar's course
+              list; its only copy sat at the bottom of Plan, under Assignments
+              and Exams. Shown on Plan's list and on course detail, which is
+              where it leads. Tapping the course already open goes back to Plan,
+              so a course page is never a dead end on a phone. Hidden above the
+              phone tier by CSS, where the sidebar does this job. */}
+          {((state.view==="plan"&&planSub==="list")||state.view==="status")&&(
+            <div className="mobile-courses-bar">
+              <div className="mobile-courses-scroll" role="group" aria-label={t('av.chrome.coursesLabel')}>
+                {courses.map(c=>{
+                  const on=state.view==="status"&&state.activeCourse===c.id;
+                  return <button key={c.id} type="button" className={"mobile-course-chip"+(on?" active":"")} aria-pressed={on}
+                    onClick={()=>dispatch(on?{type:"SET_VIEW",view:"plan"}:{type:"SET_VIEW",view:"status",course:c.id})}>
+                    <span className="mobile-course-dot" style={{background:c.color}} aria-hidden="true"/>{c.name}
+                  </button>;
+                })}
+                <button type="button" className="mobile-course-add" onClick={()=>setShowAddCourse(true)}>+ {t('av.chrome.addCourse')}</button>
+              </div>
+            </div>
+          )}
           {/* v1.3 — keyed wrapper triggers the page-turn cross-fade on view switch.
               The urgent banner above stays sticky (lives outside the wrapper), so
               only the routed view animates. */}
@@ -2251,7 +2271,9 @@ export default function App() {
 
       {/* ── Mobile: collapsible course strip + bottom tab bar ── */}
       <nav className="mobile-tabbar">
-        {views.filter(v=>!v.railOnly).map(v=><div key={v.id} role="button" tabIndex={0} className={"mobile-tab"+(state.view===v.id?" active":"")}
+        {/* `status` has no tab of its own; on a phone it is reached from Plan's
+            course strip (v1.15 Item 2), so Plan stays lit there. */}
+        {views.filter(v=>!v.railOnly).map(v=><div key={v.id} role="button" tabIndex={0} className={"mobile-tab"+((state.view===v.id||(v.id==="plan"&&state.view==="status"))?" active":"")}
           onClick={()=>dispatch({type:"SET_VIEW",view:v.id})}
           onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&dispatch({type:"SET_VIEW",view:v.id})}>
           <v.Icon size={20} strokeWidth={1.75} aria-hidden="true"/>

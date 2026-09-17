@@ -276,21 +276,21 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
   .mobile-tab-label{display:block;}
   .mobile-tab:active{background:var(--surface2);}
   .mobile-tab.active{color:var(--text);border-top-color:var(--text);}
-  /* Course strip — fixed just above the tab bar */
+  /* Course strip — v1.15 Item 2. The phone's answer to `.sidebar-courses`.
+     These rules sat unused from v1.0 as a collapsed bar fixed above the tab
+     bar; wired up now, but in the page flow at the top of Plan and course
+     detail instead. A fixed bar would cover the end of every list, and a
+     collapsed one needs a toggle, which just hides the courses again.
+     The negative margin runs it to the screen edges against `.content`'s 14px
+     gutter, so chips scroll out under the edge rather than stopping short. */
   .mobile-courses-bar{
     display:flex;align-items:center;
-    position:fixed;
-    bottom:calc(64px + env(safe-area-inset-bottom));
-    left:0;right:0;
-    z-index:49;
-    background:var(--surface);
-    border-top:1px solid var(--border);
-    overflow:hidden;
-    transition:max-height 0.25s ease;
-    max-height:0;
+    margin:-16px -14px 4px;
+    border-bottom:1px solid var(--border);
   }
-  .mobile-courses-bar.open{max-height:56px;}
-  .mobile-courses-scroll{display:flex;gap:6px;padding:10px 14px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex:1;}
+  .mobile-courses-scroll{display:flex;gap:6px;padding:10px 14px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex:1;overscroll-behavior-x:contain;}
+  .mobile-course-chip{min-height:32px;font-family:inherit;color:var(--text);}
+  .mobile-course-add{min-height:32px;font-family:inherit;}
   .mobile-courses-scroll::-webkit-scrollbar{display:none;}
   .mobile-course-chip{display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;white-space:nowrap;font-size:12px;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;}
   .mobile-course-chip.active{border-color:var(--text);}
