@@ -1,0 +1,3 @@
+Plan y horario: las tareas ahora pueden tener una hora límite, no solo una fecha. Una clase puede abarcar varios días de la semana como una sola entrada, y puedes mover una clase entre los ámbitos Año escolar, Semestre y Jakso. Los bloques de estudio planificados pueden repetirse cada varias semanas en lugar de solo semanalmente.
+
+Notas: registra una nota de un semestre pasado sin necesidad de un curso activo, y elige cómo funciona la ponderación — como factor, como porcentaje del curso o en puntos — con escalas predefinidas para Francia, GPA de EE. UU., IB y Porcentaje. La asistencia ahora se muestra como una tarjeta de sellos, y el peso de las notas como una barra proporcional. Los nuevos usuarios reciben algunos consejos descartables después de crear su primer curso.

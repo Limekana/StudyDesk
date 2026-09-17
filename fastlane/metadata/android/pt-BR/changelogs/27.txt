@@ -1,0 +1,3 @@
+Plano e Horário: as tarefas agora podem ter um horário de entrega, não apenas uma data. Uma aula pode abranger vários dias da semana como um único registro, e você pode mover uma aula entre os escopos Ano Letivo, Semestre e Jakso. Os blocos de estudo planejados agora podem se repetir a cada algumas semanas, não apenas semanalmente.
+
+Notas: registre uma nota de um semestre passado sem precisar de uma disciplina ativa, e escolha como o peso funciona — como fator, como porcentagem da disciplina, ou em pontos — com escalas prontas para França, GPA dos EUA, IB e Porcentagem. A frequência agora aparece como um cartão de ponto, e o peso das notas como uma barra proporcional. Novos usuários recebem algumas dicas dispensáveis após criar sua primeira disciplina.
