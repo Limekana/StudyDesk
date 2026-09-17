@@ -498,6 +498,7 @@
     "focus5": "Totalmente imerso",
     "title": "Salvar sessão?",
     "intro": "Sessão de foco concluída. Registre para que ela conte no seu total de estudos.",
+    "introPast": "Adicione uma sessão que você estudou sem o timer. Ela conta nos seus totais como qualquer outra.",
     "fCourse": "Disciplina (opcional)",
     "generalStudy": "Estudo geral",
     "fDuration": "Duração (minutos)",

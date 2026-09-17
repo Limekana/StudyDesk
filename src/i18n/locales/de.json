@@ -494,6 +494,7 @@
     "focus5": "Voll vertieft",
     "title": "Sitzung speichern?",
     "intro": "Fokussitzung beendet. Erfasse sie, damit sie zu deinen Lernsummen zählt.",
+    "introPast": "Trag eine Lerneinheit ein, die du ohne Timer gemacht hast. Sie zählt wie jede andere zu deinen Summen.",
     "fCourse": "Kurs (optional)",
     "generalStudy": "Allgemeines Lernen",
     "fDuration": "Dauer (Minuten)",

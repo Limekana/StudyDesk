@@ -490,6 +490,7 @@
     "focus5": "Sangat fokus",
     "title": "Simpan sesi?",
     "intro": "Sesi fokus selesai. Catat agar terhitung dalam total belajarmu.",
+    "introPast": "Tambahkan sesi belajar yang kamu lakukan tanpa timer. Sesi ini dihitung ke total belajarmu seperti yang lain.",
     "fCourse": "Mata pelajaran (opsional)",
     "generalStudy": "Belajar umum",
     "fDuration": "Durasi (menit)",

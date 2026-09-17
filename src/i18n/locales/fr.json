@@ -498,6 +498,7 @@
     "focus5": "Totalement absorbé",
     "title": "Enregistrer la session ?",
     "intro": "Session de concentration terminée. Enregistrez-la pour l’ajouter à vos totaux d’étude.",
+    "introPast": "Ajoutez une session faite sans le minuteur. Elle compte dans vos totaux comme les autres.",
     "fCourse": "Cours (facultatif)",
     "generalStudy": "Étude générale",
     "fDuration": "Durée (minutes)",

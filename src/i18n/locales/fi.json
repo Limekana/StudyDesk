@@ -494,6 +494,7 @@
     "focus5": "Täysin uppoutunut",
     "title": "Tallennetaanko istunto?",
     "intro": "Keskittymisjakso päättyi. Kirjaa se mukaan opiskelusummiin.",
+    "introPast": "Lisää opiskelukerta, jonka teit ilman ajastinta. Se lasketaan opiskelumäärääsi kuten muutkin.",
     "fCourse": "Kurssi (valinnainen)",
     "generalStudy": "Yleinen opiskelu",
     "fDuration": "Kesto (minuuttia)",

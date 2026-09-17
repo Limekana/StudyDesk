@@ -494,6 +494,7 @@
     "focus5": "Locked in",
     "title": "Save session?",
     "intro": "Focus session finished. Log it so it counts toward your study totals.",
+    "introPast": "Add a session you studied without the timer. It counts toward your study totals like any other.",
     "fCourse": "Course (optional)",
     "generalStudy": "General study",
     "fDuration": "Duration (minutes)",

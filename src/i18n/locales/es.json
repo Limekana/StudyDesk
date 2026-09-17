@@ -498,6 +498,7 @@
     "focus5": "Totalmente inmerso",
     "title": "¿Guardar sesión?",
     "intro": "Sesión de concentración terminada. Regsístrala para que cuente en tus totales de estudio.",
+    "introPast": "Añade una sesión que estudiaste sin el temporizador. Cuenta en tus totales como cualquier otra.",
     "fCourse": "Curso (opcional)",
     "generalStudy": "Estudio general",
     "fDuration": "Duración (minutos)",
