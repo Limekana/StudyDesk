@@ -18,13 +18,14 @@ import Appearance from './Appearance.jsx';
 import CalendarFeeds from './CalendarFeeds.jsx';
 import { downloadExport, deleteAccount } from '../../lib/dataRights.js';
 import { useConfirm } from '../../lib/useConfirm.js';
-import { avatarInitials } from '../../lib/avatarInitials.js';
 import { focusCapabilities, ensureNotificationPermission } from '../../lib/focusMode.js';
-import { scaleFor, normalizeScale, describeScale } from '../../lib/gradeScale.js';
+import { scaleFor, normalizeScale, describeScale, SCALE_PRESETS } from '../../lib/gradeScale.js';
 import { preferredWeekStart, setPreferredWeekStart, resolveWeekStart, weekdayLabels } from '../../lib/calendar.js';
 import { preferredDayStart, setPreferredDayStart, DAY_START_CHOICES } from '../../lib/studyDay.js';
+import { preferredDueWindow, setPreferredDueWindow, DUE_WINDOW_CHOICES } from '../../lib/dueWindow.js';
 import { formatLocale } from '../../lib/dates.js';
-import { GuestAvatar } from '../../lib/avatar.jsx';
+import { AccountAvatar, GuestAvatar } from '../../lib/avatar.jsx';
+import { useAccountAvatar } from '../../lib/useAccountAvatar.js';
 import pkg from '../../../package.json';
 
 // A v4 uuid for a feedback row. crypto.randomUUID needs a secure context, and
@@ -68,6 +69,7 @@ const css = `
 .sv2-avatar{width:52px;height:52px;min-width:52px;border-radius:50%;border:1px solid var(--border2);background:var(--bg);color:var(--text);font-family:var(--font-display);font-size:21px;font-weight:600;display:flex;align-items:center;justify-content:center;text-transform:uppercase;}
 .sv2-hero-info{min-width:0;flex:1;}
 .sv2-hero-name{font-family:var(--font-display);font-size:18px;font-weight:600;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sv2-hero-mail{margin-top:2px;font-family:var(--font-mono);font-size:11px;color:var(--muted2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .sv2-hero-status{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:12px;color:var(--muted);}
 .sv2-dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 
@@ -102,6 +104,16 @@ const css = `
 .sv2-scale-field{display:flex;flex-direction:column;gap:4px;flex:1 1 84px;}
 .sv2-scale-field span{font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted2);}
 .sv2-scale-field input{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;font-size:14px;color:var(--text);}
+/* v1.14 Item 2 — the preset row spans, so the number fields below it keep the
+   three-across rhythm they already had rather than wrapping around chips. */
+.sv2-scale-presets{flex:1 1 100%;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.sv2-preset{background:transparent;border:1px solid var(--border2);border-radius:20px;padding:5px 12px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.06em;color:var(--muted);cursor:pointer;transition:color .15s,border-color .15s;}
+.sv2-preset:hover{color:var(--text);border-color:var(--text);}
+/* A dashed rim marks the chips that LEAVE Custom rather than filling it in.
+   The row label says so too — this is the at-a-glance half of the same fact,
+   and it is a border style rather than a colour so it survives both themes
+   and does not lean on hue to carry meaning. */
+.sv2-preset-mode{border-style:dashed;}
 .sv2-scale-dir{flex:1 1 100%;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
 .sv2-scale .sv2-note{flex:1 1 100%;margin:0;}
 .sv2-action{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;}
@@ -294,6 +306,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
   // the end of one night, not the start of a day, and the calendar splitting it
   // in two breaks a streak they actually kept.
   const [dayStartPref, setDayStartPref] = useState(() => preferredDayStart());
+  const [dueWindowPref, setDueWindowPref] = useState(() => preferredDueWindow());
   const settingsLocale = formatLocale();
   const dayNames = useMemo(
     // Index by real getDay() value, so `dayNames[6]` is Saturday whatever the
@@ -450,6 +463,11 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
   }, [session, state, dispatch, showFlash, t]);
 
   const userEmail = session?.user?.email || '—';
+  // v1.14 Item 12 — the same resolved profile the topbar draws from. The hero
+  // was reading the email directly and rendering bare initials, so a user who
+  // had set a name AND a photo in the block two sections below this one saw
+  // neither of them here.
+  const account = useAccountAvatar(session);
   const userId = session?.user?.id;
   const userIdShort = userId ? `${userId.slice(0, 8)}…${userId.slice(-4)}` : '—';
   const provider = session?.user?.app_metadata?.provider || 'email';
@@ -462,9 +480,15 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
         {/* ── Account hero ── */}
         <div className="sv2-section">
           <div className="sv2-hero">
-            <div className="sv2-avatar">{avatarInitials(session) ?? <GuestAvatar/>}</div>
+            <div className="sv2-avatar" style={session ? account.tintStyle : undefined}>
+              {session ? <AccountAvatar avatar={account} session={session}/> : <GuestAvatar/>}
+            </div>
             <div className="sv2-hero-info">
-              <div className="sv2-hero-name">{session ? userEmail : t('settings.guest')}</div>
+              <div className="sv2-hero-name">{session ? (account.displayName || userEmail) : t('settings.guest')}</div>
+              {/* The address stays visible whenever it is no longer the title:
+                  "which account am I signed into" is the question this hero
+                  exists to answer, and a display name does not answer it. */}
+              {session && account.displayName && <div className="sv2-hero-mail">{userEmail}</div>}
               <div className="sv2-hero-status">
                 <span className="sv2-dot" style={{ background: session ? 'var(--success)' : 'var(--muted2)' }} />
                 {session ? t('settings.signedInProvider', { provider }) : t('settings.localOnly')}
@@ -579,6 +603,44 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
             </span>
           </div>
           <div className="sv2-note">{t('settings.dayStartNote')}</div>
+        </div>
+
+        {/* ── Due window (v1.14 Item 4, #51) ──
+             "if you have put in all your assignments for the semester it says
+             you have like 20 assignments due which looks kind of alarming."
+             The count was right and the word was wrong — open is not due. The
+             default is per-type rather than one number, because a reading due
+             Friday and an essay due in ten days are both genuinely due and no
+             single horizon is honest about both. Anyone who wants the old
+             behaviour back picks "everything". ── */}
+        <div className="sv2-section">
+          <div className="sv2-section-title">{t('settings.dueWindowLbl')}</div>
+          <div className="sv2-row">
+            <span className="sv2-row-label">{t('settings.dueWindow')}</span>
+            <span className="sv2-row-value">
+              <select
+                value={String(dueWindowPref)}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  const v = (raw === 'smart' || raw === 'all') ? raw : Number(raw);
+                  setPreferredDueWindow(v);
+                  setDueWindowPref(v);
+                  showFlash(t('settings.dueWindowSaved'));
+                }}
+              >
+                {DUE_WINDOW_CHOICES.map((w) => (
+                  <option key={w} value={String(w)}>
+                    {w === 'smart'
+                      ? t('settings.dueWindowSmart')
+                      : w === 'all'
+                        ? t('settings.dueWindowAll')
+                        : t('settings.dueWindowDays', { count: w })}
+                  </option>
+                ))}
+              </select>
+            </span>
+          </div>
+          <div className="sv2-note">{t('settings.dueWindowNote')}</div>
         </div>
 
         {/* ── Cloud sync ── */}
@@ -935,6 +997,39 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
               the section stays a single row for the IB and US majority. */}
           {mode === 'custom' && (
             <div className="sv2-scale">
+              {/* v1.14 Item 2 — above the fields, not below them: the point is
+                  to be seen before someone starts typing four numbers. */}
+              {/* Two groups under two labels, because one label cannot be
+                  honest about both. A scale chip is something you START FROM
+                  and then edit; a mode chip SWITCHES AWAY from Custom to a
+                  scale that already exists in its own right, and calling that
+                  "start from" would describe the opposite of what it does. */}
+              <div className="sv2-scale-presets">
+                <span className="sv2-row-label">{t('settings.scalePresets')}</span>
+                {SCALE_PRESETS.filter((p) => !p.mode).map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className="sv2-preset"
+                    onClick={() => setScale(p.scale)}
+                  >
+                    {t(p.labelKey)}
+                  </button>
+                ))}
+              </div>
+              <div className="sv2-scale-presets">
+                <span className="sv2-row-label">{t('settings.scaleSwitchTo')}</span>
+                {SCALE_PRESETS.filter((p) => p.mode).map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className="sv2-preset sv2-preset-mode"
+                    onClick={() => dispatch({ type: 'SET_GRADE_MODE', mode: p.mode })}
+                  >
+                    {t(p.labelKey)}
+                  </button>
+                ))}
+              </div>
               <label className="sv2-scale-field">
                 <span>{t('settings.scaleMin')}</span>
                 <input
@@ -988,6 +1083,11 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
           <div className="sv2-note">
             {mode === 'custom' ? t('settings.gradeNoteCustom') : t('settings.gradeNote')}
           </div>
+          {/* v1.14 Item 2 — the other half of the /20 request. The person who
+              asked had not tried Custom and had no reason to think it was for
+              them; a scale they recognise, named in the note they are already
+              reading, is the whole fix. */}
+          {mode !== 'custom' && <div className="sv2-note">{t('settings.gradeCustomHint')}</div>}
         </div>
 
         {/* ── Period history (Archive) ── */}

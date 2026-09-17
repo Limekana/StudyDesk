@@ -20,7 +20,8 @@ import Attendance from './Attendance.jsx';
 import { shortenLabels } from '../../lib/courseLabels.js';
 import {
   TERM_LEVELS, childLevel, childrenOf, termIndex, resolveTermRange,
-  descendantTermIds, timeToMinutes, minutesToTime, minutesToSqlTime,
+  descendantTermIds, timeToMinutes, minutesToTime, minutesToSqlTime, flattenTerms,
+  planSeriesWrite, entriesInSeries,
 } from '../../lib/timetable.js';
 import { resolveWeekStart, weekdayLabels } from '../../lib/calendar.js';
 import { formatLocale, parseLocalDate } from '../../lib/dates.js';
@@ -173,10 +174,21 @@ function TermForm({ draft, onSave, onClose, t }) {
 
 // ── Lesson form ────────────────────────────────────────────────────────────
 
-function LessonForm({ draft, courses, onSave, onDelete, onClose, t }) {
+function LessonForm({ draft, courses, terms, onSave, onDelete, onClose, t }) {
   const [subjectId, setSubjectId] = useState(draft.subjectId || '');
+  // v1.14 Item 6b (#51) — "there's no way to move a lesson between the year,
+  // the semester and the jakso without deleting it and typing it in again".
+  // The scope is a foreign key, so moving one is an edit; what made it
+  // impossible was that the editor had no field for it and `saveLesson`
+  // hard-wired whichever term the sidebar happened to have selected.
+  const [termId, setTermId] = useState(draft.termId || '');
+  // v1.14 Item 6a — the weekday is a SET now. `draft.weekdays` is supplied by
+  // the caller, which knows whether this lesson is already part of a series;
+  // falling back to the single weekday keeps every existing lesson working.
+  const [weekdays, setWeekdays] = useState(
+    () => new Set((draft.weekdays && draft.weekdays.length ? draft.weekdays : [draft.weekday]).map(Number)),
+  );
   const [title, setTitle] = useState(draft.title || '');
-  const [weekday, setWeekday] = useState(String(draft.weekday));
   const [start, setStart] = useState(clock(draft.startMin));
   const [end, setEnd] = useState(clock(draft.endMin));
   const [room, setRoom] = useState(draft.room || '');
@@ -188,6 +200,8 @@ function LessonForm({ draft, courses, onSave, onDelete, onClose, t }) {
   const locale = formatLocale();
   const weekStart = resolveWeekStart(locale);
   const labels = weekdayLabels(weekStart, locale);
+  const termOptions = flattenTerms(terms);
+  const moved = !!draft.id && !!termId && termId !== draft.termId;
 
   const submit = () => {
     const s = timeToMinutes(start), e = timeToMinutes(end);
@@ -196,11 +210,16 @@ function LessonForm({ draft, courses, onSave, onDelete, onClose, t }) {
     // The DB requires a subject OR a non-blank title. Enforced here so the row
     // is never queued in a shape the server is certain to reject.
     if (!subjectId && !title.trim()) { setErr(t('tt.errIdentity')); return; }
+    // A lesson on no days is not a lesson. Refused here rather than saved as a
+    // deletion: `planSeriesWrite` would otherwise be asked to remove every day
+    // in the series through the Save button, which is not what Save means.
+    if (weekdays.size === 0) { setErr(t('tt.errNoDays')); return; }
     onSave({
       ...draft,
+      termId: termId || draft.termId,
       subjectId: subjectId || null,
       title: title.trim(),
-      weekday: Number(weekday),
+      weekdays: [...weekdays].sort((a, b) => a - b),
       startsAt: minutesToSqlTime(s),
       endsAt: minutesToSqlTime(e),
       room: room.trim(),
@@ -227,19 +246,45 @@ function LessonForm({ draft, courses, onSave, onDelete, onClose, t }) {
             placeholder={t('tt.labelPlaceholder')}
           />
         </div>
-        <div className="tt-form-row">
-          <div className="input-group">
-            <div className="input-label">{t('tt.fDay')}</div>
-            <select value={weekday} onChange={(e) => setWeekday(e.target.value)}>
-              {/* Options are generated in the LOCALE's week order but carry the
-                  real `getDay()` value, so a Monday-first user picks Monday
-                  from the top of the list and still stores 1. */}
+        {/* Full width, above the times: seven toggles do not fit in a third of
+            a row, and the day set is the first thing you check when you open
+            this form. */}
+        <div className="input-group">
+            <div className="input-label">{t('tt.fDays')}</div>
+            {/* v1.14 Item 6a — toggles, not a <select multiple>. Seven items is
+                small enough to show at once, and a multi-select on a phone
+                hides the very thing this control exists to make obvious: which
+                days this lesson runs on.
+
+                Rendered in the LOCALE's week order but carrying the real
+                `getDay()` value, so a Monday-first user picks Monday from the
+                left and still stores 1. */}
+            <div className="tt-daypick" role="group" aria-label={t('tt.fDays')}>
               {labels.map((label, i) => {
                 const dayValue = (weekStart + i) % 7;
-                return <option key={dayValue} value={dayValue}>{label}</option>;
+                const on = weekdays.has(dayValue);
+                return (
+                  <button
+                    key={dayValue}
+                    type="button"
+                    className={'tt-daypick-btn' + (on ? ' on' : '')}
+                    aria-pressed={on}
+                    onClick={() => {
+                      setErr('');
+                      setWeekdays((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(dayValue)) next.delete(dayValue); else next.add(dayValue);
+                        return next;
+                      });
+                    }}
+                  >
+                    {label}
+                  </button>
+                );
               })}
-            </select>
-          </div>
+            </div>
+        </div>
+        <div className="tt-form-row">
           <div className="input-group">
             <div className="input-label">{t('tt.fStart')}</div>
             <input type="time" step="300" value={start} onChange={(e) => { setStart(e.target.value); setErr(''); }} />
@@ -266,13 +311,39 @@ function LessonForm({ draft, courses, onSave, onDelete, onClose, t }) {
           </select>
           {parity && <div className="tt-hint">{t('tt.repeatNote')}</div>}
         </div>
+        {/* Only when there is an existing lesson to move. On a NEW one the
+            scope is the term the user is looking at, and offering to file it
+            somewhere else invites creating a lesson that then vanishes from
+            the grid they created it on. */}
+        {draft.id && termOptions.length > 1 && (
+          <div className="input-group">
+            <div className="input-label">{t('tt.fScope')}</div>
+            <select value={termId} onChange={(e) => setTermId(e.target.value)}>
+              {termOptions.map(({ term, depth }) => (
+                <option key={term.id} value={term.id}>
+                  {`${'\u00a0\u00a0'.repeat(depth)}${depth ? '\u2514 ' : ''}${term.name}`}
+                </option>
+              ))}
+            </select>
+            {/* The one consequence that is not obvious. Parity is counted from
+                the START OF THE TERM the lesson hangs off, so the same "week
+                A" lands on different weeks under a different term — see
+                weekParityOf. Said here rather than discovered a fortnight
+                later. */}
+            {moved && parity && <div className="tt-hint">{t('tt.scopeParityNote')}</div>}
+            {moved && !parity && <div className="tt-hint">{t('tt.scopeNote')}</div>}
+          </div>
+        )}
         {err && <div className="tt-error">{err}</div>}
         <div className="plan-actions">
           <button className="btn" onClick={submit}>{t('common.save')}</button>
           <button className="btn-outline" onClick={onClose}>{t('common.cancel')}</button>
           {draft.id && (
             <button className="btn-danger-text plan-delete" onClick={onDelete}>
-              <Trash2 size={13} strokeWidth={1.75} /> {t('common.delete')}
+              <Trash2 size={13} strokeWidth={1.75} />{' '}
+              {draft.weekdays && draft.weekdays.length > 1
+                ? t('tt.deleteSeries', { count: draft.weekdays.length })
+                : t('common.delete')}
             </button>
           )}
         </div>
@@ -470,36 +541,85 @@ export default function TimetableView({ state, dispatch, session, showFlash }) {
       : t('tt.termDeleted'));
   };
 
+  // v1.14 Item 6a — a lesson is a SET of weekdays now, so saving reconciles
+  // that set against what is already stored rather than writing one row.
+  //
+  // The series is the unit of editing: time, course, room, parity and term are
+  // shared by every day in it, which is what makes it a series rather than
+  // several lessons that happen to look alike. Everything except the weekday
+  // therefore goes into `base` and lands on all of them.
   const saveLesson = (form) => {
-    const payload = {
-      termId: selected.id,
+    const base = {
+      // v1.14 Item 6b — the form's choice, when it made one. A new lesson has
+      // no `termId` in its draft and still lands in the selected term.
+      termId: form.termId || selected.id,
       subjectId: form.subjectId,
       title: form.title,
-      weekday: form.weekday,
       startsAt: form.startsAt,
       endsAt: form.endsAt,
       room: form.room,
       color: form.color || null,
       weekParity: form.weekParity ?? null,
     };
-    if (form.id) {
-      dispatch({ type: 'EDIT_TT_ENTRY', id: form.id, ...payload });
-      if (session) outbox.enqueue('upsert_timetable', { id: form.id, ...payload });
-    } else {
-      const id = crypto.randomUUID();
-      dispatch({ type: 'ADD_TT_ENTRY', id, ...payload });
-      if (session) outbox.enqueue('upsert_timetable', { id, ...payload });
+
+    // A lesson that has never been grouped gets a series id the first time it
+    // is saved, whether or not it gains a second day. One rule, and the id is
+    // then already there if a day is added later.
+    const seriesId = form.seriesId || crypto.randomUUID();
+    // Its own row counts as part of the series even before it had an id —
+    // otherwise editing a long-standing single-day lesson would leave the
+    // original row behind and write a second one beside it.
+    const existing = form.id
+      ? [...new Set([
+        ...entriesInSeries(state.timetableEntries, form.seriesId),
+        ...(state.timetableEntries || []).filter((e) => e.id === form.id && !e.deletedAt),
+      ])]
+      : [];
+
+    const { upserts, deleteIds } = planSeriesWrite({
+      existing,
+      seriesId,
+      weekdays: form.weekdays,
+      base,
+      newId: () => crypto.randomUUID(),
+    });
+    if (upserts.length === 0) return;
+
+    for (const row of upserts) {
+      const { id, ...rest } = row;
+      const known = (state.timetableEntries || []).some((e) => e.id === id);
+      dispatch({ type: known ? 'EDIT_TT_ENTRY' : 'ADD_TT_ENTRY', id, ...rest });
+      if (session) outbox.enqueue('upsert_timetable', { id, ...rest });
     }
+    // Days the user unticked. Deleted one at a time through the same path a
+    // single delete uses, so nothing new can go wrong here that would not
+    // already be wrong there.
+    for (const id of deleteIds) {
+      dispatch({ type: 'DELETE_TT_ENTRY', id });
+      if (session) outbox.enqueue('delete_timetable', { id });
+    }
+
     setLessonDraft(null);
-    showFlash?.(t('tt.lessonSaved'));
+    showFlash?.(upserts.length > 1
+      ? t('tt.lessonSavedDays', { count: upserts.length })
+      : t('tt.lessonSaved'));
   };
 
+  // v1.14 Item 6a — Delete removes the whole set, because the set is what the
+  // form edits. Dropping a single day is unticking it and saving, which is
+  // where the user already is. The button says "all N days" when there is more
+  // than one, so this is never a surprise — the commitment editor made the
+  // same call for the same reason.
   const removeLesson = () => {
     if (!lessonDraft?.id) return;
-    dispatch({ type: 'DELETE_TT_ENTRY', id: lessonDraft.id });
-    if (session) outbox.enqueue('delete_timetable', { id: lessonDraft.id });
+    const ids = [...new Set([
+      lessonDraft.id,
+      ...entriesInSeries(state.timetableEntries, lessonDraft.seriesId).map((e) => e.id),
+    ])];
+    dispatch({ type: 'DELETE_TT_ENTRIES', ids });
+    if (session) for (const id of ids) outbox.enqueue('delete_timetable', { id });
     setLessonDraft(null);
-    showFlash?.(t('tt.lessonDeleted'));
+    showFlash?.(ids.length > 1 ? t('tt.lessonDeletedDays', { count: ids.length }) : t('tt.lessonDeleted'));
   };
 
   const range = selected ? resolveTermRange(selected, byId) : { from: null, to: null };
@@ -596,16 +716,27 @@ export default function TimetableView({ state, dispatch, session, showFlash }) {
                   startMin,
                   endMin: Math.min(24 * 60, startMin + DEFAULT_LESSON_MIN),
                 })}
-                onEdit={(e) => setLessonDraft({
-                  id: e.id,
-                  subjectId: e.subjectId || '',
-                  title: e.title || '',
-                  weekday: e.weekday,
-                  startMin: timeToMinutes(e.startsAt) ?? 9 * 60,
-                  endMin: timeToMinutes(e.endsAt) ?? 10 * 60,
-                  room: e.room || '',
-                  color: e.color || null,
-                })}
+                onEdit={(e) => {
+                  // v1.14 Item 6a — open the SET, not the day that was tapped.
+                  // Tapping Wednesday on a Mon/Wed lesson and seeing a form
+                  // that only knows about Wednesday is how you end up with two
+                  // lessons that were meant to be one.
+                  const days = entriesInSeries(state.timetableEntries, e.seriesId).map((x) => x.weekday);
+                  return setLessonDraft({
+                    id: e.id,
+                    seriesId: e.seriesId || null,
+                    termId: e.termId,
+                    subjectId: e.subjectId || '',
+                    title: e.title || '',
+                    weekday: e.weekday,
+                    weekdays: days.length ? days : [e.weekday],
+                    startMin: timeToMinutes(e.startsAt) ?? 9 * 60,
+                    endMin: timeToMinutes(e.endsAt) ?? 10 * 60,
+                    room: e.room || '',
+                    color: e.color || null,
+                    weekParity: e.weekParity ?? null,
+                  });
+                }}
                 t={t}
               />}
             </>
@@ -619,6 +750,7 @@ export default function TimetableView({ state, dispatch, session, showFlash }) {
       {lessonDraft && selected && (
         <LessonForm
           draft={lessonDraft}
+          terms={terms}
           courses={courses}
           onSave={saveLesson}
           onDelete={removeLesson}

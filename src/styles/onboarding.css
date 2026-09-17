@@ -41,3 +41,22 @@
 .ob-notif-title{font-family:var(--font-display);font-size:18px;font-weight:600;margin-bottom:8px;}
 .ob-notif-desc{font-size:13px;color:var(--muted);line-height:1.6;}
 @media(max-width:480px){.ob-card{padding:34px 20px 26px;background-position:15px 0,0 6px;}.ob-pad{padding-inline-start:10px;}.ob-card::before{width:92px;}}
+
+/* v1.14 — the first-steps strip on the Next Up home. Deliberately NOT the
+   `.ob-card` notebook page above: that card is a first-run flow that owns the
+   screen, and these are suggestions sitting beside the user's real content.
+   Flat, quiet, and clearly subordinate to the buckets underneath. */
+.fs-strip{margin-bottom:18px;display:flex;flex-direction:column;gap:8px;}
+.fs-title{font-family:var(--font-mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted2);}
+.fs-card{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 14px;}
+/* A dashed inline start edge marks these as provisional — they are the only
+   cards on this screen that will disappear on their own. */
+.fs-card{border-inline-start:2px dashed var(--border2);}
+.fs-card-body{flex:1 1 200px;min-width:0;}
+.fs-card-title{font-size:13.5px;font-weight:600;margin-bottom:3px;}
+.fs-card-sub{font-size:12px;line-height:1.5;color:var(--muted);}
+.fs-card-actions{display:flex;align-items:center;gap:10px;flex:0 0 auto;}
+.fs-skip{background:none;border:none;cursor:pointer;padding:6px 2px;
+  font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted2);}
+.fs-skip:hover{color:var(--text);text-decoration:underline;text-underline-offset:3px;}

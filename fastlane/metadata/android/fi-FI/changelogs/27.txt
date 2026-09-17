@@ -1,0 +1,3 @@
+Suunnitelma ja lukujärjestys: tehtävillä voi nyt olla eräpäivän lisäksi myös kellonaika. Yksi oppitunti voi ulottua useille viikonpäiville yhtenä merkintänä, ja oppitunnin voi siirtää lukuvuoden, lukukauden ja jakson välillä. Suunnitellut opiskelulohkot voivat nyt toistua muutaman viikon välein pelkän viikoittaisen sijaan.
+
+Arvosanat: kirjaa arvosana menneeltä jaksolta ilman aktiivista kurssia, ja valitse miten painotus toimii — kertoimena, prosenttiosuutena kurssista tai pisteinä — valmiilla asteikoilla Ranskalle, Yhdysvaltain GPA:lle, IB:lle ja prosenteille. Läsnäolo näkyy nyt leimakorttina ja arvosanan painotus suhteellisena palkkina. Uudet käyttäjät saavat muutaman suljettavan vinkin ensimmäisen kurssin luomisen jälkeen.

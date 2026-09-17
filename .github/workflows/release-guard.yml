@@ -1,0 +1,171 @@
+# Tag-without-Release guard — v1.14 Item 16.
+#
+# WHY THIS EXISTS. In the v1.13 cycle all three suite apps landed in the same
+# broken state at once: the tag was pushed, and no GitHub Release with a signed
+# APK ever followed it. That matters more here than in an ordinary repo. NCC and
+# StudyDesk are merged into F-Droid with `AutoUpdateMode: Version` and
+# `UpdateCheckMode: Tags`, so the tag IS the publish trigger and the named APK
+# asset on its Release IS the artifact F-Droid fetches. A tag with no Release is
+# not a cosmetic gap: it is an update F-Droid has been told to look for and
+# cannot find.
+#
+# It was caught weeks later, by hand, while looking for something else. Checking
+# the three repos' tags against their Releases while writing this guard turned up
+# SIX more historical instances, listed in ACCEPTED_GAPS below — so the v1.13
+# cycle was not the first time, it was the first time anybody looked.
+#
+# WHY DAILY, AND WHY A 24-HOUR GRACE, rather than the hour the build plan
+# suggested. The real release timeline says an hour is wrong: on StudyDesk
+# v1.13.1 the tag was cut 2026-09-11T21:07Z and the signed APK was uploaded
+# 2026-09-12T14:45Z — seventeen hours later, on a release that went perfectly.
+# Tag, build, sign and upload are separate manual steps and they span a night's
+# sleep. An hourly guard would have spent that whole release red, and a guard
+# that cries wolf on a good release is worse than no guard: it teaches you to
+# ignore it. The failure this catches is "nobody noticed for weeks", so a day is
+# the right resolution.
+#
+# HOW IT REPORTS. It fails the job. GitHub emails the repo owner when a
+# scheduled workflow fails on the default branch, which is the whole
+# notification mechanism and needs no token, no secret and no bot account.
+#
+# TWO THINGS TO KNOW ABOUT SCHEDULED WORKFLOWS:
+#   - They only ever run from the DEFAULT BRANCH. This file does nothing until
+#     it is merged to `main`.
+#   - GitHub disables them after 60 days with no repo activity, with an email
+#     first. On a repo that ships every few weeks that will not fire, but if the
+#     suite ever goes quiet, this is the guard that goes quiet with it.
+
+name: Release guard
+
+on:
+  schedule:
+    # 07:20 UTC. Off the hour on purpose — :00 is the busiest minute on GitHub's
+    # scheduler and runs there are the most likely to be delayed or dropped.
+    - cron: '20 7 * * *'
+  workflow_dispatch:
+    inputs:
+      grace_hours:
+        description: 'Hours a tag may go without a Release before it is flagged'
+        required: false
+        default: '24'
+
+permissions:
+  contents: read
+
+jobs:
+  tags-have-releases:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        env:
+          GRACE_HOURS: ${{ inputs.grace_hours || '24' }}
+        with:
+          script: |
+            // Tags deliberately left without a Release. Every entry needs a
+            // reason: the point of this list is that an accepted gap is written
+            // down and a new one is not, so an undocumented addition here is
+            // the same failure this guard exists to catch, just quieter.
+            const ACCEPTED_GAPS = new Map(Object.entries({
+              "v1.13.0": "superseded by v1.13.1 before a Release was ever cut — the v1.13 cycle gap, closed by shipping 1.13.1 rather than backfilling 1.13.0 (registry, 2026-09-12).",
+              "v1.5.2": "pre-dates this guard; the reason was not recorded. Listed so the guard starts green — if it is ever worth backfilling, do that and delete this line."
+            }));
+
+            // The empty-Release half of the check applies only from here on.
+            // Every tag in all three repos was checked against its Release
+            // while writing this guard, so the "no Release at all" half is
+            // known-clean back to v1.0 (ACCEPTED_GAPS holds the six exceptions
+            // found). The ASSETS on those older Releases were not audited, and
+            // starting red on a 2026-05 release nobody is going to backfill
+            // would just teach everyone to ignore this job.
+            const ASSET_CHECK_FROM = Date.parse('2026-09-12T00:00:00Z');
+
+            const graceHours = Number(process.env.GRACE_HOURS) || 24;
+            const graceMs = graceHours * 3600 * 1000;
+            const now = Date.now();
+            const { owner, repo } = context.repo;
+
+            const tags = await github.paginate(github.rest.repos.listTags, {
+              owner, repo, per_page: 100,
+            });
+            const releases = await github.paginate(github.rest.repos.listReleases, {
+              owner, repo, per_page: 100,
+            });
+
+            // Drafts are invisible to F-Droid and to everyone else, so a draft
+            // is not a Release for this purpose — it is the failure wearing a
+            // hat. Keyed by tag_name, which is what a tag can be matched on.
+            const byTag = new Map(
+              releases.filter((r) => !r.draft).map((r) => [r.tag_name, r]),
+            );
+
+            const problems = [];
+            const skipped = [];
+
+            for (const tag of tags) {
+              // Only version tags. A `nightly` or `base-image` tag is not a
+              // release and should not be treated as a missing one.
+              if (!/^v\d/.test(tag.name)) continue;
+
+              if (ACCEPTED_GAPS.has(tag.name)) {
+                skipped.push(`${tag.name} — accepted: ${ACCEPTED_GAPS.get(tag.name)}`);
+                continue;
+              }
+
+              // Check the Release FIRST and the tag's age only when
+              // something is missing: a healthy tag then costs no API call at
+              // all, and a repo with thirty green tags does not spend thirty
+              // requests proving it.
+              const release = byTag.get(tag.name);
+              if (release) {
+                const published = Date.parse(release.published_at || release.created_at);
+                if (!(published >= ASSET_CHECK_FROM)) {
+                  skipped.push(`${tag.name} — Release pre-dates the asset check`);
+                  continue;
+                }
+                if ((release.assets || []).some((a) => a.name.endsWith('.apk'))) continue;
+              }
+
+              // A tag object has no timestamp of its own that the API will give
+              // us cheaply, so the tagged COMMIT's date is the age used here. It
+              // is a lower bound — a tag is never pushed before the commit it
+              // points at exists — so the grace period this computes is always
+              // at least as generous as the real one. Being late to complain is
+              // the correct direction to be wrong in.
+              const commit = await github.rest.repos.getCommit({
+                owner, repo, ref: tag.commit.sha,
+              });
+              const dated = commit.data.commit.committer?.date
+                || commit.data.commit.author?.date;
+              const age = now - new Date(dated).getTime();
+              if (age < graceMs) {
+                skipped.push(`${tag.name} — inside the ${graceHours}h grace period`);
+                continue;
+              }
+
+              if (!release) {
+                problems.push(`${tag.name}: tagged, but there is no published Release.`);
+              } else {
+                // The incident was "no Release, no signed asset" — an empty
+                // Release is the same outage for an F-Droid user, who is
+                // fetching the APK, not reading the notes.
+                problems.push(`${tag.name}: Release exists (${release.html_url}) but carries no .apk asset.`);
+              }
+            }
+
+            core.startGroup(`Not flagged (${skipped.length})`);
+            for (const line of skipped) core.info(line);
+            core.endGroup();
+
+            if (problems.length === 0) {
+              core.info(`OK — every version tag in ${owner}/${repo} older than ${graceHours}h has a published Release with an APK.`);
+              return;
+            }
+
+            for (const p of problems) core.error(p);
+            core.setFailed(
+              `${problems.length} tag(s) in ${owner}/${repo} have no usable Release. `
+              + 'For an app on F-Droid with UpdateCheckMode: Tags, that is an update users have been '
+              + 'pointed at and cannot download. Either finish the release (see '
+              + 'limecore/fdroid/FDROID_RELEASE_CHECKLIST.md, section B) or, if the tag was '
+              + 'deliberately superseded, add it to ACCEPTED_GAPS in this workflow with the reason.',
+            );

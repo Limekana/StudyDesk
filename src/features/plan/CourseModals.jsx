@@ -20,7 +20,7 @@ import { enterSubmit } from '../../lib/imeSubmit.js';
 
 export function AddAsgnModal({ courses, activeCourse, onAdd, onClose }) {
   const { t } = useTranslation();
-  const [title,setTitle]=useState(""); const [courseId,setCourse]=useState(activeCourse||(courses[0]?.id??"")); const [type,setType]=useState(ASSIGN_TYPES[0]); const [dueDate,setDueDate]=useState(""); const [notes,setNotes]=useState("");
+  const [title,setTitle]=useState(""); const [courseId,setCourse]=useState(activeCourse||(courses[0]?.id??"")); const [type,setType]=useState(ASSIGN_TYPES[0]); const [dueDate,setDueDate]=useState(""); const [dueTime,setDueTime]=useState(""); const [notes,setNotes]=useState("");
   // v1.8 — "Other" used to be a dead end: it stored the literal string "Other"
   // with no way to say what the assignment actually was. Picking it now reveals
   // a label field and the custom text is what gets stored, so `type` stays a
@@ -30,7 +30,7 @@ export function AddAsgnModal({ courses, activeCourse, onAdd, onClose }) {
   const [customType,setCustomType]=useState("");
   const isOtherType = type===OTHER_ASSIGN_TYPE;
   const resolvedType = isOtherType ? customType.trim() : type;
-  const submit=()=>{ if(!title.trim()||!courseId||!resolvedType) return; onAdd({title:title.trim(),courseId,type:resolvedType,dueDate,notes}); };
+  const submit=()=>{ if(!title.trim()||!courseId||!resolvedType) return; onAdd({title:title.trim(),courseId,type:resolvedType,dueDate,dueTime:dueDate?dueTime:"",notes}); };
   return <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={t('av.md.addAssignment')} onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
     <div className="modal-title">{t('av.md.addAssignment')}</div>
     <div className="input-group"><div className="input-label">{t('av.md.title')}</div><input type="text" placeholder={t('av.md.titlePh')} value={title} onChange={e=>setTitle(e.target.value)} autoFocus/></div>
@@ -39,7 +39,15 @@ export function AddAsgnModal({ courses, activeCourse, onAdd, onClose }) {
       <div className="input-group"><div className="input-label">{t('av.md.type')}</div><select value={type} onChange={e=>setType(e.target.value)}>{ASSIGN_TYPES.map(ty=><option key={ty} value={ty}>{t(`av.assignType.${ty}`,{defaultValue:ty})}</option>)}</select></div>
     </div>
     {isOtherType&&<div className="input-group"><input type="text" placeholder={t('av.md.typeCustomPh')} value={customType} onChange={e=>setCustomType(e.target.value)} aria-label={t('av.md.type')} autoFocus/></div>}
-    <div className="input-group"><div className="input-label">{t('av.md.dueDateOpt')}</div><input type="date" value={dueDate} onChange={e=>setDueDate(e.target.value)}/></div>
+    {/* v1.14 Item 5 (#51) — date and time as one row, the time disabled until
+        there is a date to hang it on. A time with no date is not a deadline,
+        and letting it be typed only to be dropped on save is worse than not
+        offering it. Optional throughout: most assignments are due "that day"
+        and always have been. */}
+    <div className="modal-grid">
+      <div className="input-group"><div className="input-label">{t('av.md.dueDateOpt')}</div><input type="date" value={dueDate} onChange={e=>setDueDate(e.target.value)}/></div>
+      <div className="input-group"><div className="input-label">{t('av.md.dueTimeOpt')}</div><input type="time" value={dueTime} disabled={!dueDate} onChange={e=>setDueTime(e.target.value)}/></div>
+    </div>
     <div className="input-group"><div className="input-label">{t('av.md.notesOpt')}</div><textarea placeholder={t('av.md.asgnNotesPh')} value={notes} onChange={e=>setNotes(e.target.value)} style={{minHeight:60}}/></div>
     <div style={{display:"flex",gap:8,marginTop:4}}><button className="btn" onClick={submit}>{t('av.md.addAssignment')}</button><button className="btn-outline" onClick={onClose}>{t('common.cancel')}</button></div>
   </div></div>;

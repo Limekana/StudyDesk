@@ -4,6 +4,12 @@ import { calculateGPA, subjectEffectiveGrade, subjectsWithEffectiveGrades } from
 import { scaleFor, describeScale } from '../../lib/gradeScale.js';
 import * as outbox from '../../lib/outbox.js';
 import { enterSubmit } from '../../lib/imeSubmit.js';
+import WeightBlocks from '../../lib/WeightBlocks.jsx';
+import {
+  WEIGHT_MODES, DEFAULT_POINTS_TOTAL, preferredWeightMode, setPreferredWeightMode,
+  toFactor, fromFactor, shareOfCourse,
+} from '../../lib/gradeWeight.js';
+import PastCourseModal from './PastCourseModal.jsx';
 
 // Grade rows go straight to Supabase, where `id` is a strict UUID column.
 // crypto.randomUUID() is browser-native (since Chromium 92 / 2021) — Capacitor's
@@ -33,6 +39,19 @@ const css = `
 .gv-row{display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:center;padding:6px 0;font-size:13px;}
 .gv-row-grade{font-family:var(--font-display);font-weight:600;font-size:16px;}
 .gv-row-meta{font-family:var(--font-mono);font-size:10px;color:var(--muted);}
+/* v1.14 — the weight rail. The course's whole weight budget is the track and
+   each grade is a segment of it, so "how much does this one count" is a
+   picture rather than a number to be trusted. The active segment is solid;
+   the others are the context that makes it mean something.
+   Every segment has a floor width (see MIN_SEGMENT), which is why the
+   percentage stays beside it: a floored segment is no longer to scale. */
+.wb{display:flex;align-items:center;gap:8px;}
+.wb-rail{display:flex;flex:1 1 auto;min-width:60px;max-width:180px;height:8px;border:1px solid var(--border2);border-radius:3px;overflow:hidden;background:var(--surface2);}
+.wb-compact .wb-rail{height:6px;max-width:96px;}
+.wb-seg{height:100%;background:var(--border2);border-inline-end:1px solid var(--surface);}
+.wb-seg:last-child{border-inline-end:none;}
+.wb-seg.is-active{background:var(--text);}
+.wb-pct{font-family:var(--font-mono);font-size:10px;color:var(--muted);white-space:nowrap;}
 .gv-row-actions{display:flex;gap:4px;}
 .gv-row-actions button{background:none;border:none;color:var(--muted2);cursor:pointer;padding:2px 6px;font-size:14px;}
 .gv-row-actions button:hover{color:var(--text);}
@@ -47,6 +66,13 @@ const css = `
 .gv-sem-btn:hover{color:var(--text);border-color:var(--text);}
 .gv-archived{opacity:0.55;}
 .gv-archived .gv-subject{background:var(--surface2);}
+/* v1.14 Item 8b — the weight entry-mode switch, and the live readout under
+   it. Reuses .gv-mode's segmented-control look so the modal does not invent a
+   third control style for a field the hero already has one for. */
+.gv-wmode{display:inline-flex;border:1px solid var(--border2);border-radius:6px;overflow:hidden;}
+.gv-wmode button{background:transparent;border:none;padding:5px 10px;font-family:var(--font-mono);font-size:9px;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;color:var(--muted);}
+.gv-wmode button.active{background:var(--text);color:var(--bg);}
+.gv-wshare{font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:6px;letter-spacing:0.04em;}
 .gv-arch-banner{margin:24px 0 10px;padding:10px 14px;background:var(--surface2);border-inline-start:3px solid var(--border2);font-family:var(--font-mono);font-size:11px;color:var(--muted);}
 @media(max-width:480px){
   .gv-hero{flex-direction:column;align-items:stretch;}
@@ -86,14 +112,40 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
   const [expandedId, setExpandedId] = useState(null);
   const [editing, setEditing] = useState(null); // grade row being edited
   const [showAdd, setShowAdd] = useState(false);
+  const [showPastCourse, setShowPastCourse] = useState(false);
 
+  // v1.14 Item 8a — measured against ALL courses, not just the active ones.
+  // The archived cards have always rendered their own "Add grade to…" button,
+  // so a user with an archived-only account could reach this with nothing in
+  // `subjects` and be told to add a course they already have.
   function onAddClick(subjectId) {
-    if (subjects.length === 0) {
+    if (allSubjects.length === 0) {
       showFlash(t('gv.addCourseFirst'));
       return;
     }
     setEditing(null);
-    setShowAdd({ subjectId: subjectId || subjects[0].id });
+    setShowAdd({ subjectId: subjectId || subjects[0]?.id || allSubjects[0].id });
+  }
+
+  // v1.14 Item 8a — a course that is archived from the moment it exists, so a
+  // finished term can be entered without appearing in the live GPA first. The
+  // grade modal opens straight afterwards: nobody creates a past course in
+  // order to look at it.
+  function createPastCourse(data) {
+    const id = uid();
+    const stamp = new Date().toISOString();
+    dispatch({ type: 'ADD_COURSE', id, ...data, archivedAt: stamp });
+    if (session) {
+      outbox.enqueue('upsert_subject', {
+        id, name: data.name, color: data.color, credits: data.credits,
+        semester: data.semester, schoolYear: data.schoolYear, archivedAt: stamp,
+      });
+    }
+    setShowPastCourse(false);
+    setShowArchived(true);
+    showFlash(t('gv.pcCreated', { name: data.name }));
+    setEditing(null);
+    setShowAdd({ subjectId: id });
   }
 
   function saveGrade(payload) {
@@ -183,11 +235,27 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
             {own.length === 0 && (
               <div style={{ fontSize: 12, color: 'var(--muted)', padding: '4px 0' }}>{t('gv.noGradesCourse')}</div>
             )}
-            {own.sort((a, b) => (b.date || '').localeCompare(a.date || '')).map((g) => (
+            {own.sort((a, b) => (b.date || '').localeCompare(a.date || '')).map((g) => {
+              // v1.14 Item 8b — the share is the honest answer to what a
+              // weight means, and it reads the same whether this course's
+              // weights were typed as 35/30/35 or 0.35/0.30/0.35. v1.14's
+              // visual-language item then draws the same fact: the rail is
+              // the course's whole weight budget with this grade's slice
+              // solid, so the share has something to be a share OF.
+              const share = shareOfCourse(g.weight, own.map((x) => x.weight));
+              return (
               <div key={g.id} className="gv-row">
                 <span>
                   <span className="gv-row-grade">{g.grade}</span>{' '}
-                  <span className="gv-row-meta">× w={g.weight}</span>
+                  {share === null ? (
+                    <span className="gv-row-meta" title={t('gv.weightTitle', { w: g.weight })}>
+                      {`× w=${g.weight}`}
+                    </span>
+                  ) : (
+                    <span title={t('gv.weightTitle', { w: g.weight })}>
+                      <WeightBlocks items={own} activeId={g.id} compact />
+                    </span>
+                  )}
                 </span>
                 <span className="gv-row-meta">{g.date || '—'}</span>
                 <span />
@@ -196,7 +264,8 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
                   <button className="danger" onClick={() => delGrade(g.id)} title={t('common.delete')}>×</button>
                 </span>
               </div>
-            ))}
+              );
+            })}
             <div style={{ marginTop: 8 }}>
               <button className="btn-outline" onClick={(e) => { e.stopPropagation(); onAddClick(s.id); }}>{t('gv.addGradeTo', { name: s.name })}</button>
             </div>
@@ -234,7 +303,11 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
         </div>
 
         <div className="gv-toolbar">
-          <button className="btn" onClick={() => onAddClick()} disabled={subjects.length === 0}>{t('gv.addGrade')}</button>
+          <button className="btn" onClick={() => onAddClick()} disabled={allSubjects.length === 0}>{t('gv.addGrade')}</button>
+          {/* v1.14 Item 8a. Beside Add grade rather than buried in the archive
+              section, which is toggle-gated and empty for exactly the person
+              who needs this on their first day. */}
+          <button className="btn-outline" onClick={() => setShowPastCourse(true)}>{t('gv.addPastCourse')}</button>
           {archivedSubjects.length > 0 && (
             <button className="btn-outline" onClick={() => setShowArchived((v) => !v)}>
               {showArchived ? t('gv.hideArchived', { count: archivedSubjects.length }) : t('gv.showArchived', { count: archivedSubjects.length })}
@@ -246,7 +319,11 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
           <div className="gv-empty">
             <div className="gv-empty-icon">⌗</div>
             <div style={{ fontWeight: 600, marginBottom: 6, color: 'var(--text)' }}>{t('gv.noCoursesTitle')}</div>
-            <div style={{ fontSize: 13 }}>{t('gv.noCoursesBody')}</div>
+            <div style={{ fontSize: 13, marginBottom: 14 }}>{t('gv.noCoursesBody')}</div>
+            {/* Someone whose courses are all in the past sees this screen with
+                nothing on it and no way forward, which is the reported
+                friction in its purest form. */}
+            <button className="btn-outline" onClick={() => setShowPastCourse(true)}>{t('gv.addPastCourse')}</button>
           </div>
         )}
 
@@ -298,12 +375,31 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
           </>
         )}
 
+        {showPastCourse && (
+          <PastCourseModal
+            courses={state.courses}
+            onCreate={createPastCourse}
+            onClose={() => setShowPastCourse(false)}
+          />
+        )}
+
         {showAdd && (
           <GradeEditModal
             mode={mode}
             scale={scale}
-            subjects={subjects}
+            /* v1.14 Item 8a — ALL courses, split into two groups in the
+               select. The archived cards have always offered "Add grade
+               to…", but the modal only knew about active ones: the id was
+               set correctly and the dropdown showed a different course's
+               name, so a grade could be filed against a course the user
+               was not looking at. */
+            subjects={activeSubjects}
+            archivedSubjects={archivedSubjects}
+            allGrades={grades}
             initial={editing ? {
+              // `id` so the share readout replaces this row's own weight
+              // rather than counting it twice while it is being edited.
+              id: editing.id,
               subjectId: editing.subjectId, grade: editing.grade, weight: editing.weight, date: editing.date,
             } : { subjectId: showAdd.subjectId }}
             isEdit={!!editing}
@@ -317,12 +413,43 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
   );
 }
 
-function GradeEditModal({ mode, scale, subjects, initial, isEdit, onSave, onDelete, onClose }) {
+function GradeEditModal({ mode, scale, subjects, archivedSubjects = [], allGrades = [], initial, isEdit, onSave, onDelete, onClose }) {
   const { t } = useTranslation();
-  const [subjectId, setSubjectId] = useState(initial.subjectId || subjects[0]?.id || '');
+  const everyCourse = [...subjects, ...archivedSubjects];
+  const [subjectId, setSubjectId] = useState(initial.subjectId || everyCourse[0]?.id || '');
   const [grade, setGrade] = useState(initial.grade != null ? String(initial.grade) : '');
-  const [weight, setWeight] = useState(initial.weight != null ? String(initial.weight) : '1');
   const [date, setDate] = useState(initial.date || new Date().toISOString().slice(0, 10));
+
+  // v1.14 Item 8b. The mode is remembered per device, so a user who thinks in
+  // percentages says so once. The stored factor is unchanged by any of it.
+  const [wMode, setWMode] = useState(preferredWeightMode);
+  const [pointsTotal, setPointsTotal] = useState(String(DEFAULT_POINTS_TOTAL));
+  const [weight, setWeight] = useState(() => {
+    const start = initial.weight != null ? initial.weight : 1;
+    const shown = fromFactor(preferredWeightMode(), start, DEFAULT_POINTS_TOTAL);
+    return shown === null ? '1' : String(shown);
+  });
+
+  // Switching mode re-expresses the SAME weight rather than reinterpreting the
+  // typed number. Flipping "0.35 factor" to percent has to read 35%, not 0.35%
+  // — otherwise the control silently rewrites what the user already entered.
+  function switchMode(next) {
+    const factor = toFactor(wMode, weight, pointsTotal);
+    setWMode(next);
+    setPreferredWeightMode(next);
+    if (factor === null) return;
+    const shown = fromFactor(next, factor, pointsTotal);
+    if (shown !== null) setWeight(String(shown));
+  }
+
+  const factor = toFactor(wMode, weight, pointsTotal);
+  // What this weight will actually be worth once saved, against the course's
+  // other grades — the readout that makes the field unambiguous whatever
+  // units it was typed in. The row being edited is replaced, not added to.
+  const siblings = allGrades
+    .filter((g) => g.subjectId === subjectId && g.id !== initial.id)
+    .map((g) => g.weight);
+  const share = factor === null ? null : shareOfCourse(factor, [...siblings, factor]);
 
   const placeholder = mode === 'custom'
     ? `${scale.min}\u2013${scale.max}`
@@ -330,13 +457,15 @@ function GradeEditModal({ mode, scale, subjects, initial, isEdit, onSave, onDele
 
   function submit() {
     const gNum = parseFloat(grade);
-    const wNum = parseFloat(weight);
     if (!subjectId) return;
     if (isNaN(gNum)) return;
     onSave({
       subjectId,
       grade: gNum,
-      weight: isNaN(wNum) || wNum < 0 ? 1 : wNum,
+      // An unusable weight falls back to 1, as it always has: a grade with a
+      // nonsense weight is still a grade, and refusing to save it would lose
+      // the number the user came here to record.
+      weight: factor === null ? 1 : factor,
       date: date || null,
     });
   }
@@ -349,6 +478,13 @@ function GradeEditModal({ mode, scale, subjects, initial, isEdit, onSave, onDele
           <div className="input-label">{t('gv.fCourse')}</div>
           <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
             {subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            {archivedSubjects.length > 0 && (
+              <optgroup label={t('gv.archivedGroup')}>
+                {archivedSubjects.map((s) => (
+                  <option key={s.id} value={s.id}>{s.semester ? `${s.name} · ${s.semester}` : s.name}</option>
+                ))}
+              </optgroup>
+            )}
           </select>
         </div>
         <div className="modal-grid">
@@ -358,7 +494,57 @@ function GradeEditModal({ mode, scale, subjects, initial, isEdit, onSave, onDele
           </div>
           <div className="input-group">
             <div className="input-label">{t('gv.fWeight')}</div>
-            <input type="number" step="0.05" min="0" placeholder={t('gv.phWeight')} value={weight} onChange={(e) => setWeight(e.target.value)} />
+            <input type="number" step="0.05" min="0" placeholder={t(`gv.phWeight_${wMode}`)} value={weight} onChange={(e) => setWeight(e.target.value)} />
+          </div>
+        </div>
+
+        {/* v1.14 Item 8b — "I don't know if I should put 0.35 for something
+            worth 35%". The switch says which of the three you are typing, and
+            the line under it says what the answer will actually be worth,
+            which is the question behind the question. */}
+        <div className="input-group">
+          <div className="gv-wmode" role="radiogroup" aria-label={t('gv.fWeight')}>
+            {WEIGHT_MODES.map((m) => (
+              <button
+                key={m}
+                type="button"
+                role="radio"
+                aria-checked={wMode === m}
+                className={wMode === m ? 'active' : ''}
+                onClick={() => switchMode(m)}
+              >
+                {t(`gv.wMode_${m}`)}
+              </button>
+            ))}
+          </div>
+          {wMode === 'points' && (
+            <div className="input-group" style={{ marginTop: 8 }}>
+              <div className="input-label">{t('gv.wPointsTotal')}</div>
+              <input
+                type="number" step="1" min="1" value={pointsTotal}
+                onChange={(e) => setPointsTotal(e.target.value)}
+              />
+            </div>
+          )}
+          {/* The same rail as the row list, live. The point of drawing it
+              HERE is that the weight being typed is the one segment that
+              moves, so the field stops being a number with no scale and
+              becomes a slice getting bigger or smaller against the course's
+              other grades. `editing` is the id so the segment is this row's
+              own, not a phantom added beside it. */}
+          {factor !== null && (
+            <div style={{ marginTop: 8 }}>
+              <WeightBlocks
+                items={[
+                  ...allGrades.filter((g) => g.subjectId === subjectId && g.id !== initial.id),
+                  { id: '__editing__', weight: factor },
+                ]}
+                activeId="__editing__"
+              />
+            </div>
+          )}
+          <div className="gv-wshare">
+            {share === null ? t('gv.wShareUnknown') : t('gv.wShare', { pct: Math.round(share * 100) })}
           </div>
         </div>
         <div className="input-group">
