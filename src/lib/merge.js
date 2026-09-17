@@ -6,6 +6,8 @@
 // These helpers translate one direction (DB → local) and reconcile via LWW
 // using updated_at / updatedAt timestamps.
 
+import { normalizeDueTime } from './dueAt.js';
+
 function newer(remoteIso, localIso) {
   if (!localIso) return true;
   if (!remoteIso) return false;
@@ -113,6 +115,12 @@ function mergeAssignment(localA, remoteRow) {
     // React flipping the field to uncontrolled — keep the empty-string shape
     // the reducer already creates.
     dueDate: remoteRow.due_date || '',
+    // v1.14 Item 5. `normalizeDueTime` turns the column's `HH:MM:SS` into the
+    // `HH:MM` an <input type="time"> can hold, and it also absorbs the column
+    // simply not being there — a pull taken before the migration lands, or a
+    // row written by an older client, both arrive as undefined and mean the
+    // same thing: no time given.
+    dueTime: normalizeDueTime(remoteRow.due_time),
     notes: remoteRow.notes || '',
     done: Boolean(remoteRow.done),
     updatedAt: remoteRow.updated_at || null,
@@ -183,6 +191,9 @@ function mergePlannedSession(localP, remoteRow) {
     // state — most planned blocks are still owed.
     fulfilledBy: remoteRow.fulfilled_by || null,
     dismissedAt: remoteRow.dismissed_at || null,
+    // v1.14 Item 7a. Absent means a one-off, which is what every pre-v1.14
+    // planned block is.
+    seriesId: remoteRow.series_id || null,
     updatedAt: remoteRow.updated_at || null,
     deletedAt: remoteRow.deleted_at || null,
   };
@@ -227,6 +238,9 @@ function mergeTimetableEntry(localE, remoteRow) {
     // reading it through `||` would be a silent coercion waiting for the day
     // someone adds a third value.
     weekParity: remoteRow.week_parity ?? null,
+    // v1.14 Item 6a. Absent — an older row, or a pull taken before the
+    // migration — means "not part of a set", which is what those rows are.
+    seriesId: remoteRow.series_id || null,
     updatedAt: remoteRow.updated_at || null,
     deletedAt: remoteRow.deleted_at || null,
   };
@@ -261,6 +275,9 @@ function mergeCommitment(localC, remoteRow) {
     weekday: remoteRow.weekday === null || remoteRow.weekday === undefined ? null : Number(remoteRow.weekday),
     startsOn: remoteRow.starts_on || '',
     endsOn: remoteRow.ends_on || '',
+    // v1.14 Item 7b. Absent — an older row, or a pull taken before the
+    // migration — reads as every week, which is what those rows mean.
+    intervalWeeks: remoteRow.interval_weeks == null ? null : Number(remoteRow.interval_weeks),
     startTime: remoteRow.start_time,
     endTime: remoteRow.end_time,
     notes: remoteRow.notes || '',

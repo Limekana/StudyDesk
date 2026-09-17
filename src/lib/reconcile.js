@@ -134,6 +134,7 @@ export function findUnsynced(state, remote) {
         title: a.title,
         type: a.type,
         dueDate: a.dueDate,
+        dueTime: a.dueTime,
         notes: a.notes,
         done: a.done,
       },
@@ -250,6 +251,7 @@ export function findUnsynced(state, remote) {
         room: te.room,
         color: te.color,
         weekParity: te.weekParity,
+        seriesId: te.seriesId,
       },
     });
   }
@@ -272,6 +274,7 @@ export function findUnsynced(state, remote) {
         notes: ps.notes,
         fulfilledBy: ps.fulfilledBy,
         dismissedAt: ps.dismissedAt,
+        seriesId: ps.seriesId,
       },
     });
   }
@@ -289,6 +292,7 @@ export function findUnsynced(state, remote) {
         weekday: cm.weekday,
         startsOn: cm.startsOn,
         endsOn: cm.endsOn,
+        intervalWeeks: cm.intervalWeeks,
         startTime: cm.startTime,
         endTime: cm.endTime,
         notes: cm.notes,

@@ -36,11 +36,14 @@ import {
   buildEvents, sortDayItems, layoutBands, layoutDayColumn, timedOn, allDayOn,
 } from '../../lib/calendar.js';
 import { lessonsOn, localTimestamp, minutesToSqlTime, timeToMinutes } from '../../lib/timetable.js';
-import { commitmentsOn } from '../../lib/commitments.js';
+import { commitmentsOn, INTERVAL_CHOICES } from '../../lib/commitments.js';
+import {
+  REPEAT_WEEK_CHOICES, MAX_OCCURRENCES, repeatHorizon, occurrenceDates, laterInSeries,
+} from '../../lib/planRepeat.js';
 import { shortenLabels } from '../../lib/courseLabels.js';
 import { ribbonWindow, spanPct, packRibbon, weekLoad, freeSlots, pctIn } from '../../lib/weekRibbon.js';
-import { COURSE_COLORS } from '../../lib/courseColors.js';
-import { parseLocalDate, toLocalISO, addDays, fmtTime, formatLocale } from '../../lib/dates.js';
+import CoursePicker from '../../lib/CoursePicker.jsx';
+import { parseLocalDate, toLocalISO, addDays, fmtTime, fmtDateFull, formatLocale } from '../../lib/dates.js';
 import { downloadIcs } from '../../lib/ics.js';
 import * as outbox from '../../lib/outbox.js';
 import '../../styles/calendar.css';
@@ -910,7 +913,7 @@ function DayAgenda({ iso, byDay, lessons, commitments, locale, onOpen, onClose, 
 // someone drags by accident and hits Escape — and an accidental drag is the
 // most likely gesture on a surface where dragging is also how you move things.
 
-function PlanEditor({ draft, courses, onSave, onDelete, onLog, onDismiss, onClose, t }) {
+function PlanEditor({ draft, courses, onSave, onDelete, onDeleteSeries, onLog, onDismiss, onClose, t }) {
   const isNew = !draft.id;
   const [subjectId, setSubjectId] = useState(draft.subjectId || '');
   const [title, setTitle] = useState(draft.title || '');
@@ -918,6 +921,13 @@ function PlanEditor({ draft, courses, onSave, onDelete, onLog, onDismiss, onClos
   const [start, setStart] = useState(minutesClock(draft.startMin));
   const [duration, setDuration] = useState(String(draft.durationMinutes));
   const [notes, setNotes] = useState(draft.notes || '');
+  // v1.14 Item 7a — 0 means "does not repeat". Only offered on a NEW plan:
+  // the occurrences are ordinary independent rows once written, so "make this
+  // existing block repeat" would mean inventing a retroactive series, and
+  // editing one block of a series edits that block, which is the point.
+  const [repeatWeeks, setRepeatWeeks] = useState(0);
+  const horizon = isNew && repeatWeeks ? repeatHorizon(date, draft.terms) : null;
+  const occurrences = horizon ? occurrenceDates(date, repeatWeeks, horizon).length : 1;
 
   const submit = () => {
     const dur = parseInt(duration, 10);
@@ -932,6 +942,7 @@ function PlanEditor({ draft, courses, onSave, onDelete, onLog, onDismiss, onClos
       notes: notes.trim(),
       iso: date,
       startMin,
+      repeatWeeks: isNew ? repeatWeeks : 0,
       durationMinutes: Math.min(1440, dur),
     });
   };
@@ -975,6 +986,33 @@ function PlanEditor({ draft, courses, onSave, onDelete, onLog, onDismiss, onClos
             <input type="number" min="1" max="1440" value={duration} onChange={(e) => setDuration(e.target.value)} />
           </div>
         </div>
+        {/* v1.14 Item 7a (#51) — "planned study sessions can't repeat, only the
+            blockers can". A repeat here MATERIALISES: it writes N ordinary
+            blocks now, each of which can then be logged, moved or dismissed on
+            its own, which is the whole reason a plan cannot recur by rule the
+            way a blocker does. The line underneath says exactly how many and
+            how far, before the button is pressed, because "repeat weekly" with
+            no visible end is the kind of thing that fills a calendar. */}
+        {isNew && (
+          <div className="input-group">
+            <div className="input-label">{t('cal.planRepeat')}</div>
+            <select value={String(repeatWeeks)} onChange={(e) => setRepeatWeeks(Number(e.target.value))}>
+              <option value="0">{t('cal.planRepeatNone')}</option>
+              {REPEAT_WEEK_CHOICES.map((n) => (
+                <option key={n} value={n}>
+                  {n === 1 ? t('cm.everyWeek') : t('cm.everyNWeeks', { count: n })}
+                </option>
+              ))}
+            </select>
+            {repeatWeeks > 0 && (
+              <div className="tt-hint">
+                {t('cal.planRepeatSummary', { count: occurrences, until: fmtDateFull(horizon) })}
+                {occurrences >= MAX_OCCURRENCES ? ` ${t('cal.planRepeatCapped', { max: MAX_OCCURRENCES })}` : ''}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="input-group">
           <div className="input-label">{t('sv.fNotes')}</div>
           <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} {...enterSubmit(submit)} />
@@ -998,6 +1036,14 @@ function PlanEditor({ draft, courses, onSave, onDelete, onLog, onDismiss, onClos
               )}
               {draft.status !== 'dismissed' && draft.status !== 'kept' && (
                 <button className="btn-outline btn-sm" onClick={onDismiss}>{t('cal.planDismiss')}</button>
+              )}
+              {/* Only the ones still owed, and only forward. A block already
+                  LOGGED is the pointer to a real study session that happened —
+                  deleting it to tidy up an intention would orphan evidence. */}
+              {draft.laterCount > 1 && (
+                <button className="btn-outline btn-sm" onClick={onDeleteSeries}>
+                  {t('cal.planStopRepeat', { count: draft.laterCount })}
+                </button>
               )}
               <button className="btn-danger-text plan-delete" onClick={onDelete} title={t('common.delete')}>
                 <Trash2 size={13} strokeWidth={1.75} /> {t('common.delete')}
@@ -1028,6 +1074,7 @@ function CommitmentEditor({ draft, onSave, onDelete, onClose, t }) {
   );
   const [startsOn, setStartsOn] = useState(draft.startsOn);
   const [endsOn, setEndsOn] = useState(draft.endsOn || '');
+  const [every, setEvery] = useState(String(draft.intervalWeeks || 1));
   const [start, setStart] = useState(minutesClock(draft.startMin));
   const [end, setEnd] = useState(minutesClock(draft.endMin));
   const [color, setColor] = useState(draft.color || '');
@@ -1050,6 +1097,9 @@ function CommitmentEditor({ draft, onSave, onDelete, onClose, t }) {
       weekday: weekly ? Number(weekday) : null,
       startsOn,
       endsOn: weekly ? endsOn : '',
+      // A one-off has no interval; sending one would describe a recurrence the
+      // row does not have.
+      intervalWeeks: weekly ? Number(every) || 1 : 1,
       startTime: minutesToSqlTime(s),
       endTime: minutesToSqlTime(e),
       notes: notes.trim(),
@@ -1084,14 +1134,31 @@ function CommitmentEditor({ draft, onSave, onDelete, onClose, t }) {
         </div>
 
         {weekly && (
-          <div className="input-group">
-            <div className="input-label">{t('tt.fDay')}</div>
-            <select value={weekday} onChange={(ev) => setWeekday(ev.target.value)}>
-              {labels.map((label, i) => {
-                const dayValue = (weekStart + i) % 7;
-                return <option key={dayValue} value={dayValue}>{label}</option>;
-              })}
-            </select>
+          <div className="plan-row plan-row-2">
+            <div className="input-group">
+              <div className="input-label">{t('tt.fDay')}</div>
+              <select value={weekday} onChange={(ev) => setWeekday(ev.target.value)}>
+                {labels.map((label, i) => {
+                  const dayValue = (weekStart + i) % 7;
+                  return <option key={dayValue} value={dayValue}>{label}</option>;
+                })}
+              </select>
+            </div>
+            {/* v1.14 Item 7b (#51) — "I have obligations that are every 2
+                weeks". Next to the weekday because the two together are the
+                whole sentence: "every other Thursday". Counted from the first
+                occurrence on or after the start date, not from the start date
+                itself — see commitments.js. */}
+            <div className="input-group">
+              <div className="input-label">{t('cm.fEvery')}</div>
+              <select value={every} onChange={(ev) => setEvery(ev.target.value)}>
+                {INTERVAL_CHOICES.map((n) => (
+                  <option key={n} value={n}>
+                    {n === 1 ? t('cm.everyWeek') : t('cm.everyNWeeks', { count: n })}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         )}
 
@@ -1121,28 +1188,13 @@ function CommitmentEditor({ draft, onSave, onDelete, onClose, t }) {
           </div>
         )}
 
+        {/* v1.14 Item 1 (#47) — the eight presets were the whole choice, so a
+            user who wanted their own colour for a blocker had none. This is
+            the same picker the course modals use, with its "no colour" slot
+            turned on: one control, one set of presets, one escape hatch. */}
         <div className="input-group">
           <div className="input-label">{t('cm.fColour')}</div>
-          <div className="cm-swatches">
-            <button
-              type="button"
-              className={'cm-swatch none' + (color ? '' : ' on')}
-              onClick={() => setColor('')}
-              title={t('cm.noColour')}
-              aria-pressed={!color}
-            />
-            {COURSE_COLORS.map((hex) => (
-              <button
-                key={hex}
-                type="button"
-                className={'cm-swatch' + (color === hex ? ' on' : '')}
-                style={{ '--sw': hex }}
-                onClick={() => setColor(hex)}
-                aria-pressed={color === hex}
-                aria-label={hex}
-              />
-            ))}
-          </div>
+          <CoursePicker value={color} onChange={setColor} allowNone />
         </div>
 
         <div className="input-group">
@@ -1285,6 +1337,7 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
         weekly: item.weekly,
         startsOn: c.startsOn,
         endsOn: c.endsOn || '',
+        intervalWeeks: c.intervalWeeks || 1,
         startMin: item.startMin,
         endMin: item.endMin,
         notes: c.notes || '',
@@ -1338,6 +1391,7 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
       notes: row.notes,
       fulfilledBy: row.fulfilledBy ?? null,
       dismissedAt: row.dismissedAt ?? null,
+      seriesId: row.seriesId ?? null,
     });
   }, [session]);
 
@@ -1349,16 +1403,47 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
       pushPlan({ ...form, startsAt, fulfilledBy: prev?.fulfilledBy ?? null, dismissedAt: prev?.dismissedAt ?? null });
       showFlash?.(t('cal.planSaved'));
     } else {
-      // The id is minted here rather than left to the reducer, because the
-      // outbox push needs the same one and reading it back out of the next
-      // state would be a race against the dispatch.
-      const id = crypto.randomUUID();
-      dispatch({ type: 'ADD_PLANNED', id, subjectId: form.subjectId, startsAt, durationMinutes: form.durationMinutes, title: form.title, notes: form.notes });
-      pushPlan({ ...form, id, startsAt });
-      showFlash?.(t('cal.planCreated'));
+      // v1.14 Item 7a — a repeat writes every occurrence NOW, as ordinary
+      // independent blocks. Each can then be logged, moved or dismissed on its
+      // own through the paths that already exist, which is precisely what a
+      // rule-based recurrence could not give us.
+      const repeat = Math.round(Number(form.repeatWeeks)) || 0;
+      const dates = repeat > 0
+        ? occurrenceDates(form.iso, repeat, repeatHorizon(form.iso, state.academicTerms))
+        : [form.iso];
+      // A series id only where there IS a series — a one-off that happens to be
+      // created alone must not look like a repeating plan of one.
+      const seriesId = dates.length > 1 ? crypto.randomUUID() : null;
+
+      for (const iso of dates) {
+        // The id is minted here rather than left to the reducer, because the
+        // outbox push needs the same one and reading it back out of the next
+        // state would be a race against the dispatch.
+        const id = crypto.randomUUID();
+        const at = localTimestamp(iso, form.startMin).toISOString();
+        dispatch({ type: 'ADD_PLANNED', id, subjectId: form.subjectId, startsAt: at, durationMinutes: form.durationMinutes, title: form.title, notes: form.notes, seriesId });
+        pushPlan({ ...form, id, startsAt: at, seriesId });
+      }
+      showFlash?.(dates.length > 1
+        ? t('cal.planCreatedRepeat', { count: dates.length })
+        : t('cal.planCreated'));
     }
     setPlan(null);
-  }, [dispatch, pushPlan, showFlash, state.plannedSessions, t]);
+  }, [dispatch, pushPlan, showFlash, state.plannedSessions, state.academicTerms, t]);
+
+  // v1.14 Item 7a — "stop repeating": drop this block and every LATER one in
+  // the same series that is still owed. `laterInSeries` refuses the resolved
+  // ones, so a block already logged keeps pointing at the study session that
+  // actually happened.
+  const deletePlanSeries = useCallback(() => {
+    if (!plan?.id) return;
+    const rows = laterInSeries(state.plannedSessions, plan.seriesId, plan.startsAt);
+    const ids = [...new Set([plan.id, ...rows.map((p) => p.id)])];
+    dispatch({ type: 'DELETE_PLANNED_MANY', ids });
+    if (session) for (const id of ids) outbox.enqueue('delete_planned', { id });
+    setPlan(null);
+    showFlash?.(t('cal.planRepeatStopped', { count: ids.length }));
+  }, [plan, state.plannedSessions, dispatch, session, showFlash, t]);
 
   const deletePlan = useCallback(() => {
     if (!plan?.id) return;
@@ -1402,6 +1487,7 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
       startsOn: iso,
       endsOn: '',
       weekday: null,
+      intervalWeeks: 1,
       startMin,
       endMin: Math.min(24 * 60, startMin + DEFAULT_PLAN_MIN),
       title: '',
@@ -1450,6 +1536,7 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
         weekly: item.weekly,
         startsOn: c.startsOn,
         endsOn: c.endsOn || '',
+        intervalWeeks: c.intervalWeeks || 1,
         startMin: item.startMin,
         endMin: item.endMin,
         notes: c.notes || '',
@@ -1470,6 +1557,10 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
         title: p.title || '',
         notes: p.notes || '',
         status: item.status,
+        // v1.14 Item 7a — carried so "stop repeating" knows which series this
+        // block belongs to and where in it this one sits.
+        seriesId: p.seriesId || null,
+        startsAt: p.startsAt,
       });
       return;
     }
@@ -1627,10 +1718,19 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
 
       {plan && (
         <PlanEditor
-          draft={plan}
+          // v1.14 Item 7a — the terms decide how far a repeat runs (the end of
+          // the term it starts in), and `laterCount` is how many blocks "stop
+          // repeating" would actually remove, counted here so the button can
+          // say the number rather than promise an unknown quantity.
+          draft={{
+            ...plan,
+            terms: state.academicTerms,
+            laterCount: laterInSeries(state.plannedSessions, plan.seriesId, plan.startsAt).length,
+          }}
           courses={Object.values(state.courses || {}).filter((c) => !c.deletedAt && !c.archivedAt)}
           onSave={savePlan}
           onDelete={deletePlan}
+          onDeleteSeries={deletePlanSeries}
           onLog={logPlan}
           onDismiss={dismissPlan}
           onClose={() => setPlan(null)}

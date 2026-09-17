@@ -86,6 +86,15 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
    its section name was - three buttons, three positions, on one screen. */
 .section-label::after{content:'';flex:1;height:1px;background:var(--border);order:1;}
 .section-label .btn,.section-label .btn-outline{order:2;flex:0 0 auto;}
+/* v1.14 Item 3 — the heading text is a button now. It inherits every type
+   property from `.section-label` rather than restating them, so a theme that
+   restyles the label (Stacks and Slate both do) restyles the toggle with it
+   and cannot leave the two disagreeing. */
+.section-toggle{font:inherit;letter-spacing:inherit;text-transform:inherit;color:inherit;background:none;border:none;padding:0;margin:0;cursor:pointer;display:inline-flex;align-items:center;gap:7px;min-height:24px;}
+.section-toggle:hover{color:var(--text);}
+/* The chevron sits before the word here, not after it as on a course card, so
+   the label's own margin rule has to be undone. */
+.section-toggle .course-card-chevron{margin-inline-start:0;}
 .asgn-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:5px;margin-bottom:8px;box-shadow:var(--shadow);}
 .asgn-item.done{opacity:0.45;}
 .asgn-check{width:17px;height:17px;border:1.5px solid var(--border2);border-radius:3px;flex-shrink:0;margin-top:2px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
