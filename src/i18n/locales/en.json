@@ -728,6 +728,7 @@
     "viewMode": "View",
     "month": "Month",
     "week": "Week",
+    "day": "Day",
     "prev": "Previous",
     "next": "Next",
     "today": "Today",

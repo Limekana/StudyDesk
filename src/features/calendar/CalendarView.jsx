@@ -360,8 +360,11 @@ function WeekRibbon({ days, byDay, lessonsByDay, commitmentsByDay, locale, cours
   );
 }
 
-function WeekSheet({ days, byDay, lessonsByDay, commitmentsByDay, weekStart, locale, onOpen, onMoveBlock, onCreatePlan, t }) {
+function WeekSheet({ days, byDay, lessonsByDay, commitmentsByDay, locale, onOpen, onOpenDay, onMoveBlock, onCreatePlan, t }) {
   const gridRef = useRef(null);
+  // v1.15 Item 3 — the same sheet draws Day mode as a single column, so the
+  // column count is the length of `days` rather than a fixed seven.
+  const cols = days.length;
   const [drag, setDrag] = useState(null);
   const [nowMin, setNowMin] = useState(() => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); });
 
@@ -381,7 +384,9 @@ function WeekSheet({ days, byDay, lessonsByDay, commitmentsByDay, weekStart, loc
     () => Array.from({ length: to - from }, (_, i) => from + i),
     [from, to],
   );
-  const isWeekendCol = (i) => { const d = (weekStart + i) % 7; return d === 0 || d === 6; };
+  // From the date itself rather than from the week start plus an index, so a
+  // one-column Day sheet marks a Saturday correctly too.
+  const isWeekendCol = (i) => { const d = parseLocalDate(days[i].iso).getDay(); return d === 0 || d === 6; };
   const today = todayIso();
 
   // Geometry is measured from the DOM rather than recomputed from CSS values,
@@ -394,14 +399,14 @@ function WeekSheet({ days, byDay, lessonsByDay, commitmentsByDay, weekStart, loc
     const rect = el.getBoundingClientRect();
     const gutter = el.querySelector('.cal-gutter');
     const gw = gutter ? gutter.getBoundingClientRect().width : 0;
-    const colW = (rect.width - gw) / 7;
+    const colW = (rect.width - gw) / cols;
     const hourH = (rect.height) / Math.max(1, hours.length);
     // In RTL the columns run right-to-left, so a rightward drag means an
     // EARLIER day. Without this, an Arabic user dragging a block towards
     // Thursday would move it to Tuesday.
     const rtl = getComputedStyle(el).direction === 'rtl';
     return { rect, gw, colW, hourH, rtl };
-  }, [hours.length]);
+  }, [hours.length, cols]);
 
   // Pointer-down on empty grid starts a CREATE drag. Bound on the day column
   // rather than the grid so the day is known without hit-testing, and guarded
@@ -487,7 +492,7 @@ function WeekSheet({ days, byDay, lessonsByDay, commitmentsByDay, weekStart, loc
 
     const rawShift = Math.round(dx / g.colW) * (g.rtl ? -1 : 1);
     const baseIdx = days.findIndex((d) => d.iso === drag.iso);
-    const idx = Math.max(0, Math.min(6, baseIdx + rawShift));
+    const idx = Math.max(0, Math.min(cols - 1, baseIdx + rawShift));
     // Derived from the CLAMPED index, so the block cannot slide visually past
     // the edge of the week while its landing day stays pinned to the last
     // column. `transform` is physical, so RTL needs the sign flipped back.
@@ -515,15 +520,27 @@ function WeekSheet({ days, byDay, lessonsByDay, commitmentsByDay, weekStart, loc
   const height = (mins) => (mins / 60) * 100 / Math.max(1, hours.length);
 
   return (
-    <div className="cal-sheet cal-weekwrap">
+    <div className="cal-sheet cal-weekwrap" style={{ '--cal-cols': cols }}>
       <div className="cal-weekhead">
         <div />
-        {days.map((d, i) => (
-          <div key={d.iso} className={`cal-weekhead-day${d.iso === today ? ' today' : ''}${isWeekendCol(i) ? ' weekend' : ''}`}>
-            <div className="cal-weekhead-dow">{weekdayLabels(weekStart, locale)[i]}</div>
-            <div className="cal-weekhead-num">{d.day}</div>
-          </div>
-        ))}
+        {days.map((d, i) => {
+          const date = parseLocalDate(d.iso);
+          // v1.15 Item 3 — week → day drill-down: the day heading opens that
+          // day. Week mode only; in Day mode it already is that day.
+          const drill = onOpenDay ? {
+            role: 'button',
+            tabIndex: 0,
+            'aria-label': date.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' }),
+            onClick: () => onOpenDay(d.iso),
+            onKeyDown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenDay(d.iso); } },
+          } : {};
+          return (
+            <div key={d.iso} {...drill} className={`cal-weekhead-day${d.iso === today ? ' today' : ''}${isWeekendCol(i) ? ' weekend' : ''}${onOpenDay ? ' drill' : ''}`}>
+              <div className="cal-weekhead-dow">{date.toLocaleDateString(locale, { weekday: 'short' })}</div>
+              <div className="cal-weekhead-num">{d.day}</div>
+            </div>
+          );
+        })}
       </div>
 
       <div className="cal-allday">
@@ -681,7 +698,7 @@ function WeekSheet({ days, byDay, lessonsByDay, commitmentsByDay, weekStart, loc
 
 // ── Day agenda ─────────────────────────────────────────────────────────────
 
-function DayAgenda({ iso, byDay, lessons, commitments, locale, onOpen, onClose, onPlanGap, onAddBlocker, studyUntil, t }) {
+function DayAgenda({ iso, byDay, lessons, commitments, locale, onOpen, onClose, onOpenWeek, onOpenDay, onPlanGap, onAddBlocker, studyUntil, t }) {
   const items = sortDayItems(byDay.get(iso) || []);
   const timed = items.filter((i) => i.kind === 'session');
   const planned = items.filter((i) => i.kind === 'planned').sort((a, b) => a.startMin - b.startMin);
@@ -727,6 +744,15 @@ function DayAgenda({ iso, byDay, lessons, commitments, locale, onOpen, onClose, 
           </div>
           <div className="cal-agenda-rel">{relativeDayLabel(iso, t)}</div>
         </div>
+        {/* v1.15 Item 3 — drill-down from wherever this day was picked. Each
+            is passed only when it leads somewhere new: Week mode offers Day,
+            Day mode offers Week, Month offers both. */}
+        {(onOpenWeek || onOpenDay) && (
+          <div className="cal-agenda-drill">
+            {onOpenWeek && <button type="button" onClick={() => onOpenWeek(iso)}>{t('cal.week')}</button>}
+            {onOpenDay && <button type="button" onClick={() => onOpenDay(iso)}>{t('cal.day')}</button>}
+          </div>
+        )}
         <button type="button" className="cal-agenda-close" onClick={onClose} aria-label={t('common.close')}>×</button>
       </div>
 
@@ -1258,7 +1284,19 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
   );
   const days = useMemo(() => weekGrid(anchor, weekStart), [anchor, weekStart]);
 
+  // v1.15 Item 3 — drill-down. Both make the picked day the anchor, so
+  // month → week → day narrows onto the same date rather than landing
+  // wherever the previous mode happened to be.
+  const openWeek = useCallback((iso) => { setAnchor(iso); setSelected(iso); setMode('week'); }, []);
+  const openDay = useCallback((iso) => { setAnchor(iso); setSelected(iso); setMode('day'); }, []);
+
   const step = (dir) => {
+    if (mode === 'day') {
+      const next = addDays(anchor, dir);
+      setAnchor(next);
+      setSelected(next);
+      return;
+    }
     if (mode === 'week') { setAnchor((a) => addDays(a, 7 * dir)); return; }
     const d = parseLocalDate(anchor);
     // Anchored to the 1st before stepping, so paging from the 31st does not
@@ -1267,6 +1305,9 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
   };
 
   const title = useMemo(() => {
+    if (mode === 'day') {
+      return parseLocalDate(anchor).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
+    }
     if (mode === 'week') {
       const start = parseLocalDate(startOfWeek(anchor, weekStart));
       const end = parseLocalDate(addDays(startOfWeek(anchor, weekStart), 6));
@@ -1621,6 +1662,7 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
     else if (e.key === 't' || e.key === 'T') { setAnchor(todayIso()); setSelected(todayIso()); }
     else if (e.key === 'm' || e.key === 'M') setMode('month');
     else if (e.key === 'w' || e.key === 'W') setMode('week');
+    else if (e.key === 'd' || e.key === 'D') openDay(selected || anchor);
     else if (e.key === 'n' || e.key === 'N') { e.preventDefault(); onAddAsgn?.(); }
     else if (e.key === 'e' || e.key === 'E') { e.preventDefault(); onAddExam?.(); }
     else if (e.key === 'Escape' && selected) setSelected(null);
@@ -1630,12 +1672,28 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
   // 620px of horizontal scroll to show a week, which is not a week you can
   // read at a glance. Tablet and desktop keep the grid, where the height is
   // available and drag-to-create earns its place.
+  //
+  // v1.15 Item 3 — Day mode. Above the phone tier it is the week grid drawn
+  // one column wide, drag-to-plan included. On a phone the day agenda below IS
+  // the day view (lessons, blockers, free gaps, logged study), so there is no
+  // sheet rather than a second, thinner rendering of the same day.
   const sheet = mode === 'month'
     ? (
       <MonthSheet
         rows={rows} bands={bands} byDay={byDay} commitmentsByDay={commitmentsByDay} weekStart={weekStart} locale={locale}
-        selected={selected} onSelect={setSelected} onOpen={openItem} t={t}
+        // Month → week drill-down: the first tap picks a day, as it always
+        // did; tapping the picked day again opens its week.
+        selected={selected} onSelect={(iso) => (iso === selected ? openWeek(iso) : setSelected(iso))} onOpen={openItem} t={t}
       />
+    )
+    : mode === 'day' ? (
+      tier === 'phone' ? null : (
+        <WeekSheet
+          days={[{ iso: anchor, day: parseLocalDate(anchor).getDate() }]}
+          byDay={byDay} lessonsByDay={lessonsByDay} commitmentsByDay={commitmentsByDay} locale={locale}
+          onOpen={openItem} onMoveBlock={onMoveBlock} onCreatePlan={openNewPlan} t={t}
+        />
+      )
     )
     : tier === 'phone' ? (
       <WeekRibbon
@@ -1645,8 +1703,8 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
       />
     ) : (
       <WeekSheet
-        days={days} byDay={byDay} lessonsByDay={lessonsByDay} commitmentsByDay={commitmentsByDay} weekStart={weekStart} locale={locale}
-        onOpen={openItem} onMoveBlock={onMoveBlock} onCreatePlan={openNewPlan} t={t}
+        days={days} byDay={byDay} lessonsByDay={lessonsByDay} commitmentsByDay={commitmentsByDay} locale={locale}
+        onOpen={openItem} onOpenDay={openDay} onMoveBlock={onMoveBlock} onCreatePlan={openNewPlan} t={t}
       />
     );
 
@@ -1660,6 +1718,7 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
         <div className="cal-modes" role="tablist" aria-label={t('cal.viewMode')}>
           <button type="button" role="tab" aria-selected={mode === 'month'} className={mode === 'month' ? 'active' : ''} onClick={() => setMode('month')}>{t('cal.month')}</button>
           <button type="button" role="tab" aria-selected={mode === 'week'} className={mode === 'week' ? 'active' : ''} onClick={() => setMode('week')}>{t('cal.week')}</button>
+          <button type="button" role="tab" aria-selected={mode === 'day'} className={mode === 'day' ? 'active' : ''} onClick={() => openDay(selected || anchor)}>{t('cal.day')}</button>
         </div>
         <div className="cal-nav">
           <button type="button" onClick={() => step(-1)} aria-label={t('cal.prev')}><ChevronLeft size={14} strokeWidth={1.75} className="rtl-mirror" /></button>
@@ -1682,17 +1741,21 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
           against dead space, which is the thing the wide tier exists to avoid.
           The empty-state placeholder this replaced is gone on purpose: the
           agenda opens on today, so there is nothing to place-hold. */}
-      <div className={selected ? 'cal-split' : undefined}>
+      <div className={(selected || mode === 'day') ? 'cal-split' : undefined}>
         {sheet}
-        {selected && (
+        {(selected || mode === 'day') && (
           <DayAgenda
-            iso={selected}
+            // In Day mode the agenda always shows the day on screen; its close
+            // button drills back out to the week instead of emptying the page.
+            iso={mode === 'day' ? anchor : selected}
             byDay={byDay}
             lessons={lessonsByDay.get(selected) || []}
             commitments={commitmentsByDay.get(selected) || []}
             locale={locale}
             onOpen={openItem}
-            onClose={() => setSelected(null)}
+            onClose={mode === 'day' ? () => openWeek(anchor) : () => setSelected(null)}
+            onOpenWeek={mode === 'week' ? undefined : openWeek}
+            onOpenDay={mode === 'day' ? undefined : openDay}
             onPlanGap={tier === 'phone' ? openNewPlan : undefined}
             // Every tier gets this button, not just phone. Blockers shipped in
             // v1.10 reachable ONLY by pressing "c" — which meant that on a
