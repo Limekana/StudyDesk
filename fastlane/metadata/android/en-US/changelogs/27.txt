@@ -1,0 +1,3 @@
+Plan and Timetable: assignments can now carry a due time, not just a date. A lesson can span several weekdays as one entry, and you can move a lesson between School Year, Semester, and Jakso scopes. Planned study blocks can repeat every few weeks instead of just weekly.
+
+Grades: log a grade for a past term without an active course, and choose how weight works — a factor, a percent of the course, or points — with ready-made scale presets for France, US GPA, IB, and Percentage. Attendance now shows as a punch card, and grade weight as a proportional bar. New users get a few dismissible pointers after creating their first course.
