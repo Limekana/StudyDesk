@@ -138,7 +138,7 @@
 @media(max-width:768px){
   /* Same clearance the flash toast uses, for the same reason: the bottom tab
      bar plus the home-indicator inset. */
-  .ref-card{bottom:calc(72px + env(safe-area-inset-bottom));inset-inline-end:14px;inset-inline-start:14px;width:auto;}
+  .ref-card{bottom:calc(72px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom)));inset-inline-end:14px;inset-inline-start:14px;width:auto;}
 }
 
 /* ── Storage alert (v1.13 Item 1a) ──────────────────────────────────────────
