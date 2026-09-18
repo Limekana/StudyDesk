@@ -1,0 +1,1 @@
+Fix: on some Android 15+ phones the account button sat under the status bar and could not be tapped, which made Settings unreachable. The top bar now clears the status bar on every device, and the tab bar and pop-up messages clear the gesture bar.
