@@ -55,6 +55,18 @@ public class UpcomingWidget extends AppWidgetProvider {
         WidgetSnapshot snap = WidgetSnapshot.load(context);
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_upcoming);
 
+        // v1.15 — palette, same as NextUpWidget. Applied to every row, visible
+        // or not, so a row that appears on the next refresh is already right.
+        WidgetSnapshot.Palette p = snap.palette;
+        views.setInt(R.id.upcoming_root, "setBackgroundResource", p.paper);
+        views.setTextColor(R.id.upcoming_label, p.label);
+        views.setTextColor(R.id.upcoming_empty, p.sub);
+        for (int i = 0; i < ROW_IDS.length; i++) {
+            views.setInt(ROW_IDS[i], "setBackgroundResource", p.rule);
+            views.setTextColor(TITLE_IDS[i], p.title);
+            views.setTextColor(WHEN_IDS[i], p.sub);
+        }
+
         int shown = Math.min(snap.upcoming.length, ROW_IDS.length);
         for (int i = 0; i < ROW_IDS.length; i++) {
             if (i < shown) {

@@ -978,6 +978,9 @@
     "title": "Aparência",
     "lighting": "Iluminação",
     "character": "Carácter",
+    "widget": "Widgets da tela inicial",
+    "widgetMatch": "Igual ao app",
+    "widgetMatchNote": "Segue a sua aparência",
     "mode": {
       "light": "Claro",
       "dark": "Escuro",

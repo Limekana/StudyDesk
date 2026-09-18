@@ -4,6 +4,7 @@ import { setLanguage, SUPPORTED_LANGS, LANGUAGE_NAMES } from "./i18n/index.js";
 import { useScrollSelectedIntoView } from "./lib/useScrollSelectedIntoView.js";
 import { parseLocalDate, toLocalISO, addDays, fmtDate, fmtDateFull, fmtToday, formatLocale } from "./lib/dates.js";
 import { pushWidgetSnapshot, consumeWidgetLaunchView, onWidgetNavigate } from "./lib/widgetBridge.js";
+import { WIDGET_PALETTE_EVENT } from "./lib/theme.js";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { App as CapApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
@@ -1298,6 +1299,16 @@ export default function App() {
   // Not gated on notifEnabled: a widget the user chose to place on their home
   // screen is not a notification, and declining reminders is not declining it.
   // The push itself no-ops off Android and when no widget is placed.
+  //
+  // v1.15 — and on a palette change: the widgets follow the app's look (or
+  // the Settings override), so switching to Dark has to reach the home screen
+  // without waiting for the next assignment edit.
+  const [widgetPaletteTick, setWidgetPaletteTick] = useState(0);
+  useEffect(() => {
+    const bump = () => setWidgetPaletteTick((n) => n + 1);
+    window.addEventListener(WIDGET_PALETTE_EVENT, bump);
+    return () => window.removeEventListener(WIDGET_PALETTE_EVENT, bump);
+  }, []);
   useEffect(() => {
     void pushWidgetSnapshot({
       assignments: state.assignments,
@@ -1306,7 +1317,7 @@ export default function App() {
       t,
       locale: formatLocale(),
     });
-  }, [state.assignments, state.exams, state.courses, t]);
+  }, [state.assignments, state.exams, state.courses, t, widgetPaletteTick]);
 
   // v1.10 — widget taps land where the widget was about.
   //

@@ -993,6 +993,9 @@
     "title": "المظهر",
     "lighting": "الإضاءة",
     "character": "الطابع",
+    "widget": "أدوات الشاشة الرئيسية",
+    "widgetMatch": "مثل التطبيق",
+    "widgetMatchNote": "يتبع مظهرك",
     "mode": {
       "light": "فاتح",
       "dark": "داكن",

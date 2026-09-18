@@ -973,6 +973,9 @@
     "title": "外观",
     "lighting": "明暗",
     "character": "风格",
+    "widget": "桌面小组件",
+    "widgetMatch": "跟随应用",
+    "widgetMatchNote": "跟随你选择的外观",
     "mode": {
       "light": "浅色",
       "dark": "深色",

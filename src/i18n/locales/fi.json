@@ -973,6 +973,9 @@
     "title": "Ulkoasu",
     "lighting": "Valaistus",
     "character": "Luonne",
+    "widget": "Kotinäytön widgetit",
+    "widgetMatch": "Kuten sovellus",
+    "widgetMatchNote": "Seuraa valittua ulkoasua",
     "mode": {
       "light": "Vaalea",
       "dark": "Tumma",

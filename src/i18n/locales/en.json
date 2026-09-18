@@ -973,6 +973,9 @@
     "title": "Appearance",
     "lighting": "Lighting",
     "character": "Character",
+    "widget": "Home-screen widgets",
+    "widgetMatch": "Match app",
+    "widgetMatchNote": "Follows your look",
     "mode": {
       "light": "Light",
       "dark": "Dark",

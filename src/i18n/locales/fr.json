@@ -978,6 +978,9 @@
     "title": "Apparence",
     "lighting": "Éclairage",
     "character": "Caractère",
+    "widget": "Widgets d’écran d’accueil",
+    "widgetMatch": "Comme l’app",
+    "widgetMatchNote": "Suit votre apparence",
     "mode": {
       "light": "Clair",
       "dark": "Sombre",

@@ -973,6 +973,9 @@
     "title": "रूप",
     "lighting": "रोशनी",
     "character": "चरित्र",
+    "widget": "होम-स्क्रीन विजेट",
+    "widgetMatch": "ऐप जैसा",
+    "widgetMatchNote": "आपकी चुनी हुई थीम के साथ",
     "mode": {
       "light": "हल्का",
       "dark": "गहरा",

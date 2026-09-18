@@ -973,6 +973,9 @@
     "title": "Erscheinungsbild",
     "lighting": "Beleuchtung",
     "character": "Charakter",
+    "widget": "Startbildschirm-Widgets",
+    "widgetMatch": "Wie die App",
+    "widgetMatchNote": "Folgt deinem Aussehen",
     "mode": {
       "light": "Hell",
       "dark": "Dunkel",

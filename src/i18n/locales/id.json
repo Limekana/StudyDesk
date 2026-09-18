@@ -968,6 +968,9 @@
     "title": "Tampilan",
     "lighting": "Pencahayaan",
     "character": "Karakter",
+    "widget": "Widget layar utama",
+    "widgetMatch": "Ikuti aplikasi",
+    "widgetMatchNote": "Mengikuti tampilanmu",
     "mode": {
       "light": "Terang",
       "dark": "Gelap",

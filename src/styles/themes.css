@@ -407,6 +407,12 @@ html[data-theme="slate"] :where(.course-card, .exam-card) {
 .theme-swatch.is-black span:nth-child(2) { background: #0c0b08; }
 .theme-swatch.is-black span:nth-child(3) { background: #ede7da; }
 .theme-swatch.is-black span:nth-child(4) { background: #e0913f; }
+/* v1.15 — "Match app" for the widgets: half cream page, half dark page, the
+   two ends of what it can resolve to. */
+.theme-swatch.is-auto span:nth-child(1) { background: #f5f2ed; }
+.theme-swatch.is-auto span:nth-child(2) { background: #faf8f4; }
+.theme-swatch.is-auto span:nth-child(3) { background: #1e1b15; }
+.theme-swatch.is-auto span:nth-child(4) { background: #16140f; }
 
 /* The swatch border is a token, so on a dark ground it stops being a pale
    hairline around a dark block — which reads as a gap rather than an edge. */
