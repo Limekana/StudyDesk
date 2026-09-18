@@ -1,0 +1,3 @@
+Um só calendário, mais fácil de navegar.
+
+A aba Plano não tem mais seu próprio minicalendário. O Calendário tem visões de Mês, Semana e Dia, e um toque leva de uma à outra. No celular, seus cursos ficam numa barra no topo do Plano. Os widgets seguem o visual claro ou escuro do app, ou escolha em Ajustes → Aparência. Dá para registrar uma sessão passada pela lista, e Feedback ficou mais fácil de achar.
