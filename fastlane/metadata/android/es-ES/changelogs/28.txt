@@ -1,0 +1,1 @@
+Corrección: en algunos teléfonos con Android 15+, el botón de la cuenta quedaba bajo la barra de estado y no se podía tocar, así que no se llegaba a Ajustes. La barra superior ahora deja libre la barra de estado en todos los dispositivos, y la barra de pestañas y los avisos dejan libre la barra de gestos.
