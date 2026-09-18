@@ -156,7 +156,7 @@ input[type=text],input[type=password],input[type=date],input[type=time],input[ty
 .flash{position:fixed;bottom:24px;inset-inline-end:24px;background:var(--text);color:var(--bg);padding:10px 18px;font-family:var(--font-mono);font-size:11px;border-radius:4px;animation:fadeup 0.2s ease;z-index:200;}
 @keyframes fadeup{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 @media(max-width:768px){
-  .flash{bottom:calc(72px + env(safe-area-inset-bottom));inset-inline-end:14px;}
+  .flash{bottom:calc(72px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom)));inset-inline-end:14px;}
   .modal-grid{grid-template-columns:1fr;}
   .input-row{flex-direction:column;align-items:stretch;}
   .btn,.btn-outline{text-align:center;}
