@@ -1,0 +1,1 @@
+Korrektur: Auf einigen Android-15+-Handys lag der Konto-Button unter der Statusleiste und ließ sich nicht antippen, sodass die Einstellungen nicht erreichbar waren. Die obere Leiste weicht der Statusleiste jetzt auf jedem Gerät aus, Tab-Leiste und Hinweise der Gestenleiste.

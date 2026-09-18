@@ -1,0 +1,1 @@
+Perbaikan: di beberapa ponsel Android 15+, tombol akun berada di bawah bilah status dan tidak bisa diketuk, sehingga Pengaturan tidak bisa dibuka. Bilah atas kini tidak tertutup bilah status di semua perangkat, dan bilah tab serta pesan tidak tertutup bilah gestur.
