@@ -276,25 +276,26 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
   .mobile-tab-label{display:block;}
   .mobile-tab:active{background:var(--surface2);}
   .mobile-tab.active{color:var(--text);border-top-color:var(--text);}
-  /* Course strip — fixed just above the tab bar */
+  /* Course strip — v1.15 Item 2. The phone's answer to `.sidebar-courses`.
+     These rules sat unused from v1.0 as a collapsed bar fixed above the tab
+     bar; wired up now, but in the page flow at the top of Plan and course
+     detail instead. A fixed bar would cover the end of every list, and a
+     collapsed one needs a toggle, which just hides the courses again.
+     The negative margin runs it to the screen edges against `.content`'s 14px
+     gutter, so chips scroll out under the edge rather than stopping short. */
   .mobile-courses-bar{
     display:flex;align-items:center;
-    position:fixed;
-    bottom:calc(64px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom)));
-    left:0;right:0;
-    z-index:49;
-    background:var(--surface);
-    border-top:1px solid var(--border);
-    overflow:hidden;
-    transition:max-height 0.25s ease;
-    max-height:0;
+    margin:-16px -14px 4px;
+    border-bottom:1px solid var(--border);
   }
-  .mobile-courses-bar.open{max-height:56px;}
-  .mobile-courses-scroll{display:flex;gap:6px;padding:10px 14px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex:1;}
+  .mobile-courses-scroll{display:flex;gap:6px;padding:10px 14px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex:1;overscroll-behavior-x:contain;}
+  .mobile-course-chip{min-height:32px;font-family:inherit;color:var(--text);}
+  .mobile-course-add{min-height:32px;font-family:inherit;}
   .mobile-courses-scroll::-webkit-scrollbar{display:none;}
   .mobile-course-chip{display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;white-space:nowrap;font-size:12px;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;}
   .mobile-course-chip.active{border-color:var(--text);}
   .mobile-course-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+  .plan-courses{display:none;}
   .mobile-course-add{padding:6px 12px;background:transparent;border:1px dashed var(--border2);border-radius:20px;font-size:12px;color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0;}
 }
 @media(min-width:769px){
@@ -338,6 +339,17 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 .sidebar-foot{border-top:1px solid var(--border);padding:6px 0;}
 .rail-toggle{display:flex;align-items:center;gap:10px;width:100%;padding:9px 20px;background:none;border:0;color:var(--muted2);font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;transition:color 0.1s,background 0.1s;}
 .rail-toggle:hover{color:var(--text);background:var(--surface2);}
+/* v1.15 (Item 12) — desktop "update available". Same footer line as the
+   collapse control, inked in the success green rather than a filled button:
+   news, not an alarm. The dot is what survives the rail. */
+.update-notice{position:relative;color:var(--success);}
+.update-notice:disabled{cursor:default;}
+.update-notice:hover{color:var(--success);background:var(--success-soft);}
+.update-notice-dot{width:6px;height:6px;border-radius:50%;background:var(--success);flex-shrink:0;margin-inline:5px;}
+.update-notice-ver{margin-inline-start:auto;letter-spacing:0.04em;text-transform:none;}
+/* Download progress: a hairline along the foot of the line, like a ruled
+   margin filling in, rather than a chunky bar. */
+.update-notice-bar{position:absolute;inset-inline-start:0;bottom:0;height:2px;background:var(--success);transition:width 0.3s linear;}
 
 @media(min-width:769px){
   /* Width only, and only where the sidebar is actually on screen — below

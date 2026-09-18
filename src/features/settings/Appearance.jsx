@@ -22,14 +22,19 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Capacitor } from '@capacitor/core';
 import {
   MODES,
   THEMES,
+  WIDGET_PALETTES,
+  WIDGET_PALETTE_AUTO,
   activeTheme,
   isPaidTheme,
   preferredMode,
+  preferredWidgetPalette,
   setPreferredMode,
   setPreferredTheme,
+  setPreferredWidgetPalette,
 } from '../../lib/theme.js';
 import { isEntitled } from '../../lib/entitlement.js';
 
@@ -43,7 +48,12 @@ const SWATCH = {
   free: 'is-free',
   stacks: 'is-stacks',
   slate: 'is-slate',
+  auto: 'is-auto',
 };
+
+// v1.15 — the home-screen widgets exist only on Android, so the row that
+// colours them is not offered anywhere they cannot be placed.
+const HAS_WIDGETS = Capacitor.getPlatform() === 'android';
 
 function Option({ id, labelKey, noteKey, active, disabled, onSelect }) {
   const { t } = useTranslation();
@@ -99,6 +109,13 @@ export default function Appearance() {
     // mode changes when a paid theme goes on or off, so re-read it for the
     // active-state highlight in the lighting row.
     setMode(preferredMode());
+  }, []);
+
+  // v1.15 — home-screen widget palette. "Match app" is the default and
+  // follows whatever is chosen above; the other three pin the widgets.
+  const [widgetPalette, setWidgetPalette] = useState(() => preferredWidgetPalette());
+  const chooseWidgetPalette = useCallback((next) => {
+    setWidgetPalette(setPreferredWidgetPalette(next));
   }, []);
 
   const paidActive = isPaidTheme(theme);
@@ -160,6 +177,26 @@ export default function Appearance() {
           <div className="theme-locked-note">{t('appearance.lockedNote')}</div>
         )}
       </div>
+
+      {/* ── Home-screen widgets (v1.15) ── */}
+      {HAS_WIDGETS && (
+        <div className="theme-group">
+          <div className="theme-group-label">{t('appearance.widget')}</div>
+          <div className="theme-options">
+            {WIDGET_PALETTES.map((id) => (
+              <Option
+                key={id}
+                id={id}
+                labelKey={id === WIDGET_PALETTE_AUTO ? 'appearance.widgetMatch' : `appearance.mode.${id}`}
+                noteKey={id === WIDGET_PALETTE_AUTO ? 'appearance.widgetMatchNote' : `appearance.modeNote.${id}`}
+                active={widgetPalette === id}
+                disabled={false}
+                onSelect={chooseWidgetPalette}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

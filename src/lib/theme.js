@@ -105,6 +105,8 @@ export function applyTheme(theme = activeTheme(), mode = activeMode(theme)) {
   else el.dataset.mode = mode;
 
   applyAppearanceChrome(isDarkAppearance(theme, mode));
+  // v1.15 — widgets on "match app" follow a look change without a restart.
+  announceWidgetPalette();
   return { theme, mode };
 }
 
@@ -134,6 +136,58 @@ export function setPreferredMode(mode) {
 // completed refresh. Cheap and idempotent, so call it freely.
 export function syncTheme() {
   return applyTheme();
+}
+
+// ── Home-screen widget palette (v1.15) ───────────────────────────────────
+//
+// Feedback 2026-09-16: "other widget colors if that's possible". The widgets
+// were cream paper whatever the app looked like. Owner call: by default they
+// follow the app's look, and Settings → Appearance can pin them to one
+// palette ("a light app with dark widgets" is a real home-screen choice).
+//
+// Only three palettes exist natively (WidgetSnapshot.Palette). The two
+// character themes map onto them by what they ARE: Stacks is card stock on a
+// light ground, Slate is a chalkboard. A supporter theme's own typography does
+// not survive RemoteViews anyway, so a separate widget skin for each would
+// promise something the launcher cannot draw.
+export const WIDGET_PALETTE_AUTO = "auto";
+export const WIDGET_PALETTES = [WIDGET_PALETTE_AUTO, LIGHT_MODE, ...DARK_MODES];
+export const WIDGET_PALETTE_KEY = "studydesk.widgetPalette";
+/** Fired whenever the palette the widgets should draw may have changed. */
+export const WIDGET_PALETTE_EVENT = "studydesk-widget-palette";
+
+export function preferredWidgetPalette() {
+  try {
+    const v = localStorage.getItem(WIDGET_PALETTE_KEY);
+    return WIDGET_PALETTES.includes(v) ? v : WIDGET_PALETTE_AUTO;
+  } catch {
+    return WIDGET_PALETTE_AUTO;
+  }
+}
+
+export function setPreferredWidgetPalette(value) {
+  const next = WIDGET_PALETTES.includes(value) ? value : WIDGET_PALETTE_AUTO;
+  try {
+    if (next === WIDGET_PALETTE_AUTO) localStorage.removeItem(WIDGET_PALETTE_KEY);
+    else localStorage.setItem(WIDGET_PALETTE_KEY, next);
+  } catch {
+    /* storage unavailable — the choice just won't survive a relaunch */
+  }
+  announceWidgetPalette();
+  return next;
+}
+
+/** "light" | "dark" | "black" — the name WidgetSnapshot.paletteFor reads. */
+export function resolveWidgetPalette(theme = activeTheme(), mode = activeMode(theme)) {
+  const pref = preferredWidgetPalette();
+  if (pref !== WIDGET_PALETTE_AUTO) return pref;
+  if (theme === "slate") return "dark";
+  if (theme === "stacks") return LIGHT_MODE;
+  return MODES.includes(mode) ? mode : LIGHT_MODE;
+}
+
+function announceWidgetPalette() {
+  try { window.dispatchEvent(new Event(WIDGET_PALETTE_EVENT)); } catch { /* no window */ }
 }
 
 // Self-wiring: entitlement.js announces every cache write, and a theme that

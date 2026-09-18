@@ -102,9 +102,12 @@ export default function SaveSessionSheet({ pending, courses, onSave, onClose, ca
   return (
     <div className="modal-overlay" role="dialog" aria-modal="true" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-title">{t('ss.title')}</div>
+        {/* v1.15 Item 6 — a hand-logged session opened this sheet saying "Focus
+            session finished", which is untrue and reads like the timer path is
+            the only one. `editableWhen` is exactly the manual-entry case. */}
+        <div className="modal-title">{editableWhen ? t('av.tm.logPast') : t('ss.title')}</div>
         <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 18 }}>
-          {t('ss.intro')}
+          {editableWhen ? t('ss.introPast') : t('ss.intro')}
         </div>
 
         <div className="input-group">

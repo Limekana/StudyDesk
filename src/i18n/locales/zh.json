@@ -371,7 +371,16 @@
     "scalePresetIb": "IB · 1–7",
     "scalePresetPct": "百分制 · 0–100",
     "scaleSwitchTo": "或切换到",
-    "gradeCustomHint": "使用其他量表 — /20、4–10、1–6？选择「自定义」并设置自己的范围。"
+    "gradeCustomHint": "使用其他量表 — /20、4–10、1–6？选择「自定义」并设置自己的范围。",
+    "updates": "更新",
+    "updateCheck": "检查更新",
+    "updateChecking": "正在检查…",
+    "updateCurrent": "已是最新版本",
+    "updateFailed": "检查失败",
+    "updateOpen": "打开发布页面",
+    "updateDownloading": "正在下载… {{percent}}%",
+    "updateRestart": "重启以更新",
+    "updateDownload": "下载并安装"
   },
   "sdob": {
     "brand": "别再纠结，开始学习。",
@@ -494,6 +503,7 @@
     "focus5": "完全投入",
     "title": "保存会话？",
     "intro": "专注时段已结束。记录它以计入你的学习总量。",
+    "introPast": "补记一次没用计时器的学习。它和其他记录一样计入你的学习总时长。",
     "fCourse": "课程（可选）",
     "generalStudy": "一般学习",
     "fDuration": "时长（分钟）",
@@ -704,7 +714,11 @@
       "expandSidebar": "展开侧边栏",
       "urgent": "紧急",
       "examPrefix": "考试：{{title}}",
-      "loading": "加载中…"
+      "loading": "加载中…",
+      "updateShort": "有可用更新",
+      "updateAvailable": "有可用更新：v{{version}}",
+      "updateDownloading": "正在下载… {{percent}}%",
+      "updateReady": "重启以更新"
     },
     "flash": {
       "courseAdded": "课程已添加",
@@ -727,6 +741,7 @@
     "viewMode": "视图",
     "month": "月",
     "week": "周",
+    "day": "日",
     "prev": "上一个",
     "next": "下一个",
     "today": "今天",
@@ -971,6 +986,9 @@
     "title": "外观",
     "lighting": "明暗",
     "character": "风格",
+    "widget": "桌面小组件",
+    "widgetMatch": "跟随应用",
+    "widgetMatchNote": "跟随你选择的外观",
     "mode": {
       "light": "浅色",
       "dark": "深色",

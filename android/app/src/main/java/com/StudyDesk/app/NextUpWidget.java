@@ -43,6 +43,16 @@ public class NextUpWidget extends AppWidgetProvider {
         WidgetSnapshot snap = WidgetSnapshot.load(context);
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_next_up);
 
+        // v1.15 — the palette the app chose (its own look, or the Settings
+        // override). The layout's literals are the light values, so a snapshot
+        // with no palette draws exactly what it always did.
+        WidgetSnapshot.Palette p = snap.palette;
+        views.setInt(R.id.next_up_root, "setBackgroundResource", p.paper);
+        views.setTextColor(R.id.next_up_label, p.label);
+        views.setTextColor(R.id.next_up_title, p.title);
+        views.setTextColor(R.id.next_up_subtitle, p.sub);
+        views.setTextColor(R.id.next_up_empty, p.sub);
+
         if (snap.hasNextUp()) {
             views.setViewVisibility(R.id.next_up_title, View.VISIBLE);
             views.setViewVisibility(R.id.next_up_subtitle, View.VISIBLE);

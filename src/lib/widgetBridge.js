@@ -10,6 +10,7 @@
 // the widget and the app end up disagreeing about the same question.
 
 import { registerPlugin, Capacitor } from '@capacitor/core';
+import { resolveWidgetPalette } from './theme.js';
 
 const WidgetBridge = registerPlugin('WidgetBridge');
 
@@ -150,6 +151,9 @@ export async function pushWidgetSnapshot({ assignments, exams, courses, t, local
       : '';
     const snapshot = {
       updatedAt: new Date().toISOString(),
+      // v1.15 — "light" | "dark" | "black"; see resolveWidgetPalette. A
+      // native layer older than this ignores the field and stays cream.
+      palette: resolveWidgetPalette(),
       nextUp: top
         ? { title: top.title, subtitle: topSubtitle, urgency: topWhen.urgency }
         : null,

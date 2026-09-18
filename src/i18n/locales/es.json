@@ -373,7 +373,16 @@
     "scalePresetIb": "IB · 1–7",
     "scalePresetPct": "Porcentaje · 0–100",
     "scaleSwitchTo": "O cambiar a",
-    "gradeCustomHint": "¿Otra escala — /20, 4–10, 1–6? Elige Propia y define tus propios límites."
+    "gradeCustomHint": "¿Otra escala — /20, 4–10, 1–6? Elige Propia y define tus propios límites.",
+    "updates": "Actualizaciones",
+    "updateCheck": "Buscar actualizaciones",
+    "updateChecking": "Comprobando…",
+    "updateCurrent": "Actualizado",
+    "updateFailed": "No se pudo comprobar",
+    "updateOpen": "Abrir página de la versión",
+    "updateDownloading": "Descargando… {{percent}} %",
+    "updateRestart": "Reiniciar para actualizar",
+    "updateDownload": "Descargar e instalar"
   },
   "sdob": {
     "brand": "Deja de decidir. Empieza a estudiar.",
@@ -498,6 +507,7 @@
     "focus5": "Totalmente inmerso",
     "title": "¿Guardar sesión?",
     "intro": "Sesión de concentración terminada. Regsístrala para que cuente en tus totales de estudio.",
+    "introPast": "Añade una sesión que estudiaste sin el temporizador. Cuenta en tus totales como cualquier otra.",
     "fCourse": "Curso (opcional)",
     "generalStudy": "Estudio general",
     "fDuration": "Duración (minutos)",
@@ -709,7 +719,11 @@
       "expandSidebar": "Expandir barra lateral",
       "urgent": "URGENTE",
       "examPrefix": "EXAMEN: {{title}}",
-      "loading": "CARGANDO…"
+      "loading": "CARGANDO…",
+      "updateShort": "Actualización disponible",
+      "updateAvailable": "Actualización disponible: v{{version}}",
+      "updateDownloading": "Descargando… {{percent}} %",
+      "updateReady": "Reiniciar para actualizar"
     },
     "flash": {
       "courseAdded": "Curso añadido",
@@ -732,6 +746,7 @@
     "viewMode": "Vista",
     "month": "Mes",
     "week": "Semana",
+    "day": "Día",
     "prev": "Anterior",
     "next": "Siguiente",
     "today": "Hoy",
@@ -976,6 +991,9 @@
     "title": "Apariencia",
     "lighting": "Iluminación",
     "character": "Carácter",
+    "widget": "Widgets de inicio",
+    "widgetMatch": "Como la app",
+    "widgetMatchNote": "Sigue tu apariencia",
     "mode": {
       "light": "Claro",
       "dark": "Oscuro",
