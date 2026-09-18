@@ -49,7 +49,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 const http = require('node:http');
 const { pathToFileURL } = require('node:url');
-const { createUpdateChecker } = require('./update-check.cjs');
+const { setupUpdates } = require('./updater.cjs');
 
 const DIST_DIR = path.join(__dirname, '..', 'dist');
 const ICON_PATH = path.join(__dirname, '..', 'resources', 'icon.ico');
@@ -514,15 +514,14 @@ ipcMain.handle('auth:begin', (_event, url) => {
   return opened;
 });
 
-// v1.15 (Item 12) — update notice. The renderer asks; the main process fetches
-// and, on request, opens only the release page it fetched itself.
-const updates = createUpdateChecker({ repo: 'Limekana/StudyDesk', log });
-
-ipcMain.handle('update:check', (_event, force) => updates.check(force === true));
-
-ipcMain.handle('update:open', () => {
-  const url = updates.releaseUrl();
-  return url ? openExternally(url) : false;
+// v1.15 (Item 12) — find, download and install updates (electron-updater),
+// with a notice-only fallback. See updater.cjs.
+setupUpdates({
+  repo: 'Limekana/StudyDesk',
+  installerPrefix: 'StudyDesk-Desktop-Setup-',
+  log,
+  getWindow: () => mainWindow,
+  openExternally,
 });
 
 app.whenReady().then(async () => {

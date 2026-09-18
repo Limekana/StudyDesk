@@ -28,7 +28,7 @@ import { AccountAvatar, GuestAvatar } from '../../lib/avatar.jsx';
 import { useAccountAvatar } from '../../lib/useAccountAvatar.js';
 import pkg from '../../../package.json';
 import { IS_DESKTOP } from '../../lib/desktop.js';
-import { checkForDesktopUpdate, openDesktopUpdate, useDesktopUpdate } from '../../lib/desktopUpdate.js';
+import { checkForDesktopUpdate, runDesktopUpdateAction, useDesktopUpdate } from '../../lib/desktopUpdate.js';
 
 // A v4 uuid for a feedback row. crypto.randomUUID needs a secure context, and
 // the fallback builds one by hand rather than inventing a non-uuid id string —
@@ -242,32 +242,40 @@ function timeInputToMinutes(value) {
   return h * 60 + min;
 }
 
-// v1.15 (Item 12) — the manual half of the desktop update notice. The button
-// re-asks GitHub (skipping the once-per-launch cache); once a newer release is
-// known it opens that release's page instead.
+// v1.15 (Item 12) — the Settings half of desktop updates. With nothing known
+// yet, the button re-asks GitHub (skipping the once-per-launch cache). Once a
+// newer release is known it downloads it, then installs it; when the updater
+// cannot handle that release, it opens the release page instead.
 function DesktopUpdateRow() {
   const { t } = useTranslation();
   const update = useDesktopUpdate();
-  const available = update.status === 'available';
-  const status =
-    update.status === 'checking' ? t('settings.updateChecking')
-    : available ? `v${update.latest}`
-    : update.status === 'current' ? t('settings.updateCurrent')
-    : update.status === 'error' ? t('settings.updateFailed')
+  const { status, canInstall } = update;
+  const pending = status === 'available' || status === 'downloading' || status === 'ready';
+  const value =
+    status === 'checking' ? t('settings.updateChecking')
+    : status === 'downloading' ? t('settings.updateDownloading', { percent: update.percent })
+    : pending ? `v${update.latest}`
+    : status === 'current' ? t('settings.updateCurrent')
+    : status === 'error' ? t('settings.updateFailed')
     : '';
+  const label =
+    status === 'ready' ? t('settings.updateRestart')
+    : status === 'downloading' ? t('settings.updateDownloading', { percent: update.percent })
+    : status === 'available' ? (canInstall ? t('settings.updateDownload') : t('settings.updateOpen'))
+    : t('settings.updateCheck');
   return (
     <>
       <div className="sv2-row">
         <span className="sv2-row-label">{t('settings.updates')}</span>
-        <span className="sv2-row-value">{status}</span>
+        <span className="sv2-row-value">{value}</span>
       </div>
       <div className="sv2-action">
         <button
-          className={available ? 'btn' : 'btn-outline'}
-          onClick={available ? openDesktopUpdate : () => checkForDesktopUpdate(true)}
-          disabled={update.status === 'checking'}
+          className={pending ? 'btn' : 'btn-outline'}
+          onClick={pending ? runDesktopUpdateAction : () => checkForDesktopUpdate(true)}
+          disabled={status === 'checking' || status === 'downloading'}
         >
-          {available ? t('settings.updateOpen') : t('settings.updateCheck')}
+          {label}
         </button>
       </div>
     </>

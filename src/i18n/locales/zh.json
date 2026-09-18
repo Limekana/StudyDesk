@@ -377,7 +377,10 @@
     "updateChecking": "正在检查…",
     "updateCurrent": "已是最新版本",
     "updateFailed": "检查失败",
-    "updateOpen": "打开发布页面"
+    "updateOpen": "打开发布页面",
+    "updateDownloading": "正在下载… {{percent}}%",
+    "updateRestart": "重启以更新",
+    "updateDownload": "下载并安装"
   },
   "sdob": {
     "brand": "别再纠结，开始学习。",
@@ -713,7 +716,9 @@
       "examPrefix": "考试：{{title}}",
       "loading": "加载中…",
       "updateShort": "有可用更新",
-      "updateAvailable": "有可用更新：v{{version}}"
+      "updateAvailable": "有可用更新：v{{version}}",
+      "updateDownloading": "正在下载… {{percent}}%",
+      "updateReady": "重启以更新"
     },
     "flash": {
       "courseAdded": "课程已添加",

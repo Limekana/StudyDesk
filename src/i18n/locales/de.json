@@ -377,7 +377,10 @@
     "updateChecking": "Wird geprüft…",
     "updateCurrent": "Aktuell",
     "updateFailed": "Prüfung fehlgeschlagen",
-    "updateOpen": "Release-Seite öffnen"
+    "updateOpen": "Release-Seite öffnen",
+    "updateDownloading": "Wird geladen… {{percent}} %",
+    "updateRestart": "Neu starten und aktualisieren",
+    "updateDownload": "Herunterladen & installieren"
   },
   "sdob": {
     "brand": "Schluss mit Grübeln. Fang an zu lernen.",
@@ -713,7 +716,9 @@
       "examPrefix": "PRÜFUNG: {{title}}",
       "loading": "LÄDT…",
       "updateShort": "Update verfügbar",
-      "updateAvailable": "Update verfügbar: v{{version}}"
+      "updateAvailable": "Update verfügbar: v{{version}}",
+      "updateDownloading": "Wird geladen… {{percent}} %",
+      "updateReady": "Neu starten und aktualisieren"
     },
     "flash": {
       "courseAdded": "Kurs hinzugefügt",

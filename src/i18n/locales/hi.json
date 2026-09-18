@@ -377,7 +377,10 @@
     "updateChecking": "जाँच हो रही है…",
     "updateCurrent": "नवीनतम है",
     "updateFailed": "जाँच नहीं हो सकी",
-    "updateOpen": "रिलीज़ पेज खोलें"
+    "updateOpen": "रिलीज़ पेज खोलें",
+    "updateDownloading": "डाउनलोड हो रहा है… {{percent}}%",
+    "updateRestart": "अपडेट के लिए रीस्टार्ट करें",
+    "updateDownload": "डाउनलोड और इंस्टॉल करें"
   },
   "sdob": {
     "brand": "सोचना बंद करें। पढ़ना शुरू करें।",
@@ -713,7 +716,9 @@
       "examPrefix": "परीक्षा: {{title}}",
       "loading": "लोड हो रहा है…",
       "updateShort": "अपडेट उपलब्ध",
-      "updateAvailable": "अपडेट उपलब्ध: v{{version}}"
+      "updateAvailable": "अपडेट उपलब्ध: v{{version}}",
+      "updateDownloading": "डाउनलोड हो रहा है… {{percent}}%",
+      "updateReady": "अपडेट के लिए रीस्टार्ट करें"
     },
     "flash": {
       "courseAdded": "विषय जोड़ा गया",

@@ -377,7 +377,10 @@
     "updateChecking": "Checking…",
     "updateCurrent": "Up to date",
     "updateFailed": "Couldn't check",
-    "updateOpen": "Open release page"
+    "updateOpen": "Open release page",
+    "updateDownloading": "Downloading… {{percent}}%",
+    "updateRestart": "Restart to update",
+    "updateDownload": "Download & install"
   },
   "sdob": {
     "brand": "Stop deciding. Start studying.",
@@ -713,7 +716,9 @@
       "examPrefix": "EXAM: {{title}}",
       "loading": "LOADING…",
       "updateShort": "Update available",
-      "updateAvailable": "Update available: v{{version}}"
+      "updateAvailable": "Update available: v{{version}}",
+      "updateDownloading": "Downloading… {{percent}}%",
+      "updateReady": "Restart to update"
     },
     "flash": {
       "courseAdded": "Course added",

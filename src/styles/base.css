@@ -341,10 +341,14 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 /* v1.15 (Item 12) — desktop "update available". Same footer line as the
    collapse control, inked in the success green rather than a filled button:
    news, not an alarm. The dot is what survives the rail. */
-.update-notice{color:var(--success);}
+.update-notice{position:relative;color:var(--success);}
+.update-notice:disabled{cursor:default;}
 .update-notice:hover{color:var(--success);background:var(--success-soft);}
 .update-notice-dot{width:6px;height:6px;border-radius:50%;background:var(--success);flex-shrink:0;margin-inline:5px;}
 .update-notice-ver{margin-inline-start:auto;letter-spacing:0.04em;text-transform:none;}
+/* Download progress: a hairline along the foot of the line, like a ruled
+   margin filling in, rather than a chunky bar. */
+.update-notice-bar{position:absolute;inset-inline-start:0;bottom:0;height:2px;background:var(--success);transition:width 0.3s linear;}
 
 @media(min-width:769px){
   /* Width only, and only where the sidebar is actually on screen — below

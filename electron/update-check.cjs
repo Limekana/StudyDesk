@@ -1,21 +1,18 @@
-// v1.15 (Item 12) — "is there a newer release?", and nothing more.
+// v1.15 (Item 12) — "is there a newer release?" The notice-only fallback for
+// updater.cjs, used when electron-updater cannot run.
 //
 // The desktop edition had no update awareness at all: it ships as a GitHub
 // Release asset, and the only way to learn about a new one was to go and look.
 // Android does not have this gap — F-Droid's own client notices new tags — so
 // this is desktop-only by construction.
 //
-// Deliberately check-and-notify, not an auto-updater. A silent installer
-// (electron-updater) needs a `publish` block, `latest.yml` and blockmaps
-// uploaded on every release — a release-pipeline change, untested against the
-// manual `gh release create` flow — and it could only ever cover the NSIS
-// install: the `.zip` edition has nothing for it to replace. Telling the user a
-// release exists and opening its page works identically for both.
+// It asks GitHub's releases API directly, so it still works when the newest
+// release has no latest.yml for electron-updater to read. It only ever
+// announces: the button it drives opens the release page.
 //
 // The request runs here in the main process rather than the renderer, so the
 // page's CSP stays untouched and the renderer never chooses what gets opened:
-// `open()` only ever opens the release URL this module itself fetched and
-// checked.
+// only the release URL this module itself fetched and checked.
 'use strict';
 
 const { app, net } = require('electron');
@@ -38,10 +35,13 @@ function isNewer(latest, current) {
 }
 
 /**
- * @param {{ repo: string, log: (line: string) => void }} opts
+ * @param {{ repo: string, installerPrefix: string, log: (line: string) => void }} opts
  *   repo — "Owner/Name" on GitHub.
+ *   installerPrefix — the Setup .exe's name up to the version, e.g.
+ *   "StudyDesk-Desktop-Setup-". A release without one (an Android-only
+ *   hotfix) is not a desktop update and must not be announced as one.
  */
-function createUpdateChecker({ repo, log }) {
+function createUpdateChecker({ repo, installerPrefix, log }) {
   const api = `https://api.github.com/repos/${repo}/releases/latest`;
   const pagePrefix = `https://github.com/${repo}/releases/`.toLowerCase();
   let pending = null;
@@ -67,7 +67,11 @@ function createUpdateChecker({ repo, log }) {
       if (!latest || !cur || !url.toLowerCase().startsWith(pagePrefix)) {
         throw new Error(`unusable release payload (tag=${body.tag_name})`);
       }
-      const available = isNewer(latest, cur);
+      const hasInstaller = Array.isArray(body.assets) && body.assets.some(
+        (a) => a && typeof a.name === 'string' && a.name.startsWith(installerPrefix) && a.name.endsWith('.exe'),
+      );
+      const available = hasInstaller && isNewer(latest, cur);
+      if (!hasInstaller) log(`update check: ${body.tag_name} has no desktop installer — not an update here`);
       releaseUrl = available ? url : null;
       log(`update check: current ${current}, latest ${latest.join('.')}${available ? ' — newer' : ''}`);
       return { status: available ? 'available' : 'current', current, latest: latest.join('.') };

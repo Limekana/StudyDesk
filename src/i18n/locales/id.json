@@ -375,7 +375,10 @@
     "updateChecking": "Memeriksa…",
     "updateCurrent": "Sudah terbaru",
     "updateFailed": "Gagal memeriksa",
-    "updateOpen": "Buka halaman rilis"
+    "updateOpen": "Buka halaman rilis",
+    "updateDownloading": "Mengunduh… {{percent}}%",
+    "updateRestart": "Mulai ulang untuk memperbarui",
+    "updateDownload": "Unduh & pasang"
   },
   "sdob": {
     "brand": "Berhenti menimbang. Mulai belajar.",
@@ -708,7 +711,9 @@
       "examPrefix": "UJIAN: {{title}}",
       "loading": "MEMUAT…",
       "updateShort": "Pembaruan tersedia",
-      "updateAvailable": "Pembaruan tersedia: v{{version}}"
+      "updateAvailable": "Pembaruan tersedia: v{{version}}",
+      "updateDownloading": "Mengunduh… {{percent}}%",
+      "updateReady": "Mulai ulang untuk memperbarui"
     },
     "flash": {
       "courseAdded": "Mata pelajaran ditambahkan",

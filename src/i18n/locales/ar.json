@@ -385,7 +385,10 @@
     "updateChecking": "جارٍ التحقق…",
     "updateCurrent": "محدَّث",
     "updateFailed": "تعذّر التحقق",
-    "updateOpen": "فتح صفحة الإصدار"
+    "updateOpen": "فتح صفحة الإصدار",
+    "updateDownloading": "جارٍ التنزيل… {{percent}}٪",
+    "updateRestart": "إعادة التشغيل للتحديث",
+    "updateDownload": "تنزيل وتثبيت"
   },
   "sdob": {
     "brand": "كفى ترددًا. ابدأ الدراسة.",
@@ -733,7 +736,9 @@
       "examPrefix": "اختبار: {{title}}",
       "loading": "جارٍ التحميل…",
       "updateShort": "يتوفر تحديث",
-      "updateAvailable": "يتوفر تحديث: v{{version}}"
+      "updateAvailable": "يتوفر تحديث: v{{version}}",
+      "updateDownloading": "جارٍ التنزيل… {{percent}}٪",
+      "updateReady": "إعادة التشغيل للتحديث"
     },
     "flash": {
       "courseAdded": "تمت إضافة المادة",

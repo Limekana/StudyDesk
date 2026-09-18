@@ -379,7 +379,10 @@
     "updateChecking": "Verificando…",
     "updateCurrent": "Atualizado",
     "updateFailed": "Não foi possível verificar",
-    "updateOpen": "Abrir página da versão"
+    "updateOpen": "Abrir página da versão",
+    "updateDownloading": "Baixando… {{percent}}%",
+    "updateRestart": "Reiniciar para atualizar",
+    "updateDownload": "Baixar e instalar"
   },
   "sdob": {
     "brand": "Pare de decidir. Comece a estudar.",
@@ -718,7 +721,9 @@
       "examPrefix": "PROVA: {{title}}",
       "loading": "CARREGANDO…",
       "updateShort": "Atualização disponível",
-      "updateAvailable": "Atualização disponível: v{{version}}"
+      "updateAvailable": "Atualização disponível: v{{version}}",
+      "updateDownloading": "Baixando… {{percent}}%",
+      "updateReady": "Reiniciar para atualizar"
     },
     "flash": {
       "courseAdded": "Disciplina adicionada",

@@ -377,7 +377,10 @@
     "updateChecking": "Tarkistetaan…",
     "updateCurrent": "Ajan tasalla",
     "updateFailed": "Tarkistus epäonnistui",
-    "updateOpen": "Avaa julkaisusivu"
+    "updateOpen": "Avaa julkaisusivu",
+    "updateDownloading": "Ladataan… {{percent}} %",
+    "updateRestart": "Käynnistä uudelleen ja päivitä",
+    "updateDownload": "Lataa ja asenna"
   },
   "sdob": {
     "brand": "Lopeta miettiminen. Aloita opiskelu.",
@@ -713,7 +716,9 @@
       "examPrefix": "KOE: {{title}}",
       "loading": "LADATAAN…",
       "updateShort": "Päivitys saatavilla",
-      "updateAvailable": "Päivitys saatavilla: v{{version}}"
+      "updateAvailable": "Päivitys saatavilla: v{{version}}",
+      "updateDownloading": "Ladataan… {{percent}} %",
+      "updateReady": "Käynnistä uudelleen ja päivitä"
     },
     "flash": {
       "courseAdded": "Kurssi lisätty",
