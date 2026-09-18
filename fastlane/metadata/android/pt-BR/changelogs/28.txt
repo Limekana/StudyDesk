@@ -1,0 +1,1 @@
+Correção: em alguns celulares com Android 15+, o botão da conta ficava sob a barra de status e não podia ser tocado, deixando os Ajustes inacessíveis. A barra superior agora respeita a barra de status em todos os aparelhos, e a barra de abas e os avisos respeitam a barra de gestos.

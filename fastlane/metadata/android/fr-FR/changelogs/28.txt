@@ -1,0 +1,1 @@
+Correctif : sur certains téléphones Android 15+, le bouton du compte se trouvait sous la barre d’état et ne pouvait pas être touché, ce qui rendait les réglages inaccessibles. La barre du haut évite désormais la barre d’état sur tous les appareils, et la barre d’onglets et les messages évitent la barre de gestes.

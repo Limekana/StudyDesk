@@ -1,0 +1,1 @@
+Korjaus: joissakin Android 15+ -puhelimissa tilipainike jäi tilarivin alle eikä sitä voinut napauttaa, joten asetuksiin ei päässyt. Yläpalkki väistää nyt tilarivin kaikilla laitteilla, ja välilehtipalkki sekä ilmoitukset väistävät elepalkin.
