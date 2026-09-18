@@ -338,6 +338,13 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 .sidebar-foot{border-top:1px solid var(--border);padding:6px 0;}
 .rail-toggle{display:flex;align-items:center;gap:10px;width:100%;padding:9px 20px;background:none;border:0;color:var(--muted2);font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;transition:color 0.1s,background 0.1s;}
 .rail-toggle:hover{color:var(--text);background:var(--surface2);}
+/* v1.15 (Item 12) — desktop "update available". Same footer line as the
+   collapse control, inked in the success green rather than a filled button:
+   news, not an alarm. The dot is what survives the rail. */
+.update-notice{color:var(--success);}
+.update-notice:hover{color:var(--success);background:var(--success-soft);}
+.update-notice-dot{width:6px;height:6px;border-radius:50%;background:var(--success);flex-shrink:0;margin-inline:5px;}
+.update-notice-ver{margin-inline-start:auto;letter-spacing:0.04em;text-transform:none;}
 
 @media(min-width:769px){
   /* Width only, and only where the sidebar is actually on screen — below

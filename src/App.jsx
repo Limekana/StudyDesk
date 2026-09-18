@@ -62,6 +62,7 @@ import './styles/print.css';
 import './styles/desktop.css';
 import { COURSE_COLORS } from "./lib/courseColors.js";
 import { NotebookPen, CalendarDays, Award, Timer, PanelLeftClose, PanelLeftOpen, Paperclip, BookOpen, Pencil } from "lucide-react";
+import { checkForDesktopUpdate, openDesktopUpdate, useDesktopUpdate } from "./lib/desktopUpdate.js";
 import { GuestAvatar, AccountAvatar } from "./lib/avatar.jsx";
 import { useShellTier, useSidebarRail } from "./lib/useShell.js";
 import { startPlanReminderLoop, webNotifySupported } from "./lib/webNotify.js";
@@ -1981,6 +1982,13 @@ export default function App() {
   // not sit between a hook and its call site.
   const shellTier = useShellTier();
   const [rail, toggleRail] = useSidebarRail(shellTier);
+
+  // v1.15 (Item 12) — one release check per launch; a no-op off desktop. The
+  // sidebar says so when GitHub has something newer, and a click opens the
+  // release page: the update itself stays the user's to run.
+  const update = useDesktopUpdate();
+  useEffect(() => { checkForDesktopUpdate(); }, []);
+  const updateLabel = update.status === "available" ? t("av.chrome.updateAvailable", { version: update.latest }) : "";
   // Resolved here rather than stored, so a user who has never chosen follows
   // the tier as it changes (resizing a window, rotating a tablet) instead of
   // being pinned to whatever tier they first loaded at.
@@ -2100,6 +2108,14 @@ export default function App() {
           <div className="add-course-btn" role="button" tabIndex={0} aria-label={t('av.chrome.addCourse')} title={rail?t('av.chrome.addCourse'):undefined} onClick={()=>setShowAddCourse(true)} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&setShowAddCourse(true)}><span style={{fontSize:16}}>+</span> <span className="rail-hide">{t('av.chrome.addCourse')}</span></div>
         </div>
         <div className="sidebar-foot">
+          {update.status === "available" && (
+            <button type="button" className="rail-toggle update-notice" onClick={openDesktopUpdate}
+              aria-label={updateLabel} title={updateLabel}>
+              <span className="update-notice-dot" aria-hidden="true"/>
+              <span className="rail-hide">{t("av.chrome.updateShort")}</span>
+              <span className="rail-hide update-notice-ver">v{update.latest}</span>
+            </button>
+          )}
           <button type="button" className="rail-toggle" onClick={toggleRail}
             aria-expanded={!rail}
             aria-label={rail?t('av.chrome.expandSidebar'):t('av.chrome.collapseSidebar')}

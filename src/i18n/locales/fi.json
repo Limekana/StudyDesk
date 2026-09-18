@@ -371,7 +371,13 @@
     "scalePresetIb": "IB · 1–7",
     "scalePresetPct": "Prosentit · 0–100",
     "scaleSwitchTo": "Tai vaihda",
-    "gradeCustomHint": "Eri asteikko — /20, 4–10, 1–6? Valitse Oma ja aseta omat rajasi."
+    "gradeCustomHint": "Eri asteikko — /20, 4–10, 1–6? Valitse Oma ja aseta omat rajasi.",
+    "updates": "Päivitykset",
+    "updateCheck": "Tarkista päivitykset",
+    "updateChecking": "Tarkistetaan…",
+    "updateCurrent": "Ajan tasalla",
+    "updateFailed": "Tarkistus epäonnistui",
+    "updateOpen": "Avaa julkaisusivu"
   },
   "sdob": {
     "brand": "Lopeta miettiminen. Aloita opiskelu.",
@@ -705,7 +711,9 @@
       "expandSidebar": "Laajenna sivupalkki",
       "urgent": "KIIREELLINEN",
       "examPrefix": "KOE: {{title}}",
-      "loading": "LADATAAN…"
+      "loading": "LADATAAN…",
+      "updateShort": "Päivitys saatavilla",
+      "updateAvailable": "Päivitys saatavilla: v{{version}}"
     },
     "flash": {
       "courseAdded": "Kurssi lisätty",

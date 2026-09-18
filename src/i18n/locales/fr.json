@@ -373,7 +373,13 @@
     "scalePresetIb": "IB · 1–7",
     "scalePresetPct": "Pourcentage · 0–100",
     "scaleSwitchTo": "Ou passer à",
-    "gradeCustomHint": "Une autre échelle — /20, 4–10, 1–6 ? Choisissez Perso et définissez vos bornes."
+    "gradeCustomHint": "Une autre échelle — /20, 4–10, 1–6 ? Choisissez Perso et définissez vos bornes.",
+    "updates": "Mises à jour",
+    "updateCheck": "Rechercher des mises à jour",
+    "updateChecking": "Vérification…",
+    "updateCurrent": "À jour",
+    "updateFailed": "Échec de la vérification",
+    "updateOpen": "Ouvrir la page de version"
   },
   "sdob": {
     "brand": "Arrête de choisir. Commence à réviser.",
@@ -710,7 +716,9 @@
       "expandSidebar": "Développer la barre latérale",
       "urgent": "URGENT",
       "examPrefix": "EXAMEN : {{title}}",
-      "loading": "CHARGEMENT…"
+      "loading": "CHARGEMENT…",
+      "updateShort": "Mise à jour disponible",
+      "updateAvailable": "Mise à jour disponible : v{{version}}"
     },
     "flash": {
       "courseAdded": "Cours ajouté",

@@ -373,7 +373,13 @@
     "scalePresetIb": "IB · 1–7",
     "scalePresetPct": "Porcentaje · 0–100",
     "scaleSwitchTo": "O cambiar a",
-    "gradeCustomHint": "¿Otra escala — /20, 4–10, 1–6? Elige Propia y define tus propios límites."
+    "gradeCustomHint": "¿Otra escala — /20, 4–10, 1–6? Elige Propia y define tus propios límites.",
+    "updates": "Actualizaciones",
+    "updateCheck": "Buscar actualizaciones",
+    "updateChecking": "Comprobando…",
+    "updateCurrent": "Actualizado",
+    "updateFailed": "No se pudo comprobar",
+    "updateOpen": "Abrir página de la versión"
   },
   "sdob": {
     "brand": "Deja de decidir. Empieza a estudiar.",
@@ -710,7 +716,9 @@
       "expandSidebar": "Expandir barra lateral",
       "urgent": "URGENTE",
       "examPrefix": "EXAMEN: {{title}}",
-      "loading": "CARGANDO…"
+      "loading": "CARGANDO…",
+      "updateShort": "Actualización disponible",
+      "updateAvailable": "Actualización disponible: v{{version}}"
     },
     "flash": {
       "courseAdded": "Curso añadido",

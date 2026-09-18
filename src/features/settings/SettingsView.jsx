@@ -27,6 +27,8 @@ import { formatLocale } from '../../lib/dates.js';
 import { AccountAvatar, GuestAvatar } from '../../lib/avatar.jsx';
 import { useAccountAvatar } from '../../lib/useAccountAvatar.js';
 import pkg from '../../../package.json';
+import { IS_DESKTOP } from '../../lib/desktop.js';
+import { checkForDesktopUpdate, openDesktopUpdate, useDesktopUpdate } from '../../lib/desktopUpdate.js';
 
 // A v4 uuid for a feedback row. crypto.randomUUID needs a secure context, and
 // the fallback builds one by hand rather than inventing a non-uuid id string —
@@ -238,6 +240,38 @@ function timeInputToMinutes(value) {
   const min = Number(m[2]);
   if (h > 23 || min > 59) return null;
   return h * 60 + min;
+}
+
+// v1.15 (Item 12) — the manual half of the desktop update notice. The button
+// re-asks GitHub (skipping the once-per-launch cache); once a newer release is
+// known it opens that release's page instead.
+function DesktopUpdateRow() {
+  const { t } = useTranslation();
+  const update = useDesktopUpdate();
+  const available = update.status === 'available';
+  const status =
+    update.status === 'checking' ? t('settings.updateChecking')
+    : available ? `v${update.latest}`
+    : update.status === 'current' ? t('settings.updateCurrent')
+    : update.status === 'error' ? t('settings.updateFailed')
+    : '';
+  return (
+    <>
+      <div className="sv2-row">
+        <span className="sv2-row-label">{t('settings.updates')}</span>
+        <span className="sv2-row-value">{status}</span>
+      </div>
+      <div className="sv2-action">
+        <button
+          className={available ? 'btn' : 'btn-outline'}
+          onClick={available ? openDesktopUpdate : () => checkForDesktopUpdate(true)}
+          disabled={update.status === 'checking'}
+        >
+          {available ? t('settings.updateOpen') : t('settings.updateCheck')}
+        </button>
+      </div>
+    </>
+  );
 }
 
 export default function SettingsView({ state, dispatch, showFlash, session }) {
@@ -1266,6 +1300,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
             <span className="sv2-row-label">StudyDesk</span>
             <span className="sv2-row-value">v{appVersion}</span>
           </div>
+          {IS_DESKTOP && <DesktopUpdateRow />}
           <details className="sv2-tech">
             <summary>{t('settings.techDetails')}</summary>
             <div className="sv2-tech-grid">

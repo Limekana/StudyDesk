@@ -371,7 +371,13 @@
     "scalePresetIb": "IB · 1–7",
     "scalePresetPct": "प्रतिशत · 0–100",
     "scaleSwitchTo": "या बदलें",
-    "gradeCustomHint": "कोई और स्केल — /20, 4–10, 1–6? कस्टम चुनें और अपनी सीमाएँ तय करें।"
+    "gradeCustomHint": "कोई और स्केल — /20, 4–10, 1–6? कस्टम चुनें और अपनी सीमाएँ तय करें।",
+    "updates": "अपडेट",
+    "updateCheck": "अपडेट जाँचें",
+    "updateChecking": "जाँच हो रही है…",
+    "updateCurrent": "नवीनतम है",
+    "updateFailed": "जाँच नहीं हो सकी",
+    "updateOpen": "रिलीज़ पेज खोलें"
   },
   "sdob": {
     "brand": "सोचना बंद करें। पढ़ना शुरू करें।",
@@ -705,7 +711,9 @@
       "expandSidebar": "साइडबार बड़ा करें",
       "urgent": "ज़रूरी",
       "examPrefix": "परीक्षा: {{title}}",
-      "loading": "लोड हो रहा है…"
+      "loading": "लोड हो रहा है…",
+      "updateShort": "अपडेट उपलब्ध",
+      "updateAvailable": "अपडेट उपलब्ध: v{{version}}"
     },
     "flash": {
       "courseAdded": "विषय जोड़ा गया",

@@ -371,7 +371,13 @@
     "scalePresetIb": "IB · 1–7",
     "scalePresetPct": "百分制 · 0–100",
     "scaleSwitchTo": "或切换到",
-    "gradeCustomHint": "使用其他量表 — /20、4–10、1–6？选择「自定义」并设置自己的范围。"
+    "gradeCustomHint": "使用其他量表 — /20、4–10、1–6？选择「自定义」并设置自己的范围。",
+    "updates": "更新",
+    "updateCheck": "检查更新",
+    "updateChecking": "正在检查…",
+    "updateCurrent": "已是最新版本",
+    "updateFailed": "检查失败",
+    "updateOpen": "打开发布页面"
   },
   "sdob": {
     "brand": "别再纠结，开始学习。",
@@ -705,7 +711,9 @@
       "expandSidebar": "展开侧边栏",
       "urgent": "紧急",
       "examPrefix": "考试：{{title}}",
-      "loading": "加载中…"
+      "loading": "加载中…",
+      "updateShort": "有可用更新",
+      "updateAvailable": "有可用更新：v{{version}}"
     },
     "flash": {
       "courseAdded": "课程已添加",

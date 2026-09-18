@@ -35,4 +35,11 @@ contextBridge.exposeInMainWorld('studydeskDesktop', {
     ipcRenderer.on('auth:callback', handler);
     return () => ipcRenderer.removeListener('auth:callback', handler);
   },
+
+  // v1.15 (Item 12) — is a newer GitHub release out? `force` skips the
+  // once-per-launch cache (the manual "Check for updates" button).
+  checkForUpdate: (force) => ipcRenderer.invoke('update:check', force === true),
+
+  // Open the release page the main process found. Takes no URL on purpose.
+  openUpdate: () => ipcRenderer.invoke('update:open'),
 });

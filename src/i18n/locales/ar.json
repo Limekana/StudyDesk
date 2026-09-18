@@ -379,7 +379,13 @@
     "scalePresetIb": "IB · 1–7",
     "scalePresetPct": "النسبة المئوية · 0–100",
     "scaleSwitchTo": "أو التبديل إلى",
-    "gradeCustomHint": "مقياس آخر — /20 أو 4–10 أو 1–6؟ اختر مخصّص وحدّد حدودك."
+    "gradeCustomHint": "مقياس آخر — /20 أو 4–10 أو 1–6؟ اختر مخصّص وحدّد حدودك.",
+    "updates": "التحديثات",
+    "updateCheck": "التحقق من التحديثات",
+    "updateChecking": "جارٍ التحقق…",
+    "updateCurrent": "محدَّث",
+    "updateFailed": "تعذّر التحقق",
+    "updateOpen": "فتح صفحة الإصدار"
   },
   "sdob": {
     "brand": "كفى ترددًا. ابدأ الدراسة.",
@@ -725,7 +731,9 @@
       "expandSidebar": "توسيع الشريط الجانبي",
       "urgent": "عاجل",
       "examPrefix": "اختبار: {{title}}",
-      "loading": "جارٍ التحميل…"
+      "loading": "جارٍ التحميل…",
+      "updateShort": "يتوفر تحديث",
+      "updateAvailable": "يتوفر تحديث: v{{version}}"
     },
     "flash": {
       "courseAdded": "تمت إضافة المادة",

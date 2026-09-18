@@ -371,7 +371,13 @@
     "scalePresetIb": "IB · 1–7",
     "scalePresetPct": "Prozent · 0–100",
     "scaleSwitchTo": "Oder wechseln zu",
-    "gradeCustomHint": "Eine andere Skala — /20, 4–10, 1–6? Wähle Eigene und lege eigene Grenzen fest."
+    "gradeCustomHint": "Eine andere Skala — /20, 4–10, 1–6? Wähle Eigene und lege eigene Grenzen fest.",
+    "updates": "Updates",
+    "updateCheck": "Nach Updates suchen",
+    "updateChecking": "Wird geprüft…",
+    "updateCurrent": "Aktuell",
+    "updateFailed": "Prüfung fehlgeschlagen",
+    "updateOpen": "Release-Seite öffnen"
   },
   "sdob": {
     "brand": "Schluss mit Grübeln. Fang an zu lernen.",
@@ -705,7 +711,9 @@
       "expandSidebar": "Seitenleiste ausklappen",
       "urgent": "DRINGEND",
       "examPrefix": "PRÜFUNG: {{title}}",
-      "loading": "LÄDT…"
+      "loading": "LÄDT…",
+      "updateShort": "Update verfügbar",
+      "updateAvailable": "Update verfügbar: v{{version}}"
     },
     "flash": {
       "courseAdded": "Kurs hinzugefügt",

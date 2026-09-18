@@ -369,7 +369,13 @@
     "scalePresetIb": "IB · 1–7",
     "scalePresetPct": "Persentase · 0–100",
     "scaleSwitchTo": "Atau beralih ke",
-    "gradeCustomHint": "Skala lain — /20, 4–10, 1–6? Pilih Khusus dan tentukan batas Anda sendiri."
+    "gradeCustomHint": "Skala lain — /20, 4–10, 1–6? Pilih Khusus dan tentukan batas Anda sendiri.",
+    "updates": "Pembaruan",
+    "updateCheck": "Periksa pembaruan",
+    "updateChecking": "Memeriksa…",
+    "updateCurrent": "Sudah terbaru",
+    "updateFailed": "Gagal memeriksa",
+    "updateOpen": "Buka halaman rilis"
   },
   "sdob": {
     "brand": "Berhenti menimbang. Mulai belajar.",
@@ -700,7 +706,9 @@
       "expandSidebar": "Perluas bilah sisi",
       "urgent": "MENDESAK",
       "examPrefix": "UJIAN: {{title}}",
-      "loading": "MEMUAT…"
+      "loading": "MEMUAT…",
+      "updateShort": "Pembaruan tersedia",
+      "updateAvailable": "Pembaruan tersedia: v{{version}}"
     },
     "flash": {
       "courseAdded": "Mata pelajaran ditambahkan",
