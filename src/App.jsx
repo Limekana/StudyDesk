@@ -2754,6 +2754,11 @@ function PlanView({ state, dispatch, session, showFlash, onAddAsgn, onAddExam, o
     {openExams.length===0&&<div className="empty">{t('av.pl.noExams')}</div>}
     {state.exams.filter(e=>e.done).length>0&&<details style={{marginBottom:16}}><summary style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",cursor:"pointer",padding:"8px 0"}}>{t('av.pl.completedExams',{count:state.exams.filter(e=>e.done).length})}</summary>{state.exams.filter(e=>e.done).map(e=><ExamCard key={e.id} exam={e} courses={state.courses} dispatch={dispatch}/>)}</details>}
     </>}
+    {/* Hidden on phones by CSS: the course chip strip at the top of Plan
+        already lists every course (plus Add course), and course detail has
+        the Edit button, so a second list at the bottom only repeated it.
+        Tablet and desktop keep it — they have no chip strip. */}
+    <div className="plan-courses">
     <div className="divider"/>
     <PlanSectionHead id="courses" label={t('av.pl.courses')} open={!collapsed.courses} onToggle={toggleSection}>
       <button className="btn btn-sm" onClick={onAddCourse}>{t('av.pl.add')}</button>
@@ -2764,6 +2769,7 @@ function PlanView({ state, dispatch, session, showFlash, onAddAsgn, onAddExam, o
       {courses.map(c=>{const openA=state.assignments.filter(a=>a.courseId===c.id&&!a.done);const openE=state.exams.filter(e=>e.courseId===c.id&&!e.done);const isOpen=!!expandedCourse[c.id];const dueA=openA.filter(a=>countsAsDue(daysUntil(a.dueDate),a.type,dueWindow));const nextA=openA.filter(a=>a.dueDate).sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate))[0];const nextE=[...openE].sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate))[0];const hasUrgent=openA.some(a=>{const d=daysUntil(a.dueDate);return d!==null&&d<=2;})||openE.some(e=>{const d=daysUntil(e.dueDate);return d!==null&&d<=5;});return <div key={c.id} className="course-card" style={{borderInlineStartColor:c.color}}><div role="button" tabIndex={0} className="course-card-compact" onClick={()=>setExpandedCourse(x=>({...x,[c.id]:!x[c.id]}))} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&setExpandedCourse(x=>({...x,[c.id]:!x[c.id]}))}><div className="course-card-left"><div className="course-card-name">{c.name}</div><div className="course-card-pills">{dueA.length>0&&<span className={"course-card-pill"+(hasUrgent?" urgent":"")} title={t('av.pl.dueTitle',{due:dueA.length,open:openA.length})}>{t('av.pl.due',{count:dueA.length})}</span>}{dueA.length===0&&openA.length>0&&<span className="course-card-pill" title={t('av.pl.openTitle',{count:openA.length})}>{t('av.pl.open',{count:openA.length})}</span>}{openE.length>0&&<span className="course-card-pill" style={{background:"rgba(109,63,160,0.08)",color:"#6d3fa0",borderColor:"rgba(109,63,160,0.18)"}}>{t('av.pl.exam',{count:openE.length})}</span>}{openA.length===0&&openE.length===0&&<span className="course-card-pill" style={{color:"#2e7d52",borderColor:"rgba(46,125,82,0.2)"}}>{t('av.pl.clear')}</span>}</div></div><span className={"course-card-chevron"+(isOpen?" open":"")}>▶</span></div>{isOpen&&<div className="course-card-detail"><div className="course-card-next">{nextE&&<div style={{color:"#6d3fa0",marginBottom:5,fontFamily:"var(--font-mono)",fontSize:11}}>📝 <strong>{nextE.title}</strong> — {urgencyLabel(daysUntil(nextE.dueDate),t)}</div>}{nextA&&<div style={{marginBottom:5}}>{t('av.pl.next')} <strong>{nextA.title}</strong><span style={{color:urgencyColor(daysUntil(nextA.dueDate)),marginLeft:6,fontFamily:"var(--font-mono)",fontSize:11}}>{urgencyLabel(daysUntil(nextA.dueDate),t)}</span></div>}{!nextA&&!nextE&&<span style={{color:"var(--muted2)",fontFamily:"var(--font-mono)",fontSize:11}}>{t('av.pl.nothingDue')}</span>}</div><div className="course-card-actions"><button className="btn-outline btn-sm" onClick={()=>onEditCourse({id:c.id,name:c.name,color:c.color})}>{t('av.pl.edit')}</button></div></div>}</div>;})}
     </div>
     </>}
+    </div>
   </div>;
 }
 

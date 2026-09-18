@@ -295,6 +295,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
   .mobile-course-chip{display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;white-space:nowrap;font-size:12px;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;}
   .mobile-course-chip.active{border-color:var(--text);}
   .mobile-course-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+  .plan-courses{display:none;}
   .mobile-course-add{padding:6px 12px;background:transparent;border:1px dashed var(--border2);border-radius:20px;font-size:12px;color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0;}
 }
 @media(min-width:769px){
