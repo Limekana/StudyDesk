@@ -345,19 +345,20 @@ html[data-theme="slate"] :where(.course-card, .exam-card) {
    SHARED — theme picker rows in Settings
    ══════════════════════════════════════════════════════════════════════════ */
 
+/* v1.15 (Item 14) — compact: swatch + name, three to a row on a phone. */
 .theme-options {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 10px;
-  margin-top: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .theme-option {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 10px;
+  gap: 6px;
+  padding: 7px;
   border: 1px solid var(--border);
   border-radius: var(--radius, 8px);
   background: var(--surface);
@@ -376,7 +377,7 @@ html[data-theme="slate"] :where(.course-card, .exam-card) {
    must not follow the theme currently applied. */
 .theme-swatch {
   display: flex;
-  height: 42px;
+  height: 26px;
   border: 1px solid var(--border);
   overflow: hidden;
 }
@@ -435,17 +436,16 @@ html[data-theme="slate"] :where(.course-card, .exam-card) {
 }
 
 .theme-option-name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
+  line-height: 1.2;
 }
-.theme-option-note {
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted2);
-}
+.theme-option-lock { flex-shrink: 0; color: var(--muted2); }
 .theme-locked-note {
   margin-top: 10px;
   font-size: 12px;

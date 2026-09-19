@@ -23,6 +23,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Capacitor } from '@capacitor/core';
+import { Lock } from 'lucide-react';
 import {
   MODES,
   THEMES,
@@ -55,21 +56,30 @@ const SWATCH = {
 // colours them is not offered anywhere they cannot be placed.
 const HAS_WIDGETS = Capacitor.getPlatform() === 'android';
 
-function Option({ id, labelKey, noteKey, active, disabled, onSelect }) {
+// v1.15 (Item 14) — swatch and name only. Every option used to carry its own
+// descriptive line as well, up to ten of them stacked on one screen; the
+// swatch already says what "Dark" or "Black" looks like. What still needs
+// words is said once, under its group (the character and locked notes).
+// A locked supporter theme gets a lock mark instead of a "Supporters" line,
+// the way LimeLog's ThemeCard does it.
+function Option({ id, label, active, locked = false, onSelect }) {
   const { t } = useTranslation();
   return (
     <button
       type="button"
       className={`theme-option${active ? ' active' : ''}`}
-      onClick={disabled ? undefined : () => onSelect(id)}
-      disabled={disabled}
+      onClick={locked ? undefined : () => onSelect(id)}
+      disabled={locked}
       aria-pressed={active}
+      aria-label={locked ? t('appearance.lockedAria', { name: label }) : undefined}
     >
       <span className={`theme-swatch ${SWATCH[id]}`} aria-hidden="true">
         <span /><span /><span /><span />
       </span>
-      <span className="theme-option-name">{t(labelKey)}</span>
-      <span className="theme-option-note">{t(noteKey)}</span>
+      <span className="theme-option-name">
+        {label}
+        {locked && <Lock className="theme-option-lock" size={12} strokeWidth={2} aria-hidden="true" />}
+      </span>
     </button>
   );
 }
@@ -132,14 +142,12 @@ export default function Appearance() {
             <Option
               key={id}
               id={id}
-              labelKey={`appearance.mode.${id}`}
-              noteKey={`appearance.modeNote.${id}`}
+              label={t(`appearance.mode.${id}`)}
               // Highlight the PREFERENCE, not the resolved value. While Slate
               // is on, the resolved mode is 'light' for everything, and
               // showing Light as selected would misreport what turning Slate
               // off is about to give back.
               active={mode === id}
-              disabled={false}
               onSelect={chooseMode}
             />
           ))}
@@ -157,17 +165,12 @@ export default function Appearance() {
             <Option
               key={id}
               id={id}
-              labelKey={`appearance.theme.${id}`}
-              noteKey={
-                isPaidTheme(id) && !entitled
-                  ? 'appearance.themeNote.locked'
-                  : `appearance.themeNote.${id}`
-              }
+              label={t(`appearance.theme.${id}`)}
               active={theme === id}
               // A lapsed or never-supporter can see the themes and cannot
-              // apply them. Disabled rather than hidden: the perk has to be
+              // apply them. Locked rather than hidden: the perk has to be
               // visible to be a reason to support.
-              disabled={isPaidTheme(id) && !entitled}
+              locked={isPaidTheme(id) && !entitled}
               onSelect={chooseTheme}
             />
           ))}
@@ -187,10 +190,8 @@ export default function Appearance() {
               <Option
                 key={id}
                 id={id}
-                labelKey={id === WIDGET_PALETTE_AUTO ? 'appearance.widgetMatch' : `appearance.mode.${id}`}
-                noteKey={id === WIDGET_PALETTE_AUTO ? 'appearance.widgetMatchNote' : `appearance.modeNote.${id}`}
+                label={t(id === WIDGET_PALETTE_AUTO ? 'appearance.widgetMatch' : `appearance.mode.${id}`)}
                 active={widgetPalette === id}
-                disabled={false}
                 onSelect={chooseWidgetPalette}
               />
             ))}
