@@ -4,6 +4,7 @@ import { setLanguage, SUPPORTED_LANGS, LANGUAGE_NAMES } from "./i18n/index.js";
 import { useScrollSelectedIntoView } from "./lib/useScrollSelectedIntoView.js";
 import { parseLocalDate, toLocalISO, addDays, fmtDate, fmtDateFull, fmtToday, formatLocale } from "./lib/dates.js";
 import { pushWidgetSnapshot, consumeWidgetLaunchView, onWidgetNavigate } from "./lib/widgetBridge.js";
+import { WIDGET_PALETTE_EVENT } from "./lib/theme.js";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { App as CapApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
@@ -33,6 +34,7 @@ import { applyRemotePull } from "./lib/merge.js";
 import GradesView from "./features/grades/GradesView.jsx";
 import SessionsView from "./features/sessions/SessionsView.jsx";
 import SaveSessionSheet from "./features/sessions/SaveSessionSheet.jsx";
+import { pastSessionDraft } from "./lib/pastSession.js";
 import NotebookView from "./features/notebook/NotebookView.jsx";
 import "./styles/notebook.css";
 import { isGradeMode, normalizeScale, DEFAULT_CUSTOM_SCALE } from "./lib/gradeScale.js";
@@ -60,6 +62,7 @@ import './styles/print.css';
 import './styles/desktop.css';
 import { COURSE_COLORS } from "./lib/courseColors.js";
 import { NotebookPen, CalendarDays, Award, Timer, PanelLeftClose, PanelLeftOpen, Paperclip, BookOpen, Pencil } from "lucide-react";
+import { checkForDesktopUpdate, runDesktopUpdateAction, useDesktopUpdate } from "./lib/desktopUpdate.js";
 import { GuestAvatar, AccountAvatar } from "./lib/avatar.jsx";
 import { useShellTier, useSidebarRail } from "./lib/useShell.js";
 import { startPlanReminderLoop, webNotifySupported } from "./lib/webNotify.js";
@@ -1297,6 +1300,16 @@ export default function App() {
   // Not gated on notifEnabled: a widget the user chose to place on their home
   // screen is not a notification, and declining reminders is not declining it.
   // The push itself no-ops off Android and when no widget is placed.
+  //
+  // v1.15 — and on a palette change: the widgets follow the app's look (or
+  // the Settings override), so switching to Dark has to reach the home screen
+  // without waiting for the next assignment edit.
+  const [widgetPaletteTick, setWidgetPaletteTick] = useState(0);
+  useEffect(() => {
+    const bump = () => setWidgetPaletteTick((n) => n + 1);
+    window.addEventListener(WIDGET_PALETTE_EVENT, bump);
+    return () => window.removeEventListener(WIDGET_PALETTE_EVENT, bump);
+  }, []);
   useEffect(() => {
     void pushWidgetSnapshot({
       assignments: state.assignments,
@@ -1305,7 +1318,7 @@ export default function App() {
       t,
       locale: formatLocale(),
     });
-  }, [state.assignments, state.exams, state.courses, t]);
+  }, [state.assignments, state.exams, state.courses, t, widgetPaletteTick]);
 
   // v1.10 — widget taps land where the widget was about.
   //
@@ -1969,6 +1982,17 @@ export default function App() {
   // not sit between a hook and its call site.
   const shellTier = useShellTier();
   const [rail, toggleRail] = useSidebarRail(shellTier);
+
+  // v1.15 (Item 12) — one update check per launch; a no-op off desktop. When
+  // GitHub has something newer the sidebar says so; a click downloads it, then
+  // "Restart to update" installs it. Nothing downloads until the user asks.
+  const update = useDesktopUpdate();
+  useEffect(() => { checkForDesktopUpdate(); }, []);
+  const updateShown = ["available", "downloading", "ready"].includes(update.status);
+  const updateLabel =
+    update.status === "downloading" ? t("av.chrome.updateDownloading", { percent: update.percent })
+    : update.status === "ready" ? t("av.chrome.updateReady")
+    : t("av.chrome.updateShort");
   // Resolved here rather than stored, so a user who has never chosen follows
   // the tier as it changes (resizing a window, rotating a tablet) instead of
   // being pinned to whatever tier they first loaded at.
@@ -2088,6 +2112,18 @@ export default function App() {
           <div className="add-course-btn" role="button" tabIndex={0} aria-label={t('av.chrome.addCourse')} title={rail?t('av.chrome.addCourse'):undefined} onClick={()=>setShowAddCourse(true)} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&setShowAddCourse(true)}><span style={{fontSize:16}}>+</span> <span className="rail-hide">{t('av.chrome.addCourse')}</span></div>
         </div>
         <div className="sidebar-foot">
+          {updateShown && (
+            <button type="button" className="rail-toggle update-notice" onClick={runDesktopUpdateAction}
+              disabled={update.status === "downloading"}
+              aria-label={`${updateLabel} · v${update.latest}`} title={`${updateLabel} · v${update.latest}`}>
+              <span className="update-notice-dot" aria-hidden="true"/>
+              <span className="rail-hide">{updateLabel}</span>
+              <span className="rail-hide update-notice-ver">v{update.latest}</span>
+              {update.status === "downloading" && (
+                <span className="update-notice-bar" style={{ width: `${update.percent}%` }} aria-hidden="true"/>
+              )}
+            </button>
+          )}
           <button type="button" className="rail-toggle" onClick={toggleRail}
             aria-expanded={!rail}
             aria-label={rail?t('av.chrome.expandSidebar'):t('av.chrome.collapseSidebar')}
@@ -2161,6 +2197,26 @@ export default function App() {
               {urgent.map((a,i)=><span key={a.id}>{a.title}{i<urgent.length-1?", ":""}</span>)}
             </div></div>
           )}
+          {/* v1.15 Item 2 — the phone had no equivalent of the sidebar's course
+              list; its only copy sat at the bottom of Plan, under Assignments
+              and Exams. Shown on Plan's list and on course detail, which is
+              where it leads. Tapping the course already open goes back to Plan,
+              so a course page is never a dead end on a phone. Hidden above the
+              phone tier by CSS, where the sidebar does this job. */}
+          {((state.view==="plan"&&planSub==="list")||state.view==="status")&&(
+            <div className="mobile-courses-bar">
+              <div className="mobile-courses-scroll" role="group" aria-label={t('av.chrome.coursesLabel')}>
+                {courses.map(c=>{
+                  const on=state.view==="status"&&state.activeCourse===c.id;
+                  return <button key={c.id} type="button" className={"mobile-course-chip"+(on?" active":"")} aria-pressed={on}
+                    onClick={()=>dispatch(on?{type:"SET_VIEW",view:"plan"}:{type:"SET_VIEW",view:"status",course:c.id})}>
+                    <span className="mobile-course-dot" style={{background:c.color}} aria-hidden="true"/>{c.name}
+                  </button>;
+                })}
+                <button type="button" className="mobile-course-add" onClick={()=>setShowAddCourse(true)}>+ {t('av.chrome.addCourse')}</button>
+              </div>
+            </div>
+          )}
           {/* v1.3 — keyed wrapper triggers the page-turn cross-fade on view switch.
               The urgent banner above stays sticky (lives outside the wrapper), so
               only the routed view animates. */}
@@ -2184,7 +2240,7 @@ export default function App() {
                 {planSub==="timetable" &&
                   <TimetableView state={state} dispatch={dispatch} session={session} showFlash={showFlash}/>}
                 {planSub==="list" &&
-                  <PlanView state={state} dispatch={dispatch} session={session} showFlash={showFlash} onAddAsgn={()=>setShowAddAsgn(true)} onAddExam={()=>setShowAddExam(true)} onAddCourse={()=>setShowAddCourse(true)} onEditCourse={(c)=>setEditingCourse(c)}/>}
+                  <PlanView state={state} dispatch={dispatch} session={session} showFlash={showFlash} onAddAsgn={()=>setShowAddAsgn(true)} onAddExam={()=>setShowAddExam(true)} onAddCourse={()=>setShowAddCourse(true)} onEditCourse={(c)=>setEditingCourse(c)} onOpenCalendar={()=>choosePlanSub("calendar")}/>}
               </div>
             </>
           )}
@@ -2227,7 +2283,7 @@ export default function App() {
               </div>
               <div className="page-turn" key={timerSub}>
                 {timerSub==="timer" &&<TimerView   state={state} dispatch={dispatch} session={session} showFlash={showFlash} onTimerComplete={(payload)=>setPendingSession(payload)}/>}
-                {timerSub==="log"   &&<SessionsView state={state} dispatch={dispatch} showFlash={showFlash} session={session}/>}
+                {timerSub==="log"   &&<SessionsView state={state} dispatch={dispatch} showFlash={showFlash} session={session} onLogPast={()=>setPendingSession(pastSessionDraft())}/>}
                 {timerSub==="stats" &&<StatsView    state={state}/>}
                 {/* The mobile home for the notebook. Same component as the
                     desktop route below — one implementation, two entry
@@ -2251,7 +2307,9 @@ export default function App() {
 
       {/* ── Mobile: collapsible course strip + bottom tab bar ── */}
       <nav className="mobile-tabbar">
-        {views.filter(v=>!v.railOnly).map(v=><div key={v.id} role="button" tabIndex={0} className={"mobile-tab"+(state.view===v.id?" active":"")}
+        {/* `status` has no tab of its own; on a phone it is reached from Plan's
+            course strip (v1.15 Item 2), so Plan stays lit there. */}
+        {views.filter(v=>!v.railOnly).map(v=><div key={v.id} role="button" tabIndex={0} className={"mobile-tab"+((state.view===v.id||(v.id==="plan"&&state.view==="status"))?" active":"")}
           onClick={()=>dispatch({type:"SET_VIEW",view:v.id})}
           onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&dispatch({type:"SET_VIEW",view:v.id})}>
           <v.Icon size={20} strokeWidth={1.75} aria-hidden="true"/>
@@ -2647,11 +2705,9 @@ function PlanSectionHead({ id, label, open, onToggle, children }) {
   );
 }
 
-function PlanView({ state, dispatch, session, showFlash, onAddAsgn, onAddExam, onAddCourse, onEditCourse }) {
-  const { t, i18n } = useTranslation();
-  const lang = (i18n.language || "en").split("-")[0];
+function PlanView({ state, dispatch, session, showFlash, onAddAsgn, onAddExam, onAddCourse, onEditCourse, onOpenCalendar }) {
+  const { t } = useTranslation();
   const courses = Object.values(state.courses).filter(c => !c.deletedAt);
-  const [calMonth, setCalMonth] = useState(()=>{const d=new Date(); return {year:d.getFullYear(),month:d.getMonth()};});
   const [expandedCourse, setExpandedCourse] = useState({});
   // Read once at mount, not on every render: the value only ever changes
   // through the toggle below, and reading localStorage per render would make
@@ -2668,31 +2724,10 @@ function PlanView({ state, dispatch, session, showFlash, onAddAsgn, onAddExam, o
       return next;
     });
   }, []);
-  const firstDay = new Date(calMonth.year,calMonth.month,1);
-  const lastDay  = new Date(calMonth.year,calMonth.month+1,0);
-  const startPad = firstDay.getDay();
-  const days = [];
-  for(let i=0;i<startPad;i++){const d=new Date(calMonth.year,calMonth.month,-(startPad-1-i));days.push({date:d,current:false});}
-  for(let i=1;i<=lastDay.getDate();i++) days.push({date:new Date(calMonth.year,calMonth.month,i),current:true});
-  while(days.length%7!==0){const d=new Date(calMonth.year,calMonth.month+1,days.length-lastDay.getDate()-startPad+1);days.push({date:d,current:false});}
-  const eventsOnDay=(date)=>{
-    const ds=toLocalISO(date);
-    const examEvents=state.exams.filter(e=>e.dueDate===ds).map(e=>({type:"exam",exam:e,course:state.courses[e.courseId]}));
-    const studyEvents=state.exams.filter(e=>!e.done&&studyStartDate(e)===ds).map(e=>({type:"study",exam:e,course:state.courses[e.courseId]}));
-    const asgnEvents=state.assignments.filter(a=>!a.done&&a.dueDate===ds).map(a=>({type:"assignment",asgn:a,course:state.courses[a.courseId]}));
-    return [...examEvents,...studyEvents,...asgnEvents];
-  };
-  const dayIsToday=(date)=>toLocalISO(date)===toLocalISO(todayMidnight());
-  const monthName=firstDay.toLocaleDateString(lang||"en",{month:"long",year:"numeric"});
-  const prevMonth=()=>setCalMonth(m=>m.month===0?{year:m.year-1,month:11}:{year:m.year,month:m.month-1});
-  const nextMonth=()=>setCalMonth(m=>m.month===11?{year:m.year+1,month:0}:{year:m.year,month:m.month+1});
-  const agendaEvents=[];
-  const _agendaBase=todayMidnight();
-  for(let i=0;i<60;i++){const d=new Date(_agendaBase);d.setDate(_agendaBase.getDate()+i);const ev=eventsOnDay(d);if(ev.length>0)agendaEvents.push({date:d,events:ev});}
   const openAsgns=state.assignments.filter(a=>!a.done).sort(byDueAsc);
   const openExams=state.exams.filter(e=>!e.done).sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));
-  // The root is NOT a tiling grid: this view also holds the month grid, the
-  // agenda and the course cards, and tiling those would break each of them.
+  // The root is NOT a tiling grid: this view also holds the course cards,
+  // and tiling those would break them.
   // Only the flat lists tile, which is where the vertical length comes from.
   return <div className="sd-page-plan">
     <PlanSectionHead id="assignments" label={t('av.pl.assignments')} open={!collapsed.assignments} onToggle={toggleSection}>
@@ -2704,27 +2739,26 @@ function PlanView({ state, dispatch, session, showFlash, onAddAsgn, onAddExam, o
     {state.assignments.filter(a=>a.done).length>0&&<details style={{marginBottom:16}}><summary style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",cursor:"pointer",padding:"8px 0"}}>{t('av.pl.completed',{count:state.assignments.filter(a=>a.done).length})}</summary>{state.assignments.filter(a=>a.done).sort(byDueDesc).map(a=><AsgnItem key={a.id} asgn={a} courses={state.courses} dispatch={dispatch} attachments={state.attachments} session={session} showFlash={showFlash}/>)}</details>}
     </>}
     <div className="divider"/>
-    <PlanSectionHead id="exams" label={t('av.pl.examsCalendar')} open={!collapsed.exams} onToggle={toggleSection}>
+    <PlanSectionHead id="exams" label={t('cal.statExams')} open={!collapsed.exams} onToggle={toggleSection}>
       <button className="btn btn-sm" onClick={onAddExam}>{t('av.pl.add')}</button>
     </PlanSectionHead>
     {!collapsed.exams && <>
-    <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
-      <button className="btn-outline btn-sm" onClick={prevMonth}><span className="rtl-mirror" aria-hidden>←</span></button>
-      <span style={{fontFamily:"var(--font-display)",fontSize:16,flex:1}}>{monthName}</span>
-      <button className="btn-outline btn-sm" onClick={nextMonth}><span className="rtl-mirror" aria-hidden>→</span></button>
-    </div>
-    <div className="calendar-grid cal-header-row" style={{marginBottom:0,gap:4}}>{["sun","mon","tue","wed","thu","fri","sat"].map(d=><div key={d} className="cal-header">{t(`av.cal.${d}`)}</div>)}</div>
-    <div className="calendar-grid" style={{marginBottom:16}}>
-      {days.map((day,i)=>{const events=eventsOnDay(day.date);return <div key={i} className={"cal-day"+(dayIsToday(day.date)?" today":"")+(day.current?"":" other-month")}><div className="cal-day-num">{day.date.getDate()}</div>{events.map((ev,j)=>{if(ev.type==="exam") return <div key={j} className="cal-event cal-exam" title={t('av.chrome.examPrefix',{title:ev.exam.title})}>📝 {ev.exam.title}</div>;if(ev.type==="study") return <div key={j} className="cal-event cal-study" title={t('av.ec.studyStart')+" "+ev.exam.title}>📚 {ev.exam.title}</div>;const col=ev.course?.color||"#8a8278";return <div key={j} className="cal-event" style={{background:col+"22",color:col}} title={ev.asgn.title}>◷ {ev.asgn.title}</div>;})}</div>;})}
-    </div>
-    <div className="cal-agenda" style={{marginBottom:16}}>
-      {agendaEvents.length===0&&<div className="empty">{t('av.pl.nothingComingUp')}</div>}
-      {agendaEvents.map((entry,i)=>{const label=entry.date.toLocaleDateString(lang||"en",{weekday:"short",day:"numeric",month:"short"});return <div key={i} className="cal-agenda-item"><div className="cal-agenda-date">{label}</div><div className="cal-agenda-pills">{entry.events.map((ev,j)=>{if(ev.type==="exam"||ev.type==="study"){const c=ev.course;return <div key={j} className="cal-agenda-pill" style={{background:ev.type==="exam"?"rgba(109,63,160,0.10)":"rgba(26,92,158,0.08)"}}><span>{ev.type==="exam"?"📝":"📚"}</span><span style={{fontFamily:"var(--font-mono)",fontSize:11,color:ev.type==="exam"?"#6d3fa0":"#1a5c9e"}}>{ev.type==="exam"?t('av.pl.examWord'):t('av.pl.studyWord')}</span><span style={{fontSize:13}}>{ev.exam.title}</span>{c&&<span className="asgn-course" style={{background:c.color+"18",color:c.color}}>{c.name}</span>}</div>;}const c=ev.course;return <div key={j} className="cal-agenda-pill" style={{background:c?c.color+"18":"var(--surface2)"}}><span>◷</span><span style={{fontFamily:"var(--font-mono)",fontSize:11,color:c?.color||"var(--muted)"}}>{t('av.pl.dueWord')}</span><span style={{fontSize:13}}>{ev.asgn.title}</span>{c&&<span className="asgn-course" style={{background:c.color+"18",color:c.color}}>{c.name}</span>}</div>;})}</div></div>;})}
-    </div>
+    {/* v1.15 Item 1 — this section used to carry its own month grid and a
+        60-day agenda: a second calendar with separate logic from the Calendar
+        tab beside it, and the source of "three different calendars". The one
+        calendar is a tap away; the exam cards below are the summary. */}
+    <button type="button" className="btn-outline btn-sm plan-open-cal" onClick={onOpenCalendar}>
+      {t('cal.planCalendar')} <span className="rtl-mirror" aria-hidden>→</span>
+    </button>
     {openExams.map(e=><ExamCard key={e.id} exam={e} courses={state.courses} dispatch={dispatch}/>)}
     {openExams.length===0&&<div className="empty">{t('av.pl.noExams')}</div>}
     {state.exams.filter(e=>e.done).length>0&&<details style={{marginBottom:16}}><summary style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--muted)",cursor:"pointer",padding:"8px 0"}}>{t('av.pl.completedExams',{count:state.exams.filter(e=>e.done).length})}</summary>{state.exams.filter(e=>e.done).map(e=><ExamCard key={e.id} exam={e} courses={state.courses} dispatch={dispatch}/>)}</details>}
     </>}
+    {/* Hidden on phones by CSS: the course chip strip at the top of Plan
+        already lists every course (plus Add course), and course detail has
+        the Edit button, so a second list at the bottom only repeated it.
+        Tablet and desktop keep it — they have no chip strip. */}
+    <div className="plan-courses">
     <div className="divider"/>
     <PlanSectionHead id="courses" label={t('av.pl.courses')} open={!collapsed.courses} onToggle={toggleSection}>
       <button className="btn btn-sm" onClick={onAddCourse}>{t('av.pl.add')}</button>
@@ -2735,6 +2769,7 @@ function PlanView({ state, dispatch, session, showFlash, onAddAsgn, onAddExam, o
       {courses.map(c=>{const openA=state.assignments.filter(a=>a.courseId===c.id&&!a.done);const openE=state.exams.filter(e=>e.courseId===c.id&&!e.done);const isOpen=!!expandedCourse[c.id];const dueA=openA.filter(a=>countsAsDue(daysUntil(a.dueDate),a.type,dueWindow));const nextA=openA.filter(a=>a.dueDate).sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate))[0];const nextE=[...openE].sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate))[0];const hasUrgent=openA.some(a=>{const d=daysUntil(a.dueDate);return d!==null&&d<=2;})||openE.some(e=>{const d=daysUntil(e.dueDate);return d!==null&&d<=5;});return <div key={c.id} className="course-card" style={{borderInlineStartColor:c.color}}><div role="button" tabIndex={0} className="course-card-compact" onClick={()=>setExpandedCourse(x=>({...x,[c.id]:!x[c.id]}))} onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&setExpandedCourse(x=>({...x,[c.id]:!x[c.id]}))}><div className="course-card-left"><div className="course-card-name">{c.name}</div><div className="course-card-pills">{dueA.length>0&&<span className={"course-card-pill"+(hasUrgent?" urgent":"")} title={t('av.pl.dueTitle',{due:dueA.length,open:openA.length})}>{t('av.pl.due',{count:dueA.length})}</span>}{dueA.length===0&&openA.length>0&&<span className="course-card-pill" title={t('av.pl.openTitle',{count:openA.length})}>{t('av.pl.open',{count:openA.length})}</span>}{openE.length>0&&<span className="course-card-pill" style={{background:"rgba(109,63,160,0.08)",color:"#6d3fa0",borderColor:"rgba(109,63,160,0.18)"}}>{t('av.pl.exam',{count:openE.length})}</span>}{openA.length===0&&openE.length===0&&<span className="course-card-pill" style={{color:"#2e7d52",borderColor:"rgba(46,125,82,0.2)"}}>{t('av.pl.clear')}</span>}</div></div><span className={"course-card-chevron"+(isOpen?" open":"")}>▶</span></div>{isOpen&&<div className="course-card-detail"><div className="course-card-next">{nextE&&<div style={{color:"#6d3fa0",marginBottom:5,fontFamily:"var(--font-mono)",fontSize:11}}>📝 <strong>{nextE.title}</strong> — {urgencyLabel(daysUntil(nextE.dueDate),t)}</div>}{nextA&&<div style={{marginBottom:5}}>{t('av.pl.next')} <strong>{nextA.title}</strong><span style={{color:urgencyColor(daysUntil(nextA.dueDate)),marginLeft:6,fontFamily:"var(--font-mono)",fontSize:11}}>{urgencyLabel(daysUntil(nextA.dueDate),t)}</span></div>}{!nextA&&!nextE&&<span style={{color:"var(--muted2)",fontFamily:"var(--font-mono)",fontSize:11}}>{t('av.pl.nothingDue')}</span>}</div><div className="course-card-actions"><button className="btn-outline btn-sm" onClick={()=>onEditCourse({id:c.id,name:c.name,color:c.color})}>{t('av.pl.edit')}</button></div></div>}</div>;})}
     </div>
     </>}
+    </div>
   </div>;
 }
 

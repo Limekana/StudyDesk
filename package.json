@@ -1,7 +1,7 @@
 {
   "name": "studydesk",
   "private": true,
-  "version": "1.14.1",
+  "version": "1.15.0",
   "type": "module",
   "license": "MIT",
   "author": "Limecore Studio",
@@ -28,8 +28,7 @@
     "preview": "vite preview",
     "cap:sync": "npm run build && npm run check:dist-fresh && cap sync android",
     "electron:dev": "electron .",
-    "electron:build": "npm run build && npm run check:dist-fresh && node electron/build.cjs --win && npm run electron:zip",
-    "electron:zip": "node electron/package-zip.cjs"
+    "electron:build": "npm run build && npm run check:dist-fresh && node electron/build.cjs --win --publish never"
   },
   "dependencies": {
     "@capacitor/android": "^8.2.0",
@@ -42,6 +41,7 @@
     "@capacitor/status-bar": "^8.0.3",
     "@supabase/supabase-js": "^2.106.0",
     "@vercel/analytics": "^2.0.1",
+    "electron-updater": "^6.8.9",
     "i18next": "^23.16.8",
     "lucide-react": "^0.414.0",
     "react": "^19.2.4",
@@ -81,6 +81,13 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "artifactName": "StudyDesk-Desktop-Setup-${version}.${ext}"
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Limekana",
+        "repo": "StudyDesk"
+      }
+    ]
   }
 }

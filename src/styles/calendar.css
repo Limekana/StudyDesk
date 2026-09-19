@@ -272,7 +272,8 @@
 /* ── Week view ─────────────────────────────────────────────────────────── */
 .cal-weekhead {
   display: grid;
-  grid-template-columns: var(--cal-gutter-w) repeat(7, minmax(0, 1fr));
+  /* v1.15 Item 3 — `--cal-cols` is 7 for a week and 1 for Day mode. */
+  grid-template-columns: var(--cal-gutter-w) repeat(var(--cal-cols, 7), minmax(0, 1fr));
   border-bottom: 1px solid var(--cal-rule);
   background: var(--surface2);
 }
@@ -288,13 +289,16 @@
 .cal-weekhead-num { font-family: var(--font-display); font-size: 17px; color: var(--muted); }
 .cal-weekhead-day.today .cal-weekhead-num { color: var(--text); font-weight: 600; }
 .cal-weekhead-day.today .cal-weekhead-dow { color: var(--text); }
+.cal-weekhead-day.drill { cursor: pointer; }
+.cal-weekhead-day.drill:hover .cal-weekhead-num,
+.cal-weekhead-day.drill:focus-visible .cal-weekhead-num { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
 
 /* All-day strip: exams and due dates have no clock time, so they cannot live
    in the hour grid. Pinning them above it is what stops a deadline being
    silently drawn at midnight. */
 .cal-allday {
   display: grid;
-  grid-template-columns: var(--cal-gutter-w) repeat(7, minmax(0, 1fr));
+  grid-template-columns: var(--cal-gutter-w) repeat(var(--cal-cols, 7), minmax(0, 1fr));
   border-bottom: 1px solid var(--cal-rule);
   background: var(--surface);
 }
@@ -312,7 +316,7 @@
 
 .cal-hours {
   display: grid;
-  grid-template-columns: var(--cal-gutter-w) repeat(7, minmax(0, 1fr));
+  grid-template-columns: var(--cal-gutter-w) repeat(var(--cal-cols, 7), minmax(0, 1fr));
   position: relative;
   /* Columns take their declared height instead of stretching to the tallest
      one — see the height rule below for why that matters. */
@@ -556,6 +560,15 @@
 .cal-agenda-rel { font-family: var(--font-mono); font-size: 10px; color: var(--muted2); letter-spacing: 0.06em; text-transform: uppercase; }
 .cal-agenda-close { margin-inline-start: auto; background: none; border: 0; color: var(--muted2); cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 4px; }
 .cal-agenda-close:hover { color: var(--text); }
+/* v1.15 Item 3 — Week / Day drill-down from the picked day. */
+.cal-agenda-drill { margin-inline-start: auto; display: inline-flex; gap: 6px; }
+.cal-agenda-drill + .cal-agenda-close { margin-inline-start: 4px; }
+.cal-agenda-drill button {
+  background: var(--surface); border: 1px solid var(--border2); border-radius: 4px; color: var(--muted);
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 5px 9px; min-height: 28px; cursor: pointer;
+}
+.cal-agenda-drill button:hover { color: var(--text); border-color: var(--text); }
 .cal-agenda-group { display: flex; flex-direction: column; gap: 6px; }
 .cal-agenda-empty { font-size: 12px; color: var(--muted2); font-style: italic; }
 

@@ -1,0 +1,3 @@
+Un seul calendrier, plus simple à parcourir.
+
+L’onglet Plan n’a plus son propre mini-calendrier. Le Calendrier propose Mois, Semaine et Jour, et on passe de l’un à l’autre d’un toucher. Sur téléphone, vos cours sont dans une barre en haut de Plan. Les widgets suivent l’apparence claire ou sombre de l’app, ou choisissez-la dans Réglages → Apparence. On peut saisir une séance passée depuis la liste, et Commentaires est plus facile à trouver.

@@ -59,17 +59,61 @@ final class WidgetSnapshot {
         return R.drawable.widget_dot_later;
     }
 
+    /**
+     * v1.15 — the widget's colours. Resolved in JS (lib/theme.js
+     * resolveWidgetPalette: the app's own look, or the user's override in
+     * Settings) and sent as a name, so the rule for which look is active lives
+     * in one place. The values are the app's own tokens from modes.css.
+     */
+    static final class Palette {
+        final int paper;   // drawable: page + margin rule
+        final int rule;    // drawable: Upcoming row hairline
+        final int label;   // NEXT UP / UPCOMING caption
+        final int title;   // the item itself
+        final int sub;     // course, date, empty state
+
+        Palette(int paper, int rule, int label, int title, int sub) {
+            this.paper = paper;
+            this.rule = rule;
+            this.label = label;
+            this.title = title;
+            this.sub = sub;
+        }
+    }
+
+    private static final Palette LIGHT = new Palette(
+        R.drawable.widget_paper, R.drawable.widget_row_rule,
+        0xFFA8A096, 0xFF1A1814, 0xFF8A8279);
+    private static final Palette DARK = new Palette(
+        R.drawable.widget_paper_dark, R.drawable.widget_row_rule_dark,
+        0xFF938B82, 0xFFEDE7DA, 0xFFA8A096);
+    private static final Palette BLACK = new Palette(
+        R.drawable.widget_paper_black, R.drawable.widget_row_rule_black,
+        0xFF938B82, 0xFFEDE7DA, 0xFFA8A096);
+
+    /**
+     * Anything unrecognised is the cream page: that is what every snapshot
+     * written before v1.15 means, and what the widget looked like until now.
+     */
+    static Palette paletteFor(String name) {
+        if ("dark".equals(name)) return DARK;
+        if ("black".equals(name)) return BLACK;
+        return LIGHT;
+    }
+
     final String nextUpTitle;
     final String nextUpSubtitle;
     final String nextUpUrgency;
     final Item[] upcoming;
+    final Palette palette;
 
     private WidgetSnapshot(String nextUpTitle, String nextUpSubtitle, String nextUpUrgency,
-                           Item[] upcoming) {
+                           Item[] upcoming, Palette palette) {
         this.nextUpTitle = nextUpTitle;
         this.nextUpSubtitle = nextUpSubtitle;
         this.nextUpUrgency = nextUpUrgency;
         this.upcoming = upcoming;
+        this.palette = palette;
     }
 
     /**
@@ -103,7 +147,8 @@ final class WidgetSnapshot {
                     o == null ? "later" : o.optString("urgency", "later")
                 );
             }
-            return new WidgetSnapshot(title, subtitle, urgency, items);
+            return new WidgetSnapshot(title, subtitle, urgency, items,
+                paletteFor(root.optString("palette", "light")));
         } catch (Exception e) {
             // Corrupt or half-written JSON. Draw the empty state rather than
             // letting the launcher show a crashed-widget placeholder.
@@ -112,7 +157,7 @@ final class WidgetSnapshot {
     }
 
     static WidgetSnapshot empty() {
-        return new WidgetSnapshot("", "", "later", new Item[0]);
+        return new WidgetSnapshot("", "", "later", new Item[0], LIGHT);
     }
 
     boolean hasNextUp() {

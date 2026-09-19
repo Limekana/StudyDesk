@@ -1,0 +1,3 @@
+Un solo calendario, más fácil de recorrer.
+
+La pestaña Plan ya no tiene su propio minicalendario. El Calendario tiene vistas de Mes, Semana y Día, y puedes pasar de una a otra con un toque. En el móvil, tus cursos están en una barra arriba de Plan. Los widgets siguen el aspecto claro u oscuro de la app, o elige uno en Ajustes → Apariencia. Puedes registrar una sesión pasada desde la lista, y Comentarios es más fácil de encontrar.

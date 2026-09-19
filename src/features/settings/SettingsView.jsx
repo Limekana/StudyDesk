@@ -27,6 +27,8 @@ import { formatLocale } from '../../lib/dates.js';
 import { AccountAvatar, GuestAvatar } from '../../lib/avatar.jsx';
 import { useAccountAvatar } from '../../lib/useAccountAvatar.js';
 import pkg from '../../../package.json';
+import { IS_DESKTOP } from '../../lib/desktop.js';
+import { checkForDesktopUpdate, runDesktopUpdateAction, useDesktopUpdate } from '../../lib/desktopUpdate.js';
 
 // A v4 uuid for a feedback row. crypto.randomUUID needs a secure context, and
 // the fallback builds one by hand rather than inventing a non-uuid id string —
@@ -238,6 +240,46 @@ function timeInputToMinutes(value) {
   const min = Number(m[2]);
   if (h > 23 || min > 59) return null;
   return h * 60 + min;
+}
+
+// v1.15 (Item 12) — the Settings half of desktop updates. With nothing known
+// yet, the button re-asks GitHub (skipping the once-per-launch cache). Once a
+// newer release is known it downloads it, then installs it; when the updater
+// cannot handle that release, it opens the release page instead.
+function DesktopUpdateRow() {
+  const { t } = useTranslation();
+  const update = useDesktopUpdate();
+  const { status, canInstall } = update;
+  const pending = status === 'available' || status === 'downloading' || status === 'ready';
+  const value =
+    status === 'checking' ? t('settings.updateChecking')
+    : status === 'downloading' ? t('settings.updateDownloading', { percent: update.percent })
+    : pending ? `v${update.latest}`
+    : status === 'current' ? t('settings.updateCurrent')
+    : status === 'error' ? t('settings.updateFailed')
+    : '';
+  const label =
+    status === 'ready' ? t('settings.updateRestart')
+    : status === 'downloading' ? t('settings.updateDownloading', { percent: update.percent })
+    : status === 'available' ? (canInstall ? t('settings.updateDownload') : t('settings.updateOpen'))
+    : t('settings.updateCheck');
+  return (
+    <>
+      <div className="sv2-row">
+        <span className="sv2-row-label">{t('settings.updates')}</span>
+        <span className="sv2-row-value">{value}</span>
+      </div>
+      <div className="sv2-action">
+        <button
+          className={pending ? 'btn' : 'btn-outline'}
+          onClick={pending ? runDesktopUpdateAction : () => checkForDesktopUpdate(true)}
+          disabled={status === 'checking' || status === 'downloading'}
+        >
+          {label}
+        </button>
+      </div>
+    </>
+  );
 }
 
 export default function SettingsView({ state, dispatch, showFlash, session }) {
@@ -535,6 +577,69 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* ── Feedback (v1.10) ──
+            Deliberately in the app rather than a survey link: a link leaves
+            the app, cannot work offline, and arrives without the app version
+            or platform, which is most of what makes a report actionable.
+            v1.15 Item 4 — moved up from sixteenth of eighteen sections, below
+            Your data, to right under Language. Same fix NCC got in v1.13: a
+            form nobody scrolls down to is hardly easier to reach than no form
+            at all. Nothing else in it changed. */}
+        <div className="sv2-section">
+          <div className="sv2-section-title">{t('settings.feedback')}</div>
+          <div className="sv2-note">{t('settings.feedbackBlurb')}</div>
+
+          <div className="sv2-fb-cats" role="group" aria-label={t('settings.feedbackCategory')}>
+            {FEEDBACK_CATEGORIES.map((c) => (
+              <button
+                key={c}
+                type="button"
+                className={`sv2-fb-cat${fbCategory === c ? ' sv2-fb-cat--on' : ''}`}
+                onClick={() => setFbCategory(c)}
+                aria-pressed={fbCategory === c}
+              >
+                {t(`settings.fbCat.${c}`)}
+              </button>
+            ))}
+          </div>
+
+          <div className="sv2-fb-stars" role="group" aria-label={t('settings.feedbackRating')}>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                className={`sv2-fb-star${n <= fbRating ? ' sv2-fb-star--on' : ''}`}
+                onClick={() => setFbRating(n === fbRating ? 0 : n)}
+                aria-label={t('settings.feedbackRatingN', { n })}
+                aria-pressed={n <= fbRating}
+              >
+                {n <= fbRating ? '★' : '☆'}
+              </button>
+            ))}
+          </div>
+
+          <textarea
+            className="sv2-fb-text"
+            value={fbMessage}
+            maxLength={FEEDBACK_MAX}
+            onChange={(e) => setFbMessage(e.target.value)}
+            placeholder={t('settings.feedbackPlaceholder')}
+            aria-label={t('settings.feedback')}
+          />
+          <div className="sv2-fb-count">{fbMessage.length}/{FEEDBACK_MAX}</div>
+
+          <div className="sv2-action">
+            <button
+              className="btn-outline"
+              onClick={handleSendFeedback}
+              disabled={!fbMessage.trim()}
+            >
+              {t('settings.feedbackSend')}
+            </button>
+          </div>
+          <div className="sv2-note">{t('settings.feedbackMeta', { app: 'StudyDesk', version: appVersion })}</div>
         </div>
 
         {/* ── Week start (v1.13 Tier 2) ──
@@ -1156,65 +1261,6 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
           </div>
         </div>
 
-        {/* ── Feedback (v1.10) ──
-            Deliberately in the app rather than a survey link: a link leaves
-            the app, cannot work offline, and arrives without the app version
-            or platform, which is most of what makes a report actionable. */}
-        <div className="sv2-section">
-          <div className="sv2-section-title">{t('settings.feedback')}</div>
-          <div className="sv2-note">{t('settings.feedbackBlurb')}</div>
-
-          <div className="sv2-fb-cats" role="group" aria-label={t('settings.feedbackCategory')}>
-            {FEEDBACK_CATEGORIES.map((c) => (
-              <button
-                key={c}
-                type="button"
-                className={`sv2-fb-cat${fbCategory === c ? ' sv2-fb-cat--on' : ''}`}
-                onClick={() => setFbCategory(c)}
-                aria-pressed={fbCategory === c}
-              >
-                {t(`settings.fbCat.${c}`)}
-              </button>
-            ))}
-          </div>
-
-          <div className="sv2-fb-stars" role="group" aria-label={t('settings.feedbackRating')}>
-            {[1, 2, 3, 4, 5].map((n) => (
-              <button
-                key={n}
-                type="button"
-                className={`sv2-fb-star${n <= fbRating ? ' sv2-fb-star--on' : ''}`}
-                onClick={() => setFbRating(n === fbRating ? 0 : n)}
-                aria-label={t('settings.feedbackRatingN', { n })}
-                aria-pressed={n <= fbRating}
-              >
-                {n <= fbRating ? '★' : '☆'}
-              </button>
-            ))}
-          </div>
-
-          <textarea
-            className="sv2-fb-text"
-            value={fbMessage}
-            maxLength={FEEDBACK_MAX}
-            onChange={(e) => setFbMessage(e.target.value)}
-            placeholder={t('settings.feedbackPlaceholder')}
-            aria-label={t('settings.feedback')}
-          />
-          <div className="sv2-fb-count">{fbMessage.length}/{FEEDBACK_MAX}</div>
-
-          <div className="sv2-action">
-            <button
-              className="btn-outline"
-              onClick={handleSendFeedback}
-              disabled={!fbMessage.trim()}
-            >
-              {t('settings.feedbackSend')}
-            </button>
-          </div>
-          <div className="sv2-note">{t('settings.feedbackMeta', { app: 'StudyDesk', version: appVersion })}</div>
-        </div>
-
         {/* ── Support ──
             Was "a link out, nothing more. No entitlements, no supporter-only
             features, no webhook." That stopped being true in v1.12: the Ko-fi
@@ -1262,6 +1308,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
             <span className="sv2-row-label">StudyDesk</span>
             <span className="sv2-row-value">v{appVersion}</span>
           </div>
+          {IS_DESKTOP && <DesktopUpdateRow />}
           <details className="sv2-tech">
             <summary>{t('settings.techDetails')}</summary>
             <div className="sv2-tech-grid">

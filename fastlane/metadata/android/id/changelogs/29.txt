@@ -1,0 +1,3 @@
+Satu kalender, lebih mudah dijelajahi.
+
+Tab Rencana tidak lagi punya kalender mini sendiri. Kalender punya tampilan Bulan, Minggu, dan Hari, dan Anda bisa mengetuk dari satu ke berikutnya. Di ponsel, kursus ada di bilah atas Rencana. Widget layar utama mengikuti tampilan terang atau gelap aplikasi, atau pilih di Pengaturan → Tampilan. Sesi belajar lampau bisa dicatat dari daftar Log, dan Masukan lebih mudah ditemukan.
