@@ -14,6 +14,7 @@ import { fmtTime } from '../../lib/dates.js';
 import { startFocus, stopFocus } from '../../lib/focusMode.js';
 import { enterSubmit } from '../../lib/imeSubmit.js';
 import { TIMER_CHANGE_EVENT } from '../../lib/timerSnapshot.js';
+import { pastSessionDraft } from '../../lib/pastSession.js';
 import { preferredDayStart, studyDayKey, todayStudyDayKey, dayKeyToDate } from '../../lib/studyDay.js';
 import '../../styles/timer.css';
 
@@ -327,17 +328,9 @@ export default function TimerView({ state, onTimerComplete }) {
   // takes, so a manually entered session is indistinguishable downstream - which
   // is the point: NCC's Life Score must not be able to treat it as lesser.
   //
-  // Defaults to an hour ago rather than now, because a session you are logging
-  // by hand already happened; `allowDateEdit` turns the read-only start time
-  // into a real field.
+  // The draft itself lives in lib/pastSession.js, shared with the Log list.
   const logPastSession = () => {
-    onTimerComplete?.({
-      durationMinutes: 30,
-      task: '',
-      subjectId: courseIdRef.current || null,
-      startedAt: new Date(Date.now() - 60*60*1000).toISOString(),
-      allowDateEdit: true,
-    });
+    onTimerComplete?.(pastSessionDraft(courseIdRef.current));
   };
 
   const switchMode = (next) => {

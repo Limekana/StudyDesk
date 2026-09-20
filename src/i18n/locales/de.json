@@ -371,7 +371,16 @@
     "scalePresetIb": "IB · 1–7",
     "scalePresetPct": "Prozent · 0–100",
     "scaleSwitchTo": "Oder wechseln zu",
-    "gradeCustomHint": "Eine andere Skala — /20, 4–10, 1–6? Wähle Eigene und lege eigene Grenzen fest."
+    "gradeCustomHint": "Eine andere Skala — /20, 4–10, 1–6? Wähle Eigene und lege eigene Grenzen fest.",
+    "updates": "Updates",
+    "updateCheck": "Nach Updates suchen",
+    "updateChecking": "Wird geprüft…",
+    "updateCurrent": "Aktuell",
+    "updateFailed": "Prüfung fehlgeschlagen",
+    "updateOpen": "Release-Seite öffnen",
+    "updateDownloading": "Wird geladen… {{percent}} %",
+    "updateRestart": "Neu starten und aktualisieren",
+    "updateDownload": "Herunterladen & installieren"
   },
   "sdob": {
     "brand": "Schluss mit Grübeln. Fang an zu lernen.",
@@ -494,6 +503,7 @@
     "focus5": "Voll vertieft",
     "title": "Sitzung speichern?",
     "intro": "Fokussitzung beendet. Erfasse sie, damit sie zu deinen Lernsummen zählt.",
+    "introPast": "Trag eine Lerneinheit ein, die du ohne Timer gemacht hast. Sie zählt wie jede andere zu deinen Summen.",
     "fCourse": "Kurs (optional)",
     "generalStudy": "Allgemeines Lernen",
     "fDuration": "Dauer (Minuten)",
@@ -704,7 +714,11 @@
       "expandSidebar": "Seitenleiste ausklappen",
       "urgent": "DRINGEND",
       "examPrefix": "PRÜFUNG: {{title}}",
-      "loading": "LÄDT…"
+      "loading": "LÄDT…",
+      "updateShort": "Update verfügbar",
+      "updateAvailable": "Update verfügbar: v{{version}}",
+      "updateDownloading": "Wird geladen… {{percent}} %",
+      "updateReady": "Neu starten und aktualisieren"
     },
     "flash": {
       "courseAdded": "Kurs hinzugefügt",
@@ -727,6 +741,7 @@
     "viewMode": "Ansicht",
     "month": "Monat",
     "week": "Woche",
+    "day": "Tag",
     "prev": "Zurück",
     "next": "Weiter",
     "today": "Heute",
@@ -971,30 +986,22 @@
     "title": "Erscheinungsbild",
     "lighting": "Beleuchtung",
     "character": "Charakter",
+    "widget": "Startbildschirm-Widgets",
+    "widgetMatch": "Wie die App",
     "mode": {
       "light": "Hell",
       "dark": "Dunkel",
       "black": "Schwarz"
-    },
-    "modeNote": {
-      "light": "Cremefarbenes Papier",
-      "dark": "Warm, blendfrei",
-      "black": "Echtes Schwarz · AMOLED"
     },
     "theme": {
       "free": "Studio",
       "stacks": "Stacks",
       "slate": "Slate"
     },
-    "themeNote": {
-      "free": "Standard",
-      "stacks": "Unterstützer",
-      "slate": "Unterstützer",
-      "locked": "Unterstützer"
-    },
     "characterNote": "Dunkel und Schwarz sind Beleuchtung — sie dimmen die Seite. Stacks und Slate sind Charakter: eine Bibliotheksausleihe und eine Schultafel, jede mit eigener Schrift, Linierung und Markierung. Sie sind nicht die dunkle Variante und waren es nie.",
     "lockedNote": "Stacks und Slate sind für Unterstützer. Dunkel und Schwarz sind kostenlos und bleiben es.",
-    "lightingInThemeNote": "Stacks und Slate bringen ihre eigene Beleuchtung mit. Deine Auswahl kehrt zurück, sobald du wieder zu Studio wechselst."
+    "lightingInThemeNote": "Stacks und Slate bringen ihre eigene Beleuchtung mit. Deine Auswahl kehrt zurück, sobald du wieder zu Studio wechselst.",
+    "lockedAria": "{{name}} — Unterstützer-Theme, gesperrt"
   },
   "storage": {
     "title": "Auf diesem Gerät ist kein Platz mehr",

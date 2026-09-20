@@ -1,0 +1,3 @@
+Yksi kalenteri, helpompi liikkua.
+
+Suunnitelma-välilehdellä ei enää ole omaa pikkukalenteria. Kalenterissa on kuukausi-, viikko- ja päivänäkymä, ja voit napauttaa näkymästä seuraavaan. Puhelimessa kurssit ovat palkissa Suunnitelman yläreunassa. Kotinäytön widgetit seuraavat sovelluksen vaaleaa tai tummaa ulkoasua, tai valitse se kohdassa Asetukset → Ulkoasu. Mennyt opiskelusessio kirjataan Loki-listasta, ja Palaute löytyy asetuksista helpommin.

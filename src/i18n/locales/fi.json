@@ -371,7 +371,16 @@
     "scalePresetIb": "IB · 1–7",
     "scalePresetPct": "Prosentit · 0–100",
     "scaleSwitchTo": "Tai vaihda",
-    "gradeCustomHint": "Eri asteikko — /20, 4–10, 1–6? Valitse Oma ja aseta omat rajasi."
+    "gradeCustomHint": "Eri asteikko — /20, 4–10, 1–6? Valitse Oma ja aseta omat rajasi.",
+    "updates": "Päivitykset",
+    "updateCheck": "Tarkista päivitykset",
+    "updateChecking": "Tarkistetaan…",
+    "updateCurrent": "Ajan tasalla",
+    "updateFailed": "Tarkistus epäonnistui",
+    "updateOpen": "Avaa julkaisusivu",
+    "updateDownloading": "Ladataan… {{percent}} %",
+    "updateRestart": "Käynnistä uudelleen ja päivitä",
+    "updateDownload": "Lataa ja asenna"
   },
   "sdob": {
     "brand": "Lopeta miettiminen. Aloita opiskelu.",
@@ -494,6 +503,7 @@
     "focus5": "Täysin uppoutunut",
     "title": "Tallennetaanko istunto?",
     "intro": "Keskittymisjakso päättyi. Kirjaa se mukaan opiskelusummiin.",
+    "introPast": "Lisää opiskelukerta, jonka teit ilman ajastinta. Se lasketaan opiskelumäärääsi kuten muutkin.",
     "fCourse": "Kurssi (valinnainen)",
     "generalStudy": "Yleinen opiskelu",
     "fDuration": "Kesto (minuuttia)",
@@ -704,7 +714,11 @@
       "expandSidebar": "Laajenna sivupalkki",
       "urgent": "KIIREELLINEN",
       "examPrefix": "KOE: {{title}}",
-      "loading": "LADATAAN…"
+      "loading": "LADATAAN…",
+      "updateShort": "Päivitys saatavilla",
+      "updateAvailable": "Päivitys saatavilla: v{{version}}",
+      "updateDownloading": "Ladataan… {{percent}} %",
+      "updateReady": "Käynnistä uudelleen ja päivitä"
     },
     "flash": {
       "courseAdded": "Kurssi lisätty",
@@ -727,6 +741,7 @@
     "viewMode": "Näkymä",
     "month": "Kuukausi",
     "week": "Viikko",
+    "day": "Päivä",
     "prev": "Edellinen",
     "next": "Seuraava",
     "today": "Tänään",
@@ -971,30 +986,22 @@
     "title": "Ulkoasu",
     "lighting": "Valaistus",
     "character": "Luonne",
+    "widget": "Kotinäytön widgetit",
+    "widgetMatch": "Kuten sovellus",
     "mode": {
       "light": "Vaalea",
       "dark": "Tumma",
       "black": "Musta"
-    },
-    "modeNote": {
-      "light": "Kermanvärinen paperi",
-      "dark": "Lämmin, häikäisemätön",
-      "black": "Aito musta · AMOLED"
     },
     "theme": {
       "free": "Studio",
       "stacks": "Stacks",
       "slate": "Slate"
     },
-    "themeNote": {
-      "free": "Oletus",
-      "stacks": "Tukijoille",
-      "slate": "Tukijoille",
-      "locked": "Tukijoille"
-    },
     "characterNote": "Tumma ja Musta ovat valaistusta — ne himmentävät sivun. Stacks ja Slate ovat luonnetta: kirjaston lainaustiski ja liitutaulu, kummallakin oma kirjasintyyppi, viivoitus ja merkinnät. Ne eivät ole se tumma vaihtoehto, eivätkä koskaan olleet.",
     "lockedNote": "Stacks ja Slate avautuvat tukijoille. Tumma ja Musta ovat ilmaisia, nyt ja aina.",
-    "lightingInThemeNote": "Stacksilla ja Slatella on oma valaistuksensa. Valintasi palaa, kun vaihdat takaisin Studioon."
+    "lightingInThemeNote": "Stacksilla ja Slatella on oma valaistuksensa. Valintasi palaa, kun vaihdat takaisin Studioon.",
+    "lockedAria": "{{name}} — tukijan teema, lukittu"
   },
   "storage": {
     "title": "Laitteen tila on lopussa",

@@ -23,6 +23,7 @@ const css = `
 .sv-focus-pip{width:5px;height:5px;border-radius:50%;background:var(--border2);}
 .sv-focus-pip.on{background:var(--text);}
 .sv-focus-row{display:flex;gap:6px;}
+.sv-log-past-row{display:flex;justify-content:flex-end;margin:-12px 0 16px;}
 .sv-focus-row button{flex:1;padding:9px 0;font-family:var(--font-display);font-size:15px;font-weight:600;cursor:pointer;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--muted);transition:all 120ms var(--ease-page-turn,ease);}
 .sv-focus-row button.on{border-color:var(--text);background:var(--text);color:var(--bg);}
 .sv-item-actions{display:flex;gap:4px;}
@@ -47,7 +48,7 @@ function fmtDateHeader(key, dayStart, t, lang) {
   return d.toLocaleDateString(lang || 'en', { weekday: 'long', day: 'numeric', month: 'long', year: d.getFullYear() !== today.getFullYear() ? 'numeric' : undefined }).toUpperCase();
 }
 
-export default function SessionsView({ state, dispatch, showFlash, session }) {
+export default function SessionsView({ state, dispatch, showFlash, session, onLogPast }) {
   const { t, i18n } = useTranslation();
   const lang = (i18n.language || 'en').split('-')[0];
   const sessions = useMemo(
@@ -100,11 +101,25 @@ export default function SessionsView({ state, dispatch, showFlash, session }) {
           <div className="sv-stat"><div className="sv-stat-label">{t('sv.allHours')}</div><div className="sv-stat-value">{(total / 60).toFixed(1)}h</div></div>
         </div>
 
+        {/* v1.15 Item 6 — #51 asked for manual entry on the Timer tab after it
+            had shipped there (v1.12.0, under the timer). It was the place
+            nobody looks: a list of sessions is where you notice one is missing,
+            so the same entry sits here too. Hidden when the list is empty,
+            because the empty state below carries it instead. */}
+        {onLogPast && sessions.length > 0 && (
+          <div className="sv-log-past-row">
+            <button type="button" className="btn-outline btn-sm" onClick={onLogPast}>+ {t('av.tm.logPast')}</button>
+          </div>
+        )}
+
         {sessions.length === 0 && (
           <div className="sv-empty">
             <div style={{ fontSize: 32, marginBottom: 10, color: 'var(--muted2)' }}>≡</div>
             <div style={{ fontWeight: 600, marginBottom: 6, color: 'var(--text)' }}>{t('sv.emptyTitle')}</div>
             <div style={{ fontSize: 13 }}>{t('sv.emptyBody')}</div>
+            {onLogPast && (
+              <button type="button" className="btn-outline btn-sm" style={{ marginTop: 14 }} onClick={onLogPast}>+ {t('av.tm.logPast')}</button>
+            )}
           </div>
         )}
 

@@ -369,7 +369,16 @@
     "scalePresetIb": "IB · 1–7",
     "scalePresetPct": "Persentase · 0–100",
     "scaleSwitchTo": "Atau beralih ke",
-    "gradeCustomHint": "Skala lain — /20, 4–10, 1–6? Pilih Khusus dan tentukan batas Anda sendiri."
+    "gradeCustomHint": "Skala lain — /20, 4–10, 1–6? Pilih Khusus dan tentukan batas Anda sendiri.",
+    "updates": "Pembaruan",
+    "updateCheck": "Periksa pembaruan",
+    "updateChecking": "Memeriksa…",
+    "updateCurrent": "Sudah terbaru",
+    "updateFailed": "Gagal memeriksa",
+    "updateOpen": "Buka halaman rilis",
+    "updateDownloading": "Mengunduh… {{percent}}%",
+    "updateRestart": "Mulai ulang untuk memperbarui",
+    "updateDownload": "Unduh & pasang"
   },
   "sdob": {
     "brand": "Berhenti menimbang. Mulai belajar.",
@@ -490,6 +499,7 @@
     "focus5": "Sangat fokus",
     "title": "Simpan sesi?",
     "intro": "Sesi fokus selesai. Catat agar terhitung dalam total belajarmu.",
+    "introPast": "Tambahkan sesi belajar yang kamu lakukan tanpa timer. Sesi ini dihitung ke total belajarmu seperti yang lain.",
     "fCourse": "Mata pelajaran (opsional)",
     "generalStudy": "Belajar umum",
     "fDuration": "Durasi (menit)",
@@ -699,7 +709,11 @@
       "expandSidebar": "Perluas bilah sisi",
       "urgent": "MENDESAK",
       "examPrefix": "UJIAN: {{title}}",
-      "loading": "MEMUAT…"
+      "loading": "MEMUAT…",
+      "updateShort": "Pembaruan tersedia",
+      "updateAvailable": "Pembaruan tersedia: v{{version}}",
+      "updateDownloading": "Mengunduh… {{percent}}%",
+      "updateReady": "Mulai ulang untuk memperbarui"
     },
     "flash": {
       "courseAdded": "Mata pelajaran ditambahkan",
@@ -722,6 +736,7 @@
     "viewMode": "Tampilan",
     "month": "Bulan",
     "week": "Minggu",
+    "day": "Hari",
     "prev": "Sebelumnya",
     "next": "Berikutnya",
     "today": "Hari ini",
@@ -966,30 +981,22 @@
     "title": "Tampilan",
     "lighting": "Pencahayaan",
     "character": "Karakter",
+    "widget": "Widget layar utama",
+    "widgetMatch": "Ikuti aplikasi",
     "mode": {
       "light": "Terang",
       "dark": "Gelap",
       "black": "Hitam"
-    },
-    "modeNote": {
-      "light": "Kertas krem",
-      "dark": "Hangat, tidak menyilaukan",
-      "black": "Hitam pekat · AMOLED"
     },
     "theme": {
       "free": "Studio",
       "stacks": "Stacks",
       "slate": "Slate"
     },
-    "themeNote": {
-      "free": "Bawaan",
-      "stacks": "Pendukung",
-      "slate": "Pendukung",
-      "locked": "Pendukung"
-    },
     "characterNote": "Gelap dan Hitam adalah pencahayaan — keduanya meredupkan halaman. Stacks dan Slate adalah karakter: meja peminjaman perpustakaan dan papan tulis, masing-masing dengan huruf, garis, dan tandanya sendiri. Keduanya bukan pilihan gelap, dan tidak pernah begitu.",
     "lockedNote": "Stacks dan Slate terbuka untuk pendukung. Gelap dan Hitam gratis, dan akan tetap begitu.",
-    "lightingInThemeNote": "Stacks dan Slate membawa pencahayaannya sendiri. Pilihanmu kembali saat beralih ke Studio."
+    "lightingInThemeNote": "Stacks dan Slate membawa pencahayaannya sendiri. Pilihanmu kembali saat beralih ke Studio.",
+    "lockedAria": "{{name}} — tema pendukung, terkunci"
   },
   "storage": {
     "title": "Ruang penyimpanan perangkat habis",

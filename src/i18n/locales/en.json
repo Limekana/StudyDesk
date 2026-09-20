@@ -371,7 +371,16 @@
     "scalePresetIb": "IB · 1–7",
     "scalePresetPct": "Percentage · 0–100",
     "scaleSwitchTo": "Or switch to",
-    "gradeCustomHint": "On another scale — /20, 4–10, 1–6? Pick Custom and set your own bounds."
+    "gradeCustomHint": "On another scale — /20, 4–10, 1–6? Pick Custom and set your own bounds.",
+    "updates": "Updates",
+    "updateCheck": "Check for updates",
+    "updateChecking": "Checking…",
+    "updateCurrent": "Up to date",
+    "updateFailed": "Couldn't check",
+    "updateOpen": "Open release page",
+    "updateDownloading": "Downloading… {{percent}}%",
+    "updateRestart": "Restart to update",
+    "updateDownload": "Download & install"
   },
   "sdob": {
     "brand": "Stop deciding. Start studying.",
@@ -494,6 +503,7 @@
     "focus5": "Locked in",
     "title": "Save session?",
     "intro": "Focus session finished. Log it so it counts toward your study totals.",
+    "introPast": "Add a session you studied without the timer. It counts toward your study totals like any other.",
     "fCourse": "Course (optional)",
     "generalStudy": "General study",
     "fDuration": "Duration (minutes)",
@@ -704,7 +714,11 @@
       "expandSidebar": "Expand sidebar",
       "urgent": "URGENT",
       "examPrefix": "EXAM: {{title}}",
-      "loading": "LOADING…"
+      "loading": "LOADING…",
+      "updateShort": "Update available",
+      "updateAvailable": "Update available: v{{version}}",
+      "updateDownloading": "Downloading… {{percent}}%",
+      "updateReady": "Restart to update"
     },
     "flash": {
       "courseAdded": "Course added",
@@ -727,6 +741,7 @@
     "viewMode": "View",
     "month": "Month",
     "week": "Week",
+    "day": "Day",
     "prev": "Previous",
     "next": "Next",
     "today": "Today",
@@ -971,30 +986,22 @@
     "title": "Appearance",
     "lighting": "Lighting",
     "character": "Character",
+    "widget": "Home-screen widgets",
+    "widgetMatch": "Match app",
     "mode": {
       "light": "Light",
       "dark": "Dark",
       "black": "Black"
-    },
-    "modeNote": {
-      "light": "Cream paper",
-      "dark": "Warm, low-glare",
-      "black": "True black · AMOLED"
     },
     "theme": {
       "free": "Studio",
       "stacks": "Stacks",
       "slate": "Slate"
     },
-    "themeNote": {
-      "free": "The default",
-      "stacks": "Supporter",
-      "slate": "Supporter",
-      "locked": "Supporters"
-    },
     "characterNote": "Dark and Black are lighting — they turn the page down. Stacks and Slate are character: a library circulation desk and a chalkboard, each with its own type, rules and marks. They are not the dark option, and never were.",
     "lockedNote": "Stacks and Slate unlock for supporters. Dark and Black are free, and always will be.",
-    "lightingInThemeNote": "Stacks and Slate bring their own lighting. Your choice here comes back when you switch to Studio."
+    "lightingInThemeNote": "Stacks and Slate bring their own lighting. Your choice here comes back when you switch to Studio.",
+    "lockedAria": "{{name}} — supporter theme, locked"
   },
   "storage": {
     "title": "This device is out of space",

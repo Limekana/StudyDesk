@@ -1,0 +1,3 @@
+One calendar, easier to get around.
+
+The Plan tab no longer has its own mini calendar. The Calendar has Month, Week and Day views, and you can tap from one into the next. On phones, your courses sit in a bar at the top of Plan. Home-screen widgets follow the app's light or dark look, or pick one in Settings → Appearance. You can log a past study session from the Log list, and Feedback is easier to find in Settings.

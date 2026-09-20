@@ -373,7 +373,16 @@
     "scalePresetIb": "IB · 1–7",
     "scalePresetPct": "Pourcentage · 0–100",
     "scaleSwitchTo": "Ou passer à",
-    "gradeCustomHint": "Une autre échelle — /20, 4–10, 1–6 ? Choisissez Perso et définissez vos bornes."
+    "gradeCustomHint": "Une autre échelle — /20, 4–10, 1–6 ? Choisissez Perso et définissez vos bornes.",
+    "updates": "Mises à jour",
+    "updateCheck": "Rechercher des mises à jour",
+    "updateChecking": "Vérification…",
+    "updateCurrent": "À jour",
+    "updateFailed": "Échec de la vérification",
+    "updateOpen": "Ouvrir la page de version",
+    "updateDownloading": "Téléchargement… {{percent}} %",
+    "updateRestart": "Redémarrer pour mettre à jour",
+    "updateDownload": "Télécharger et installer"
   },
   "sdob": {
     "brand": "Arrête de choisir. Commence à réviser.",
@@ -498,6 +507,7 @@
     "focus5": "Totalement absorbé",
     "title": "Enregistrer la session ?",
     "intro": "Session de concentration terminée. Enregistrez-la pour l’ajouter à vos totaux d’étude.",
+    "introPast": "Ajoutez une session faite sans le minuteur. Elle compte dans vos totaux comme les autres.",
     "fCourse": "Cours (facultatif)",
     "generalStudy": "Étude générale",
     "fDuration": "Durée (minutes)",
@@ -709,7 +719,11 @@
       "expandSidebar": "Développer la barre latérale",
       "urgent": "URGENT",
       "examPrefix": "EXAMEN : {{title}}",
-      "loading": "CHARGEMENT…"
+      "loading": "CHARGEMENT…",
+      "updateShort": "Mise à jour disponible",
+      "updateAvailable": "Mise à jour disponible : v{{version}}",
+      "updateDownloading": "Téléchargement… {{percent}} %",
+      "updateReady": "Redémarrer pour mettre à jour"
     },
     "flash": {
       "courseAdded": "Cours ajouté",
@@ -732,6 +746,7 @@
     "viewMode": "Vue",
     "month": "Mois",
     "week": "Semaine",
+    "day": "Jour",
     "prev": "Précédent",
     "next": "Suivant",
     "today": "Aujourd'hui",
@@ -976,30 +991,22 @@
     "title": "Apparence",
     "lighting": "Éclairage",
     "character": "Caractère",
+    "widget": "Widgets d’écran d’accueil",
+    "widgetMatch": "Comme l’app",
     "mode": {
       "light": "Clair",
       "dark": "Sombre",
       "black": "Noir"
-    },
-    "modeNote": {
-      "light": "Papier crème",
-      "dark": "Chaud, sans éblouissement",
-      "black": "Noir absolu · AMOLED"
     },
     "theme": {
       "free": "Studio",
       "stacks": "Stacks",
       "slate": "Slate"
     },
-    "themeNote": {
-      "free": "Par défaut",
-      "stacks": "Soutiens",
-      "slate": "Soutiens",
-      "locked": "Soutiens"
-    },
     "characterNote": "Sombre et Noir relèvent de l'éclairage — ils baissent la page. Stacks et Slate relèvent du caractère : un bureau de prêt de bibliothèque et un tableau noir, chacun avec sa typographie, ses filets et ses marques. Ce ne sont pas l'option sombre, et ne l'ont jamais été.",
     "lockedNote": "Stacks et Slate se débloquent pour ceux qui soutiennent l'app. Sombre et Noir sont gratuits, et le resteront.",
-    "lightingInThemeNote": "Stacks et Slate ont leur propre éclairage. Votre choix revient dès que vous repassez à Studio."
+    "lightingInThemeNote": "Stacks et Slate ont leur propre éclairage. Votre choix revient dès que vous repassez à Studio.",
+    "lockedAria": "{{name}} — thème réservé aux soutiens, verrouillé"
   },
   "storage": {
     "title": "Cet appareil n'a plus d'espace",

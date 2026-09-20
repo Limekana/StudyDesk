@@ -35,6 +35,7 @@
             android:contentDescription="@null" />
 
         <TextView
+            android:id="@+id/next_up_label"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/widget_next_up_label"

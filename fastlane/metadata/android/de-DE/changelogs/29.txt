@@ -1,0 +1,3 @@
+Ein Kalender, einfacher zu bedienen.
+
+Der Plan-Tab hat keinen eigenen Mini-Kalender mehr. Der Kalender bietet Monat, Woche und Tag, und du tippst dich von einer Ansicht in die nächste. Auf dem Handy stehen deine Kurse in einer Leiste oben im Plan. Startbildschirm-Widgets folgen dem hellen oder dunklen Look der App, oder du wählst einen unter Einstellungen → Darstellung. Vergangene Lernsitzungen trägst du über die Liste ein, und Feedback ist leichter zu finden.

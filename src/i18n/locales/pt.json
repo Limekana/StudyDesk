@@ -373,7 +373,16 @@
     "scalePresetIb": "IB · 1–7",
     "scalePresetPct": "Percentagem · 0–100",
     "scaleSwitchTo": "Ou mudar para",
-    "gradeCustomHint": "Outra escala — /20, 4–10, 1–6? Escolha Própria e defina os seus limites."
+    "gradeCustomHint": "Outra escala — /20, 4–10, 1–6? Escolha Própria e defina os seus limites.",
+    "updates": "Atualizações",
+    "updateCheck": "Verificar atualizações",
+    "updateChecking": "Verificando…",
+    "updateCurrent": "Atualizado",
+    "updateFailed": "Não foi possível verificar",
+    "updateOpen": "Abrir página da versão",
+    "updateDownloading": "Baixando… {{percent}}%",
+    "updateRestart": "Reiniciar para atualizar",
+    "updateDownload": "Baixar e instalar"
   },
   "sdob": {
     "brand": "Pare de decidir. Comece a estudar.",
@@ -498,6 +507,7 @@
     "focus5": "Totalmente imerso",
     "title": "Salvar sessão?",
     "intro": "Sessão de foco concluída. Registre para que ela conte no seu total de estudos.",
+    "introPast": "Adicione uma sessão que você estudou sem o timer. Ela conta nos seus totais como qualquer outra.",
     "fCourse": "Disciplina (opcional)",
     "generalStudy": "Estudo geral",
     "fDuration": "Duração (minutos)",
@@ -709,7 +719,11 @@
       "expandSidebar": "Expandir barra lateral",
       "urgent": "URGENTE",
       "examPrefix": "PROVA: {{title}}",
-      "loading": "CARREGANDO…"
+      "loading": "CARREGANDO…",
+      "updateShort": "Atualização disponível",
+      "updateAvailable": "Atualização disponível: v{{version}}",
+      "updateDownloading": "Baixando… {{percent}}%",
+      "updateReady": "Reiniciar para atualizar"
     },
     "flash": {
       "courseAdded": "Disciplina adicionada",
@@ -732,6 +746,7 @@
     "viewMode": "Vista",
     "month": "Mês",
     "week": "Semana",
+    "day": "Dia",
     "prev": "Anterior",
     "next": "Seguinte",
     "today": "Hoje",
@@ -976,30 +991,22 @@
     "title": "Aparência",
     "lighting": "Iluminação",
     "character": "Carácter",
+    "widget": "Widgets da tela inicial",
+    "widgetMatch": "Igual ao app",
     "mode": {
       "light": "Claro",
       "dark": "Escuro",
       "black": "Preto"
-    },
-    "modeNote": {
-      "light": "Papel creme",
-      "dark": "Quente, sem brilho",
-      "black": "Preto puro · AMOLED"
     },
     "theme": {
       "free": "Studio",
       "stacks": "Stacks",
       "slate": "Slate"
     },
-    "themeNote": {
-      "free": "Predefinição",
-      "stacks": "Apoiantes",
-      "slate": "Apoiantes",
-      "locked": "Apoiantes"
-    },
     "characterNote": "Escuro e Preto são iluminação — baixam a página. Stacks e Slate são carácter: um balcão de empréstimo e um quadro de ardósia, cada um com o seu tipo de letra, pautado e marcas. Não são a opção escura, e nunca foram.",
     "lockedNote": "Stacks e Slate desbloqueiam para quem apoia a app. Escuro e Preto são gratuitos, e continuarão a sê-lo.",
-    "lightingInThemeNote": "Stacks e Slate trazem a sua própria iluminação. A tua escolha volta quando mudares para Studio."
+    "lightingInThemeNote": "Stacks e Slate trazem a sua própria iluminação. A tua escolha volta quando mudares para Studio.",
+    "lockedAria": "{{name}} — tema de apoiador, bloqueado"
   },
   "storage": {
     "title": "Este dispositivo ficou sem espaço",
