@@ -106,6 +106,15 @@ jobs:
         run: npm run check:boot
 
       # There is no TypeScript here by design, so lint is the only static
-      # check this app has.
+      # check this app has. `npm run lint` also runs scripts/check-logic.mjs,
+      # which is where 356 of this repo's logic assertions already live.
       - name: Lint
         run: npm run lint
+
+      # v1.16 (limecore#11). Vitest covers the two modules check-logic.mjs does
+      # not reach: merge.js (the LWW that decides which device's edit survives)
+      # and gpa.js (the number a student opens the app for, mirrored in NCC).
+      # The two harnesses are deliberately not merged here — consolidating them
+      # is code-health work, not a prerequisite for it (limecore#12).
+      - name: Test gate
+        run: npm test

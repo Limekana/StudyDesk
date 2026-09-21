@@ -24,6 +24,8 @@
     "check:dep-tdz": "node scripts/check-dep-tdz.mjs",
     "check:line-endings": "node scripts/check-line-endings.mjs",
     "build": "vite build",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "node scripts/check-line-endings.mjs && node scripts/check-ime.mjs && node scripts/check-dep-tdz.mjs && node scripts/check-contrast.mjs && node scripts/check-notebook-colours.mjs && node scripts/check-logic.mjs && eslint . --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "cap:sync": "npm run build && npm run check:dist-fresh && cap sync android",
@@ -61,7 +63,8 @@
     "globals": "^16.5.0",
     "playwright": "^1.49.1",
     "sharp": "^0.35.3",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "vitest": "^3.2.7"
   },
   "build": {
     "appId": "com.limecore.studydesk.desktop",
