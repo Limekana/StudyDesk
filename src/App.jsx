@@ -31,6 +31,7 @@ import * as sync from "./lib/sync.js";
 import * as outbox from "./lib/outbox.js";
 import { reconcileUnsynced } from "./lib/reconcile.js";
 import { applyRemotePull } from "./lib/merge.js";
+import { stampsFromPull, isInSync, isRemoteTombstone, shouldPull } from "./lib/syncStamps.js";
 import GradesView from "./features/grades/GradesView.jsx";
 import SessionsView from "./features/sessions/SessionsView.jsx";
 import SaveSessionSheet from "./features/sessions/SaveSessionSheet.jsx";
@@ -1349,6 +1350,23 @@ export default function App() {
     };
   }, []);
 
+  // ── Sync bookkeeping shared by the effects below (StudyDesk#72) ─────────
+  // Declared up here, ahead of the first effect that names them: hook
+  // dependency arrays are read during render, so a later `const` would be in
+  // its temporal dead zone (scripts/check-dep-tdz.mjs).
+  //
+  // `pulledOnce` — the first pull of this session has settled, as state, for
+  // effects that must RE-RUN when it flips rather than merely read it (the
+  // note autosave). `pulledOnceRef` below is the same fact for the reconciler.
+  const [pulledOnce, setPulledOnce] = useState(false);
+  // What the last pull said about each row the effects below push unprompted.
+  // Written BEFORE `MERGE_REMOTE` is dispatched, so the effects that re-run on
+  // the merged state already see it. See src/lib/syncStamps.js.
+  const remoteStampsRef = useRef(null);
+  // A throttled "pull now", set by the sync effect while a session exists
+  // and called when the user comes back to the window.
+  const requestPullRef = useRef(null);
+
   // v1.3 — outbox drain triggers. The outbox holds pending Supabase writes
   // when the device is offline or a sync call failed; this effect re-runs
   // drain on three signals:
@@ -1364,17 +1382,30 @@ export default function App() {
   //
   // drain() is single-flight inside the outbox (coalesces overlapping
   // calls) so firing it from all three paths is safe.
+  //
+  // StudyDesk#72 — the same signals now also pull, after the drain, so local
+  // edits reach the server before the server's view is merged back. Window
+  // `focus` joins them for the desktop edition, where switching between
+  // windows never changes `visibilityState`. The pull is throttled inside
+  // `requestPullRef` (syncStamps.js), so an alt-tab habit costs nothing.
   useEffect(() => {
     // One-shot on mount.
     void outbox.drain();
-    function onOnline() { void outbox.drain(); }
+    const drainThenPull = () => {
+      void Promise.resolve(outbox.drain())
+        .catch(() => { /* drain reports its own failures */ })
+        .then(() => requestPullRef.current?.());
+    };
+    function onOnline() { drainThenPull(); }
     function onVisibility() {
-      if (document.visibilityState === 'visible') void outbox.drain();
+      if (document.visibilityState === 'visible') drainThenPull();
     }
     window.addEventListener('online', onOnline);
+    window.addEventListener('focus', drainThenPull);
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
       window.removeEventListener('online', onOnline);
+      window.removeEventListener('focus', drainThenPull);
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, []);
@@ -1467,12 +1498,32 @@ export default function App() {
   const noteTimers = useRef(new Map());
   useEffect(() => {
     if (!session) return undefined;
+    // StudyDesk#72 — wait for the first pull to settle, as the v1.7
+    // reconciler already does. Until then this effect cannot tell a note the
+    // user just edited from a stale local copy, and it used to push them all
+    // 1.5s after sign-in stamped `now()`: on a connection slower than the
+    // debounce, an out-of-date copy overwrote a newer edit made on another
+    // device. `pulledOnce` flips on success AND failure, so an offline launch
+    // still pushes, and an edit made in the gap is picked up when it flips.
+    if (!pulledOnce) return undefined;
     const timers = noteTimers.current;
     for (const n of state.notes || []) {
       if (n.deletedAt) continue;
       const prev = timers.get(n.id);
       if (prev?.updatedAt === n.updatedAt) continue;
       if (prev?.handle) clearTimeout(prev.handle);
+      // StudyDesk#72 — this note is exactly the copy the last pull returned:
+      // either it arrived from another device or it is our own push coming
+      // back with its push-time stamp. Record the baseline, push nothing.
+      // Pushing it would stamp a newer `updated_at`, which the next pull
+      // returns, which lands here again — a loop once per pull, and every ~3s
+      // per note once realtime works (Limekana/limecore#24). Cancelling the
+      // pending timer above is correct too: the server's copy is newer than
+      // the payload it captured.
+      if (isInSync("notes", n, remoteStampsRef.current)) {
+        timers.set(n.id, { updatedAt: n.updatedAt, handle: 0, payload: null });
+        continue;
+      }
       // The payload is captured HERE, alongside the timer, so `flush` below
       // can push it without the note being in scope. Without it the flush had
       // nothing to send — see blocker 3 on that effect.
@@ -1493,7 +1544,7 @@ export default function App() {
       timers.set(n.id, { updatedAt: n.updatedAt, handle, payload });
     }
     return undefined;
-  }, [state.notes, session]);
+  }, [state.notes, session, pulledOnce]);
 
   // Flush pending note pushes on unmount and on backgrounding.
   //
@@ -1682,11 +1733,24 @@ export default function App() {
 
   // ── Sync: initial pull + Realtime, gated on sign-in ─────────────────────────
   useEffect(() => {
-    if (!session) { sync.stopRealtime(); pulledOnceRef.current = false; return; }
+    if (!session) {
+      sync.stopRealtime();
+      pulledOnceRef.current = false;
+      setPulledOnce(false);
+      remoteStampsRef.current = null;
+      requestPullRef.current = null;
+      return;
+    }
     let cancelled = false;
+    let lastPullAt = NaN;
     const doPull = async () => {
+      lastPullAt = Date.now();
       try {
         const remote = await sync.pullAllStudyData();
+        // StudyDesk#72 — stamps first, merge second. The merge re-runs the
+        // push effects, and they must already know which rows are just the
+        // server's own copy coming back.
+        if (!cancelled) remoteStampsRef.current = stampsFromPull(remote);
         if (!cancelled) dispatch({ type: "MERGE_REMOTE", remote });
         // v1.12 Item 1 (#38) — repair rows that never reached the server.
         // Every enqueue site is gated on `session`, so anything written while
@@ -1710,12 +1774,25 @@ export default function App() {
         // failed we still want later local edits to sync; blocking on a healthy
         // pull would mean one flaky launch silently stops pushing for the whole
         // session. LWW plus the outbox already handle a stale starting point.
-        if (!cancelled) pulledOnceRef.current = true;
+        if (!cancelled) {
+          pulledOnceRef.current = true;
+          setPulledOnce(true);
+        }
       }
+    };
+    // StudyDesk#72 — the launch pull used to be the only one. Realtime was
+    // meant to cover the rest, and its channel has delivered nothing since
+    // v1.7 (Limekana/limecore#24), so an open tab or a resumed app showed the
+    // data it launched with until it was restarted. Coming back to the window
+    // now pulls, throttled, since that is when a user looks for the change
+    // they just made on their other device.
+    requestPullRef.current = () => {
+      if (cancelled || !shouldPull(lastPullAt, Date.now())) return;
+      void doPull();
     };
     doPull();
     sync.startRealtime(doPull);
-    return () => { cancelled = true; sync.stopRealtime(); };
+    return () => { cancelled = true; requestPullRef.current = null; sync.stopRealtime(); };
   // Only re-subscribe when the signed-in user id changes — not on every
   // session refresh (token refresh shouldn't tear down Realtime).
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1885,34 +1962,44 @@ export default function App() {
     const examsById = byId(state.exams);
     const actionsById = byId(state.actions);
 
+    // StudyDesk#72 — `stamps` is what the last pull returned. A row whose
+    // stamp moved because a pull brought the server's copy in is not a local
+    // edit, and a row that left because the pull carried its tombstone was
+    // deleted elsewhere; re-queueing either only moves the server's timestamp,
+    // which the next pull brings back here (Limekana/limecore#24).
+    const stamps = remoteStampsRef.current;
+
     for (const [id, s] of next.assignments) {
       if (prev.assignments.get(id) === s) continue;
       const a = assignmentsById.get(id);
       if (!a?.courseId) continue;
+      if (isInSync('assignments', a, stamps)) continue;
       outbox.enqueue('upsert_assignment', { id, courseId: a.courseId, title: a.title, type: a.type, dueDate: a.dueDate, dueTime: a.dueTime, notes: a.notes, done: a.done });
     }
     for (const id of prev.assignments.keys()) {
-      if (!next.assignments.has(id)) outbox.enqueue('delete_assignment', { id });
+      if (!next.assignments.has(id) && !isRemoteTombstone('assignments', id, stamps)) outbox.enqueue('delete_assignment', { id });
     }
 
     for (const [id, s] of next.exams) {
       if (prev.exams.get(id) === s) continue;
       const e = examsById.get(id);
       if (!e?.courseId) continue;
+      if (isInSync('exams', e, stamps)) continue;
       outbox.enqueue('upsert_exam', { id, courseId: e.courseId, title: e.title, dueDate: e.dueDate, difficulty: e.difficulty, notes: e.notes, done: e.done, topics: e.topics });
     }
     for (const id of prev.exams.keys()) {
-      if (!next.exams.has(id)) outbox.enqueue('delete_exam', { id });
+      if (!next.exams.has(id) && !isRemoteTombstone('exams', id, stamps)) outbox.enqueue('delete_exam', { id });
     }
 
     for (const [id, s] of next.actions) {
       if (prev.actions.get(id) === s) continue;
       const a = actionsById.get(id);
       if (!a) continue;
+      if (isInSync('actions', a, stamps)) continue;
       outbox.enqueue('upsert_action', { id, text: a.text, bucket: a.bucket, courseId: a.courseId, done: a.done });
     }
     for (const id of prev.actions.keys()) {
-      if (!next.actions.has(id)) outbox.enqueue('delete_action', { id });
+      if (!next.actions.has(id) && !isRemoteTombstone('actions', id, stamps)) outbox.enqueue('delete_action', { id });
     }
 
     pushBaseline.current = next;

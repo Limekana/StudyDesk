@@ -2408,3 +2408,73 @@ check('soft-deleted rows do not count as having done a step', () => {
   assert.deepEqual(firstSteps.outstandingSteps(state, []),
     ['timetable', 'session', 'grade']);
 });
+
+// ── Sync stamps: a pull is not an edit (StudyDesk#72, Limekana/limecore#24) ──
+//
+// Two effects push rows whenever `updatedAt` moves. Every push stamps
+// `updated_at = now()` when it is SENT, so the next pull returns a newer stamp
+// and, without these, both effects re-pushed the server's own copy — once per
+// pull today, every ~3s per row the day realtime works.
+
+const syncStamps = await import('../src/lib/syncStamps.js');
+
+const pulled = {
+  assignments: [
+    { id: 'a1', updated_at: '2026-09-24T06:35:54.274+00:00', deleted_at: null },
+    { id: 'a2', updated_at: '2026-09-24T06:35:54.274123+00:00', deleted_at: '2026-09-24T06:35:54+00:00' },
+  ],
+  exams: [],
+  actions: [{ id: 't1', updated_at: '2026-09-24T07:00:00+00:00' }],
+  notes: [{ id: 'n1', updated_at: '2026-09-24T08:00:00.5+00:00' }],
+};
+const stamps = syncStamps.stampsFromPull(pulled);
+
+check('a row carrying the pulled stamp is in sync, whatever the string format', () => {
+  // Server text is `+00:00` with microseconds; the local copy after a merge
+  // may be either that string or a `Z` string for the same millisecond.
+  assert.equal(syncStamps.isInSync('assignments', { id: 'a1', updatedAt: '2026-09-24T06:35:54.274+00:00' }, stamps), true);
+  assert.equal(syncStamps.isInSync('assignments', { id: 'a1', updatedAt: '2026-09-24T06:35:54.274Z' }, stamps), true);
+  assert.equal(syncStamps.isInSync('notes', { id: 'n1', updatedAt: '2026-09-24T08:00:00.500Z' }, stamps), true);
+  assert.equal(syncStamps.isInSync('actions', { id: 't1', updatedAt: '2026-09-24T07:00:00.000Z' }, stamps), true);
+});
+
+check('a local edit after the pull is NOT in sync, so it still pushes', () => {
+  assert.equal(syncStamps.isInSync('assignments', { id: 'a1', updatedAt: '2026-09-24T06:35:55.000Z' }, stamps), false);
+});
+
+check('a row the server has never seen, or a missing stamp map, is NOT in sync', () => {
+  assert.equal(syncStamps.isInSync('assignments', { id: 'new', updatedAt: '2026-09-24T06:35:54.274Z' }, stamps), false);
+  assert.equal(syncStamps.isInSync('assignments', { id: 'a1', updatedAt: '2026-09-24T06:35:54.274Z' }, null), false);
+  assert.equal(syncStamps.isInSync('assignments', { id: 'a1' }, stamps), false);
+});
+
+check('a tombstoned row is never "in sync" but is recognised as deleted elsewhere', () => {
+  assert.equal(syncStamps.isInSync('assignments', { id: 'a2', updatedAt: '2026-09-24T06:35:54.274Z' }, stamps), false);
+  assert.equal(syncStamps.isRemoteTombstone('assignments', 'a2', stamps), true);
+  assert.equal(syncStamps.isRemoteTombstone('assignments', 'a1', stamps), false);
+  assert.equal(syncStamps.isRemoteTombstone('assignments', 'a2', null), false);
+});
+
+check('a pull missing a table leaves an empty map rather than throwing', () => {
+  const s = syncStamps.stampsFromPull({ assignments: [{ id: 'x', updated_at: '2026-01-01T00:00:00Z' }] });
+  assert.equal(s.exams.size, 0);
+  assert.equal(s.notes.size, 0);
+  assert.equal(syncStamps.stampsFromPull(null).assignments.size, 0);
+});
+
+check('the return-to-window pull is throttled, and the first one always runs', () => {
+  const t = syncStamps.MIN_PULL_INTERVAL_MS;
+  assert.equal(syncStamps.shouldPull(NaN, 1000), true);
+  assert.equal(syncStamps.shouldPull(0, t - 1), false);
+  assert.equal(syncStamps.shouldPull(0, t), true);
+});
+
+// ── Grade column bound (StudyDesk#71) ───────────────────────────────────────
+
+check('a custom scale cannot exceed what grades.grade numeric(7,2) stores', () => {
+  const huge = gradeScale.normalizeScale({ min: 0, max: 1e9, passMark: 50 });
+  assert.equal(huge.max, gradeScale.MAX_GRADE);
+  assert.ok(gradeScale.MAX_GRADE <= 99999.99);
+  // The 0–100 scale that could not store a perfect score is untouched.
+  assert.equal(gradeScale.normalizeScale({ min: 0, max: 100, passMark: 60 }).max, 100);
+});

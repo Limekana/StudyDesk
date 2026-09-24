@@ -1,0 +1,1 @@
+Correcciones: las notas de 100 o más ahora se sincronizan con tus otros dispositivos. Antes se quedaban en el dispositivo donde las introdujiste; las que se quedaron atascadas se suben solas la próxima vez que abras la app. Las apps web y de escritorio, y la del móvil al volver a ella, ahora traen los cambios de tus otros dispositivos al regresar, en lugar de solo tras reiniciar.

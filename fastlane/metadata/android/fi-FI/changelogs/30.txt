@@ -1,0 +1,1 @@
+Korjauksia: 100:n tai suuremmat arvosanat synkronoituvat nyt muille laitteillesi. Aiemmin ne jäivät laitteelle, jolla ne syötettiin; jumiin jääneet lähtevät itsestään, kun avaat sovelluksen seuraavan kerran. Verkko- ja työpöytäsovellus sekä puhelinsovellus hakevat nyt muiden laitteidesi muutokset, kun palaat niihin, eivätkä vasta uudelleenkäynnistyksen jälkeen.
