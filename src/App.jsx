@@ -1151,6 +1151,10 @@ export default function App() {
   //
   // undefined = auth still resolving · null = signed out · object = signed in.
   const [session, setSession] = useState(undefined);
+  // StudyDesk#75 — for callbacks memoised with [] (onboarding) that must still
+  // know whether a push can be queued. Written in an effect, like stateRef.
+  const sessionRef = useRef(session);
+  useEffect(() => { sessionRef.current = session; });
   // v1.1 — guest mode flag. When `session === null` AND `guest === true`, the
   // app renders normally with cloud sync disabled (Supabase realtime + outbox
   // are already session-gated, so this is a pure UI bypass — no other code
@@ -1452,7 +1456,14 @@ export default function App() {
   // Notifications are only scheduled after onboarding completes — never on first open
   const handleOnboardingComplete = useCallback((courseData, opts = {}) => {
     if (courseData) {
-      dispatch({type:"ADD_COURSE", name:courseData.name, color:courseData.color});
+      // StudyDesk#75 — this was the one course-creation path that never queued
+      // its push. Onboarding runs signed in, so the course stayed local-only
+      // while the user's first assignments, grades and notes on it failed the
+      // server's foreign key and were quarantined. The id is minted here so the
+      // local row and the queued push agree on it.
+      const id = newSyncId();
+      dispatch({type:"ADD_COURSE", id, name:courseData.name, color:courseData.color});
+      if (sessionRef.current) outbox.enqueue("upsert_subject", { id, name: courseData.name, color: courseData.color });
     }
     // `notifications` carries which of the two step-3 buttons was pressed.
     // Default true so any caller that omits it (or a skip that never reaches

@@ -1140,6 +1140,42 @@ check('payloads with no row id still enqueue, one per call', () => {
   assert.equal(queued().length, 2, 'kinds without an id keep the old append behaviour');
 });
 
+// StudyDesk#75 — a child quarantined because its course was not on the server
+// yet must come back when that course lands, and nothing else may.
+check('a parent landing revives children quarantined on its foreign key', () => {
+  const fk = 'insert or update on table "assignments" violates foreign key constraint "assignments_subject_id_fkey"';
+  const items = [
+    { id: 'a', kind: 'upsert_assignment', payload: { id: 'asg-1', courseId: 'c-1' }, attempts: 5, quarantined: true, lastError: fk },
+    { id: 'b', kind: 'upsert_grade', payload: { id: 'gr-1', subjectId: 'c-1' }, attempts: 5, quarantined: true, lastError: 'x', lastErrorCode: '23503' },
+    { id: 'c', kind: 'upsert_note', payload: { id: 'n-1', courseId: 'c-1' }, attempts: 5, quarantined: true, lastError: 'NetworkError: failed to fetch' },
+    { id: 'd', kind: 'upsert_exam', payload: { id: 'ex-1', courseId: 'c-2' }, attempts: 5, quarantined: true, lastError: fk },
+    { id: 'e', kind: 'upsert_assignment', payload: { id: 'asg-2', courseId: 'c-1' }, attempts: 2, quarantined: false, lastError: fk },
+  ];
+  const { items: out, revived } = outbox.reviveFkChildren(items, 'c-1');
+  const by = Object.fromEntries(out.map((i) => [i.id, i]));
+  assert.equal(revived, 2);
+  assert.equal(by.a.quarantined, false, 'legacy message-only FK failure revives');
+  assert.equal(by.a.attempts, 0, 'with a fresh budget');
+  assert.equal(by.b.quarantined, false, 'recorded 23503 revives');
+  assert.equal(by.c.quarantined, true, 'a non-FK failure keeps its quarantine');
+  assert.equal(by.d.quarantined, true, "another course's child is untouched");
+  assert.equal(by.e.attempts, 2, 'a live item keeps its budget');
+});
+
+check('reviving matches the parent id on any field but the row\'s own id', () => {
+  const fk = 'violates foreign key constraint';
+  const items = [
+    { id: 'a', kind: 'upsert_attendance', payload: { id: 'att-1', timetableEntryId: 'tt-1' }, quarantined: true, attempts: 5, lastError: fk },
+    { id: 'b', kind: 'upsert_note_attachment', payload: { id: 'na-1', entryId: 'tt-1' }, quarantined: true, attempts: 5, lastError: fk },
+    { id: 'c', kind: 'upsert_timetable', payload: { id: 'tt-1', termId: 't-1' }, quarantined: true, attempts: 5, lastError: fk },
+  ];
+  const { items: out, revived } = outbox.reviveFkChildren(items, 'tt-1');
+  assert.equal(revived, 2);
+  assert.equal(out.find((i) => i.id === 'c').quarantined, true, 'the parent row itself is not its own child');
+  assert.equal(outbox.reviveFkChildren(items, null).revived, 0, 'no id, no revival');
+  assert.equal(outbox.reviveFkChildren(items, 'nope').items, items, 'nothing to revive returns the same list');
+});
+
 // ── notebook/model.js — a paste must survive every exit from the editor ───
 //
 // v1.13 review, blocker E. The textarea holds ONE block, so a newline can only
