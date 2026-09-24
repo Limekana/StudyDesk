@@ -381,11 +381,63 @@ export function __drainOrderForTest(items) {
   return orderForDrain(items);
 }
 
+/** StudyDesk#75 — kinds whose row other items point at. When one of these
+ *  lands, children that were quarantined on a foreign-key failure against it
+ *  get their budget back (see `reviveFkChildren`). */
+const PARENT_KINDS = new Set([
+  'upsert_subject', 'upsert_term', 'log_session', 'upsert_timetable', 'upsert_note',
+]);
+
+/** Was this failure the parent row not existing on the server (yet)? Reads the
+ *  code when it was recorded and the message otherwise — items quarantined by
+ *  1.15.0 and earlier stored only the message. */
+function isFkFailure(item) {
+  if (item?.lastErrorCode === '23503') return true;
+  return /foreign key/i.test(item?.lastError || '');
+}
+
+/**
+ * Revive items that were quarantined because `parentId` was missing, now that
+ * it has been pushed. Pure; returns the new list and how many were revived.
+ *
+ * StudyDesk#75. A child pushed before its parent fails its foreign key, burns
+ * its five attempts and is quarantined. Reconcile later queues the missing
+ * parent and it lands — but reconcile re-queuing the child's IDENTICAL payload
+ * deliberately does not revive it (`coalesceOnto`), so without this the child
+ * stayed off the server until the user happened to edit it. The failure it
+ * was quarantined for has just been fixed, which is exactly when it deserves
+ * a new budget, and only then — the unbounded-retry protection still holds.
+ *
+ * "References" is any payload field other than `id` equal to the parent's id
+ * (courseId, subjectId, termId, parentId, timetableEntryId, entryId,
+ * sessionId). Matching on value keeps this correct when a kind gains a field.
+ */
+export function reviveFkChildren(items, parentId) {
+  if (typeof parentId !== 'string' || !parentId) return { items, revived: 0 };
+  let revived = 0;
+  const next = items.map((it) => {
+    if (!it.quarantined || !isFkFailure(it)) return it;
+    const refs = Object.entries(it.payload || {}).some(([k, v]) => k !== 'id' && v === parentId);
+    if (!refs) return it;
+    revived += 1;
+    return { ...it, attempts: 0, quarantined: false };
+  });
+  return { items: revived ? next : items, revived };
+}
+
 let draining = false;
+// StudyDesk#75 — set when `drain()` is called while a pass is running. The
+// pass's plan is a snapshot, so without this an item enqueued mid-pass (the
+// course reconcile queues while the cold-start drain is still going) waited
+// for some unrelated later trigger, while its children kept failing on it.
+let rerunRequested = false;
+// Bound on back-to-back passes per drain() call. A re-run is only ever
+// requested by a new enqueue, so this is a guard, not an expected limit.
+const MAX_PASSES = 5;
 
 /** Process pending items in dependency order. Coalesces concurrent calls via
  *  the `draining` flag — a second invocation while one is in-flight returns
- *  immediately.
+ *  immediately, and the running drain does one more pass when it finishes.
  *
  *  **Does not stop at the first failure.** The previous implementation did,
  *  which turned one unsatisfiable item into a frozen queue: the head burned
@@ -401,121 +453,135 @@ let draining = false;
  *  Returns the new queue depth so callers can decide whether to flash a
  *  result message. */
 export async function drain(opts = {}) {
-  if (draining) return loadItems().length;
+  if (draining) { rerunRequested = true; return loadItems().length; }
   // Skip if offline — items stay queued. `online` event will re-trigger.
-  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-    return loadItems().length;
-  }
+  const offline = () => typeof navigator !== 'undefined' && navigator.onLine === false;
+  if (offline()) return loadItems().length;
   draining = true;
   try {
     if (opts.force) {
       saveItems(loadItems().map((i) => ({ ...i, attempts: 0, quarantined: false })));
     }
-
-    // Snapshot which items this pass will attempt, in dependency order.
-    // Anything enqueued mid-pass is picked up by the next drain rather than
-    // extending this one indefinitely.
-    const planned = orderForDrain(loadItems()).map((i) => i.id);
-
-    // The FIRST failure of the pass, not the last. With dependency ordering
-    // the first failure is the closest thing to a root cause the queue can
-    // observe — a failing parent explains its children, never the reverse.
-    // Surfacing only `lastError` is why #38 was reported as "exams" when the
-    // subject was the actual problem.
-    let firstError = null;
-    let firstErrorKind = null;
-
-    for (const id of planned) {
-      const items = loadItems();
-      const item = items.find((i) => i.id === id);
-      // Gone — a concurrent clear() (sign-out) or a parallel drain took it.
-      if (!item) continue;
-      // Quarantined items are skipped until an explicit forced retry. They
-      // are NOT dropped: silent data loss is still worse than a stuck item,
-      // and the Settings panel surfaces the count.
-      if (item.quarantined) continue;
-
-      const handler = KIND_DISPATCH[item.kind];
-      if (!handler) {
-        // Unknown kind — drop it (came from an older app version or a typo).
-        console.error('[outbox] dropping item with unknown kind:', item.kind);
-        saveItems(loadItems().filter((i) => i.id !== id));
-        continue;
-      }
-
-      try {
-        // Marked in flight so a concurrent `enqueue` appends instead of
-        // replacing this item's payload — the success path below removes it
-        // by id, which would take a newer edit with it.
-        inFlightId = id;
-        await handler(item.payload);
-        saveItems(loadItems().filter((i) => i.id !== id));
-        saveMeta({ ...loadMeta(), lastSuccessAt: new Date().toISOString() });
-      } catch (e) {
-        const errMsg = (e && e.message) || String(e);
-        const attempts = (item.attempts || 0) + 1;
-        // At the ceiling an item is quarantined rather than rotated to the
-        // back. Rotating is what produced #38's confusing carousel: the item
-        // never left the queue, so it re-failed on every subsequent drain and
-        // kept overwriting `lastError` with whichever child ran last.
-        const quarantined = attempts >= MAX_ATTEMPTS;
-        const failed = {
-          ...item, attempts, quarantined,
-          lastAttemptAt: new Date().toISOString(), lastError: errMsg,
-        };
-
-        // v1.13 review, blocker D. `enqueue` never coalesces onto the in-flight
-        // item — correct, because the success path removes it by id and would
-        // take a newer edit with it — so a mutation arriving mid-push appends a
-        // second item for the same `kind::id`. Fine when the push SUCCEEDS: the
-        // in-flight item is removed and the appended one is all that is left.
-        //
-        // When it FAILS, the queue is left holding two items for one row, the
-        // earlier carrying the older payload. Nothing downstream can arbitrate
-        // between them: `upsertNote` and `upsertAttendance` stamp
-        // `updated_at: nowISO()` at PUSH time rather than carrying the edit's
-        // own timestamp, so server-side LWW sees the stale copy as the newer
-        // write and it simply wins.
-        //
-        // Collapse them here instead, at the one moment both are visible: the
-        // failed item's payload is superseded by the later duplicate's, so drop
-        // the failed item and let the duplicate carry the row forward. Its own
-        // budget applies — the payload it holds is genuinely newer work and has
-        // not itself failed, which is the same rule `coalesceOnto` uses.
-        //
-        // Deliberately not fixed by moving the timestamp into the payload.
-        // That would make LWW meaningful across the whole outbox, but it also
-        // hands arbitration to the DEVICE clock, and a phone with a wrong clock
-        // would then lose every conflict against itself. Server-stamped
-        // `now()` is the safer authority; the ordering is what needed fixing.
-        const failedKey = identityOf(failed.kind, failed.payload);
-        const current = loadItems();
-        const hasDuplicate = failedKey != null && current.some((o) => (
-          o.id !== id && identityOf(o.kind, o.payload) === failedKey
-        ));
-        // Dropped, not kept alongside: the duplicate already carries this row's
-        // newest state, and two items for one row is the defect.
-        saveItems(
-          hasDuplicate
-            ? current.filter((i) => i.id !== id)
-            : current.map((i) => (i.id === id ? failed : i)),
-        );
-        if (!firstError) { firstError = errMsg; firstErrorKind = item.kind; }
-      } finally {
-        inFlightId = null;
-      }
-    }
-
-    saveMeta({
-      ...loadMeta(),
-      lastError: firstError,
-      lastErrorKind: firstErrorKind,
-      lastErrorAt: firstError ? new Date().toISOString() : loadMeta().lastErrorAt || null,
-    });
+    let passes = 0;
+    do {
+      rerunRequested = false;
+      await drainPass();
+      passes += 1;
+    } while (rerunRequested && passes < MAX_PASSES && !offline());
   } finally {
     draining = false;
   }
   return loadItems().length;
+}
+
+async function drainPass() {
+  // Snapshot which items this pass will attempt, in dependency order.
+  // Anything enqueued mid-pass is picked up by the next pass, which
+  // `drain` runs when an enqueue arrived during this one (StudyDesk#75).
+  const planned = orderForDrain(loadItems()).map((i) => i.id);
+
+  // The FIRST failure of the pass, not the last. With dependency ordering
+  // the first failure is the closest thing to a root cause the queue can
+  // observe — a failing parent explains its children, never the reverse.
+  // Surfacing only `lastError` is why #38 was reported as "exams" when the
+  // subject was the actual problem.
+  let firstError = null;
+  let firstErrorKind = null;
+
+  for (const id of planned) {
+    const items = loadItems();
+    const item = items.find((i) => i.id === id);
+    // Gone — a concurrent clear() (sign-out) or a parallel drain took it.
+    if (!item) continue;
+    // Quarantined items are skipped until an explicit forced retry, or until
+    // the parent they failed on lands (StudyDesk#75). They are NOT dropped: silent data loss is still worse than a stuck item,
+    // and the Settings panel surfaces the count.
+    if (item.quarantined) continue;
+
+    const handler = KIND_DISPATCH[item.kind];
+    if (!handler) {
+      // Unknown kind — drop it (came from an older app version or a typo).
+      console.error('[outbox] dropping item with unknown kind:', item.kind);
+      saveItems(loadItems().filter((i) => i.id !== id));
+      continue;
+    }
+
+    try {
+      // Marked in flight so a concurrent `enqueue` appends instead of
+      // replacing this item's payload — the success path below removes it
+      // by id, which would take a newer edit with it.
+      inFlightId = id;
+      await handler(item.payload);
+      let rest = loadItems().filter((i) => i.id !== id);
+      // StudyDesk#75 — a parent just landed; children quarantined on its
+      // missing foreign key can now succeed. They rank after it, so this
+      // pass still reaches them (`planned` holds every id, and the
+      // quarantine check above reads the live item).
+      if (PARENT_KINDS.has(item.kind)) rest = reviveFkChildren(rest, item.payload?.id).items;
+      saveItems(rest);
+      saveMeta({ ...loadMeta(), lastSuccessAt: new Date().toISOString() });
+    } catch (e) {
+      const errMsg = (e && e.message) || String(e);
+      const errCode = (e && typeof e.code === 'string') ? e.code : null;
+      const attempts = (item.attempts || 0) + 1;
+      // At the ceiling an item is quarantined rather than rotated to the
+      // back. Rotating is what produced #38's confusing carousel: the item
+      // never left the queue, so it re-failed on every subsequent drain and
+      // kept overwriting `lastError` with whichever child ran last.
+      const quarantined = attempts >= MAX_ATTEMPTS;
+      const failed = {
+        ...item, attempts, quarantined,
+        lastAttemptAt: new Date().toISOString(), lastError: errMsg, lastErrorCode: errCode,
+      };
+
+      // v1.13 review, blocker D. `enqueue` never coalesces onto the in-flight
+      // item — correct, because the success path removes it by id and would
+      // take a newer edit with it — so a mutation arriving mid-push appends a
+      // second item for the same `kind::id`. Fine when the push SUCCEEDS: the
+      // in-flight item is removed and the appended one is all that is left.
+      //
+      // When it FAILS, the queue is left holding two items for one row, the
+      // earlier carrying the older payload. Nothing downstream can arbitrate
+      // between them: `upsertNote` and `upsertAttendance` stamp
+      // `updated_at: nowISO()` at PUSH time rather than carrying the edit's
+      // own timestamp, so server-side LWW sees the stale copy as the newer
+      // write and it simply wins.
+      //
+      // Collapse them here instead, at the one moment both are visible: the
+      // failed item's payload is superseded by the later duplicate's, so drop
+      // the failed item and let the duplicate carry the row forward. Its own
+      // budget applies — the payload it holds is genuinely newer work and has
+      // not itself failed, which is the same rule `coalesceOnto` uses.
+      //
+      // Deliberately not fixed by moving the timestamp into the payload.
+      // That would make LWW meaningful across the whole outbox, but it also
+      // hands arbitration to the DEVICE clock, and a phone with a wrong clock
+      // would then lose every conflict against itself. Server-stamped
+      // `now()` is the safer authority; the ordering is what needed fixing.
+      const failedKey = identityOf(failed.kind, failed.payload);
+      const current = loadItems();
+      const hasDuplicate = failedKey != null && current.some((o) => (
+        o.id !== id && identityOf(o.kind, o.payload) === failedKey
+      ));
+      // Dropped, not kept alongside: the duplicate already carries this row's
+      // newest state, and two items for one row is the defect.
+      saveItems(
+        hasDuplicate
+          ? current.filter((i) => i.id !== id)
+          : current.map((i) => (i.id === id ? failed : i)),
+      );
+      if (!firstError) { firstError = errMsg; firstErrorKind = item.kind; }
+    } finally {
+      inFlightId = null;
+    }
+  }
+
+  saveMeta({
+    ...loadMeta(),
+    lastError: firstError,
+    lastErrorKind: firstErrorKind,
+    lastErrorAt: firstError ? new Date().toISOString() : loadMeta().lastErrorAt || null,
+  });
 }
 
 // v1.3.1 — cached snapshot. `useSyncExternalStore` requires getSnapshot to

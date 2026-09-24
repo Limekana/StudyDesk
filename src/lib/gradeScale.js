@@ -6,16 +6,30 @@
 //
 // Almost none of this needed new maths. `calculateGPA(courses, 'ib')` is a
 // straight weighted mean, which is already correct for any "higher is better"
-// numeric scale, Finnish 4–10 included; and `grades.grade` is `numeric` in
-// Postgres storing the raw value, so a scale is purely interpretation and no
-// migration is involved. What was missing was somewhere to say what the numbers
-// mean.
+// numeric scale, Finnish 4–10 included; and `grades.grade` stores the raw
+// value, so a scale is purely interpretation. What was missing was somewhere to
+// say what the numbers mean.
+//
+// ── The column IS bounded (StudyDesk#71) ─────────────────────────────────
+// This comment used to say `grade` was a plain `numeric`, so "no migration is
+// involved". It was `numeric(4,2)`: max 99.99. Every grade of 100 — a perfect
+// score in US mode, whose built-in scale is 0–100 — was refused by the server
+// and retried forever from the outbox, and never reached another device.
+// Widened to `numeric(7,2)` on 2026-09-24
+// (supabase/migrations/20260924_grades_grade_precision.sql). The bound still
+// exists, so `normalizeScale` caps a custom scale at MAX_GRADE below: a scale
+// that could not be stored is refused where the user can see it, not in the
+// outbox where they cannot.
 //
 // `direction` is here because several European scales run the other way —
 // German and Czech 1–5/1–6 have 1 as best. It costs one comparison, and leaving
 // it out means revisiting all of this the first time a German user asks.
 
 const GRADE_MODES = ['ib', 'us', 'custom'];
+
+/** Largest magnitude `grades.grade numeric(7,2)` can hold, kept one decade
+ *  under the column's 99999.99 so a scale's max plus rounding still fits. */
+export const MAX_GRADE = 99999;
 
 /** Suggested when "Custom" is first picked: the Finnish scale that prompted
  *  the request, which also makes the feature self-explanatory. */
@@ -104,8 +118,10 @@ export function normalizeScale(raw) {
     return Number.isFinite(n) ? n : fallback;
   };
 
-  let min = num(raw?.min, d.min);
-  let max = num(raw?.max, d.max);
+  // Clamped to what the grades column can store (StudyDesk#71, see header).
+  const clampGrade = (n) => Math.max(-MAX_GRADE, Math.min(MAX_GRADE, n));
+  let min = clampGrade(num(raw?.min, d.min));
+  let max = clampGrade(num(raw?.max, d.max));
   // A user typing a range backwards means the range, not an error — swapping is
   // friendlier than refusing, and `direction` already carries which end is good.
   if (min > max) [min, max] = [max, min];

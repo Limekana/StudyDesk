@@ -1,0 +1,26 @@
+-- StudyDesk#71 — grades of 100 or more could not be stored.
+--
+-- `grades.grade` was numeric(4,2): max 99.99. US mode's built-in scale is
+-- 0-100, the "Percentage 0-100" chip switches to it, and Custom scales can go
+-- higher, so every perfect score — and every grade on a points scale — was
+-- refused with 22003 `numeric field overflow`. The client retried it from the
+-- outbox on every launch and it never reached another device (61 failed writes
+-- across 2 accounts in the 24 h before this ran; no stored grade was >= 99).
+--
+-- Same scale, wider precision:
+--   * every stored value is unchanged, and every shipped app version reads the
+--     column as a plain number (P1: old versions stay on F-Droid indefinitely);
+--   * increasing a numeric's precision at the same scale is binary-coercible,
+--     so Postgres does not rewrite the table;
+--   * no views depend on the column; RLS, triggers and the realtime
+--     publication are unaffected.
+--
+-- Applied to production 2026-09-24 via apply_migration `grades_grade_precision`,
+-- owner-approved. Unsynced grades still sit in each device's local state and
+-- `reconcileUnsynced` re-queues them after the next pull, so they upload on
+-- the next launch with no user action.
+--
+-- src/lib/gradeScale.js caps a custom scale at MAX_GRADE (99999) to stay
+-- inside this bound.
+
+alter table public.grades alter column grade type numeric(7,2);
