@@ -976,7 +976,21 @@ export function startRealtime(onChange) {
       () => schedulePull(onChange),
     );
   }
-  c.subscribe();
+  // Limekana/limecore#24 — this channel has been silently dead since v1.7: it
+  // binds tables that are not in the `supabase_realtime` publication, and the
+  // Realtime server rejects the WHOLE channel for one missing table (a
+  // `system` frame with status "error", never retried). Nothing logged it, so
+  // nobody saw it for two months. Log both paths so the next one is visible.
+  c.on('system', {}, (payload) => {
+    if (payload?.status === 'error') {
+      console.warn('[sync] realtime rejected the subscription:', payload.message || payload);
+    }
+  });
+  c.subscribe((status, err) => {
+    if (status !== 'SUBSCRIBED') {
+      console.warn(`[sync] realtime channel ${status}`, err?.message || '');
+    }
+  });
   channel = c;
 }
 
