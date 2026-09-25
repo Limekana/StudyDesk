@@ -7,6 +7,8 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['src/**/*.test.js'],
+    // `test/` holds tests for code outside `src` (the Electron main process),
+    // kept out of `electron/` so electron-builder does not ship them.
+    include: ['src/**/*.test.js', 'test/**/*.test.mjs'],
   },
 });
