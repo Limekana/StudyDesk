@@ -380,7 +380,9 @@
     "updateOpen": "Release-Seite öffnen",
     "updateDownloading": "Wird geladen… {{percent}} %",
     "updateRestart": "Neu starten und aktualisieren",
-    "updateDownload": "Herunterladen & installieren"
+    "updateDownload": "Herunterladen & installieren",
+    "fdroidCheck": "Auf F-Droid nach Updates suchen",
+    "fdroidCheckNote": "Einmal am Tag fragt StudyDesk bei f-droid.org nach der neuesten Version. Über dich wird nichts gesendet. Ausgeschaltet unterbleibt die Anfrage ganz."
   },
   "sdob": {
     "brand": "Schluss mit Grübeln. Fang an zu lernen.",
@@ -1117,5 +1119,12 @@
     "gradeCta": "Zu den Noten",
     "dismiss": "Überspringen",
     "dismissAria": "Diesen Vorschlag überspringen: {{what}}. Er kommt nicht zurück."
+  },
+  "update": {
+    "eyebrow": "Auf F-Droid",
+    "title": "StudyDesk {{version}} ist da",
+    "versions": "Update von {{current}} auf {{latest}}",
+    "open": "Auf F-Droid holen",
+    "later": "Später"
   }
 }

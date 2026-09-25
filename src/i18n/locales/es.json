@@ -382,7 +382,9 @@
     "updateOpen": "Abrir página de la versión",
     "updateDownloading": "Descargando… {{percent}} %",
     "updateRestart": "Reiniciar para actualizar",
-    "updateDownload": "Descargar e instalar"
+    "updateDownload": "Descargar e instalar",
+    "fdroidCheck": "Buscar actualizaciones en F-Droid",
+    "fdroidCheckNote": "Una vez al día, StudyDesk consulta en f-droid.org cuál es la versión más reciente. No se envía nada sobre ti. Si lo desactivas, la consulta no se hace en absoluto."
   },
   "sdob": {
     "brand": "Deja de decidir. Empieza a estudiar.",
@@ -1122,5 +1124,12 @@
     "gradeCta": "Ir a Notas",
     "dismiss": "Omitir",
     "dismissAria": "Omitir esta sugerencia: {{what}}. No volverá a aparecer."
+  },
+  "update": {
+    "eyebrow": "En F-Droid",
+    "title": "Ya está aquí StudyDesk {{version}}",
+    "versions": "Actualizar de {{current}} a {{latest}}",
+    "open": "Descargar en F-Droid",
+    "later": "Más tarde"
   }
 }

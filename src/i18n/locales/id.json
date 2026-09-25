@@ -378,7 +378,9 @@
     "updateOpen": "Buka halaman rilis",
     "updateDownloading": "Mengunduh… {{percent}}%",
     "updateRestart": "Mulai ulang untuk memperbarui",
-    "updateDownload": "Unduh & pasang"
+    "updateDownload": "Unduh & pasang",
+    "fdroidCheck": "Periksa pembaruan di F-Droid",
+    "fdroidCheckNote": "Sekali sehari, StudyDesk menanyakan versi terbaru ke f-droid.org. Tidak ada data tentang Anda yang dikirim. Jika dimatikan, permintaan ini tidak dikirim sama sekali."
   },
   "sdob": {
     "brand": "Berhenti menimbang. Mulai belajar.",
@@ -1112,5 +1114,12 @@
     "gradeCta": "Ke Nilai",
     "dismiss": "Lewati",
     "dismissAria": "Lewati saran ini: {{what}}. Saran ini tidak akan muncul lagi."
+  },
+  "update": {
+    "eyebrow": "Di F-Droid",
+    "title": "StudyDesk {{version}} sudah rilis",
+    "versions": "Perbarui dari {{current}} ke {{latest}}",
+    "open": "Dapatkan di F-Droid",
+    "later": "Nanti"
   }
 }

@@ -380,7 +380,9 @@
     "updateOpen": "Avaa julkaisusivu",
     "updateDownloading": "Ladataan… {{percent}} %",
     "updateRestart": "Käynnistä uudelleen ja päivitä",
-    "updateDownload": "Lataa ja asenna"
+    "updateDownload": "Lataa ja asenna",
+    "fdroidCheck": "Tarkista päivitykset F-Droidista",
+    "fdroidCheckNote": "StudyDesk kysyy kerran päivässä f-droid.orgilta uusinta versiota. Sinusta ei lähetetä mitään. Kun tämä on pois päältä, kyselyä ei tehdä lainkaan."
   },
   "sdob": {
     "brand": "Lopeta miettiminen. Aloita opiskelu.",
@@ -1117,5 +1119,12 @@
     "gradeCta": "Siirry arvosanoihin",
     "dismiss": "Ohita",
     "dismissAria": "Ohita tämä ehdotus: {{what}}. Se ei palaa."
+  },
+  "update": {
+    "eyebrow": "F-Droidissa",
+    "title": "StudyDesk {{version}} on julkaistu",
+    "versions": "Päivitä versiosta {{current}} versioon {{latest}}",
+    "open": "Hae F-Droidista",
+    "later": "Myöhemmin"
   }
 }

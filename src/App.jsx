@@ -19,6 +19,7 @@ import { refreshEntitlement } from "./lib/entitlement.js";
 import { writeJson } from "./lib/localStore.js";
 import { downloadExport } from "./lib/dataRights.js";
 import StorageAlert from "./features/settings/StorageAlert.jsx";
+import FdroidUpdateNote from "./features/update/FdroidUpdateNote.jsx";
 import TimerPill from "./features/timer/TimerPill.jsx";
 import { useAccountAvatar } from "./lib/useAccountAvatar.js";
 import { readCollapsed, writeCollapsed } from "./lib/planSections.js";
@@ -2287,6 +2288,9 @@ export default function App() {
               window in which the user can save it, and they will not
               necessarily be on Settings when it opens. */}
           <StorageAlert onExport={onExportFromAlert} />
+          {/* v1.16 (#67) — Android only, once a day, off in Settings. Renders
+              nothing unless F-Droid has a newer build than this one. */}
+          <FdroidUpdateNote />
           {(urgent.length>0||urgentExams.length>0)&&state.view==="plan"&&(
             <div className="urgent-banner"><span>⚠️</span><div>
               <strong>{t('av.chrome.urgent')}</strong> —{" "}

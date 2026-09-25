@@ -380,7 +380,9 @@
     "updateOpen": "Open release page",
     "updateDownloading": "Downloading… {{percent}}%",
     "updateRestart": "Restart to update",
-    "updateDownload": "Download & install"
+    "updateDownload": "Download & install",
+    "fdroidCheck": "Check F-Droid for updates",
+    "fdroidCheckNote": "Once a day, StudyDesk asks f-droid.org for its newest version. Nothing about you is sent. Turning this off stops the request entirely."
   },
   "sdob": {
     "brand": "Stop deciding. Start studying.",
@@ -1117,5 +1119,12 @@
     "gradeCta": "Go to Grades",
     "dismiss": "Skip",
     "dismissAria": "Skip this suggestion: {{what}}. It won't come back."
+  },
+  "update": {
+    "eyebrow": "On F-Droid",
+    "title": "StudyDesk {{version}} is out",
+    "versions": "Update from {{current}} to {{latest}}",
+    "open": "Get it on F-Droid",
+    "later": "Later"
   }
 }
