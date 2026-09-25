@@ -49,7 +49,7 @@
 -- 12 tables that have none, and should be applied with the client release.
 --
 -- Tested against Postgres 17 before review: supabase/tests/lww_guard.test.sql.
--- NOT yet applied to production — owner confirms before `apply_migration`.
+-- APPLIED to production 2026-09-25 (owner-confirmed) as `v116_lww_clamp_delete_wins`, version 20260925190821.
 
 create or replace function public.set_updated_at()
 returns trigger
