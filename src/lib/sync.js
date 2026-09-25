@@ -9,6 +9,7 @@
 // All times stored as ISO strings. Soft-delete via deleted_at (never hard DELETE).
 
 import { supabase } from './supabase.js';
+import { selectAll } from './selectAll.js';
 import { dueTimeToSql } from './dueAt.js';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -863,25 +864,31 @@ export const NOTEBOOK_BUCKET = 'notebook';
 export async function pullAllStudyData() {
   // Pull EVERYTHING including soft-deleted rows so the local LWW merge
   // can correctly tombstone things the user deleted on another device.
+  //
+  // v1.16 (limecore#28, #73): EVERYTHING means every page. A bare `select('*')`
+  // stops at the API row cap with no error, and the rows past it then look
+  // local-only to `reconcileUnsynced`, which re-pushes them on every launch.
+  // `selectAll` pages each table to completion or fails as a whole — it never
+  // hands back a partial list, so the throws below still mean what they meant.
   const [
     subjectsRes, gradesRes, sessionsRes, assignmentsRes, examsRes, actionsRes,
     plannedRes, termsRes, timetableRes, attachmentsRes, commitmentsRes,
     notesRes, noteAttRes, attendanceRes,
   ] = await Promise.all([
-    supabase.from('subjects').select('*'),
-    supabase.from('grades').select('*'),
-    supabase.from('study_sessions').select('*'),
-    supabase.from('assignments').select('*'),
-    supabase.from('exams').select('*'),
-    supabase.from('study_actions').select('*'),
-    supabase.from('planned_sessions').select('*'),
-    supabase.from('academic_terms').select('*'),
-    supabase.from('timetable_entries').select('*'),
-    supabase.from('assignment_attachments').select('*'),
-    supabase.from('commitments').select('*'),
-    supabase.from('notebook_entries').select('*'),
-    supabase.from('notebook_attachments').select('*'),
-    supabase.from('lesson_attendance').select('*'),
+    selectAll(supabase, 'subjects'),
+    selectAll(supabase, 'grades'),
+    selectAll(supabase, 'study_sessions'),
+    selectAll(supabase, 'assignments'),
+    selectAll(supabase, 'exams'),
+    selectAll(supabase, 'study_actions'),
+    selectAll(supabase, 'planned_sessions'),
+    selectAll(supabase, 'academic_terms'),
+    selectAll(supabase, 'timetable_entries'),
+    selectAll(supabase, 'assignment_attachments'),
+    selectAll(supabase, 'commitments'),
+    selectAll(supabase, 'notebook_entries'),
+    selectAll(supabase, 'notebook_attachments'),
+    selectAll(supabase, 'lesson_attendance'),
   ]);
   if (subjectsRes.error) throw subjectsRes.error;
   if (gradesRes.error) throw gradesRes.error;

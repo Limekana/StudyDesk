@@ -23,6 +23,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase.js';
+import { selectAll } from '../lib/selectAll.js';
 import { applyRemotePull } from '../lib/merge.js';
 import { toLocalISO } from '../lib/dates.js';
 
@@ -56,12 +57,18 @@ async function fetchGlance(now) {
   // is null rather than false would drop out of `.eq('done', false)` and the
   // widget would silently omit real homework. Filtering locally on Boolean()
   // matches how the rest of the app reads that column.
+  //
+  // Paged to completion (v1.16, limecore#28) like the full sync: a bare
+  // `select('*')` stops at the API row cap with no error, and past it the
+  // widget would simply not show some of the user's homework.
   const [subjects, assignments, planned, terms, timetable] = await Promise.all([
-    supabase.from('subjects').select('*'),
-    supabase.from('assignments').select('*'),
-    supabase.from('planned_sessions').select('*').gte('starts_at', start).lt('starts_at', end),
-    supabase.from('academic_terms').select('*'),
-    supabase.from('timetable_entries').select('*'),
+    selectAll(supabase, 'subjects'),
+    selectAll(supabase, 'assignments'),
+    selectAll(supabase, 'planned_sessions', {
+      filter: (q) => q.gte('starts_at', start).lt('starts_at', end),
+    }),
+    selectAll(supabase, 'academic_terms'),
+    selectAll(supabase, 'timetable_entries'),
   ]);
 
   for (const res of [subjects, assignments, planned, terms, timetable]) {
