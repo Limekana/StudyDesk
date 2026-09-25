@@ -388,7 +388,9 @@
     "updateOpen": "فتح صفحة الإصدار",
     "updateDownloading": "جارٍ التنزيل… {{percent}}٪",
     "updateRestart": "إعادة التشغيل للتحديث",
-    "updateDownload": "تنزيل وتثبيت"
+    "updateDownload": "تنزيل وتثبيت",
+    "fdroidCheck": "التحقق من التحديثات على F-Droid",
+    "fdroidCheckNote": "يسأل StudyDesk موقع f-droid.org مرة واحدة يوميًا عن أحدث إصدار. لا يُرسل أي شيء عنك. عند إيقافه لا يُرسل الطلب إطلاقًا."
   },
   "sdob": {
     "brand": "كفى ترددًا. ابدأ الدراسة.",
@@ -1137,5 +1139,12 @@
     "gradeCta": "الذهاب إلى الدرجات",
     "dismiss": "تخطٍّ",
     "dismissAria": "تخطّي هذا الاقتراح: {{what}}. لن يظهر مرة أخرى."
+  },
+  "update": {
+    "eyebrow": "على F-Droid",
+    "title": "صدر StudyDesk {{version}}",
+    "versions": "التحديث من {{current}} إلى {{latest}}",
+    "open": "احصل عليه من F-Droid",
+    "later": "لاحقًا"
   }
 }

@@ -380,7 +380,9 @@
     "updateOpen": "रिलीज़ पेज खोलें",
     "updateDownloading": "डाउनलोड हो रहा है… {{percent}}%",
     "updateRestart": "अपडेट के लिए रीस्टार्ट करें",
-    "updateDownload": "डाउनलोड और इंस्टॉल करें"
+    "updateDownload": "डाउनलोड और इंस्टॉल करें",
+    "fdroidCheck": "F-Droid पर अपडेट जाँचें",
+    "fdroidCheckNote": "StudyDesk दिन में एक बार f-droid.org से नवीनतम संस्करण पूछता है। आपके बारे में कुछ भी नहीं भेजा जाता। इसे बंद करने पर यह अनुरोध बिल्कुल नहीं भेजा जाता।"
   },
   "sdob": {
     "brand": "सोचना बंद करें। पढ़ना शुरू करें।",
@@ -1117,5 +1119,12 @@
     "gradeCta": "ग्रेड पर जाएँ",
     "dismiss": "छोड़ें",
     "dismissAria": "यह सुझाव छोड़ें: {{what}}। यह दोबारा नहीं आएगा।"
+  },
+  "update": {
+    "eyebrow": "F-Droid पर",
+    "title": "StudyDesk {{version}} आ गया है",
+    "versions": "{{current}} से {{latest}} पर अपडेट करें",
+    "open": "F-Droid से पाएँ",
+    "later": "बाद में"
   }
 }

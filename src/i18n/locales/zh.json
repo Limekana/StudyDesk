@@ -380,7 +380,9 @@
     "updateOpen": "打开发布页面",
     "updateDownloading": "正在下载… {{percent}}%",
     "updateRestart": "重启以更新",
-    "updateDownload": "下载并安装"
+    "updateDownload": "下载并安装",
+    "fdroidCheck": "在 F-Droid 上检查更新",
+    "fdroidCheckNote": "StudyDesk 每天向 f-droid.org 查询一次最新版本，不会发送任何关于你的信息。关闭后将不再发送该请求。"
   },
   "sdob": {
     "brand": "别再纠结，开始学习。",
@@ -1117,5 +1119,12 @@
     "gradeCta": "前往成绩",
     "dismiss": "跳过",
     "dismissAria": "跳过此建议：{{what}}。它不会再出现。"
+  },
+  "update": {
+    "eyebrow": "F-Droid 上",
+    "title": "StudyDesk {{version}} 已发布",
+    "versions": "从 {{current}} 更新到 {{latest}}",
+    "open": "前往 F-Droid 获取",
+    "later": "稍后"
   }
 }

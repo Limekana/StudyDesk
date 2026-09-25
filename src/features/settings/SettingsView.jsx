@@ -29,6 +29,7 @@ import { useAccountAvatar } from '../../lib/useAccountAvatar.js';
 import pkg from '../../../package.json';
 import { IS_DESKTOP } from '../../lib/desktop.js';
 import { checkForDesktopUpdate, runDesktopUpdateAction, useDesktopUpdate } from '../../lib/desktopUpdate.js';
+import { setUpdateCheckEnabled, useFdroidUpdate } from '../../lib/fdroidUpdate.js';
 
 // A v4 uuid for a feedback row. crypto.randomUUID needs a secure context, and
 // the fallback builds one by hand rather than inventing a non-uuid id string —
@@ -278,6 +279,33 @@ function DesktopUpdateRow() {
           {label}
         </button>
       </div>
+    </>
+  );
+}
+
+// v1.16 (#67) — the switch the privacy policy promises (NCC#50): Off stops
+// the once-a-day request to f-droid.org entirely, not merely the note. Kept to
+// the Off/On pair every other Settings switch uses. Android only, because it
+// is the only build F-Droid ships.
+function FdroidUpdateRow() {
+  const { t } = useTranslation();
+  const { enabled } = useFdroidUpdate();
+  return (
+    <>
+      <div className="sv2-row">
+        <span className="sv2-row-label">{t('settings.fdroidCheck')}</span>
+        <span className="sv2-row-value">
+          <span className="sv2-mode">
+            <button className={!enabled ? 'active' : ''} onClick={() => setUpdateCheckEnabled(false)}>
+              {t('settings.aiOff')}
+            </button>
+            <button className={enabled ? 'active' : ''} onClick={() => setUpdateCheckEnabled(true)}>
+              {t('settings.aiOn')}
+            </button>
+          </span>
+        </span>
+      </div>
+      <div className="sv2-note">{t('settings.fdroidCheckNote')}</div>
     </>
   );
 }
@@ -1309,6 +1337,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
             <span className="sv2-row-value">v{appVersion}</span>
           </div>
           {IS_DESKTOP && <DesktopUpdateRow />}
+          {Capacitor.getPlatform() === 'android' && <FdroidUpdateRow />}
           <details className="sv2-tech">
             <summary>{t('settings.techDetails')}</summary>
             <div className="sv2-tech-grid">
