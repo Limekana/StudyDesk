@@ -25,6 +25,8 @@ import { readCollapsed, writeCollapsed } from "./lib/planSections.js";
 import { preferredDueWindow, countsAsDue } from "./lib/dueWindow.js";
 import { normalizeDueTime, byDueAsc, byDueDesc, dueDayReminderAt } from "./lib/dueAt.js";
 import ReferralPrompt from "./features/referral/ReferralPrompt.jsx";
+import PolicyUpdatedNote from "./features/errors/PolicyUpdatedNote.jsx";
+import { setReportScreen } from "./lib/errorReports.js";
 import { inheritFromNexus } from "./lib/suiteSso.js";
 import { hydrateOnboardedFromCloud, markOnboardedCloud } from "./lib/onboardingCloud.js";
 import * as sync from "./lib/sync.js";
@@ -1624,9 +1626,9 @@ export default function App() {
     if (session) outbox.enqueue("delete_note", { id });
   }, [session]);
 
-  const onExportFromAlert = useCallback(() => {
+  const onExportFromAlert = useCallback(async () => {
     try {
-      const name = downloadExport(state, session);
+      const name = await downloadExport(state, session);
       showFlash(t('settings.exportDone', { name }));
     } catch (e) {
       showFlash(t('settings.exportFailed', { msg: e.message }));
@@ -2080,6 +2082,9 @@ export default function App() {
   // not sit between a hook and its call site.
   const shellTier = useShellTier();
   const [rail, toggleRail] = useSidebarRail(shellTier);
+  // v1.16 (limecore#16) — an error report says which view was open. StudyDesk
+  // routes by reducer state, not URL, so the reporter is told directly.
+  useEffect(() => { setReportScreen(state.view); }, [state.view]);
 
   // v1.15 (Item 12) — one update check per launch; a no-op off desktop. When
   // GitHub has something newer the sidebar says so; a click downloads it, then
@@ -2461,6 +2466,9 @@ export default function App() {
         and only once onboarding is out of the way. Guests have no auth
         metadata to write to, so `session?.user` is the whole gate. */}
     {onboarded && session?.user && <ReferralPrompt user={session.user}/>}
+    {/* v1.16 (limecore#16) — once, for people who used StudyDesk under the
+        old policy; pinned to the top edge, clear of the referral corner. */}
+    {onboarded && <PolicyUpdatedNote/>}
   </>);
 }
 
