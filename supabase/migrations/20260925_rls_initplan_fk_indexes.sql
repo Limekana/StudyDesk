@@ -34,8 +34,7 @@
 --
 -- Tested against Postgres 17 before review: supabase/tests/rls_initplan.test.sql
 -- (a before/after diff of every policy, plus row-level behaviour as two users).
--- NOT yet applied to production — owner confirms before `apply_migration`, and
--- limecore#14 asks for the O-5 backup (limecore#6) to be verified first.
+-- APPLIED to production 2026-09-26 (owner-confirmed) as `v116_rls_initplan_fk_indexes`, version 20260926102231.
 
 -- ── 1. Initplan: 35 policies, same predicate, `auth.uid()` evaluated once ────
 alter policy academic_terms_select on public.academic_terms using ((select auth.uid()) = user_id);
