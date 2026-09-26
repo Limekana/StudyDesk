@@ -380,7 +380,10 @@
     "updateOpen": "Avaa julkaisusivu",
     "updateDownloading": "Ladataan… {{percent}} %",
     "updateRestart": "Käynnistä uudelleen ja päivitä",
-    "updateDownload": "Lataa ja asenna"
+    "updateDownload": "Lataa ja asenna",
+    "errorReports": "Lähetä virheraportit",
+    "errorReportsSub": "Oletuksena pois · vain tilillä",
+    "errorReportsNote": "Kun sovellus kohtaa virheen, josta se ei toivu, se lähettää meille virheen tyypin, kohdan koodissamme, sovelluksen ja Androidin tai selaimen version sekä avoinna olleen näkymän. Ei koskaan syöttämiäsi tietoja. Säilytetään 90 päivää."
   },
   "sdob": {
     "brand": "Lopeta miettiminen. Aloita opiskelu.",
@@ -1117,5 +1120,25 @@
     "gradeCta": "Siirry arvosanoihin",
     "dismiss": "Ohita",
     "dismissAria": "Ohita tämä ehdotus: {{what}}. Se ei palaa."
+  },
+  "crash": {
+    "eyebrow": "Virhe",
+    "title": "Jokin meni vikaan",
+    "body": "Tämä näkymä kohtasi virheen, josta se ei pystynyt toipumaan. Tietosi ovat tallessa tällä laitteella.",
+    "reload": "Lataa uudelleen",
+    "send": "Lähetä tämä raportti",
+    "sending": "Lähetetään…",
+    "retry": "Lähetys epäonnistui. Yritä uudelleen",
+    "sent": "Raportti lähetetty. Kiitos.",
+    "guest": "Virheraportit vaativat tilin, joten mitään ei lähetetty.",
+    "export": "Vie tietoni",
+    "exported": "Vienti ladattu",
+    "whatIsSent": "Raportti kertoo, mikä virhe tapahtui ja missä kohtaa koodiamme. Se ei koskaan sisällä syöttämiäsi tietoja."
+  },
+  "policy": {
+    "eyebrow": "Tietosuojaseloste päivitetty",
+    "body": "Se kattaa nyt virheraportit, jotka ovat pois päältä, ellet kytke niitä päälle, sekä Androidin päivitystarkistuksen F-Droidista.",
+    "read": "Lue se",
+    "ok": "OK"
   }
 }

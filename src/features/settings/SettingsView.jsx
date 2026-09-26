@@ -29,6 +29,7 @@ import { useAccountAvatar } from '../../lib/useAccountAvatar.js';
 import pkg from '../../../package.json';
 import { IS_DESKTOP } from '../../lib/desktop.js';
 import { checkForDesktopUpdate, runDesktopUpdateAction, useDesktopUpdate } from '../../lib/desktopUpdate.js';
+import { setErrorReportsEnabled, useErrorReportsEnabled } from '../../lib/errorReports.js';
 
 // A v4 uuid for a feedback row. crypto.randomUUID needs a secure context, and
 // the fallback builds one by hand rather than inventing a non-uuid id string —
@@ -282,6 +283,31 @@ function DesktopUpdateRow() {
   );
 }
 
+// v1.16 (limecore#16) — "Send error reports", the same Off/On pair as every
+// other Settings switch. Off by default; the note under it is the consent text.
+function ErrorReportsRow() {
+  const { t } = useTranslation();
+  const on = useErrorReportsEnabled();
+  return (
+    <>
+      <div className="sv2-row">
+        <span className="sv2-row-label">{t('settings.errorReports')}</span>
+        <span className="sv2-row-value">
+          <span className="sv2-mode">
+            <button className={!on ? 'active' : ''} onClick={() => setErrorReportsEnabled(false)}>
+              {t('settings.aiOff')}
+            </button>
+            <button className={on ? 'active' : ''} onClick={() => setErrorReportsEnabled(true)}>
+              {t('settings.aiOn')}
+            </button>
+          </span>
+        </span>
+      </div>
+      <div className="sv2-note">{t('settings.errorReportsNote')}</div>
+    </>
+  );
+}
+
 export default function SettingsView({ state, dispatch, showFlash, session }) {
   // v1.10 (Item 12) — ask the device what it can do before offering anything.
   // A settings switch that silently does nothing is worse than an absent one,
@@ -439,9 +465,9 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
   }, [confirm, showFlash, dispatch, t]);
 
   // ── GDPR Art. 20 — portability ─────────────────────────────────────────────
-  const onExport = useCallback(() => {
+  const onExport = useCallback(async () => {
     try {
-      const name = downloadExport(state, session);
+      const name = await downloadExport(state, session);
       showFlash(t('settings.exportDone', { name }));
     } catch (e) {
       showFlash(t('settings.exportFailed', { msg: e.message }));
@@ -1235,6 +1261,9 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
           {/* Free-tier disclosure — informed consent belongs at the switch,
               not only in PRIVACY.md. */}
           <div className="sv2-note">{t('settings.aiTrainingNote')}</div>
+          {/* v1.16 (limecore#16) — off by default, accounts only; the note is
+              the consent text the privacy policy (NCC#50) relies on. */}
+          <ErrorReportsRow />
           <div className="sv2-action">
             <button className="btn-outline" onClick={onExport}>
               {t('settings.exportData')}

@@ -1,0 +1,54 @@
+/* v1.16 (limecore#16) — the crash page and the one-time policy note.
+   Existing tokens only, so every theme restyles both. Kept in their own file:
+   the crash page is imported by the error boundary itself, so it has styles
+   even when the component that normally imports cards.css is what broke. */
+
+/* ── Crash page ─────────────────────────────────────────────────────────────
+   A single sheet of paper on the desk: the same card the rest of the app
+   uses, centred, with the display face for the one sentence that matters.
+   Reload is the ink button; the other two are outlines, because reloading is
+   what fixes the problem and the rest are for after. */
+.crash-page{
+  min-height:100%;min-height:100dvh;
+  display:flex;align-items:center;justify-content:center;
+  padding:24px 16px;
+  padding-top:calc(24px + var(--safe-area-inset-top, env(safe-area-inset-top)));
+  background:var(--bg);color:var(--text);
+}
+.crash-card{
+  width:100%;max-width:380px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:6px;
+  box-shadow:var(--shadow-md);
+  padding:22px 22px 18px;
+}
+.crash-eyebrow{font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted2);}
+.crash-title{font-family:var(--font-display);font-size:22px;font-weight:400;line-height:1.25;margin:6px 0 8px;}
+.crash-body{font-size:13px;line-height:1.55;color:var(--text);margin:0 0 10px;}
+.crash-meta{font-family:var(--font-mono);font-size:10.5px;color:var(--muted);word-break:break-all;margin-bottom:16px;}
+.crash-actions{display:flex;flex-direction:column;gap:8px;}
+.crash-actions .btn,.crash-actions .btn-outline{width:100%;text-align:center;}
+.crash-status{font-size:12px;line-height:1.5;color:var(--muted);text-align:center;padding:6px 0;}
+.crash-note{font-size:11px;line-height:1.5;color:var(--muted2);margin:14px 0 0;}
+
+/* ── Policy note ────────────────────────────────────────────────────────────
+   Pinned to the top edge rather than the bottom corner, which the referral
+   card and the flash toast use. Once per install, gone for good on either
+   action. */
+.pol-note{
+  position:fixed;z-index:205;
+  top:calc(12px + var(--safe-area-inset-top, env(safe-area-inset-top)));
+  inset-inline:14px;margin-inline:auto;max-width:420px;
+  background:var(--surface);border:1px solid var(--border2);border-radius:6px;
+  box-shadow:var(--shadow-md);padding:12px 16px;
+  animation:fadeup 0.24s var(--ease-settle);
+}
+.pol-note-eyebrow{font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted2);}
+.pol-note-body{font-size:12.5px;line-height:1.5;color:var(--text);margin:5px 0 10px;}
+.pol-note-actions{display:flex;align-items:center;gap:14px;}
+.pol-note-actions .btn-outline{text-decoration:none;display:inline-block;}
+.pol-note-ok{background:none;border:none;cursor:pointer;padding:2px 0;
+  font-family:var(--font-mono);font-size:10px;letter-spacing:0.06em;color:var(--muted);}
+.pol-note-ok:hover{color:var(--text);}
+@media (prefers-reduced-motion: reduce){ .pol-note{animation:none;} }

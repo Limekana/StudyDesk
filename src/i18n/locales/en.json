@@ -380,7 +380,10 @@
     "updateOpen": "Open release page",
     "updateDownloading": "Downloading… {{percent}}%",
     "updateRestart": "Restart to update",
-    "updateDownload": "Download & install"
+    "updateDownload": "Download & install",
+    "errorReports": "Send error reports",
+    "errorReportsSub": "Off by default · account only",
+    "errorReportsNote": "When the app hits an error it cannot recover from, it sends us which error it was, where in our code, the app and Android or browser version, and the screen that was open. Never what you entered. Kept 90 days."
   },
   "sdob": {
     "brand": "Stop deciding. Start studying.",
@@ -1117,5 +1120,25 @@
     "gradeCta": "Go to Grades",
     "dismiss": "Skip",
     "dismissAria": "Skip this suggestion: {{what}}. It won't come back."
+  },
+  "crash": {
+    "eyebrow": "Error",
+    "title": "Something went wrong",
+    "body": "This screen hit an error it could not recover from. Your data is safe on this device.",
+    "reload": "Reload",
+    "send": "Send this report",
+    "sending": "Sending…",
+    "retry": "Could not send. Try again",
+    "sent": "Report sent. Thank you.",
+    "guest": "Error reports need an account, so nothing was sent.",
+    "export": "Export my data",
+    "exported": "Export downloaded",
+    "whatIsSent": "A report says which error happened and where in our code. It never includes what you entered."
+  },
+  "policy": {
+    "eyebrow": "Privacy policy updated",
+    "body": "It now covers error reports, which stay off unless you switch them on, and the Android check for updates on F-Droid.",
+    "read": "Read it",
+    "ok": "OK"
   }
 }

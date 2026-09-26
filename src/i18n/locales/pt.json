@@ -382,7 +382,10 @@
     "updateOpen": "Abrir página da versão",
     "updateDownloading": "Baixando… {{percent}}%",
     "updateRestart": "Reiniciar para atualizar",
-    "updateDownload": "Baixar e instalar"
+    "updateDownload": "Baixar e instalar",
+    "errorReports": "Enviar relatórios de erro",
+    "errorReportsSub": "Desativado por padrão · só com conta",
+    "errorReportsNote": "Quando o app encontra um erro do qual não consegue se recuperar, ele nos envia qual foi o erro, onde no nosso código, a versão do app e do Android ou do navegador, e a tela aberta. Nunca o que você digitou. Guardados por 90 dias."
   },
   "sdob": {
     "brand": "Pare de decidir. Comece a estudar.",
@@ -1122,5 +1125,25 @@
     "gradeCta": "Ir para Notas",
     "dismiss": "Ignorar",
     "dismissAria": "Ignorar esta sugestão: {{what}}. Não voltará a aparecer."
+  },
+  "crash": {
+    "eyebrow": "Erro",
+    "title": "Algo deu errado",
+    "body": "Esta tela encontrou um erro do qual não conseguiu se recuperar. Seus dados estão seguros neste dispositivo.",
+    "reload": "Recarregar",
+    "send": "Enviar este relatório",
+    "sending": "Enviando…",
+    "retry": "Não foi possível enviar. Tentar de novo",
+    "sent": "Relatório enviado. Obrigado.",
+    "guest": "Relatórios de erro exigem uma conta, então nada foi enviado.",
+    "export": "Exportar meus dados",
+    "exported": "Exportação baixada",
+    "whatIsSent": "Um relatório diz qual erro aconteceu e onde no nosso código. Nunca inclui o que você digitou."
+  },
+  "policy": {
+    "eyebrow": "Política de privacidade atualizada",
+    "body": "Agora ela inclui os relatórios de erro, desativados a menos que você os ative, e a verificação de atualizações no F-Droid no Android.",
+    "read": "Ler",
+    "ok": "OK"
   }
 }

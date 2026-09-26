@@ -8,6 +8,7 @@
 // server-side account to delete.
 
 import { supabase } from './supabase.js';
+import { selectAll } from './selectAll.js';
 import { removeForUser } from './userStorage.js';
 import { AVATAR_BUCKET, AVATAR_FILE } from './profile.js';
 
@@ -26,8 +27,33 @@ const EXPORT_SCHEMA_VERSION = 1;
  * database, so omitting them would make the export a misleading account of what
  * we hold.
  */
-function buildExport(state, session) {
+/**
+ * v1.16 (limecore#16) — the two things we hold that exist ONLY on the server:
+ * feedback the user sent, and error reports (kept 90 days). Neither is in
+ * local state, so an export built from it alone would omit them, and the
+ * privacy policy (NCC#50) promises the export includes both. Signed-in only;
+ * a guest has sent neither. A failed read is recorded in the export rather
+ * than dropped, so an incomplete export says so.
+ */
+export const SERVER_ONLY_TABLES = ['feedback', 'client_errors'];
+
+export async function serverOnlyData(userId) {
+  const out = {};
+  for (const table of SERVER_ONLY_TABLES) {
+    try {
+      const { data, error } = await selectAll(supabase, table, { filter: (q) => q.eq('user_id', userId) });
+      out[table] = error ? { error: error.message } : (data ?? []);
+    } catch (e) {
+      out[table] = { error: e.message };
+    }
+  }
+  return out;
+}
+
+async function buildExport(state, session) {
   const courses = Object.values(state.courses || {});
+  const userId = session?.user?.id;
+  const server = userId ? await serverOnlyData(userId) : null;
   return {
     schemaVersion: EXPORT_SCHEMA_VERSION,
     exportedAt: new Date().toISOString(),
@@ -52,6 +78,7 @@ function buildExport(state, session) {
     studySessions: state.studySessions || [],
     assignments: state.assignments || [],
     exams: state.exams || [],
+    ...(server ? { server } : {}),
     settings: {
       gradeMode: state.gradeMode ?? null,
       customScale: state.customScale ?? null,
@@ -63,8 +90,8 @@ function buildExport(state, session) {
 }
 
 /** Trigger a download of the export as a .json file. Returns the filename. */
-export function downloadExport(state, session) {
-  const payload = buildExport(state, session);
+export async function downloadExport(state, session) {
+  const payload = await buildExport(state, session);
   const json = JSON.stringify(payload, null, 2);
   const name = `studydesk-export-${new Date().toISOString().slice(0, 10)}.json`;
   const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));

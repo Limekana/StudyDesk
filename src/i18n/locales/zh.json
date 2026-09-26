@@ -380,7 +380,10 @@
     "updateOpen": "打开发布页面",
     "updateDownloading": "正在下载… {{percent}}%",
     "updateRestart": "重启以更新",
-    "updateDownload": "下载并安装"
+    "updateDownload": "下载并安装",
+    "errorReports": "发送错误报告",
+    "errorReportsSub": "默认关闭 · 仅限账户",
+    "errorReportsNote": "当应用遇到无法恢复的错误时，会向我们发送错误类型、出错的代码位置、应用及 Android 或浏览器版本，以及当时打开的页面。绝不包含你输入的内容。保留 90 天。"
   },
   "sdob": {
     "brand": "别再纠结，开始学习。",
@@ -1117,5 +1120,25 @@
     "gradeCta": "前往成绩",
     "dismiss": "跳过",
     "dismissAria": "跳过此建议：{{what}}。它不会再出现。"
+  },
+  "crash": {
+    "eyebrow": "错误",
+    "title": "出了点问题",
+    "body": "此页面遇到了无法恢复的错误。你的数据仍安全地保存在此设备上。",
+    "reload": "重新加载",
+    "send": "发送此报告",
+    "sending": "正在发送…",
+    "retry": "发送失败，请重试",
+    "sent": "报告已发送，谢谢。",
+    "guest": "错误报告需要账户，因此未发送任何内容。",
+    "export": "导出我的数据",
+    "exported": "已下载导出文件",
+    "whatIsSent": "报告只说明发生了什么错误以及出错的代码位置，绝不包含你输入的内容。"
+  },
+  "policy": {
+    "eyebrow": "隐私政策已更新",
+    "body": "新增了错误报告（除非你开启，否则保持关闭）以及 Android 上通过 F-Droid 检查更新的说明。",
+    "read": "查看",
+    "ok": "好的"
   }
 }

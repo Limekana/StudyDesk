@@ -382,7 +382,10 @@
     "updateOpen": "Abrir página de la versión",
     "updateDownloading": "Descargando… {{percent}} %",
     "updateRestart": "Reiniciar para actualizar",
-    "updateDownload": "Descargar e instalar"
+    "updateDownload": "Descargar e instalar",
+    "errorReports": "Enviar informes de errores",
+    "errorReportsSub": "Desactivado por defecto · solo con cuenta",
+    "errorReportsNote": "Cuando la app encuentra un error del que no puede recuperarse, nos envía qué error fue, en qué parte de nuestro código, la versión de la app y de Android o del navegador, y la pantalla abierta. Nunca lo que escribiste. Se guardan 90 días."
   },
   "sdob": {
     "brand": "Deja de decidir. Empieza a estudiar.",
@@ -1122,5 +1125,25 @@
     "gradeCta": "Ir a Notas",
     "dismiss": "Omitir",
     "dismissAria": "Omitir esta sugerencia: {{what}}. No volverá a aparecer."
+  },
+  "crash": {
+    "eyebrow": "Error",
+    "title": "Algo salió mal",
+    "body": "Esta pantalla encontró un error del que no pudo recuperarse. Tus datos están a salvo en este dispositivo.",
+    "reload": "Recargar",
+    "send": "Enviar este informe",
+    "sending": "Enviando…",
+    "retry": "No se pudo enviar. Reintentar",
+    "sent": "Informe enviado. Gracias.",
+    "guest": "Los informes de errores requieren una cuenta, así que no se envió nada.",
+    "export": "Exportar mis datos",
+    "exported": "Exportación descargada",
+    "whatIsSent": "Un informe indica qué error ocurrió y en qué parte de nuestro código. Nunca incluye lo que escribiste."
+  },
+  "policy": {
+    "eyebrow": "Política de privacidad actualizada",
+    "body": "Ahora incluye los informes de errores, desactivados salvo que los actives, y la comprobación de actualizaciones de F-Droid en Android.",
+    "read": "Leerla",
+    "ok": "Aceptar"
   }
 }
