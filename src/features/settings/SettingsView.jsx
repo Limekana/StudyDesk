@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore } from 'react';
 import { webNotifyPermission, requestWebNotifyPermission, webNotifySupported } from '../../lib/webNotify.js';
 import { Capacitor } from '@capacitor/core';
+import { setErrorReportsEnabled, useErrorReportsEnabled } from '../../lib/errorReports.js';
 import { useTranslation } from 'react-i18next';
 import { setLanguage, SUPPORTED_LANGS, LANGUAGE_NAMES } from '../../i18n/index.js';
 import { useScrollSelectedIntoView } from '../../lib/useScrollSelectedIntoView.js';
@@ -29,7 +30,6 @@ import { useAccountAvatar } from '../../lib/useAccountAvatar.js';
 import pkg from '../../../package.json';
 import { IS_DESKTOP } from '../../lib/desktop.js';
 import { checkForDesktopUpdate, runDesktopUpdateAction, useDesktopUpdate } from '../../lib/desktopUpdate.js';
-import { setErrorReportsEnabled, useErrorReportsEnabled } from '../../lib/errorReports.js';
 
 // A v4 uuid for a feedback row. crypto.randomUUID needs a secure context, and
 // the fallback builds one by hand rather than inventing a non-uuid id string —
@@ -279,31 +279,6 @@ function DesktopUpdateRow() {
           {label}
         </button>
       </div>
-    </>
-  );
-}
-
-// v1.16 (limecore#16) — "Send error reports", the same Off/On pair as every
-// other Settings switch. Off by default; the note under it is the consent text.
-function ErrorReportsRow() {
-  const { t } = useTranslation();
-  const on = useErrorReportsEnabled();
-  return (
-    <>
-      <div className="sv2-row">
-        <span className="sv2-row-label">{t('settings.errorReports')}</span>
-        <span className="sv2-row-value">
-          <span className="sv2-mode">
-            <button className={!on ? 'active' : ''} onClick={() => setErrorReportsEnabled(false)}>
-              {t('settings.aiOff')}
-            </button>
-            <button className={on ? 'active' : ''} onClick={() => setErrorReportsEnabled(true)}>
-              {t('settings.aiOn')}
-            </button>
-          </span>
-        </span>
-      </div>
-      <div className="sv2-note">{t('settings.errorReportsNote')}</div>
     </>
   );
 }
@@ -1350,6 +1325,31 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
           </details>
         </div>
       </div>
+    </>
+  );
+}
+
+// v1.16 (limecore#16) — "Send error reports", the same Off/On pair as every
+// other Settings switch. Off by default; the note under it is the consent text.
+function ErrorReportsRow() {
+  const { t } = useTranslation();
+  const on = useErrorReportsEnabled();
+  return (
+    <>
+      <div className="sv2-row">
+        <span className="sv2-row-label">{t('settings.errorReports')}</span>
+        <span className="sv2-row-value">
+          <span className="sv2-mode">
+            <button className={!on ? 'active' : ''} onClick={() => setErrorReportsEnabled(false)}>
+              {t('settings.aiOff')}
+            </button>
+            <button className={on ? 'active' : ''} onClick={() => setErrorReportsEnabled(true)}>
+              {t('settings.aiOn')}
+            </button>
+          </span>
+        </span>
+      </div>
+      <div className="sv2-note">{t('settings.errorReportsNote')}</div>
     </>
   );
 }

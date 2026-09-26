@@ -1,4 +1,24 @@
 {
+  "crash": {
+    "eyebrow": "Erreur",
+    "title": "Un problème est survenu",
+    "body": "Cet écran a rencontré une erreur dont il n’a pas pu se remettre. Vos données sont en sécurité sur cet appareil.",
+    "reload": "Recharger",
+    "send": "Envoyer ce rapport",
+    "sending": "Envoi…",
+    "retry": "Échec de l’envoi. Réessayer",
+    "sent": "Rapport envoyé. Merci.",
+    "guest": "Les rapports d’erreur nécessitent un compte, rien n’a donc été envoyé.",
+    "export": "Exporter mes données",
+    "exported": "Export téléchargé",
+    "whatIsSent": "Un rapport indique quelle erreur s’est produite et où dans notre code. Il n’inclut jamais ce que vous avez saisi."
+  },
+  "policy": {
+    "eyebrow": "Politique de confidentialité mise à jour",
+    "body": "Elle couvre désormais les rapports d’erreur, désactivés sauf si vous les activez, et la vérification des mises à jour sur F-Droid sous Android.",
+    "read": "La lire",
+    "ok": "OK"
+  },
   "app": {
     "name": "StudyDesk",
     "tagline": "Planifie tes études. Garde une longueur d’avance."
@@ -152,6 +172,9 @@
     "errSetPassword": "Le nouveau mot de passe n'a pas pu être enregistré. Réessayez."
   },
   "settings": {
+    "errorReports": "Envoyer les rapports d’erreur",
+    "errorReportsSub": "Désactivé par défaut · compte requis",
+    "errorReportsNote": "Quand l’app rencontre une erreur dont elle ne peut se remettre, elle nous envoie l’erreur, l’endroit de notre code, la version de l’app et d’Android ou du navigateur, et l’écran ouvert. Jamais ce que vous avez saisi. Conservés 90 jours.",
     "cloudSync": "Synchro cloud",
     "grades": "Notes",
     "about": "À propos",
@@ -382,10 +405,7 @@
     "updateOpen": "Ouvrir la page de version",
     "updateDownloading": "Téléchargement… {{percent}} %",
     "updateRestart": "Redémarrer pour mettre à jour",
-    "updateDownload": "Télécharger et installer",
-    "errorReports": "Envoyer les rapports d’erreur",
-    "errorReportsSub": "Désactivé par défaut · compte requis",
-    "errorReportsNote": "Quand l’app rencontre une erreur dont elle ne peut se remettre, elle nous envoie l’erreur, l’endroit de notre code, la version de l’app et d’Android ou du navigateur, et l’écran ouvert. Jamais ce que vous avez saisi. Conservés 90 jours."
+    "updateDownload": "Télécharger et installer"
   },
   "sdob": {
     "brand": "Arrête de choisir. Commence à réviser.",
@@ -1125,25 +1145,5 @@
     "gradeCta": "Aller aux notes",
     "dismiss": "Passer",
     "dismissAria": "Passer cette suggestion : {{what}}. Elle ne reviendra pas."
-  },
-  "crash": {
-    "eyebrow": "Erreur",
-    "title": "Un problème est survenu",
-    "body": "Cet écran a rencontré une erreur dont il n’a pas pu se remettre. Vos données sont en sécurité sur cet appareil.",
-    "reload": "Recharger",
-    "send": "Envoyer ce rapport",
-    "sending": "Envoi…",
-    "retry": "Échec de l’envoi. Réessayer",
-    "sent": "Rapport envoyé. Merci.",
-    "guest": "Les rapports d’erreur nécessitent un compte, rien n’a donc été envoyé.",
-    "export": "Exporter mes données",
-    "exported": "Export téléchargé",
-    "whatIsSent": "Un rapport indique quelle erreur s’est produite et où dans notre code. Il n’inclut jamais ce que vous avez saisi."
-  },
-  "policy": {
-    "eyebrow": "Politique de confidentialité mise à jour",
-    "body": "Elle couvre désormais les rapports d’erreur, désactivés sauf si vous les activez, et la vérification des mises à jour sur F-Droid sous Android.",
-    "read": "La lire",
-    "ok": "OK"
   }
 }

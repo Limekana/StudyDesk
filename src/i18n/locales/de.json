@@ -1,4 +1,24 @@
 {
+  "crash": {
+    "eyebrow": "Fehler",
+    "title": "Etwas ist schiefgelaufen",
+    "body": "Dieser Bildschirm ist auf einen Fehler gestoßen, von dem er sich nicht erholen konnte. Deine Daten sind auf diesem Gerät sicher.",
+    "reload": "Neu laden",
+    "send": "Diesen Bericht senden",
+    "sending": "Wird gesendet…",
+    "retry": "Senden fehlgeschlagen. Erneut versuchen",
+    "sent": "Bericht gesendet. Danke.",
+    "guest": "Fehlerberichte brauchen ein Konto, daher wurde nichts gesendet.",
+    "export": "Meine Daten exportieren",
+    "exported": "Export heruntergeladen",
+    "whatIsSent": "Ein Bericht sagt, welcher Fehler passiert ist und wo in unserem Code. Er enthält nie, was du eingegeben hast."
+  },
+  "policy": {
+    "eyebrow": "Datenschutzerklärung aktualisiert",
+    "body": "Sie umfasst jetzt Fehlerberichte, die aus bleiben, bis du sie einschaltest, und die Update-Prüfung auf F-Droid unter Android.",
+    "read": "Lesen",
+    "ok": "OK"
+  },
   "app": {
     "name": "StudyDesk",
     "tagline": "Plane dein Studium. Bleib voraus."
@@ -151,6 +171,9 @@
     "errSetPassword": "Das neue Passwort konnte nicht gespeichert werden. Versuche es erneut."
   },
   "settings": {
+    "errorReports": "Fehlerberichte senden",
+    "errorReportsSub": "Standardmäßig aus · nur mit Konto",
+    "errorReportsNote": "Wenn die App auf einen Fehler stößt, von dem sie sich nicht erholt, sendet sie uns, welcher Fehler es war, wo in unserem Code, die App- und Android- bzw. Browserversion und den geöffneten Bildschirm. Nie, was du eingegeben hast. 90 Tage gespeichert.",
     "cloudSync": "Cloud-Sync",
     "grades": "Noten",
     "about": "Über",
@@ -380,10 +403,7 @@
     "updateOpen": "Release-Seite öffnen",
     "updateDownloading": "Wird geladen… {{percent}} %",
     "updateRestart": "Neu starten und aktualisieren",
-    "updateDownload": "Herunterladen & installieren",
-    "errorReports": "Fehlerberichte senden",
-    "errorReportsSub": "Standardmäßig aus · nur mit Konto",
-    "errorReportsNote": "Wenn die App auf einen Fehler stößt, von dem sie sich nicht erholt, sendet sie uns, welcher Fehler es war, wo in unserem Code, die App- und Android- bzw. Browserversion und den geöffneten Bildschirm. Nie, was du eingegeben hast. 90 Tage gespeichert."
+    "updateDownload": "Herunterladen & installieren"
   },
   "sdob": {
     "brand": "Schluss mit Grübeln. Fang an zu lernen.",
@@ -1120,25 +1140,5 @@
     "gradeCta": "Zu den Noten",
     "dismiss": "Überspringen",
     "dismissAria": "Diesen Vorschlag überspringen: {{what}}. Er kommt nicht zurück."
-  },
-  "crash": {
-    "eyebrow": "Fehler",
-    "title": "Etwas ist schiefgelaufen",
-    "body": "Dieser Bildschirm ist auf einen Fehler gestoßen, von dem er sich nicht erholen konnte. Deine Daten sind auf diesem Gerät sicher.",
-    "reload": "Neu laden",
-    "send": "Diesen Bericht senden",
-    "sending": "Wird gesendet…",
-    "retry": "Senden fehlgeschlagen. Erneut versuchen",
-    "sent": "Bericht gesendet. Danke.",
-    "guest": "Fehlerberichte brauchen ein Konto, daher wurde nichts gesendet.",
-    "export": "Meine Daten exportieren",
-    "exported": "Export heruntergeladen",
-    "whatIsSent": "Ein Bericht sagt, welcher Fehler passiert ist und wo in unserem Code. Er enthält nie, was du eingegeben hast."
-  },
-  "policy": {
-    "eyebrow": "Datenschutzerklärung aktualisiert",
-    "body": "Sie umfasst jetzt Fehlerberichte, die aus bleiben, bis du sie einschaltest, und die Update-Prüfung auf F-Droid unter Android.",
-    "read": "Lesen",
-    "ok": "OK"
   }
 }
