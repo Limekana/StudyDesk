@@ -26,7 +26,7 @@
 --
 -- `drop trigger if exists` first, so re-running this is harmless.
 -- Tested against Postgres 17 before review: supabase/tests/lww_guard.test.sql.
--- NOT yet applied to production — owner confirms before `apply_migration`.
+-- APPLIED to production 2026-09-26 (owner-confirmed) as `v116_lww_guard_regime_c`, version 20260926102128.
 
 do $$
 declare
