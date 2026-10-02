@@ -43,6 +43,7 @@
 
 import * as sync from './sync.js';
 import { writeJson } from './localStore.js';
+import { editStamp } from './editStamp.js';
 
 const STORAGE_KEY = 'studydesk-outbox';
 const META_KEY = 'studydesk-outbox-meta'; // { lastSuccessAt }
@@ -221,9 +222,18 @@ function stableStringify(v) {
   return `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${stableStringify(v[k])}`).join(',')}}`;
 }
 
+function withoutStamp(payload) {
+  if (!payload || typeof payload !== 'object' || !('updatedAt' in payload)) return payload;
+  const { updatedAt: _stamp, ...rest } = payload;
+  return rest;
+}
+
 function payloadChanged(prev, next) {
   try {
-    return stableStringify(prev) !== stableStringify(next);
+    // The edit stamp is new on every enqueue by design, so it is not "work".
+    // Comparing it would make every re-enqueue look changed and reset a
+    // failing item's retry budget forever — the quarantine would never trip.
+    return stableStringify(withoutStamp(prev)) !== stableStringify(withoutStamp(next));
   } catch {
     // Unserialisable payload (a cycle, a BigInt). Treat as changed: reviving a
     // row that did not need it costs one retry, failing to revive one that did
@@ -254,6 +264,14 @@ export function enqueue(kind, payload) {
     console.error('[outbox] unknown kind:', kind);
     return;
   }
+  // v1.16 (limecore#27, registry P6): stamp the EDIT, here, on every enqueue.
+  // The push used to stamp the moment it was SENT, so a snapshot edited
+  // offline won every conflict against newer edits made elsewhere. Stamping
+  // per enqueue (not once per queued item) matters because of coalescing
+  // below: a later edit that folds onto a queued one must carry its own time,
+  // not the first edit's. See src/lib/editStamp.js.
+  const stamp = editStamp(kind, payload);
+  if (stamp) payload = { ...payload, updatedAt: stamp };
   const items = loadItems();
   const key = identityOf(kind, payload);
   const rowId = payload?.id;

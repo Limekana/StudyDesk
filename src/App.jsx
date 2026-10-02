@@ -1546,6 +1546,9 @@ export default function App() {
         content: n.content,
         sessionId: n.sessionId,
         layout: n.layout ?? null,
+        // v1.16 (limecore#27): the note's own edit time — the keystroke, not
+        // the debounce firing 1.5 s later. The outbox stamps from it.
+        updatedAt: n.updatedAt,
       };
       const handle = setTimeout(() => {
         outbox.enqueue("upsert_note", payload);
@@ -1985,7 +1988,7 @@ export default function App() {
       const a = assignmentsById.get(id);
       if (!a?.courseId) continue;
       if (isInSync('assignments', a, stamps)) continue;
-      outbox.enqueue('upsert_assignment', { id, courseId: a.courseId, title: a.title, type: a.type, dueDate: a.dueDate, dueTime: a.dueTime, notes: a.notes, done: a.done });
+      outbox.enqueue('upsert_assignment', { id, courseId: a.courseId, title: a.title, type: a.type, dueDate: a.dueDate, dueTime: a.dueTime, notes: a.notes, done: a.done, updatedAt: a.updatedAt });
     }
     for (const id of prev.assignments.keys()) {
       if (!next.assignments.has(id) && !isRemoteTombstone('assignments', id, stamps)) outbox.enqueue('delete_assignment', { id });
@@ -1996,7 +1999,7 @@ export default function App() {
       const e = examsById.get(id);
       if (!e?.courseId) continue;
       if (isInSync('exams', e, stamps)) continue;
-      outbox.enqueue('upsert_exam', { id, courseId: e.courseId, title: e.title, dueDate: e.dueDate, difficulty: e.difficulty, notes: e.notes, done: e.done, topics: e.topics });
+      outbox.enqueue('upsert_exam', { id, courseId: e.courseId, title: e.title, dueDate: e.dueDate, difficulty: e.difficulty, notes: e.notes, done: e.done, topics: e.topics, updatedAt: e.updatedAt });
     }
     for (const id of prev.exams.keys()) {
       if (!next.exams.has(id) && !isRemoteTombstone('exams', id, stamps)) outbox.enqueue('delete_exam', { id });
@@ -2007,7 +2010,7 @@ export default function App() {
       const a = actionsById.get(id);
       if (!a) continue;
       if (isInSync('actions', a, stamps)) continue;
-      outbox.enqueue('upsert_action', { id, text: a.text, bucket: a.bucket, courseId: a.courseId, done: a.done });
+      outbox.enqueue('upsert_action', { id, text: a.text, bucket: a.bucket, courseId: a.courseId, done: a.done, updatedAt: a.updatedAt });
     }
     for (const id of prev.actions.keys()) {
       if (!next.actions.has(id) && !isRemoteTombstone('actions', id, stamps)) outbox.enqueue('delete_action', { id });

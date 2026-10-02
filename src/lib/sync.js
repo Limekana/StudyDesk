@@ -10,6 +10,7 @@
 
 import { supabase } from './supabase.js';
 import { selectAll } from './selectAll.js';
+import { pushStamp, recordPull } from './editStamp.js';
 import { dueTimeToSql } from './dueAt.js';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -51,7 +52,7 @@ export async function recordAppOpen({ app, appVersion, platform, openedOn }) {
 
 // ── subjects (courses) ───────────────────────────────────────────────────────
 
-export async function upsertSubject({ id, name, credits, semester, color, archivedAt, schoolYear }) {
+export async function upsertSubject({ id, name, credits, semester, color, archivedAt, schoolYear, updatedAt }) {
   const userId = await currentUserId();
   const { error } = await supabase.from('subjects').upsert({
     id,
@@ -72,7 +73,7 @@ export async function upsertSubject({ id, name, credits, semester, color, archiv
     // preserve-on-undefined semantics as archived_at: callers that don't know
     // about it (e.g. NCC, the add-course path) won't clobber an existing value.
     ...(schoolYear !== undefined ? { school_year: schoolYear } : {}),
-    updated_at: nowISO(),
+    updated_at: pushStamp(updatedAt),
   });
   if (error) throw error;
   return id;
@@ -165,7 +166,7 @@ export async function deleteSubject(id) {
 
 // ── grades ───────────────────────────────────────────────────────────────────
 
-export async function upsertGrade({ id, subjectId, grade, weight, date }) {
+export async function upsertGrade({ id, subjectId, grade, weight, date, updatedAt }) {
   if (!subjectId) throw new Error('subjectId is required (grade must reference a subject)');
   const userId = await currentUserId();
   const { error } = await supabase.from('grades').upsert({
@@ -175,7 +176,7 @@ export async function upsertGrade({ id, subjectId, grade, weight, date }) {
     grade,
     weight: weight ?? 1,
     date: date ?? todayISO(),
-    updated_at: nowISO(),
+    updated_at: pushStamp(updatedAt),
   });
   if (error) throw error;
   return id;
@@ -201,7 +202,7 @@ function clampFocus(focusRating) {
   return Math.max(1, Math.min(5, n));
 }
 
-export async function logStudySession({ id, subjectId, startedAt, durationMinutes, notes, focusRating, aiDebriefRaw, aiSubjectCovered, aiComprehension, aiConfusionFlags, aiSessionSummary }) {
+export async function logStudySession({ id, subjectId, startedAt, durationMinutes, notes, focusRating, aiDebriefRaw, aiSubjectCovered, aiComprehension, aiConfusionFlags, aiSessionSummary, updatedAt }) {
   const userId = await currentUserId();
   const duration = Math.max(1, Math.min(1440, Math.round(durationMinutes)));
   // Idempotent UPSERT (was INSERT) so the v1.0.4 post-migration push can
@@ -222,14 +223,14 @@ export async function logStudySession({ id, subjectId, startedAt, durationMinute
     ai_comprehension: aiComprehension ?? null,
     ai_confusion_flags: Array.isArray(aiConfusionFlags) ? aiConfusionFlags : null,
     ai_session_summary: aiSessionSummary ?? null,
-    updated_at: nowISO(),
+    updated_at: pushStamp(updatedAt),
   });
   if (error) throw error;
   return id;
 }
 
-export async function updateStudySession({ id, subjectId, startedAt, durationMinutes, notes, focusRating, aiDebriefRaw, aiSubjectCovered, aiComprehension, aiConfusionFlags, aiSessionSummary }) {
-  const patch = { updated_at: nowISO() };
+export async function updateStudySession({ id, subjectId, startedAt, durationMinutes, notes, focusRating, aiDebriefRaw, aiSubjectCovered, aiComprehension, aiConfusionFlags, aiSessionSummary, updatedAt }) {
+  const patch = { updated_at: pushStamp(updatedAt) };
   if (subjectId !== undefined) patch.subject_id = subjectId || null;
   if (startedAt !== undefined) patch.started_at = startedAt;
   if (durationMinutes !== undefined) {
@@ -295,7 +296,7 @@ async function upsertTolerant(table, row, optionalColumns) {
   if (retry.error) throw retry.error;
 }
 
-export async function upsertAssignment({ id, courseId, title, type, dueDate, dueTime, notes, done }) {
+export async function upsertAssignment({ id, courseId, title, type, dueDate, dueTime, notes, done, updatedAt }) {
   if (!courseId) throw new Error('courseId is required (assignment must reference a course)');
   const userId = await currentUserId();
   await upsertTolerant('assignments', {
@@ -311,7 +312,7 @@ export async function upsertAssignment({ id, courseId, title, type, dueDate, due
     due_time: dueTimeToSql(dueTime),
     notes: notes || null,
     done: Boolean(done),
-    updated_at: nowISO(),
+    updated_at: pushStamp(updatedAt),
   }, ['due_time']);
   return id;
 }
@@ -325,7 +326,7 @@ export async function deleteAssignment(id) {
   if (error) throw error;
 }
 
-export async function upsertExam({ id, courseId, title, dueDate, difficulty, notes, done, topics }) {
+export async function upsertExam({ id, courseId, title, dueDate, difficulty, notes, done, topics, updatedAt }) {
   if (!courseId) throw new Error('courseId is required (exam must reference a course)');
   const userId = await currentUserId();
   const { error } = await supabase.from('exams').upsert({
@@ -340,7 +341,7 @@ export async function upsertExam({ id, courseId, title, dueDate, difficulty, not
     // Topics ride along inside the exam row. Guard the shape: a corrupt local
     // value would otherwise fail the jsonb column and block the whole push.
     topics: Array.isArray(topics) ? topics : [],
-    updated_at: nowISO(),
+    updated_at: pushStamp(updatedAt),
   });
   if (error) throw error;
   return id;
@@ -389,7 +390,7 @@ export async function myFeedback() {
   return data || [];
 }
 
-export async function upsertAction({ id, text, bucket, courseId, done }) {
+export async function upsertAction({ id, text, bucket, courseId, done, updatedAt }) {
   const userId = await currentUserId();
   const { error } = await supabase.from('study_actions').upsert({
     id,
@@ -399,7 +400,7 @@ export async function upsertAction({ id, text, bucket, courseId, done }) {
     text,
     bucket: bucket || 'today',
     done: Boolean(done),
-    updated_at: nowISO(),
+    updated_at: pushStamp(updatedAt),
   });
   if (error) throw error;
   return id;
@@ -423,7 +424,7 @@ export async function deleteAction(id) {
 // F-Droid would keep doing so forever — old versions cannot be taught to
 // filter a column that did not exist when they shipped (`P1`).
 
-export async function upsertPlannedSession({ id, subjectId, startsAt, durationMinutes, title, notes, fulfilledBy, dismissedAt, seriesId }) {
+export async function upsertPlannedSession({ id, subjectId, startsAt, durationMinutes, title, notes, fulfilledBy, dismissedAt, seriesId, updatedAt }) {
   const userId = await currentUserId();
   const row = {
     id,
@@ -433,7 +434,7 @@ export async function upsertPlannedSession({ id, subjectId, startsAt, durationMi
     duration_minutes: Math.max(1, Math.min(1440, Math.round(durationMinutes))),
     title: title || null,
     notes: notes || null,
-    updated_at: nowISO(),
+    updated_at: pushStamp(updatedAt),
   };
   // The DB forbids a row being both fulfilled and dismissed. Sending only the
   // key that is set would leave a stale opposite value in place and trip that
@@ -460,7 +461,7 @@ export async function deletePlannedSession(id) {
 
 // ── academic terms · timetable ───────────────────────────────────────────────
 
-export async function upsertTerm({ id, parentId, level, name, startsOn, endsOn, position }) {
+export async function upsertTerm({ id, parentId, level, name, startsOn, endsOn, position, updatedAt }) {
   const userId = await currentUserId();
   const { error } = await supabase.from('academic_terms').upsert({
     id,
@@ -476,7 +477,7 @@ export async function upsertTerm({ id, parentId, level, name, startsOn, endsOn, 
     starts_on: startsOn || null,
     ends_on: endsOn || null,
     position: Number.isFinite(Number(position)) ? Number(position) : 0,
-    updated_at: nowISO(),
+    updated_at: pushStamp(updatedAt),
   });
   if (error) throw error;
   return id;
@@ -508,7 +509,7 @@ export async function deleteTerm({ id, descendantIds = [] }) {
   if (error) throw error;
 }
 
-export async function upsertTimetableEntry({ id, termId, subjectId, title, weekday, startsAt, endsAt, room, color, weekParity, seriesId }) {
+export async function upsertTimetableEntry({ id, termId, subjectId, title, weekday, startsAt, endsAt, room, color, weekParity, seriesId, updatedAt }) {
   if (!termId) throw new Error('termId is required (a lesson must belong to a term)');
   const userId = await currentUserId();
   await upsertTolerant('timetable_entries', {
@@ -532,7 +533,7 @@ export async function upsertTimetableEntry({ id, termId, subjectId, title, weekd
     // for a lesson that meets on one day. Optional below, pending
     // 20260913_timetable_series_id.sql.
     series_id: seriesId || null,
-    updated_at: nowISO(),
+    updated_at: pushStamp(updatedAt),
   }, ['series_id']);
   return id;
 }
@@ -553,7 +554,7 @@ export async function deleteTimetableEntry(id) {
 // here is study and counting it as such would be the same mistake the separate
 // `planned_sessions` table exists to prevent.
 
-export async function upsertCommitment({ id, title, color, weekday, startsOn, endsOn, startTime, endTime, notes, intervalWeeks }) {
+export async function upsertCommitment({ id, title, color, weekday, startsOn, endsOn, startTime, endTime, notes, intervalWeeks, updatedAt }) {
   const userId = await currentUserId();
   // `weekday` null is the one-off/weekly switch, so it is normalised
   // deliberately rather than defaulted — `Number(null)` is 0, which is Sunday,
@@ -579,7 +580,7 @@ export async function upsertCommitment({ id, title, color, weekday, startsOn, en
     end_time: endTime,
     interval_weeks: wd !== null && Number.isFinite(every) && every > 1 ? every : null,
     notes: (notes || '').trim() || null,
-    updated_at: nowISO(),
+    updated_at: pushStamp(updatedAt),
   }, ['interval_weeks']);
   return id;
 }
@@ -711,7 +712,7 @@ export async function deleteAttachment({ id, storagePath }) {
 
 // ── Lesson attendance (v1.13 Tier 2, issue #31) ─────────────────────────────
 
-export async function upsertAttendance({ timetableEntryId, date, status, note }) {
+export async function upsertAttendance({ timetableEntryId, date, status, note, updatedAt }) {
   const userId = await currentUserId();
   // `onConflict` on the natural key, not the surrogate id. Two devices marking
   // the same lesson generate different uuids for the same FACT, and without
@@ -767,7 +768,7 @@ export async function upsertAttendance({ timetableEntryId, date, status, note })
     // Explicit, not omitted: this is what makes re-marking a previously
     // cleared lesson work now that the row is reused rather than replaced.
     deleted_at: null,
-    updated_at: nowISO(),
+    updated_at: pushStamp(updatedAt),
   }, { onConflict: 'user_id,timetable_entry_id,date' });
   if (error) throw error;
 }
@@ -790,7 +791,7 @@ export async function deleteAttendance(id) {
  * Same snapshot-not-patch contract as assignments: the payload carries the
  * whole note, so a retry after a later local edit still converges under LWW.
  */
-export async function upsertNote({ id, courseId, title, lessonDate, content, sessionId, layout }) {
+export async function upsertNote({ id, courseId, title, lessonDate, content, sessionId, layout, updatedAt }) {
   const userId = await currentUserId();
   const { error } = await supabase.from('notebook_entries').upsert({
     id,
@@ -810,7 +811,7 @@ export async function upsertNote({ id, courseId, title, lessonDate, content, ses
     // behind for the next device to lay the note out with.
     layout: layout || null,
     session_id: sessionId || null,
-    updated_at: nowISO(),
+    updated_at: pushStamp(updatedAt),
   });
   if (error) throw error;
   return id;
@@ -827,7 +828,7 @@ export async function deleteNote(id) {
   return id;
 }
 
-export async function upsertNoteAttachment({ id, entryId, storagePath, fileName, mimeType, sizeBytes }) {
+export async function upsertNoteAttachment({ id, entryId, storagePath, fileName, mimeType, sizeBytes, updatedAt }) {
   const userId = await currentUserId();
   const { error } = await supabase.from('notebook_attachments').upsert({
     id,
@@ -837,7 +838,7 @@ export async function upsertNoteAttachment({ id, entryId, storagePath, fileName,
     file_name: fileName,
     mime_type: mimeType || null,
     size_bytes: sizeBytes ?? null,
-    updated_at: nowISO(),
+    updated_at: pushStamp(updatedAt),
   });
   if (error) throw error;
   return id;
@@ -921,7 +922,7 @@ export async function pullAllStudyData() {
   if (noteAttRes.error && !missingTable(noteAttRes)) throw noteAttRes.error;
   // Same tolerance, same window, same reasoning as the notebook tables above.
   if (attendanceRes.error && !missingTable(attendanceRes)) throw attendanceRes.error;
-  return {
+  const remote = {
     subjects: subjectsRes.data || [],
     grades: gradesRes.data || [],
     sessions: sessionsRes.data || [],
@@ -937,6 +938,11 @@ export async function pullAllStudyData() {
     noteAttachments: noteAttRes.data || [],
     attendance: attendanceRes.data || [],
   };
+  // v1.16 (limecore#27): remember the newest stamp the server holds for each
+  // row, so an edit made after this pull is stamped newer than it even on a
+  // device whose clock runs slow. See src/lib/editStamp.js.
+  recordPull(remote);
+  return remote;
 }
 
 // ── realtime ────────────────────────────────────────────────────────────────

@@ -141,6 +141,52 @@ describe('subject merge', () => {
   });
 });
 
+describe('delete wins (limecore#27, registry P6)', () => {
+  // The three collections that keep tombstones in local state used plain LWW,
+  // so a local edit stamped after a remote delete kept the row alive on this
+  // device while every other device had dropped it.
+
+  it('a remote tombstone beats a NEWER local edit of a course', () => {
+    const state = { courses: { s1: { id: 's1', name: 'edited here', updatedAt: LATE } } };
+    const out = applyRemotePull(
+      state,
+      remote({ subjects: [{ id: 's1', name: 'Maths', updated_at: EARLY, deleted_at: EARLY }] }),
+    );
+    expect(out.courses.s1.deletedAt).toBe(EARLY);
+  });
+
+  it('...and of a grade, and of a study session', () => {
+    const state = {
+      grades: [{ id: 'g1', subjectId: 's1', grade: 7, updatedAt: LATE }],
+      studySessions: [{ id: 'x1', durationMinutes: 30, updatedAt: LATE }],
+    };
+    const out = applyRemotePull(state, remote({
+      grades: [{ id: 'g1', subject_id: 's1', grade: 6, updated_at: EARLY, deleted_at: EARLY }],
+      sessions: [{ id: 'x1', duration_minutes: 30, updated_at: EARLY, deleted_at: EARLY }],
+    }));
+    expect(out.grades[0].deletedAt).toBe(EARLY);
+    expect(out.studySessions[0].deletedAt).toBe(EARLY);
+  });
+
+  it('a newer LIVE remote row still revives a local tombstone — revival is plain LWW', () => {
+    const state = { courses: { s1: { id: 's1', name: 'Maths', updatedAt: EARLY, deletedAt: EARLY } } };
+    const out = applyRemotePull(
+      state,
+      remote({ subjects: [{ id: 's1', name: 'Maths', updated_at: LATE, deleted_at: null }] }),
+    );
+    expect(out.courses.s1.deletedAt).toBeNull();
+  });
+
+  it('an OLDER live remote row does not revive a local tombstone', () => {
+    const state = { courses: { s1: { id: 's1', name: 'Maths', updatedAt: LATE, deletedAt: LATE } } };
+    const out = applyRemotePull(
+      state,
+      remote({ subjects: [{ id: 's1', name: 'Maths', updated_at: EARLY, deleted_at: null }] }),
+    );
+    expect(out.courses.s1.deletedAt).toBe(LATE);
+  });
+});
+
 describe('tombstone-removal collections', () => {
   it('removes a deleted assignment instead of keeping a tombstone', () => {
     // Assignments are read in ~20 places that do not filter `deletedAt`, so a
