@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore } from 'react';
 import { webNotifyPermission, requestWebNotifyPermission, webNotifySupported } from '../../lib/webNotify.js';
 import { Capacitor } from '@capacitor/core';
+import { setErrorReportsEnabled, useErrorReportsEnabled } from '../../lib/errorReports.js';
 import { useTranslation } from 'react-i18next';
 import { setLanguage, SUPPORTED_LANGS, LANGUAGE_NAMES } from '../../i18n/index.js';
 import { useScrollSelectedIntoView } from '../../lib/useScrollSelectedIntoView.js';
@@ -439,9 +440,9 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
   }, [confirm, showFlash, dispatch, t]);
 
   // ── GDPR Art. 20 — portability ─────────────────────────────────────────────
-  const onExport = useCallback(() => {
+  const onExport = useCallback(async () => {
     try {
-      const name = downloadExport(state, session);
+      const name = await downloadExport(state, session);
       showFlash(t('settings.exportDone', { name }));
     } catch (e) {
       showFlash(t('settings.exportFailed', { msg: e.message }));
@@ -1235,6 +1236,9 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
           {/* Free-tier disclosure — informed consent belongs at the switch,
               not only in PRIVACY.md. */}
           <div className="sv2-note">{t('settings.aiTrainingNote')}</div>
+          {/* v1.16 (limecore#16) — off by default, accounts only; the note is
+              the consent text the privacy policy (NCC#50) relies on. */}
+          <ErrorReportsRow />
           <div className="sv2-action">
             <button className="btn-outline" onClick={onExport}>
               {t('settings.exportData')}
@@ -1321,6 +1325,31 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
           </details>
         </div>
       </div>
+    </>
+  );
+}
+
+// v1.16 (limecore#16) — "Send error reports", the same Off/On pair as every
+// other Settings switch. Off by default; the note under it is the consent text.
+function ErrorReportsRow() {
+  const { t } = useTranslation();
+  const on = useErrorReportsEnabled();
+  return (
+    <>
+      <div className="sv2-row">
+        <span className="sv2-row-label">{t('settings.errorReports')}</span>
+        <span className="sv2-row-value">
+          <span className="sv2-mode">
+            <button className={!on ? 'active' : ''} onClick={() => setErrorReportsEnabled(false)}>
+              {t('settings.aiOff')}
+            </button>
+            <button className={on ? 'active' : ''} onClick={() => setErrorReportsEnabled(true)}>
+              {t('settings.aiOn')}
+            </button>
+          </span>
+        </span>
+      </div>
+      <div className="sv2-note">{t('settings.errorReportsNote')}</div>
     </>
   );
 }
