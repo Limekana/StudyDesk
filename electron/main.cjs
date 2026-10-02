@@ -50,6 +50,7 @@ const fs = require('node:fs');
 const http = require('node:http');
 const { pathToFileURL } = require('node:url');
 const { setupUpdates } = require('./updater.cjs');
+const { createAuthState } = require('./authState.cjs');
 
 const DIST_DIR = path.join(__dirname, '..', 'dist');
 const ICON_PATH = path.join(__dirname, '..', 'resources', 'icon.ico');
@@ -215,11 +216,13 @@ const AUTH_PORTS = [51837, 51838, 51839, 51840, 51841];
 const AUTH_CALLBACK_PATH = '/callback';
 
 let authRedirectUri = null;
-// Only accept a callback while a sign-in this app started is outstanding. The
-// listener is reachable by anything running as this user, and an unsolicited
-// code is at best noise and at worst an attempt to plant someone else's
-// session. Cheap to gate, so gate it.
-let authPending = false;
+// Only accept a callback that carries the `state` nonce of a sign-in this app
+// started. The listener is reachable by anything running as this user, and an
+// unsolicited code is at best noise and at worst an attempt to plant someone
+// else's session. v1.16 (limecore#3) replaced the bare `authPending` boolean,
+// which any local request could satisfy — and, by arriving first, consume.
+// See authState.cjs.
+const authState = createAuthState();
 
 const CALLBACK_PAGE = (ok) => `<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
@@ -253,13 +256,21 @@ function handleAuthCallback(req, res) {
   const code = url.searchParams.get('code');
   const error = url.searchParams.get('error_description') || url.searchParams.get('error');
 
-  if (!authPending) {
+  const verdict = authState.check(url.searchParams.get('state'));
+  if (verdict === 'none') {
     log('discarded an unsolicited auth callback');
     res.writeHead(409, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('No sign-in is in progress');
     return;
   }
-  authPending = false;
+  if (verdict !== 'ok') {
+    // 'mismatch' leaves the real sign-in armed; 'expired' has cleared it.
+    // Either way nothing reaches the renderer. The nonce is never logged.
+    log(`discarded an auth callback: state ${verdict}`);
+    res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+    res.end(CALLBACK_PAGE(false));
+    return;
+  }
 
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
   res.end(CALLBACK_PAGE(Boolean(code) && !error));
@@ -503,14 +514,19 @@ ipcMain.on('widget:close', () => {
 });
 
 // Renderer asks for the provider URL to be opened in the real browser. This is
-// the only way a sign-in starts on desktop now, and arming `authPending` here
-// is what makes the loopback listener willing to accept the code that follows.
+// the only way a sign-in starts on desktop now. Arming `authState` here puts a
+// fresh nonce on the URL's `redirect_to`, and only a callback carrying it back
+// is accepted. The renderer is untouched: it still asks Supabase for the bare
+// loopback URI, and the nonce is added on the way out. `arm` refuses anything
+// that is not https or does not redirect to this launch's own listener.
 ipcMain.handle('auth:begin', (_event, url) => {
-  // https only. `openExternally` tolerates http because ordinary links in the
-  // renderer legitimately are http; an OAuth leg over plain http would not be.
-  if (typeof url !== 'string' || !url.startsWith('https://')) return false;
-  const opened = openExternally(url);
-  if (opened) authPending = true;
+  const target = authState.arm(url, authRedirectUri);
+  if (!target) {
+    log('refused auth:begin: not an https URL redirecting to this listener');
+    return false;
+  }
+  const opened = openExternally(target);
+  if (!opened) authState.disarm();
   return opened;
 });
 
