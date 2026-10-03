@@ -1,0 +1,3 @@
+Une synchronisation fiable.
+
+Une modification faite hors ligne n'écrase plus une modification plus récente venue d'un autre appareil, et une suppression s'applique désormais partout. Les grandes bibliothèques se synchronisent entièrement. Nouveau dans Réglages : un avis quand une version plus récente est sur F-Droid, et des rapports d'erreur facultatifs (désactivés par défaut). Le champ Lock In s'affiche de nouveau correctement.

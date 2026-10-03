@@ -1,0 +1,3 @@
+Una sincronización en la que puedes confiar.
+
+Un cambio hecho sin conexión ya no sobrescribe otro más reciente de otro dispositivo, y lo que borras queda borrado en todos. Las bibliotecas grandes se sincronizan por completo. Nuevo en Ajustes: un aviso cuando hay una versión más reciente en F-Droid e informes de errores opcionales (desactivados por defecto). El campo de Lock In vuelve a verse bien.

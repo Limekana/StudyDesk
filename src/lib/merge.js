@@ -19,6 +19,19 @@ function newer(remoteIso, localIso) {
   return new Date(remoteIso).getTime() > new Date(localIso).getTime();
 }
 
+// v1.16 (limecore#27, registry P6) — delete wins. A remote tombstone beats a
+// local live row even when the local stamp is newer: the delete happened, and
+// an edit that raced it (made here without having seen it) must not keep the
+// row alive on this device while every other device has dropped it. The
+// server enforces the same rule, so the edit's own push cannot un-delete the
+// row there either. Used by the three collections that keep tombstones in
+// local state; the others already drop a tombstoned row outright in
+// `mergeList`. A deliberate revival arrives as a newer LIVE remote row and is
+// ordinary last-writer-wins, so it is unaffected.
+function remoteWins(remote, local) {
+  return newer(remote.updatedAt, local.updatedAt) || (Boolean(remote.deletedAt) && !local.deletedAt);
+}
+
 /**
  * DB subject row → local-shaped object.
  *
@@ -49,7 +62,7 @@ function mergeSubject(localCourse, remoteRow) {
     // New subject discovered remotely — use remote color if set, gray default otherwise.
     return { ...remote, color: remote.color || '#7a7570', notes: [] };
   }
-  if (newer(remote.updatedAt, localCourse.updatedAt)) {
+  if (remoteWins(remote, localCourse)) {
     return {
       ...localCourse,
       ...remote,
@@ -74,7 +87,7 @@ function mergeGrade(localGrade, remoteRow) {
     deletedAt: remoteRow.deleted_at || null,
   };
   if (!localGrade) return remote;
-  if (newer(remote.updatedAt, localGrade.updatedAt)) return remote;
+  if (remoteWins(remote, localGrade)) return remote;
   return localGrade;
 }
 
@@ -97,7 +110,7 @@ function mergeSession(localSession, remoteRow) {
     deletedAt: remoteRow.deleted_at || null,
   };
   if (!localSession) return remote;
-  if (newer(remote.updatedAt, localSession.updatedAt)) return remote;
+  if (remoteWins(remote, localSession)) return remote;
   return localSession;
 }
 

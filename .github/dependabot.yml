@@ -1,0 +1,11 @@
+# v1.16 (limecore#15, SUPPLY-03): the workflows pin every action to a full
+# commit SHA, so a moved or hijacked tag cannot change what CI runs. This keeps
+# those pins current: Dependabot opens a PR when an action releases, and the
+# `# vX.Y.Z` comment next to each SHA is what it updates alongside it.
+# GitHub Actions only. npm upgrades are planned by hand (majors are v1.18).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

@@ -19,12 +19,15 @@ import { refreshEntitlement } from "./lib/entitlement.js";
 import { writeJson } from "./lib/localStore.js";
 import { downloadExport } from "./lib/dataRights.js";
 import StorageAlert from "./features/settings/StorageAlert.jsx";
+import FdroidUpdateNote from "./features/update/FdroidUpdateNote.jsx";
 import TimerPill from "./features/timer/TimerPill.jsx";
 import { useAccountAvatar } from "./lib/useAccountAvatar.js";
 import { readCollapsed, writeCollapsed } from "./lib/planSections.js";
 import { preferredDueWindow, countsAsDue } from "./lib/dueWindow.js";
 import { normalizeDueTime, byDueAsc, byDueDesc, dueDayReminderAt } from "./lib/dueAt.js";
 import ReferralPrompt from "./features/referral/ReferralPrompt.jsx";
+import PolicyUpdatedNote from "./features/errors/PolicyUpdatedNote.jsx";
+import { setReportScreen } from "./lib/errorReports.js";
 import { inheritFromNexus } from "./lib/suiteSso.js";
 import { hydrateOnboardedFromCloud, markOnboardedCloud } from "./lib/onboardingCloud.js";
 import * as sync from "./lib/sync.js";
@@ -1546,6 +1549,9 @@ export default function App() {
         content: n.content,
         sessionId: n.sessionId,
         layout: n.layout ?? null,
+        // v1.16 (limecore#27): the note's own edit time — the keystroke, not
+        // the debounce firing 1.5 s later. The outbox stamps from it.
+        updatedAt: n.updatedAt,
       };
       const handle = setTimeout(() => {
         outbox.enqueue("upsert_note", payload);
@@ -1624,9 +1630,9 @@ export default function App() {
     if (session) outbox.enqueue("delete_note", { id });
   }, [session]);
 
-  const onExportFromAlert = useCallback(() => {
+  const onExportFromAlert = useCallback(async () => {
     try {
-      const name = downloadExport(state, session);
+      const name = await downloadExport(state, session);
       showFlash(t('settings.exportDone', { name }));
     } catch (e) {
       showFlash(t('settings.exportFailed', { msg: e.message }));
@@ -1985,7 +1991,7 @@ export default function App() {
       const a = assignmentsById.get(id);
       if (!a?.courseId) continue;
       if (isInSync('assignments', a, stamps)) continue;
-      outbox.enqueue('upsert_assignment', { id, courseId: a.courseId, title: a.title, type: a.type, dueDate: a.dueDate, dueTime: a.dueTime, notes: a.notes, done: a.done });
+      outbox.enqueue('upsert_assignment', { id, courseId: a.courseId, title: a.title, type: a.type, dueDate: a.dueDate, dueTime: a.dueTime, notes: a.notes, done: a.done, updatedAt: a.updatedAt });
     }
     for (const id of prev.assignments.keys()) {
       if (!next.assignments.has(id) && !isRemoteTombstone('assignments', id, stamps)) outbox.enqueue('delete_assignment', { id });
@@ -1996,7 +2002,7 @@ export default function App() {
       const e = examsById.get(id);
       if (!e?.courseId) continue;
       if (isInSync('exams', e, stamps)) continue;
-      outbox.enqueue('upsert_exam', { id, courseId: e.courseId, title: e.title, dueDate: e.dueDate, difficulty: e.difficulty, notes: e.notes, done: e.done, topics: e.topics });
+      outbox.enqueue('upsert_exam', { id, courseId: e.courseId, title: e.title, dueDate: e.dueDate, difficulty: e.difficulty, notes: e.notes, done: e.done, topics: e.topics, updatedAt: e.updatedAt });
     }
     for (const id of prev.exams.keys()) {
       if (!next.exams.has(id) && !isRemoteTombstone('exams', id, stamps)) outbox.enqueue('delete_exam', { id });
@@ -2007,7 +2013,7 @@ export default function App() {
       const a = actionsById.get(id);
       if (!a) continue;
       if (isInSync('actions', a, stamps)) continue;
-      outbox.enqueue('upsert_action', { id, text: a.text, bucket: a.bucket, courseId: a.courseId, done: a.done });
+      outbox.enqueue('upsert_action', { id, text: a.text, bucket: a.bucket, courseId: a.courseId, done: a.done, updatedAt: a.updatedAt });
     }
     for (const id of prev.actions.keys()) {
       if (!next.actions.has(id) && !isRemoteTombstone('actions', id, stamps)) outbox.enqueue('delete_action', { id });
@@ -2080,6 +2086,9 @@ export default function App() {
   // not sit between a hook and its call site.
   const shellTier = useShellTier();
   const [rail, toggleRail] = useSidebarRail(shellTier);
+  // v1.16 (limecore#16) — an error report says which view was open. StudyDesk
+  // routes by reducer state, not URL, so the reporter is told directly.
+  useEffect(() => { setReportScreen(state.view); }, [state.view]);
 
   // v1.15 (Item 12) — one update check per launch; a no-op off desktop. When
   // GitHub has something newer the sidebar says so; a click downloads it, then
@@ -2287,6 +2296,9 @@ export default function App() {
               window in which the user can save it, and they will not
               necessarily be on Settings when it opens. */}
           <StorageAlert onExport={onExportFromAlert} />
+          {/* v1.16 (#67) — Android only, once a day, off in Settings. Renders
+              nothing unless F-Droid has a newer build than this one. */}
+          <FdroidUpdateNote />
           {(urgent.length>0||urgentExams.length>0)&&state.view==="plan"&&(
             <div className="urgent-banner"><span>⚠️</span><div>
               <strong>{t('av.chrome.urgent')}</strong> —{" "}
@@ -2461,6 +2473,9 @@ export default function App() {
         and only once onboarding is out of the way. Guests have no auth
         metadata to write to, so `session?.user` is the whole gate. */}
     {onboarded && session?.user && <ReferralPrompt user={session.user}/>}
+    {/* v1.16 (limecore#16) — once, for people who used StudyDesk under the
+        old policy; pinned to the top edge, clear of the referral corner. */}
+    {onboarded && <PolicyUpdatedNote/>}
   </>);
 }
 

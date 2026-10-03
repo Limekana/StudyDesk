@@ -1,0 +1,3 @@
+Synkronointi, johon voi luottaa.
+
+Offline-tilassa tehty muutos ei enää korvaa toisella laitteella tehtyä uudempaa muutosta, ja poistettu pysyy poistettuna kaikilla laitteilla. Suuret kirjastot synkronoituvat kokonaan. Uutta asetuksissa: ilmoitus, kun F-Droidissa on uudempi versio, sekä vapaaehtoiset virheraportit (oletuksena pois päältä). Lock In -kenttä näkyy taas oikein.
