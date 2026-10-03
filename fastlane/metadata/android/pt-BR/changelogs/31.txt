@@ -1,0 +1,3 @@
+Uma sincronização em que você pode confiar.
+
+Uma edição feita offline não sobrescreve mais uma edição mais recente de outro aparelho, e o que você apaga continua apagado em todos. Bibliotecas grandes sincronizam por completo. Novo em Configurações: um aviso quando há uma versão mais nova no F-Droid e relatórios de erro opcionais (desligados por padrão). O campo do Lock In volta a aparecer corretamente.

@@ -1,0 +1,3 @@
+Sinkronisasi yang bisa diandalkan.
+
+Perubahan yang dibuat secara offline tidak lagi menimpa perubahan yang lebih baru dari perangkat lain, dan yang dihapus tetap terhapus di semua perangkat. Pustaka besar kini tersinkron sepenuhnya. Baru di Pengaturan: pemberitahuan saat versi baru tersedia di F-Droid, dan laporan galat opsional (nonaktif secara bawaan). Kolom Lock In kembali tampil dengan benar.

@@ -1,0 +1,3 @@
+Sync you can trust.
+
+An edit made offline no longer overwrites a newer one from another device, and a delete now wins on every device. Large libraries sync completely. New in Settings: a notice when a newer StudyDesk is on F-Droid, and optional error reports (off by default) that help fix crashes. The Lock In focus field shows correctly again, and desktop sign-in is more secure.

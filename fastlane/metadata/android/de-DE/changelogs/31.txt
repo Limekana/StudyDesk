@@ -1,0 +1,3 @@
+Synchronisierung, der du vertrauen kannst.
+
+Eine offline gemachte Änderung überschreibt keine neuere von einem anderen Gerät mehr, und Gelöschtes bleibt auf allen Geräten gelöscht. Große Bibliotheken werden vollständig synchronisiert. Neu in den Einstellungen: ein Hinweis, wenn auf F-Droid eine neuere Version bereitsteht, und optionale Fehlerberichte (standardmäßig aus). Das Lock-In-Feld wird wieder richtig angezeigt.
