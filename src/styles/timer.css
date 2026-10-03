@@ -62,9 +62,15 @@
 .lockin-task{font-family:var(--font-display);font-size:18px;color:rgba(250,248,244,0.85);max-width:80vw;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .lockin-ring{width:260px;height:260px;margin:0;}
 .lockin-ring .pomo-time{font-size:56px;letter-spacing:-0.02em;}
-.lockin-task-input{background:transparent;border:none;border-bottom:1px solid rgba(250,248,244,0.15);color:var(--lockin-ink);padding:10px 4px;font-family:var(--font-display);font-size:17px;text-align:center;width:min(360px,80vw);outline:none;transition:border-color 0.15s;}
-.lockin-task-input:focus{border-bottom-color:rgba(250,248,244,0.45);}
-.lockin-task-input::placeholder{color:rgba(250,248,244,0.3);}
+/* StudyDesk#86 - the Lock In inputs are scoped as `.lockin-wrap input.x`
+   (0,2,1). forms.css styles every text/number input with `input[type=text]`
+   (0,1,1); a bare class (0,1,0) loses to it on every shared property. That
+   turned this field into a cream box whose cream placeholder was invisible,
+   and stretched the custom-minutes pill to 100% width. lockinSpecificity.test.js
+   fails if either rule drops back below the global input rule. */
+.lockin-wrap input.lockin-task-input{background:transparent;border:none;border-bottom:1px solid rgba(250,248,244,0.15);border-radius:0;color:var(--lockin-ink);padding:10px 4px;font-family:var(--font-display);font-size:17px;text-align:center;width:min(360px,80vw);min-height:0;outline:none;transition:border-color 0.15s;}
+.lockin-wrap input.lockin-task-input:focus{border-color:transparent;border-bottom-color:rgba(250,248,244,0.45);}
+.lockin-wrap input.lockin-task-input::placeholder{color:rgba(250,248,244,0.3);}
 .lockin-controls{display:flex;justify-content:center;}
 .lockin-btn-main{background:var(--lockin-ink);color:var(--lockin-on);border:none;width:72px;height:72px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.1s,opacity 0.1s;box-shadow:var(--shadow-strong);}
 .lockin-btn-main:hover{opacity:0.9;transform:scale(1.04);}
@@ -73,11 +79,14 @@
 .lockin-preset{background:transparent;color:rgba(250,248,244,0.5);border:1px solid rgba(250,248,244,0.2);padding:6px 14px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;border-radius:99px;cursor:pointer;transition:all 0.1s;}
 .lockin-preset.active{background:rgba(250,248,244,0.12);color:var(--lockin-ink);border-color:rgba(250,248,244,0.4);}
 .lockin-preset:disabled{opacity:0.3;cursor:not-allowed;}
-.lockin-preset-input{width:62px;text-align:center;color:var(--lockin-ink);border-style:dashed;}
-.lockin-preset-input:focus{outline:none;border-style:solid;border-color:rgba(250,248,244,0.6);}
+/* The custom-minutes field is an <input type=number> wearing the .lockin-preset
+   pill, so it restates the pill's look at the scoped specificity (see #86 above). */
+.lockin-wrap input.lockin-preset-input{background:transparent;border:1px dashed rgba(250,248,244,0.2);border-radius:99px;color:var(--lockin-ink);padding:6px 14px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;width:62px;min-height:0;text-align:center;outline:none;}
+.lockin-wrap input.lockin-preset-input:focus{outline:none;border-style:solid;border-color:rgba(250,248,244,0.6);}
+.lockin-wrap input.lockin-preset-input:disabled{opacity:0.3;cursor:not-allowed;}
 .lockin-preset-input::-webkit-outer-spin-button,
 .lockin-preset-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
-.lockin-preset-input{-moz-appearance:textfield;appearance:textfield;}
+.lockin-wrap input.lockin-preset-input{-moz-appearance:textfield;appearance:textfield;}
 .lockin-exit{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);background:transparent;border:1px solid rgba(250,248,244,0.18);color:rgba(250,248,244,0.55);padding:9px 22px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;cursor:pointer;border-radius:99px;transition:all 0.15s;}
 .lockin-exit:hover{color:var(--lockin-ink);border-color:rgba(250,248,244,0.45);}
 
