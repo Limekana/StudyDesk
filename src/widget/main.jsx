@@ -10,8 +10,11 @@
 // to shake out bugs in — one screen, one hook.
 
 import { createRoot } from 'react-dom/client';
-import '../i18n';
+import { i18nReady } from '../i18n';
 import '../index.css';
 import Widget from './Widget.jsx';
 
-createRoot(document.getElementById('root')).render(<Widget />);
+// v1.17 (limecore#18): wait for the active language's chunk, as main.jsx does.
+void i18nReady.then(() => {
+  createRoot(document.getElementById('root')).render(<Widget />);
+});

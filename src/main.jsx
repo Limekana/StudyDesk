@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import './i18n'
+import { i18nReady } from './i18n'
 import './index.css'
 import App from './App.jsx'
 import { ConfirmProvider } from './lib/ConfirmDialog.jsx'
@@ -27,16 +27,20 @@ installGlobalErrorHandlers()
 // Before onboarding can run: a fresh install starts on the current policy.
 notePolicyBaseline()
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    {/* Outermost, so a throw anywhere below lands on the recovery screen
-        instead of a blank page (limecore#16). */}
-    <ErrorBoundary>
-      {/* Outside <App> so any view can call useConfirm(), including the auth
-          gate that renders before the app shell. */}
-      <ConfirmProvider>
-        <App />
-      </ConfirmProvider>
-    </ErrorBoundary>
-  </StrictMode>,
-)
+// v1.17 (limecore#18): the active language is its own chunk now. Render once it
+// has loaded, so the first paint is not English for a frame.
+void i18nReady.then(() => {
+  createRoot(document.getElementById('root')).render(
+    <StrictMode>
+      {/* Outermost, so a throw anywhere below lands on the recovery screen
+          instead of a blank page (limecore#16). */}
+      <ErrorBoundary>
+        {/* Outside <App> so any view can call useConfirm(), including the auth
+            gate that renders before the app shell. */}
+        <ConfirmProvider>
+          <App />
+        </ConfirmProvider>
+      </ErrorBoundary>
+    </StrictMode>,
+  )
+})
