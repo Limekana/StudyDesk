@@ -10,6 +10,7 @@ import { watchForRecovery } from './lib/passwordRecovery.js'
 import ErrorBoundary from './features/errors/ErrorBoundary.jsx'
 import { notePolicyBaseline } from './lib/policyNotice.js'
 import { installGlobalErrorHandlers } from './lib/errorReports.js'
+import { installStaleChunkReload } from './lib/staleChunkReload.js'
 
 // No-op unless this bundle was built by Vercel — see webAnalytics.js.
 initWebAnalytics()
@@ -26,6 +27,9 @@ watchForRecovery(supabase)
 installGlobalErrorHandlers()
 // Before onboarding can run: a fresh install starts on the current policy.
 notePolicyBaseline()
+// Web only: a tab older than the current deploy reloads instead of failing to
+// load a view or language chunk (limecore#13).
+installStaleChunkReload()
 
 // v1.17 (limecore#18): the active language is its own chunk now. Render once it
 // has loaded, so the first paint is not English for a frame.

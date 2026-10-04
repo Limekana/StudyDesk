@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useReducer, useRef } from "react";
+import { useState, useEffect, useCallback, useReducer, useRef, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { setLanguage, SUPPORTED_LANGS, LANGUAGE_NAMES } from "./i18n/index.js";
 import { useScrollSelectedIntoView } from "./lib/useScrollSelectedIntoView.js";
@@ -35,18 +35,14 @@ import * as outbox from "./lib/outbox.js";
 import { reconcileUnsynced } from "./lib/reconcile.js";
 import { applyRemotePull } from "./lib/merge.js";
 import { stampsFromPull, isInSync, isRemoteTombstone, shouldPull } from "./lib/syncStamps.js";
-import GradesView from "./features/grades/GradesView.jsx";
-import SessionsView from "./features/sessions/SessionsView.jsx";
 import SaveSessionSheet from "./features/sessions/SaveSessionSheet.jsx";
 import { pastSessionDraft } from "./lib/pastSession.js";
-import NotebookView from "./features/notebook/NotebookView.jsx";
 import "./styles/notebook.css";
 import { isGradeMode, normalizeScale, DEFAULT_CUSTOM_SCALE } from "./lib/gradeScale.js";
 import CoursePicker from "./lib/CoursePicker.jsx";
 import { ASSIGN_TYPES, OTHER_ASSIGN_TYPE } from "./lib/assignTypes.js";
 import { DIFFICULTY_DAYS, DIFFICULTY_COLORS } from "./lib/examDifficulty.js";
 import { AddAsgnModal, AddExamModal, EditCourseModal } from "./features/plan/CourseModals.jsx";
-import TimerView from "./features/timer/TimerView.jsx";
 // Cascade order preserved from the old css+css2+css3+css4+cssOnboard concat.
 import './styles/base.css';
 /* Load order is load-bearing. base.css declares the free light palette on
@@ -70,15 +66,23 @@ import { checkForDesktopUpdate, runDesktopUpdateAction, useDesktopUpdate } from 
 import { GuestAvatar, AccountAvatar } from "./lib/avatar.jsx";
 import { useShellTier, useSidebarRail } from "./lib/useShell.js";
 import { startPlanReminderLoop, webNotifySupported } from "./lib/webNotify.js";
-import StatsView from "./features/stats/StatsView.jsx";
-import CalendarView from "./features/calendar/CalendarView.jsx";
-import AnalyticsView from "./features/analytics/AnalyticsView.jsx";
-import TimetableView from "./features/timetable/TimetableView.jsx";
 import FirstSteps from "./features/onboarding/FirstSteps.jsx";
 import AttachmentList from "./features/plan/Attachments.jsx";
 import { useAttachmentDrop } from "./features/plan/useAttachmentDrop.js";
-import SettingsView from "./features/settings/SettingsView.jsx";
 import { enterSubmit } from "./lib/imeSubmit.js";
+
+// v1.17 (limecore#13): every feature view is its own chunk, loaded the first
+// time its tab is opened. The views a launch opens on (actions, the plan list,
+// the course pane) live in this file and stay in the entry chunk.
+const GradesView = lazy(() => import("./features/grades/GradesView.jsx"));
+const SessionsView = lazy(() => import("./features/sessions/SessionsView.jsx"));
+const NotebookView = lazy(() => import("./features/notebook/NotebookView.jsx"));
+const TimerView = lazy(() => import("./features/timer/TimerView.jsx"));
+const StatsView = lazy(() => import("./features/stats/StatsView.jsx"));
+const CalendarView = lazy(() => import("./features/calendar/CalendarView.jsx"));
+const AnalyticsView = lazy(() => import("./features/analytics/AnalyticsView.jsx"));
+const TimetableView = lazy(() => import("./features/timetable/TimetableView.jsx"));
+const SettingsView = lazy(() => import("./features/settings/SettingsView.jsx"));
 
 // v1.3.1 — initials for the top-right profile avatar (opens Settings, like NCC).
 // Derives 1–2 letters from the signed-in email's local part; guests get "·".
@@ -2331,6 +2335,12 @@ export default function App() {
               The urgent banner above stays sticky (lives outside the wrapper), so
               only the routed view animates. */}
           <div className="page-turn" key={state.view}>
+          {/* v1.17 (limecore#13) — the feature views are lazy chunks. Nothing
+              is shown while one loads (a frame or two from local assets); the
+              header, rail and tab bar stay put because they are outside. The
+              sub-tab panels have their own boundaries so their tab rows stay
+              put as well. */}
+          <Suspense fallback={null}>
           {state.view==="plan"   &&(
             <>
               <div className="timer-subtabs" role="tablist" aria-label={t('cal.viewMode')}>
@@ -2345,12 +2355,14 @@ export default function App() {
                 ))}
               </div>
               <div className="page-turn" key={planSub}>
+                <Suspense fallback={null}>
                 {planSub==="calendar" &&
                   <CalendarView state={state} dispatch={dispatch} session={session} showFlash={showFlash} tier={shellTier} onAddAsgn={()=>setShowAddAsgn(true)} onAddExam={()=>setShowAddExam(true)}/>}
                 {planSub==="timetable" &&
                   <TimetableView state={state} dispatch={dispatch} session={session} showFlash={showFlash}/>}
                 {planSub==="list" &&
                   <PlanView state={state} dispatch={dispatch} session={session} showFlash={showFlash} onAddAsgn={()=>setShowAddAsgn(true)} onAddExam={()=>setShowAddExam(true)} onAddCourse={()=>setShowAddCourse(true)} onEditCourse={(c)=>setEditingCourse(c)} onOpenCalendar={()=>choosePlanSub("calendar")}/>}
+                </Suspense>
               </div>
             </>
           )}
@@ -2376,9 +2388,11 @@ export default function App() {
                 ))}
               </div>
               <div className="page-turn" key={gradesSub}>
+                <Suspense fallback={null}>
                 {gradesSub==="trends"
                   ? <AnalyticsView state={state}/>
                   : <GradesView state={state} dispatch={dispatch} showFlash={showFlash} session={session}/>}
+                </Suspense>
               </div>
             </>
           )}
@@ -2392,6 +2406,7 @@ export default function App() {
                 ))}
               </div>
               <div className="page-turn" key={timerSub}>
+                <Suspense fallback={null}>
                 {timerSub==="timer" &&<TimerView   state={state} dispatch={dispatch} session={session} showFlash={showFlash} onTimerComplete={(payload)=>setPendingSession(payload)}/>}
                 {timerSub==="log"   &&<SessionsView state={state} dispatch={dispatch} showFlash={showFlash} session={session} onLogPast={()=>setPendingSession(pastSessionDraft())}/>}
                 {timerSub==="stats" &&<StatsView    state={state}/>}
@@ -2399,6 +2414,7 @@ export default function App() {
                     desktop route below — one implementation, two entry
                     points, so the two cannot drift. */}
                 {timerSub==="notes" &&<NotebookView state={state} dispatch={dispatch} onDeleteNote={onDeleteNote} onOpenTimer={()=>setTimerSub("timer")}/>}
+                </Suspense>
               </div>
             </>
           )}
@@ -2411,6 +2427,7 @@ export default function App() {
             />
           )}
           {state.view==="settings"&&<SettingsView state={state} dispatch={dispatch} showFlash={showFlash} session={session}/>}
+          </Suspense>
           </div>
         </div>
       </main>
