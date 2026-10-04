@@ -8,7 +8,9 @@
 //
 // Bump POLICY_VERSION only for a material change, and announce it once.
 export const POLICY_VERSION = '2026-09-v1.16';
-export const POLICY_URL = 'https://limekana.github.io/nexus-command-center/legal/privacy.html';
+// v1.17 (limecore#32): moved off GitHub Pages. Not a material change, so the
+// version stays; the old Pages URL is a permanent stub pointing here.
+export const POLICY_URL = 'https://limecore.dev/privacy';
 const KEY = 'sd-policy-seen';
 
 /** Called from main.jsx before onboarding can run: a device that has never

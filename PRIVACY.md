@@ -6,7 +6,7 @@ StudyDesk is made by **Limecore Studio**. This policy explains what the app
 stores, where it goes, and what you can do about it.
 
 > StudyDesk shares one account system and one database with the other Limecore
-> apps. The **[suite-wide privacy policy](https://limekana.github.io/nexus-command-center/legal/privacy.html)**
+> apps. The **[suite-wide privacy policy](https://limecore.dev/privacy)**
 > is the canonical version and covers all three; this page is the StudyDesk-only
 > view of the same thing.
 

@@ -1273,7 +1273,7 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
             </button>
             <a
               className="btn-outline"
-              href="https://limekana.github.io/nexus-command-center/legal/privacy.html"
+              href="https://limecore.dev/privacy"
               target="_blank"
               rel="noopener noreferrer"
             >
