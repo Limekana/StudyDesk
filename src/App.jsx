@@ -35,7 +35,6 @@ import "./styles/notebook.css";
 import { isGradeMode, normalizeScale, DEFAULT_CUSTOM_SCALE } from "./lib/gradeScale.js";
 import CoursePicker from "./lib/CoursePicker.jsx";
 import { AddAsgnModal, AddExamModal, EditCourseModal } from "./features/plan/CourseModals.jsx";
-import OnboardingView from "./features/onboarding/OnboardingView.jsx";
 import CourseDetailView from "./features/plan/CourseDetailView.jsx";
 import PlanView from "./features/plan/PlanView.jsx";
 import ActionsView from "./features/actions/ActionsView.jsx";
@@ -79,6 +78,8 @@ const CalendarView = lazy(() => import("./features/calendar/CalendarView.jsx"));
 const AnalyticsView = lazy(() => import("./features/analytics/AnalyticsView.jsx"));
 const TimetableView = lazy(() => import("./features/timetable/TimetableView.jsx"));
 const SettingsView = lazy(() => import("./features/settings/SettingsView.jsx"));
+// v1.17 (limecore#12): only a first run ever shows onboarding.
+const OnboardingView = lazy(() => import("./features/onboarding/OnboardingView.jsx"));
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -1371,7 +1372,9 @@ export default function App() {
 
   return (<>
     
-    {!onboarded && onboardChecked && <OnboardingView onComplete={handleOnboardingComplete}/>}
+    {!onboarded && onboardChecked && (
+      <Suspense fallback={null}><OnboardingView onComplete={handleOnboardingComplete}/></Suspense>
+    )}
     {onboarded && (
       <div className={"app"+(rail?" is-rail":"")} data-tier={shellTier}>
       {/* ── Desktop sidebar ──

@@ -23,7 +23,7 @@ import { readFileSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const BUDGET_KIB = 730; // measured 2026-10-04 after limecore#13: 698.0 KiB (base + main)
+const BUDGET_KIB = 725; // measured 2026-10-05 after limecore#12 (onboarding lazy): 694.4 KiB
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
