@@ -43,7 +43,6 @@
     "linkSignup": "إنشاء حساب",
     "guest": "المتابعة كضيف",
     "guestNote": "محليًا فقط · بلا مزامنة سحابية · يمكنك تسجيل الدخول لاحقًا",
-    "infoConfirm": "تم إنشاء الحساب. تحقّق من بريدك الإلكتروني للتأكيد.",
     "errNexus": "تعذّر توريث جلسة Nexus.",
     "errNexusFailed": "فشل تسجيل الدخول عبر Nexus",
     "errGoogleStart": "تعذّر بدء تسجيل الدخول عبر Google",
@@ -101,29 +100,14 @@
     "cancel": "إلغاء",
     "delete": "حذف",
     "edit": "تعديل",
-    "add": "إضافة",
-    "done": "تم",
     "close": "إغلاق",
-    "back": "رجوع",
-    "confirm": "تأكيد",
-    "retry": "إعادة المحاولة",
-    "loading": "جارٍ التحميل…",
-    "settings": "الإعدادات",
-    "next": "التالي"
-  },
-  "academic": {
-    "period": "الفترة",
-    "semester": "الفصل الدراسي",
-    "schoolYear": "العام الدراسي",
-    "course": "المادة",
-    "grade": "الدرجة"
+    "confirm": "تأكيد"
   },
   "nav": {
     "study": "الدراسة",
     "plan": "الخطة",
     "grades": "الدرجات",
     "timer": "المؤقّت",
-    "stats": "الإحصاءات",
     "notebook": "دفتر"
   },
   "topbar": {
@@ -131,7 +115,6 @@
   },
   "course": {
     "edit": "تعديل المادة",
-    "add": "إضافة مادة",
     "name": "اسم المادة",
     "namePlaceholder": "مثال: التفاضل والتكامل II",
     "credits": "الساعات المعتمدة (وزن المعدّل)",
@@ -144,7 +127,6 @@
     "deleteConfirm": "حذف جميع البيانات؟",
     "yesDelete": "نعم، احذف",
     "no": "لا",
-    "updated": "تم تحديث المادة",
     "colorSwatch": "اللون {{hex}}",
     "colorCustom": "اختر أي لون",
     "colorNone": "بدون لون"
@@ -645,8 +627,6 @@
       "lockInTitle": "بلا استراحات، بلا تنقّل، تركيز عميق فقط",
       "studying": "جارٍ الدراسة",
       "workingPlaceholder": "على ماذا تعمل؟ (اختياري)",
-      "quickFillAria": "تعبئة سريعة من المادة",
-      "quickFillOption": "تعبئة سريعة من المادة…",
       "weeklyHours": "الساعات الأسبوعية",
       "thisWeek": "هذا الأسبوع",
       "wk": "أسبوع {{n}}",
@@ -671,7 +651,6 @@
       "noOpenAsgn": "لا توجد واجبات مفتوحة.",
       "completed": "المكتملة ({{count}})",
       "examsCalendar": "الاختبارات والتقويم",
-      "nothingComingUp": "لا شيء قادم.",
       "noExams": "لا توجد اختبارات بعد.",
       "completedExams": "الاختبارات المكتملة ({{count}})",
       "courses": "المواد",
@@ -687,21 +666,9 @@
       "next": "التالي:",
       "nothingDue": "لا شيء مستحق — كل شيء منجز",
       "edit": "تعديل",
-      "examWord": "اختبار",
-      "studyWord": "دراسة",
-      "dueWord": "مستحق",
       "open": "{{count}} مفتوحة",
       "openTitle": "{{count}} مفتوحة، لا شيء يستحق قريبًا",
       "dueTitle": "{{due}} تستحق قريبًا · {{open}} مفتوحة إجمالًا"
-    },
-    "cal": {
-      "sun": "أحد",
-      "mon": "إثن",
-      "tue": "ثلا",
-      "wed": "أرب",
-      "thu": "خمي",
-      "fri": "جمع",
-      "sat": "سبت"
     },
     "ec": {
       "examTag": "اختبار",
@@ -761,7 +728,6 @@
       "examPrefix": "اختبار: {{title}}",
       "loading": "جارٍ التحميل…",
       "updateShort": "يتوفر تحديث",
-      "updateAvailable": "يتوفر تحديث: v{{version}}",
       "updateDownloading": "جارٍ التنزيل… {{percent}}٪",
       "updateReady": "إعادة التشغيل للتحديث"
     },

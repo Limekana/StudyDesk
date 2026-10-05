@@ -43,7 +43,6 @@
     "linkSignup": "खाता बनाएँ",
     "guest": "अतिथि के रूप में जारी रखें",
     "guestNote": "केवल इस डिवाइस पर · कोई क्लाउड सिंक नहीं · बाद में साइन इन कर सकते हैं",
-    "infoConfirm": "खाता बन गया। पुष्टि के लिए अपना ईमेल देखें।",
     "errNexus": "Nexus सत्र नहीं लिया जा सका।",
     "errNexusFailed": "Nexus साइन-इन विफल",
     "errGoogleStart": "Google साइन-इन शुरू नहीं हो सका",
@@ -101,29 +100,14 @@
     "cancel": "रद्द करें",
     "delete": "मिटाएँ",
     "edit": "बदलें",
-    "add": "जोड़ें",
-    "done": "हो गया",
     "close": "बंद करें",
-    "back": "वापस",
-    "confirm": "पुष्टि करें",
-    "retry": "फिर कोशिश करें",
-    "loading": "लोड हो रहा है…",
-    "settings": "सेटिंग्स",
-    "next": "आगे"
-  },
-  "academic": {
-    "period": "अवधि",
-    "semester": "सेमेस्टर",
-    "schoolYear": "शैक्षणिक वर्ष",
-    "course": "विषय",
-    "grade": "ग्रेड"
+    "confirm": "पुष्टि करें"
   },
   "nav": {
     "study": "पढ़ाई",
     "plan": "योजना",
     "grades": "ग्रेड",
     "timer": "टाइमर",
-    "stats": "आँकड़े",
     "notebook": "नोटबुक"
   },
   "topbar": {
@@ -131,7 +115,6 @@
   },
   "course": {
     "edit": "विषय बदलें",
-    "add": "विषय जोड़ें",
     "name": "विषय का नाम",
     "namePlaceholder": "जैसे कैलकुलस II",
     "credits": "क्रेडिट (GPA भार)",
@@ -144,7 +127,6 @@
     "deleteConfirm": "सारा डेटा मिटाएँ?",
     "yesDelete": "हाँ, मिटाएँ",
     "no": "नहीं",
-    "updated": "विषय अपडेट हुआ",
     "colorSwatch": "रंग {{hex}}",
     "colorCustom": "कोई भी रंग चुनें",
     "colorNone": "कोई रंग नहीं"
@@ -629,8 +611,6 @@
       "lockInTitle": "ब्रेक हटाएँ, नेविगेशन छिपाएँ, केवल गहरी एकाग्रता",
       "studying": "पढ़ाई जारी",
       "workingPlaceholder": "आप किस पर काम कर रहे हैं? (वैकल्पिक)",
-      "quickFillAria": "विषय से जल्दी भरें",
-      "quickFillOption": "विषय से जल्दी भरें…",
       "weeklyHours": "साप्ताहिक घंटे",
       "thisWeek": "इस सप्ताह",
       "wk": "सप्ताह {{n}}",
@@ -655,7 +635,6 @@
       "noOpenAsgn": "कोई खुला असाइनमेंट नहीं।",
       "completed": "पूरे हुए ({{count}})",
       "examsCalendar": "परीक्षाएँ और कैलेंडर",
-      "nothingComingUp": "आगे कुछ नहीं।",
       "noExams": "अभी कोई परीक्षा नहीं।",
       "completedExams": "पूरी हुई परीक्षाएँ ({{count}})",
       "courses": "विषय",
@@ -667,21 +646,9 @@
       "next": "अगला:",
       "nothingDue": "कुछ देना बाकी नहीं — सब पूरा",
       "edit": "बदलें",
-      "examWord": "परीक्षा",
-      "studyWord": "पढ़ाई",
-      "dueWord": "देना है",
       "open": "{{count}} खुले",
       "openTitle": "{{count}} खुले, जल्दी कुछ देय नहीं",
       "dueTitle": "{{due}} जल्दी देय · कुल {{open}} खुले"
-    },
-    "cal": {
-      "sun": "रवि",
-      "mon": "सोम",
-      "tue": "मंगल",
-      "wed": "बुध",
-      "thu": "गुरु",
-      "fri": "शुक्र",
-      "sat": "शनि"
     },
     "ec": {
       "examTag": "परीक्षा",
@@ -741,7 +708,6 @@
       "examPrefix": "परीक्षा: {{title}}",
       "loading": "लोड हो रहा है…",
       "updateShort": "अपडेट उपलब्ध",
-      "updateAvailable": "अपडेट उपलब्ध: v{{version}}",
       "updateDownloading": "डाउनलोड हो रहा है… {{percent}}%",
       "updateReady": "अपडेट के लिए रीस्टार्ट करें"
     },

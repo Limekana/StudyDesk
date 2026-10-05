@@ -28,29 +28,14 @@
     "cancel": "Annuler",
     "delete": "Supprimer",
     "edit": "Modifier",
-    "add": "Ajouter",
-    "done": "Terminé",
     "close": "Fermer",
-    "back": "Retour",
-    "confirm": "Confirmer",
-    "retry": "Réessayer",
-    "loading": "Chargement…",
-    "settings": "Paramètres",
-    "next": "Suivant"
-  },
-  "academic": {
-    "period": "Période",
-    "semester": "Semestre",
-    "schoolYear": "Année scolaire",
-    "course": "Cours",
-    "grade": "Note"
+    "confirm": "Confirmer"
   },
   "nav": {
     "study": "Étudier",
     "plan": "Plan",
     "grades": "Notes",
     "timer": "Minuteur",
-    "stats": "Stats",
     "notebook": "Carnet"
   },
   "topbar": {
@@ -58,7 +43,6 @@
   },
   "course": {
     "edit": "Modifier le cours",
-    "add": "Ajouter un cours",
     "name": "Nom du cours",
     "namePlaceholder": "ex. Analyse II",
     "credits": "Crédits (pondération)",
@@ -71,7 +55,6 @@
     "deleteConfirm": "Supprimer toutes les données ?",
     "yesDelete": "Oui, supprimer",
     "no": "Non",
-    "updated": "Cours mis à jour",
     "colorSwatch": "Couleur {{hex}}",
     "colorCustom": "Choisir n'importe quelle couleur",
     "colorNone": "Aucune couleur"
@@ -122,7 +105,6 @@
     "linkSignup": "Créer un compte",
     "guest": "Continuer en invité",
     "guestNote": "LOCAL UNIQUEMENT · PAS DE SYNCHRONISATION · CONNEXION POSSIBLE PLUS TARD",
-    "infoConfirm": "Compte créé. Vérifiez votre e-mail pour confirmer.",
     "errNexus": "Impossible d'hériter de la session Nexus.",
     "errNexusFailed": "Échec de la connexion Nexus",
     "errGoogleStart": "Impossible de démarrer la connexion Google",
@@ -633,8 +615,6 @@
       "lockInTitle": "Sans pauses, sans navigation, concentration pure",
       "studying": "Étude",
       "workingPlaceholder": "Sur quoi travaillez-vous ? (facultatif)",
-      "quickFillAria": "Remplissage rapide depuis un cours",
-      "quickFillOption": "Remplir depuis un cours…",
       "weeklyHours": "Heures hebdomadaires",
       "thisWeek": "Cette semaine",
       "wk": "Sem {{n}}",
@@ -659,7 +639,6 @@
       "noOpenAsgn": "Aucun devoir en cours.",
       "completed": "Terminés ({{count}})",
       "examsCalendar": "Examens et calendrier",
-      "nothingComingUp": "Rien à venir.",
       "noExams": "Aucun examen pour l’instant.",
       "completedExams": "Examens terminés ({{count}})",
       "courses": "Cours",
@@ -671,22 +650,10 @@
       "next": "Suivant :",
       "nothingDue": "Rien à rendre — tout est clair",
       "edit": "Modifier",
-      "examWord": "EXAMEN",
-      "studyWord": "ÉTUDE",
-      "dueWord": "À RENDRE",
       "exam_many": "{{count}} examens",
       "open": "{{count}} en cours",
       "openTitle": "{{count}} en cours, rien à rendre bientôt",
       "dueTitle": "{{due}} à rendre bientôt · {{open}} en cours au total"
-    },
-    "cal": {
-      "sun": "Dim",
-      "mon": "Lun",
-      "tue": "Mar",
-      "wed": "Mer",
-      "thu": "Jeu",
-      "fri": "Ven",
-      "sat": "Sam"
     },
     "ec": {
       "examTag": "EXAMEN",
@@ -746,7 +713,6 @@
       "examPrefix": "EXAMEN : {{title}}",
       "loading": "CHARGEMENT…",
       "updateShort": "Mise à jour disponible",
-      "updateAvailable": "Mise à jour disponible : v{{version}}",
       "updateDownloading": "Téléchargement… {{percent}} %",
       "updateReady": "Redémarrer pour mettre à jour"
     },

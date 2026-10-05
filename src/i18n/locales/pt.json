@@ -43,7 +43,6 @@
     "linkSignup": "Criar conta",
     "guest": "Continuar como convidado",
     "guestNote": "SOMENTE LOCAL · SEM SINCRONIZAÇÃO · VOCÊ PODE ENTRAR DEPOIS",
-    "infoConfirm": "Conta criada. Confira seu e-mail para confirmar.",
     "errNexus": "Não foi possível herdar a sessão do Nexus.",
     "errNexusFailed": "Falha no login com Nexus",
     "errGoogleStart": "Não foi possível iniciar o login com o Google",
@@ -101,29 +100,14 @@
     "cancel": "Cancelar",
     "delete": "Excluir",
     "edit": "Editar",
-    "add": "Adicionar",
-    "done": "Concluído",
     "close": "Fechar",
-    "back": "Voltar",
-    "confirm": "Confirmar",
-    "retry": "Tentar de novo",
-    "loading": "Carregando…",
-    "settings": "Configurações",
-    "next": "Avançar"
-  },
-  "academic": {
-    "period": "Período",
-    "semester": "Semestre",
-    "schoolYear": "Ano letivo",
-    "course": "Disciplina",
-    "grade": "Nota"
+    "confirm": "Confirmar"
   },
   "nav": {
     "study": "Estudar",
     "plan": "Plano",
     "grades": "Notas",
     "timer": "Timer",
-    "stats": "Estatísticas",
     "notebook": "Caderno"
   },
   "topbar": {
@@ -131,7 +115,6 @@
   },
   "course": {
     "edit": "Editar disciplina",
-    "add": "Adicionar disciplina",
     "name": "Nome da disciplina",
     "namePlaceholder": "ex.: Cálculo II",
     "credits": "Créditos (peso no GPA)",
@@ -144,7 +127,6 @@
     "deleteConfirm": "Excluir todos os dados?",
     "yesDelete": "Sim, excluir",
     "no": "Não",
-    "updated": "Disciplina atualizada",
     "colorSwatch": "Cor {{hex}}",
     "colorCustom": "Escolher qualquer cor",
     "colorNone": "Sem cor"
@@ -633,8 +615,6 @@
       "lockInTitle": "Sem pausas, sem navegação, só foco profundo",
       "studying": "Estudando",
       "workingPlaceholder": "No que você está trabalhando? (opcional)",
-      "quickFillAria": "Preenchimento rápido pela disciplina",
-      "quickFillOption": "Preenchimento rápido pela disciplina…",
       "weeklyHours": "Horas semanais",
       "thisWeek": "Esta semana",
       "wk": "Sem {{n}}",
@@ -659,7 +639,6 @@
       "noOpenAsgn": "Nenhum trabalho em aberto.",
       "completed": "Concluídos ({{count}})",
       "examsCalendar": "Provas e calendário",
-      "nothingComingUp": "Nada por vir.",
       "noExams": "Nenhuma prova ainda.",
       "completedExams": "Provas concluídas ({{count}})",
       "courses": "Disciplinas",
@@ -671,22 +650,10 @@
       "next": "Próximo:",
       "nothingDue": "Nada a entregar — tudo em dia",
       "edit": "Editar",
-      "examWord": "PROVA",
-      "studyWord": "ESTUDO",
-      "dueWord": "ENTREGA",
       "exam_many": "{{count}} provas",
       "open": "{{count}} em aberto",
       "openTitle": "{{count}} em aberto, nada a entregar em breve",
       "dueTitle": "{{due}} a entregar em breve · {{open}} em aberto no total"
-    },
-    "cal": {
-      "sun": "Dom",
-      "mon": "Seg",
-      "tue": "Ter",
-      "wed": "Qua",
-      "thu": "Qui",
-      "fri": "Sex",
-      "sat": "Sáb"
     },
     "ec": {
       "examTag": "PROVA",
@@ -746,7 +713,6 @@
       "examPrefix": "PROVA: {{title}}",
       "loading": "CARREGANDO…",
       "updateShort": "Atualização disponível",
-      "updateAvailable": "Atualização disponível: v{{version}}",
       "updateDownloading": "Baixando… {{percent}}%",
       "updateReady": "Reiniciar para atualizar"
     },

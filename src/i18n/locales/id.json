@@ -43,7 +43,6 @@
     "linkSignup": "Buat akun",
     "guest": "Lanjutkan sebagai tamu",
     "guestNote": "HANYA LOKAL · TANPA SINKRONISASI AWAN · BISA MASUK NANTI",
-    "infoConfirm": "Akun dibuat. Periksa emailmu untuk konfirmasi.",
     "errNexus": "Tidak dapat mewarisi sesi Nexus.",
     "errNexusFailed": "Gagal masuk lewat Nexus",
     "errGoogleStart": "Tidak dapat memulai proses masuk dengan Google",
@@ -101,29 +100,14 @@
     "cancel": "Batal",
     "delete": "Hapus",
     "edit": "Ubah",
-    "add": "Tambah",
-    "done": "Selesai",
     "close": "Tutup",
-    "back": "Kembali",
-    "confirm": "Konfirmasi",
-    "retry": "Coba lagi",
-    "loading": "Memuat…",
-    "settings": "Pengaturan",
-    "next": "Lanjut"
-  },
-  "academic": {
-    "period": "Periode",
-    "semester": "Semester",
-    "schoolYear": "Tahun ajaran",
-    "course": "Mata pelajaran",
-    "grade": "Nilai"
+    "confirm": "Konfirmasi"
   },
   "nav": {
     "study": "Belajar",
     "plan": "Rencana",
     "grades": "Nilai",
     "timer": "Timer",
-    "stats": "Statistik",
     "notebook": "Buku catatan"
   },
   "topbar": {
@@ -131,7 +115,6 @@
   },
   "course": {
     "edit": "Ubah mata pelajaran",
-    "add": "Tambah mata pelajaran",
     "name": "Nama mata pelajaran",
     "namePlaceholder": "mis. Kalkulus II",
     "credits": "Kredit (bobot GPA)",
@@ -144,7 +127,6 @@
     "deleteConfirm": "Hapus semua data?",
     "yesDelete": "Ya, hapus",
     "no": "Tidak",
-    "updated": "Mata pelajaran diperbarui",
     "colorSwatch": "Warna {{hex}}",
     "colorCustom": "Pilih warna apa pun",
     "colorNone": "Tanpa warna"
@@ -625,8 +607,6 @@
       "lockInTitle": "Tanpa istirahat, tanpa navigasi, hanya fokus mendalam",
       "studying": "Sedang belajar",
       "workingPlaceholder": "Kamu sedang mengerjakan apa? (opsional)",
-      "quickFillAria": "Isi cepat dari mata pelajaran",
-      "quickFillOption": "Isi cepat dari mata pelajaran…",
       "weeklyHours": "Jam per minggu",
       "thisWeek": "Minggu ini",
       "wk": "Mgg {{n}}",
@@ -651,7 +631,6 @@
       "noOpenAsgn": "Tidak ada tugas yang terbuka.",
       "completed": "Selesai ({{count}})",
       "examsCalendar": "Ujian & kalender",
-      "nothingComingUp": "Tidak ada yang akan datang.",
       "noExams": "Belum ada ujian.",
       "completedExams": "Ujian yang selesai ({{count}})",
       "courses": "Mata pelajaran",
@@ -662,21 +641,9 @@
       "next": "Berikutnya:",
       "nothingDue": "Tidak ada tenggat — semua beres",
       "edit": "Ubah",
-      "examWord": "UJIAN",
-      "studyWord": "BELAJAR",
-      "dueWord": "TENGGAT",
       "open": "{{count}} terbuka",
       "openTitle": "{{count}} terbuka, tidak ada yang segera jatuh tempo",
       "dueTitle": "{{due}} segera jatuh tempo · total {{open}} terbuka"
-    },
-    "cal": {
-      "sun": "Min",
-      "mon": "Sen",
-      "tue": "Sel",
-      "wed": "Rab",
-      "thu": "Kam",
-      "fri": "Jum",
-      "sat": "Sab"
     },
     "ec": {
       "examTag": "UJIAN",
@@ -736,7 +703,6 @@
       "examPrefix": "UJIAN: {{title}}",
       "loading": "MEMUAT…",
       "updateShort": "Pembaruan tersedia",
-      "updateAvailable": "Pembaruan tersedia: v{{version}}",
       "updateDownloading": "Mengunduh… {{percent}}%",
       "updateReady": "Mulai ulang untuk memperbarui"
     },
