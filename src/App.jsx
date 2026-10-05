@@ -84,20 +84,12 @@ const AnalyticsView = lazy(() => import("./features/analytics/AnalyticsView.jsx"
 const TimetableView = lazy(() => import("./features/timetable/TimetableView.jsx"));
 const SettingsView = lazy(() => import("./features/settings/SettingsView.jsx"));
 
-// v1.3.1 — initials for the top-right profile avatar (opens Settings, like NCC).
-// Derives 1–2 letters from the signed-in email's local part; guests get "·".
 const BUCKETS = ["today", "this_week", "later"];
-const BUCKET_LABELS = { today: "TODAY", this_week: "THIS WEEK", later: "LATER" };
 const BUCKET_COLORS = {
   today:     { bg: "#c0392b", text: "#fff" },
   this_week: { bg: "#d4860a", text: "#fff" },
   later:     { bg: "#2e7d52", text: "#fff" },
 };
-/** Sentinel preset that reveals the free-text label field (v1.8). Never stored
- *  as an assignment's type — the user's own label is stored instead. */
-const DIFFICULTY_LABELS = { easy:"Easy", medium:"Medium", hard:"Hard", brutal:"Brutal" };
-const POMO_PRESETS = { focus:25, short:5, long:15 };
-
 // Local midnight for "today", computed PER CALL — never frozen at module load.
 // A Capacitor WebView backgrounded overnight and resumed without a cold restart
 // would otherwise still think it's yesterday, mis-bucketing an assignment due
