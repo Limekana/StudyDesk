@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  v1.17 (limecore#19): resources the shrinker must keep although no code or
+  XML references them directly. ic_stat_studydesk is named by a string that arrives from
+  JavaScript (the smallIcon of a local notification), and the resource
+  shrinker only sees references inside the APK's own code and XML.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_stat_studydesk" />
