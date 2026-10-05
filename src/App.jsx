@@ -2928,7 +2928,7 @@ function ExamCard({ exam, courses, dispatch }) {
   const progressColor=pct===100?"var(--success)":pct>50?"var(--warning)":"var(--danger)";
   const addTopic=()=>{ if(!topicInput.trim()) return; dispatch({type:"ADD_EXAM_TOPIC",examId:exam.id,title:topicInput.trim()}); setTopicInput(""); };
   if (editing) return <div className="exam-card" style={{borderInlineStartColor:course?.color||"var(--border2)",flexDirection:"column",gap:10,padding:14}}>
-    <input type="text" value={eTitle} onChange={e=>setETitle(e.target.value)} style={{fontWeight:500}} autoFocus aria-label={t('sv.fTitle')}/>
+    <input type="text" value={eTitle} onChange={e=>setETitle(e.target.value)} style={{fontWeight:500}} autoFocus aria-label={t('av.md.examSubject')}/>
     <input type="date" value={eDate} onChange={e=>setEDate(e.target.value)} aria-label={t('av.ec.examDate')}/>
     <div className="study-plan-bar">
       <span className="study-plan-label">{t('av.ec.difficulty')}</span>
