@@ -14,6 +14,7 @@ import { reconcileUnsynced } from '../../lib/reconcile.js';
 import { clearEntitlement } from '../../lib/entitlement.js';
 import { clearAvatarCache } from '../../lib/profile.js';
 import ProfileSection from './ProfileSection.jsx';
+import ChangeEmail from './ChangeEmail.jsx';
 import SupporterBlock from './SupporterBlock.jsx';
 import Appearance from './Appearance.jsx';
 import CalendarFeeds from './CalendarFeeds.jsx';
@@ -575,6 +576,8 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
               <button className="sv2-signin" onClick={onSignIn}>{t('settings.signInToSync')}</button>
             )}
           </div>
+          {/* v1.17 (limecore#10): email/password accounts only. */}
+          {session && <ChangeEmail session={session} showFlash={showFlash} />}
           {!session && (
             <div className="sv2-note">
               {t('settings.guestNote')}
