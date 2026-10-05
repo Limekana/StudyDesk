@@ -1,23 +1,27 @@
+/* v1.17 (limecore#20): Playfair Display and DM Sans each ship as ONE file.
+   The three per-weight files of each were byte-identical copies, so every
+   weight below now points at the same URL: one download instead of three,
+   and the weight descriptors (what the browser matches against) unchanged. */
 @font-face {
   font-family: 'Playfair Display';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/fonts/playfair-400.woff2') format('woff2');
+  src: url('/fonts/playfair.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Playfair Display';
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url('/fonts/playfair-500.woff2') format('woff2');
+  src: url('/fonts/playfair.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Playfair Display';
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url('/fonts/playfair-600.woff2') format('woff2');
+  src: url('/fonts/playfair.woff2') format('woff2');
 }
 @font-face {
   font-family: 'DM Mono';
@@ -45,21 +49,21 @@
   font-style: normal;
   font-weight: 300;
   font-display: swap;
-  src: url('/fonts/dmsans-300.woff2') format('woff2');
+  src: url('/fonts/dmsans.woff2') format('woff2');
 }
 @font-face {
   font-family: 'DM Sans';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/fonts/dmsans-400.woff2') format('woff2');
+  src: url('/fonts/dmsans.woff2') format('woff2');
 }
 @font-face {
   font-family: 'DM Sans';
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url('/fonts/dmsans-500.woff2') format('woff2');
+  src: url('/fonts/dmsans.woff2') format('woff2');
 }
 
 /* ── Paid-theme faces (v1.13) ───────────────────────────────────────────────
