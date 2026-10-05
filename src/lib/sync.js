@@ -380,12 +380,22 @@ export async function submitFeedback({ id, category, rating, message, appVersion
   return id;
 }
 
+// v1.17 (limecore#17): the user's own reports with their status, for Settings.
+// Columns are named, never `*`: once the 20261005 migration is applied the
+// user may read only these, and a request naming any other column fails as a
+// whole. `shipped_in` arrives with that migration, so until it is applied the
+// query falls back to the columns that exist (42703 = undefined column) rather
+// than hiding the list.
+const MY_FEEDBACK_COLUMNS = 'id, app, category, rating, message, created_at, status';
+
 export async function myFeedback() {
-  const { data, error } = await supabase
+  const query = (cols) => supabase
     .from('feedback')
-    .select('id, category, rating, message, created_at, app')
+    .select(cols)
     .order('created_at', { ascending: false })
     .limit(20);
+  let { data, error } = await query(`${MY_FEEDBACK_COLUMNS}, shipped_in`);
+  if (error?.code === '42703') ({ data, error } = await query(MY_FEEDBACK_COLUMNS));
   if (error) throw error;
   return data || [];
 }

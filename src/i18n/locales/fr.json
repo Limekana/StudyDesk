@@ -331,6 +331,14 @@
     "feedbackEmpty": "Écrivez d'abord un message.",
     "feedbackSignIn": "Connectez-vous pour envoyer un commentaire.",
     "feedbackMeta": "Envoyé avec {{app}} v{{version}}.",
+    "fbYours": "Vos commentaires",
+    "fbYoursNote": "Quand un de vos commentaires est prévu ou publié, cela s’affiche ici.",
+    "fbStatus": {
+      "sent": "Envoyé",
+      "planned": "Prévu",
+      "shipped": "Publié",
+      "shippedIn": "Publié dans la {{version}}"
+    },
     "fbCat": {
       "bug": "Bug",
       "idea": "Idée",

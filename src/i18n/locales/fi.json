@@ -329,6 +329,14 @@
     "feedbackEmpty": "Kirjoita ensin viesti.",
     "feedbackSignIn": "Kirjaudu sisään lähettääksesi palautetta.",
     "feedbackMeta": "Lähetetään tiedolla {{app}} v{{version}}.",
+    "fbYours": "Palautteesi",
+    "fbYoursNote": "Kun lähettämäsi asia on suunnitteilla tai julkaistu, se näkyy täällä.",
+    "fbStatus": {
+      "sent": "Lähetetty",
+      "planned": "Suunnitteilla",
+      "shipped": "Julkaistu",
+      "shippedIn": "Julkaistu versiossa {{version}}"
+    },
     "fbCat": {
       "bug": "Vika",
       "idea": "Idea",
