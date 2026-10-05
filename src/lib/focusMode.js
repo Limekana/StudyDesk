@@ -49,8 +49,11 @@ export function focusCapabilities() {
  * Returns what actually happened, not what was asked for — the user can refuse
  * the pinning prompt, and the caller needs to know it is not pinned so it can
  * avoid promising otherwise.
+ *
+ * `immersive` (v1.17, #68) hides the status and navigation bars until
+ * stopFocus(). A shell older than 1.17 ignores it and keeps its bars.
  */
-export async function startFocus({ title, text, endsAt, chip = true, pin = false }) {
+export async function startFocus({ title, text, endsAt, chip = true, pin = false, immersive = false }) {
   if (!isNative()) return { chip: false, pinned: false };
   try {
     return await FocusMode.start({
@@ -61,6 +64,7 @@ export async function startFocus({ title, text, endsAt, chip = true, pin = false
       endsAt: Number.isFinite(endsAt) ? Math.round(endsAt) : 0,
       chip: !!chip,
       pin: !!pin,
+      immersive: !!immersive,
     });
   } catch {
     return { chip: false, pinned: false };
@@ -126,8 +130,8 @@ export async function ensureNotificationPermission() {
 }
 
 /** End a focus block. Safe to call when nothing was started — the native side
- *  clears both halves unconditionally, which is what recovers a session that
- *  was interrupted by a crash rather than by the user. */
+ *  clears every half unconditionally (chip, pin, hidden bars), which is what
+ *  recovers a session that was interrupted by a crash rather than by the user. */
 export async function stopFocus() {
   if (!isNative()) return { chipCleared: false, pinned: false };
   try {
