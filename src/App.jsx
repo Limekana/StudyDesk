@@ -1,9 +1,6 @@
 import { useState, useEffect, useCallback, useReducer, useRef, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
-import { fmtToday, formatLocale } from "./lib/dates.js";
-import { pushWidgetSnapshot, consumeWidgetLaunchView, onWidgetNavigate } from "./lib/widgetBridge.js";
-import { WIDGET_PALETTE_EVENT } from "./lib/theme.js";
-import { LocalNotifications } from "@capacitor/local-notifications";
+import { fmtToday } from "./lib/dates.js";
 import { App as CapApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "./lib/supabase.js";
@@ -14,7 +11,6 @@ import { isGuestMode, setGuestMode } from "./lib/guestMode.js";
 import { scheduleOriginStamp } from "./lib/originMarker.js";
 import { watchAppOpens } from "./lib/appOpens.js";
 import { refreshEntitlement } from "./lib/entitlement.js";
-import { writeJson } from "./lib/localStore.js";
 import { downloadExport } from "./lib/dataRights.js";
 import StorageAlert from "./features/settings/StorageAlert.jsx";
 import FdroidUpdateNote from "./features/update/FdroidUpdateNote.jsx";
@@ -28,18 +24,16 @@ import { hydrateOnboardedFromCloud, markOnboardedCloud } from "./lib/onboardingC
 import * as sync from "./lib/sync.js";
 import * as outbox from "./lib/outbox.js";
 import { reconcileUnsynced } from "./lib/reconcile.js";
-import { stampsFromPull, isInSync, isRemoteTombstone, shouldPull } from "./lib/syncStamps.js";
+import { stampsFromPull, shouldPull } from "./lib/syncStamps.js";
 import SaveSessionSheet from "./features/sessions/SaveSessionSheet.jsx";
 import { pastSessionDraft } from "./lib/pastSession.js";
 import "./styles/notebook.css";
-import { isGradeMode, normalizeScale, DEFAULT_CUSTOM_SCALE } from "./lib/gradeScale.js";
 import CoursePicker from "./lib/CoursePicker.jsx";
 import { AddAsgnModal, AddExamModal, EditCourseModal } from "./features/plan/CourseModals.jsx";
 import CourseDetailView from "./features/plan/CourseDetailView.jsx";
 import PlanView from "./features/plan/PlanView.jsx";
 import ActionsView from "./features/actions/ActionsView.jsx";
 import { daysUntil } from "./lib/deadlines.js";
-import { ACTION_DONE_ID, cancelAllNotifications, scheduleNotifications } from "./lib/planNotifications.js";
 import { INITIAL, reducer, newSyncId } from "./lib/appReducer.js";
 // Cascade order preserved from the old css+css2+css3+css4+cssOnboard concat.
 import './styles/base.css';
@@ -63,8 +57,14 @@ import { NotebookPen, CalendarDays, Award, Timer, PanelLeftClose, PanelLeftOpen,
 import { checkForDesktopUpdate, runDesktopUpdateAction, useDesktopUpdate } from "./lib/desktopUpdate.js";
 import { AccountAvatar } from "./lib/avatar.jsx";
 import { useShellTier, useSidebarRail } from "./lib/useShell.js";
-import { startPlanReminderLoop, webNotifySupported } from "./lib/webNotify.js";
 import { enterSubmit } from "./lib/imeSubmit.js";
+import { rehydrateState } from "./app/rehydrate.js";
+import { usePersistState } from "./app/usePersistState.js";
+import { useReminders } from "./app/useReminders.js";
+import { useWidgets } from "./app/useWidgets.js";
+import { useOutboxTriggers, useReminderActions } from "./app/useAppEvents.js";
+import { useNoteSync } from "./app/useNoteSync.js";
+import { useCloudPushers } from "./app/useCloudPushers.js";
 
 // v1.17 (limecore#13): every feature view is its own chunk, loaded the first
 // time its tab is opened. The views a launch opens on (actions, the plan list,
@@ -81,244 +81,9 @@ const SettingsView = lazy(() => import("./features/settings/SettingsView.jsx"));
 // v1.17 (limecore#12): only a first run ever shows onboarding.
 const OnboardingView = lazy(() => import("./features/onboarding/OnboardingView.jsx"));
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 // ── Root App ──────────────────────────────────────────────────────────────────
 export default function App() {
-  const [state, dispatch] = useReducer(reducer, INITIAL, (init) => {
-    try {
-      const raw = localStorage.getItem("studydesk-v1");
-      const saved = raw ? JSON.parse(raw) : {};
-      // Normalize legacy course rows that pre-date credits/semester/timestamps.
-      // v1.2 adds archivedAt — defaults to null (active) on rehydration.
-      // Guard each field's shape independently so a single malformed field
-      // (e.g. a non-array `assignments` from a partial write) falls back to
-      // empty for THAT field only — never throwing out to the catch, which
-      // would blank ALL local data and let the persist effect overwrite it.
-      const savedCourses = saved.courses && typeof saved.courses === "object" ? saved.courses : {};
-      const courses = {};
-      for (const [id, c] of Object.entries(savedCourses)) {
-        courses[id] = {
-          notes: [],
-          credits: 1,
-          semester: null,
-          schoolYear: null,
-          updatedAt: null,
-          deletedAt: null,
-          archivedAt: null,
-          ...c,
-        };
-      }
-      const gradeMode = (() => {
-        try {
-          const raw = localStorage.getItem("studydesk-grade-mode");
-          return isGradeMode(raw) ? raw : "ib";
-        } catch { return "ib"; }
-      })();
-      const customScale = (() => {
-        try {
-          const raw = localStorage.getItem("studydesk-grade-scale");
-          return raw ? normalizeScale(JSON.parse(raw)) : DEFAULT_CUSTOM_SCALE;
-        } catch { return DEFAULT_CUSTOM_SCALE; }
-      })();
-      // Absent key reads as false, so every existing install starts opted out
-      // rather than inheriting an "on" it was never asked about.
-      const aiEnabled = (() => {
-        try { return localStorage.getItem("studydesk-ai-enabled") === "1"; } catch { return false; }
-      })();
-      // Lock In's native extras. The chip's key is absent for everyone who
-      // installed before v1.10, and absent must mean ON there — it is the
-      // half of the feature the owner actually asked for. Pinning's absent
-      // key means OFF, because nobody consents to being locked in by default.
-      const focusChip = (() => {
-        try { return localStorage.getItem("studydesk-focus-chip") !== "0"; } catch { return true; }
-      })();
-      const focusPin = (() => {
-        try { return localStorage.getItem("studydesk-focus-pin") === "1"; } catch { return false; }
-      })();
-      // Study-until. Absent means the default is in force, which is the right
-      // reading for every install that predates the setting — the evening was
-      // never deliberately excluded, it just fell off the end of the window.
-      // An explicit "off" is the only thing that disables it.
-      const studyUntil = (() => {
-        try {
-          const raw = localStorage.getItem("studydesk-study-until");
-          if (raw === null) return 21*60;
-          if (raw === "off") return null;
-          const n = Number(raw);
-          return Number.isFinite(n) ? Math.max(0, Math.min(24*60, Math.round(n))) : 21*60;
-        } catch { return 21*60; }
-      })();
-      // Planned-session reminders. Absent keys mean the defaults, which is the
-      // right reading for an install that predates the feature — nobody there
-      // declined it, it did not exist.
-      const planRemindLead = (() => {
-        try {
-          const raw = localStorage.getItem("studydesk-plan-lead");
-          if (raw === null) return 30;
-          if (raw === "off") return null;
-          const n = Number(raw);
-          return Number.isFinite(n) ? Math.max(1, Math.min(24*60, Math.round(n))) : 30;
-        } catch { return 30; }
-      })();
-      const planRemindStart = (() => {
-        try { return localStorage.getItem("studydesk-plan-start") !== "0"; } catch { return true; }
-      })();
-      // Reminders. The key is absent for everyone who onboarded before this
-      // preference existed, and those users have already been through the
-      // permission prompt — so absent-but-onboarded means keep scheduling, and
-      // only an explicit "Maybe later" writes a "0". A blanket default of false
-      // would silently stop reminders for every existing install.
-      const notifEnabled = (() => {
-        try {
-          const raw = localStorage.getItem("studydesk-notifications");
-          if (raw !== null) return raw === "1";
-          return localStorage.getItem("studydesk-onboarded") === "1";
-        } catch { return true; }
-      })();
-
-      // ── v1.0.4 UUID migration ────────────────────────────────────────────────
-      // Earlier versions used short uid() strings for IDs. Supabase columns are
-      // `uuid` type and reject them ("invalid input syntax for type uuid: ...").
-      // This pass detects non-UUID local IDs and rewrites them — keeping all
-      // cross-references intact (grade.subjectId, session.subjectId,
-      // assignment.courseId, exam.courseId, action.courseId, activeCourse).
-      // Marks `studydesk-needs-initial-push` so the App runs a one-shot push
-      // of the migrated rows after auth lands.
-      let needsPush = localStorage.getItem("studydesk-needs-initial-push") === "1";
-      const subjectIdMap = {};
-      const migratedCourses = {};
-      for (const [oldId, c] of Object.entries(courses)) {
-        if (UUID_RE.test(oldId)) {
-          migratedCourses[oldId] = c;
-          subjectIdMap[oldId] = oldId;
-        } else {
-          const newId = crypto.randomUUID();
-          subjectIdMap[oldId] = newId;
-          migratedCourses[newId] = { ...c, id: newId };
-          needsPush = true;
-        }
-      }
-      const migratedGrades = (Array.isArray(saved.grades) ? saved.grades : []).map(g => {
-        const idOk = UUID_RE.test(g.id);
-        const subjIdMapped = subjectIdMap[g.subjectId];
-        const subjOk = !subjIdMapped || subjIdMapped === g.subjectId;
-        if (idOk && subjOk) return g;
-        needsPush = true;
-        return {
-          ...g,
-          id: idOk ? g.id : crypto.randomUUID(),
-          subjectId: subjIdMapped || g.subjectId,
-        };
-      });
-      const migratedSessions = (Array.isArray(saved.studySessions) ? saved.studySessions : []).map(s => {
-        const idOk = UUID_RE.test(s.id);
-        const subjIdMapped = s.subjectId ? subjectIdMap[s.subjectId] : null;
-        const subjOk = !s.subjectId || subjIdMapped === s.subjectId;
-        if (idOk && subjOk) return s;
-        needsPush = true;
-        return {
-          ...s,
-          id: idOk ? s.id : crypto.randomUUID(),
-          subjectId: s.subjectId ? (subjIdMapped || s.subjectId) : null,
-        };
-      });
-      // ── v1.7 assignment/exam/action UUID migration (StudyDesk#6) ────────────
-      // These were local-only until v1.7 and used short uid() ids, which the
-      // new `uuid` columns reject outright. Re-key them here, exactly as the
-      // v1.0.4 pass above did for courses/grades/sessions, and mark the batch
-      // for the one-shot push so a user's existing homework reaches the cloud
-      // rather than only newly created items.
-      //
-      // asgnIdMap/examIdMap are kept because manual actions can carry a
-      // sourceId pointing at an assignment or exam. Re-keying the target
-      // without remapping the reference would silently break "mark done" on
-      // the suggested-action row.
-      const asgnIdMap = {};
-      const examIdMap = {};
-      const migratedAssignments = (Array.isArray(saved.assignments) ? saved.assignments : []).map(a => {
-        const idOk = UUID_RE.test(a.id);
-        const mappedCourse = subjectIdMap[a.courseId];
-        const courseOk = !mappedCourse || mappedCourse === a.courseId;
-        if (!idOk) asgnIdMap[a.id] = crypto.randomUUID();
-        if (idOk && courseOk) return a;
-        needsPush = true;
-        return {
-          ...a,
-          id: idOk ? a.id : asgnIdMap[a.id],
-          courseId: mappedCourse || a.courseId,
-        };
-      });
-      const migratedExams = (Array.isArray(saved.exams) ? saved.exams : []).map(e => {
-        const idOk = UUID_RE.test(e.id);
-        const mappedCourse = subjectIdMap[e.courseId];
-        const courseOk = !mappedCourse || mappedCourse === e.courseId;
-        if (!idOk) examIdMap[e.id] = crypto.randomUUID();
-        if (idOk && courseOk) return e;
-        needsPush = true;
-        return {
-          ...e,
-          id: idOk ? e.id : examIdMap[e.id],
-          courseId: mappedCourse || e.courseId,
-        };
-      });
-      const migratedActions = (Array.isArray(saved.actions) ? saved.actions : []).map(a => {
-        const idOk = UUID_RE.test(a.id);
-        const mappedCourse = a.courseId ? subjectIdMap[a.courseId] : null;
-        const courseOk = !a.courseId || mappedCourse === a.courseId;
-        const mappedSource = a.sourceId ? (asgnIdMap[a.sourceId] || examIdMap[a.sourceId]) : null;
-        if (idOk && courseOk && !mappedSource) return a;
-        needsPush = true;
-        return {
-          ...a,
-          id: idOk ? a.id : crypto.randomUUID(),
-          courseId: a.courseId ? (mappedCourse || a.courseId) : null,
-          sourceId: mappedSource || a.sourceId || null,
-        };
-      });
-      const migratedActiveCourse = saved.activeCourse && subjectIdMap[saved.activeCourse]
-        ? subjectIdMap[saved.activeCourse]
-        : saved.activeCourse || null;
-
-      if (needsPush) {
-        try { localStorage.setItem("studydesk-needs-initial-push", "1"); } catch {}
-      }
-
-      return {
-        ...init,
-        ...saved,
-        courses: migratedCourses,
-        assignments: migratedAssignments,
-        exams: migratedExams,
-        actions: migratedActions,
-        grades: migratedGrades,
-        studySessions: migratedSessions,
-        // v1.10. No UUID migration pass for these four: they were born after
-        // v1.0.4, so every id they have ever held came from crypto.randomUUID.
-        // Shape-guarded individually for the same reason as the lists above —
-        // one malformed array must not blank the others.
-        plannedSessions: Array.isArray(saved.plannedSessions) ? saved.plannedSessions : [],
-        academicTerms: Array.isArray(saved.academicTerms) ? saved.academicTerms : [],
-        timetableEntries: Array.isArray(saved.timetableEntries) ? saved.timetableEntries : [],
-        attachments: Array.isArray(saved.attachments) ? saved.attachments : [],
-        commitments: Array.isArray(saved.commitments) ? saved.commitments : [],
-        notes: Array.isArray(saved.notes) ? saved.notes : [],
-        noteAttachments: Array.isArray(saved.noteAttachments) ? saved.noteAttachments : [],
-        attendance: Array.isArray(saved.attendance) ? saved.attendance : [],
-        activeCourse: migratedActiveCourse,
-        gradeMode,
-        customScale,
-        aiEnabled,
-        notifEnabled,
-        focusChip,
-        focusPin,
-        studyUntil,
-        planRemindLead,
-        planRemindStart,
-        view: "actions",
-      };
-    } catch { return init; }
-  });
+  const [state, dispatch] = useReducer(reducer, INITIAL, rehydrateState);
   const { t } = useTranslation();
 
   // ── Auth session — DECLARED FIRST, DELIBERATELY ────────────────────────────
@@ -380,181 +145,11 @@ export default function App() {
   // is evaluated during render, so up here it referenced the binding before
   // its useState had run.
   const [onboardChecked, setOnboardChecked] = useState(false);
-  // v1.13 Item 1a — THE five-hours bug.
-  //
-  // This write is the app's database, and until now it was
-  // `try { ... } catch {}`. When it failed the app carried on with in-memory
-  // state that would not survive the next cold start: the user kept studying,
-  // the timer kept logging, and everything since the last successful write
-  // vanished at relaunch. Offline, none of it had reached the server either,
-  // so it was gone from every device — which is the report verbatim.
-  //
-  // `writeJson` marks this critical, so a failure raises the app-wide storage
-  // health state that `StorageAlert` renders. See src/lib/localStore.js for
-  // why an app update is not special here: it is simply the relaunch at which
-  // the user finds out.
-  useEffect(() => {
-    writeJson("studydesk-v1", {
-      courses:state.courses,
-      assignments:state.assignments,
-      actions:state.actions,
-      exams:state.exams,
-      grades:state.grades,
-      studySessions:state.studySessions,
-      plannedSessions:state.plannedSessions,
-      academicTerms:state.academicTerms,
-      timetableEntries:state.timetableEntries,
-      attachments:state.attachments,
-      commitments:state.commitments,
-      notes:state.notes,
-      noteAttachments:state.noteAttachments,
-      attendance:state.attendance,
-    }, { critical: true });
-  }, [state.courses,state.assignments,state.actions,state.exams,state.grades,state.studySessions,state.plannedSessions,state.academicTerms,state.timetableEntries,state.attachments,state.commitments,state.notes,state.noteAttachments,state.attendance]);
-  // gradeMode is UI-only — persist separately so it doesn't trigger a v1 rewrite on every toggle.
-  useEffect(() => {
-    try { localStorage.setItem("studydesk-grade-mode", state.gradeMode); } catch {}
-  }, [state.gradeMode]);
-  useEffect(() => {
-    try { localStorage.setItem("studydesk-grade-scale", JSON.stringify(state.customScale)); } catch {}
-  }, [state.customScale]);
-  // Same treatment for the AI opt-in: device-level, not synced academic data.
-  useEffect(() => {
-    try { localStorage.setItem("studydesk-ai-enabled", state.aiEnabled ? "1" : "0"); } catch {}
-  }, [state.aiEnabled]);
-  useEffect(() => {
-    try { localStorage.setItem("studydesk-focus-chip", state.focusChip ? "1" : "0"); } catch {}
-  }, [state.focusChip]);
-  useEffect(() => {
-    try { localStorage.setItem("studydesk-focus-pin", state.focusPin ? "1" : "0"); } catch {}
-  }, [state.focusPin]);
-  useEffect(() => {
-    try { localStorage.setItem("studydesk-notifications", state.notifEnabled ? "1" : "0"); } catch {}
-  }, [state.notifEnabled]);
-  useEffect(() => {
-    try {
-      localStorage.setItem("studydesk-study-until", state.studyUntil === null ? "off" : String(state.studyUntil));
-    } catch {}
-  }, [state.studyUntil]);
-  useEffect(() => {
-    try {
-      localStorage.setItem("studydesk-plan-lead", state.planRemindLead === null ? "off" : String(state.planRemindLead));
-      localStorage.setItem("studydesk-plan-start", state.planRemindStart ? "1" : "0");
-    } catch {}
-  }, [state.planRemindLead, state.planRemindStart]);
+  usePersistState(state);
 
-  // Schedule notifications after onboarding with fresh state (#21 fix)
-  // Reschedule notifications whenever exams or assignments change (not just onboarding)
-  useEffect(() => {
-    if (!onboarded) return;
-    // notifEnabled is what makes "Maybe later" mean anything. Before this gate
-    // both onboarding buttons ran the same path, so declining still reached
-    // scheduleNotifications — which calls requestPermissions() and therefore
-    // raised the very OS prompt the user had just declined.
-    if (state.notifEnabled) {
-      scheduleNotifications(
-        state.exams, state.assignments, state.courses,
-        state.plannedSessions,
-        { lead: state.planRemindLead, atStart: state.planRemindStart },
-        t,
-      );
-    } else {
-      // Turning them off must also clear anything already scheduled, or
-      // reminders keep arriving from a previous session's schedule.
-      cancelAllNotifications();
-    }
-    // state.courses belongs here: notification bodies carry the course name, so
-    // renaming a course left stale text scheduled until an exam or assignment
-    // happened to change.
-    // plannedSessions and both reminder prefs belong here for the same reason
-    // state.courses does: the schedule is derived from them, so changing one
-    // without rescheduling leaves the OS holding a stale set of alarms.
-  }, [onboarded, state.notifEnabled, state.exams, state.assignments, state.courses,
-      state.plannedSessions, state.planRemindLead, state.planRemindStart, t]);
+  useReminders({ onboarded, state, t });
 
-  // ── Web reminders (v1.10) ────────────────────────────────────────────────
-  //
-  // Android gets OS alarms through LocalNotifications; the browser has no
-  // equivalent, so on web the same two preferences are served by a polling
-  // loop. See lib/webNotify.js for why it polls rather than setTimeout, and
-  // for the honest limit: this fires while StudyDesk is OPEN in a tab, hidden
-  // or minimised included, and cannot fire once the tab is closed.
-  //
-  // The loop reads through a ref so it is started once. Passing state directly
-  // would rebuild it on every plan edit and every keystroke in Settings, which
-  // resets the tick and drops whatever was about to fire.
-  const webNotifyState = useRef(null);
-  webNotifyState.current = {
-    enabled: onboarded && state.notifEnabled,
-    plans: state.plannedSessions,
-    courses: state.courses,
-    prefs: { lead: state.planRemindLead, atStart: state.planRemindStart },
-    labels: {
-      fallback: t('notif.planFallback'),
-      now: t('notif.planNowTitle'),
-      soon: (n) => t('notif.planSoonTitle', { n }),
-    },
-  };
-  useEffect(() => {
-    if (Capacitor.isNativePlatform() || !webNotifySupported()) return undefined;
-    return startPlanReminderLoop(() => webNotifyState.current);
-  }, []);
-
-  // v1.9 (Item 8) — keep the home-screen widgets in step with the same data,
-  // on the same triggers as the notifications above. Both answer "what's next"
-  // from outside the app, so they should never be able to disagree.
-  //
-  // Not gated on notifEnabled: a widget the user chose to place on their home
-  // screen is not a notification, and declining reminders is not declining it.
-  // The push itself no-ops off Android and when no widget is placed.
-  //
-  // v1.15 — and on a palette change: the widgets follow the app's look (or
-  // the Settings override), so switching to Dark has to reach the home screen
-  // without waiting for the next assignment edit.
-  const [widgetPaletteTick, setWidgetPaletteTick] = useState(0);
-  useEffect(() => {
-    const bump = () => setWidgetPaletteTick((n) => n + 1);
-    window.addEventListener(WIDGET_PALETTE_EVENT, bump);
-    return () => window.removeEventListener(WIDGET_PALETTE_EVENT, bump);
-  }, []);
-  useEffect(() => {
-    void pushWidgetSnapshot({
-      assignments: state.assignments,
-      exams: state.exams,
-      courses: state.courses,
-      t,
-      locale: formatLocale(),
-    });
-  }, [state.assignments, state.exams, state.courses, t, widgetPaletteTick]);
-
-  // v1.10 — widget taps land where the widget was about.
-  //
-  // Shipped 1.7.0 gave both widgets the same bare "open MainActivity" intent,
-  // so a tap dropped the user on whatever screen they last left the app on —
-  // reported as "doesnt take me to the right place both just open the app".
-  // Next Up now opens the Next Up view, Upcoming opens the plan view.
-  //
-  // Two paths because Android delivers the two cases differently: a cold start
-  // is queued natively and collected here on mount, a tap while the app is
-  // already running arrives as an event. See WidgetBridgePlugin.
-  useEffect(() => {
-    let cancelled = false;
-
-    void consumeWidgetLaunchView().then((view) => {
-      if (!cancelled && view) dispatch({ type: "SET_VIEW", view });
-    });
-
-    // Await the handle before removing it — the same StrictMode ordering trap
-    // that double-registered the notification listener in v1.7.
-    const handlePromise = onWidgetNavigate((view) => {
-      dispatch({ type: "SET_VIEW", view });
-    });
-
-    return () => {
-      cancelled = true;
-      void handlePromise?.then((h) => h.remove()).catch(() => {});
-    };
-  }, []);
+  useWidgets({ state, t, dispatch });
 
   // ── Sync bookkeeping shared by the effects below (StudyDesk#72) ─────────
   // Declared up here, ahead of the first effect that names them: hook
@@ -573,88 +168,9 @@ export default function App() {
   // and called when the user comes back to the window.
   const requestPullRef = useRef(null);
 
-  // v1.3 — outbox drain triggers. The outbox holds pending Supabase writes
-  // when the device is offline or a sync call failed; this effect re-runs
-  // drain on three signals:
-  //
-  //   1. App cold-start (mount) — catches anything queued in a prior
-  //      session that hadn't drained yet.
-  //   2. `online` window event — fires when the OS detects network
-  //      restoration. Capacitor surfaces this in the Android WebView.
-  //   3. `visibilitychange` → visible — fires when the app comes back to
-  //      the foreground after being backgrounded. Capacitor maps Android's
-  //      onResume here. Useful when the device was online but the user
-  //      was away long enough for a retry to make sense.
-  //
-  // drain() is single-flight inside the outbox (coalesces overlapping
-  // calls) so firing it from all three paths is safe.
-  //
-  // StudyDesk#72 — the same signals now also pull, after the drain, so local
-  // edits reach the server before the server's view is merged back. Window
-  // `focus` joins them for the desktop edition, where switching between
-  // windows never changes `visibilityState`. The pull is throttled inside
-  // `requestPullRef` (syncStamps.js), so an alt-tab habit costs nothing.
-  useEffect(() => {
-    // One-shot on mount.
-    void outbox.drain();
-    const drainThenPull = () => {
-      void Promise.resolve(outbox.drain())
-        .catch(() => { /* drain reports its own failures */ })
-        .then(() => requestPullRef.current?.());
-    };
-    function onOnline() { drainThenPull(); }
-    function onVisibility() {
-      if (document.visibilityState === 'visible') drainThenPull();
-    }
-    window.addEventListener('online', onOnline);
-    window.addEventListener('focus', drainThenPull);
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => {
-      window.removeEventListener('online', onOnline);
-      window.removeEventListener('focus', drainThenPull);
-      document.removeEventListener('visibilitychange', onVisibility);
-    };
-  }, []);
+  useOutboxTriggers(requestPullRef);
 
-  // Listen for "Mark done" action-button taps on assignment reminders.
-  // The handler dispatches TOGGLE_ASSIGNMENT — since reschedules filter out
-  // assignments where done===true, the next scheduling pass naturally drops
-  // any further reminders for the just-completed assignment. The reducer's
-  // toggle (rather than a one-way mark-done) is fine here because Android
-  // auto-dismisses the notification on action tap, so accidental
-  // double-taps that would un-toggle aren't reachable.
-  useEffect(() => {
-    // Hold the listener PROMISE and remove via it. With the old
-    // `let handle=null; (async)=>{handle=await add()}` pattern, React 19
-    // StrictMode's mount→cleanup→mount runs cleanup before the await resolves
-    // (handle still null → .remove() skipped), orphaning the first listener and
-    // double-registering — so "Mark done" fired TOGGLE_ASSIGNMENT twice (net
-    // no-op). The backButton listener below already uses this safe idiom.
-    const handlePromise = LocalNotifications.addListener(
-          "localNotificationActionPerformed",
-          (event) => {
-            // v1.3.1 BUG-14 — body-tap navigation. @capacitor/local-notifications
-            // fires this same event for both the "Mark done" action button AND
-            // a tap on the notification body itself (actionId === 'tap'). The
-            // existing handler only acted on 'done'; body taps fell through and
-            // the app opened on whatever screen it was last on instead of the
-            // relevant assignments view. Route body taps to the plan view so
-            // the user lands on the full assignment list — same target as the
-            // ActionsView ("Next Up") would imply but "plan" surfaces all
-            // upcoming work, which matches the tap intent better.
-            if (event.actionId === "tap") {
-              dispatch({ type: "SET_VIEW", view: "plan" });
-              return;
-            }
-            if (event.actionId !== ACTION_DONE_ID) return;
-            const assignmentId = event.notification?.extra?.assignmentId;
-            if (!assignmentId) return;
-            dispatch({ type: "TOGGLE_ASSIGNMENT", id: assignmentId });
-          },
-        );
-    handlePromise.catch((e) => console.warn("[StudyDesk] action listener failed:", e));
-    return () => { handlePromise.then((h) => h.remove()).catch(() => {}); };
-  }, []);
+  useReminderActions(dispatch);
   // Notifications are only scheduled after onboarding completes — never on first open
   const handleOnboardingComplete = useCallback((courseData, opts = {}) => {
     if (courseData) {
@@ -686,6 +202,8 @@ export default function App() {
   const [newCourseColor, setNewCourseColor] = useState(COURSE_COLORS[0]);
   const showFlash = useCallback((msg) => { setFlash(msg); setTimeout(()=>setFlash(null),2200); }, []);
 
+  const { onDeleteNote } = useNoteSync({ state, session, pulledOnce, remoteStampsRef, dispatch });
+
   // v1.13 Item 1a — the escape hatch offered by StorageAlert.
   //
   // Reads from `state`, which is IN MEMORY and still correct, rather than
@@ -693,142 +211,6 @@ export default function App() {
   // point of the button: it is the one action that does not depend on
   // anything currently broken. `downloadExport` builds a blob and hands it to
   // the browser, touching no persistent storage on the way.
-  // ── v1.13 Item 1b — pushing note edits ──────────────────────────────────
-  //
-  // A note changes on every keystroke, so it CANNOT be enqueued the way an
-  // assignment is. Enqueueing per change would put hundreds of items in a
-  // queue that persists to localStorage on every write — which is the exact
-  // pressure that Item 1a identifies as the cause of the five-hours loss.
-  //
-  // So: debounce, and enqueue at most one item per note per idle window. The
-  // outbox de-duplicates nothing, but `upsert_note` carries the whole note as
-  // a snapshot, so a later item simply supersedes an earlier one under LWW —
-  // which makes a stale queued copy harmless rather than a lost edit.
-  //
-  // The 1500ms window matches the realtime pull's own coalescing constant, so
-  // the two do not fight: an edit settles, pushes, and the echo arrives after
-  // the queue has already drained it.
-  const noteTimers = useRef(new Map());
-  useEffect(() => {
-    if (!session) return undefined;
-    // StudyDesk#72 — wait for the first pull to settle, as the v1.7
-    // reconciler already does. Until then this effect cannot tell a note the
-    // user just edited from a stale local copy, and it used to push them all
-    // 1.5s after sign-in stamped `now()`: on a connection slower than the
-    // debounce, an out-of-date copy overwrote a newer edit made on another
-    // device. `pulledOnce` flips on success AND failure, so an offline launch
-    // still pushes, and an edit made in the gap is picked up when it flips.
-    if (!pulledOnce) return undefined;
-    const timers = noteTimers.current;
-    for (const n of state.notes || []) {
-      if (n.deletedAt) continue;
-      const prev = timers.get(n.id);
-      if (prev?.updatedAt === n.updatedAt) continue;
-      if (prev?.handle) clearTimeout(prev.handle);
-      // StudyDesk#72 — this note is exactly the copy the last pull returned:
-      // either it arrived from another device or it is our own push coming
-      // back with its push-time stamp. Record the baseline, push nothing.
-      // Pushing it would stamp a newer `updated_at`, which the next pull
-      // returns, which lands here again — a loop once per pull, and every ~3s
-      // per note once realtime works (Limekana/limecore#24). Cancelling the
-      // pending timer above is correct too: the server's copy is newer than
-      // the payload it captured.
-      if (isInSync("notes", n, remoteStampsRef.current)) {
-        timers.set(n.id, { updatedAt: n.updatedAt, handle: 0, payload: null });
-        continue;
-      }
-      // The payload is captured HERE, alongside the timer, so `flush` below
-      // can push it without the note being in scope. Without it the flush had
-      // nothing to send — see blocker 3 on that effect.
-      const payload = {
-        id: n.id,
-        courseId: n.courseId,
-        title: n.title,
-        lessonDate: n.lessonDate,
-        content: n.content,
-        sessionId: n.sessionId,
-        layout: n.layout ?? null,
-        // v1.16 (limecore#27): the note's own edit time — the keystroke, not
-        // the debounce firing 1.5 s later. The outbox stamps from it.
-        updatedAt: n.updatedAt,
-      };
-      const handle = setTimeout(() => {
-        outbox.enqueue("upsert_note", payload);
-        const cur = timers.get(n.id);
-        if (cur) timers.set(n.id, { ...cur, handle: 0 });
-      }, 1500);
-      timers.set(n.id, { updatedAt: n.updatedAt, handle, payload });
-    }
-    return undefined;
-  }, [state.notes, session, pulledOnce]);
-
-  // Flush pending note pushes on unmount and on backgrounding.
-  //
-  // ── This CANCELLED them instead (v1.13 review, blocker 3) ──────────────
-  //
-  // It cleared every timer and enqueued nothing, so the edit it was written
-  // to rescue was the exact edit it destroyed: type a line, press Home inside
-  // the 1.5s debounce, and the write never left the device. It fired on
-  // unmount too, so merely navigating out of the notebook did the same.
-  //
-  // Nor was reconcile the safety net the old comment claimed. `findUnsynced`
-  // compares IDS: once a note has been pushed even once it exists remotely,
-  // so a later lost edit is invisible to it. The note then sits locally with
-  // a newer `updatedAt` that no one ever sees, until another device's older
-  // copy wins LWW and overwrites it.
-  //
-  // That is the five-hours bug, in the data the build plan calls the most
-  // precious in the app. It now enqueues.
-  useEffect(() => {
-    const flush = () => {
-      for (const [, rec] of noteTimers.current) {
-        if (!rec.handle) continue;
-        clearTimeout(rec.handle);
-        // Cancel the timer and do its job immediately. `enqueue` coalesces on
-        // the note id, so a flush racing a timer that already fired replaces
-        // one pending item rather than queueing a second.
-        if (rec.payload) outbox.enqueue("upsert_note", rec.payload);
-      }
-      noteTimers.current.clear();
-    };
-    const onHide = () => { if (document.visibilityState === "hidden") flush(); };
-    // `pagehide` as well as `visibilitychange`. iOS WKWebView does not reliably
-    // deliver `visibilitychange` when the OS terminates a backgrounded app, and
-    // this flush is the last thing standing between a debounced note edit and
-    // losing it. `pagehide` fires on that path, and flushing twice is free —
-    // `flush` clears the timer map, and `enqueue` coalesces on the note id.
-    const onPageHide = () => flush();
-    document.addEventListener("visibilitychange", onHide);
-    window.addEventListener("pagehide", onPageHide);
-    return () => {
-      document.removeEventListener("visibilitychange", onHide);
-      window.removeEventListener("pagehide", onPageHide);
-      flush();
-    };
-  }, []);
-
-  // Deleting a note. v1.13 review, blocker 4.
-  //
-  // `DELETE_NOTE` existed in the reducer and `delete_note` in KIND_DISPATCH,
-  // and NOTHING dispatched or enqueued either — the notebook shipped with no
-  // way to delete a note at all. The half that would have bitten hardest is
-  // the sync half: a note removed on one device would have stayed live on the
-  // server and come back on the next reinstall.
-  //
-  // Sited here rather than in the view because this is where `session` and
-  // the outbox live, matching every other delete path in this file.
-  const onDeleteNote = useCallback((id) => {
-    if (!id) return;
-    const pending = noteTimers.current.get(id);
-    // Drop any queued upsert for this note first: pushing an edit and then a
-    // tombstone for the same note in one drain is two round trips to reach
-    // the state one of them describes.
-    if (pending?.handle) clearTimeout(pending.handle);
-    noteTimers.current.delete(id);
-    dispatch({ type: "DELETE_NOTE", id });
-    if (session) outbox.enqueue("delete_note", { id });
-  }, [session]);
-
   const onExportFromAlert = useCallback(async () => {
     try {
       const name = await downloadExport(state, session);
@@ -1055,174 +437,7 @@ export default function App() {
     }
   }, [state.view]);
 
-  // ── v1.0.4 one-shot post-migration push ─────────────────────────────────────
-  // The UUID migration in the reducer init may have rewritten local IDs. Those
-  // rewritten rows have never reached Supabase (the old short-ID pushes were
-  // failing silently). Push everything once after sign-in. Subjects must go
-  // before grades (FK), grades before sessions doesn't matter (no FK between).
-  // Fire-and-forget per row, log failures — next user edit will retry.
-  useEffect(() => {
-    if (!session) return;
-    if (localStorage.getItem("studydesk-needs-initial-push") !== "1") return;
-    let cancelled = false;
-    (async () => {
-      let pushed = 0, failed = 0;
-      const courses = Object.values(state.courses).filter(c => !c.deletedAt);
-      for (const c of courses) {
-        if (cancelled) return;
-        try {
-          await sync.upsertSubject({ id: c.id, name: c.name, credits: c.credits, semester: c.semester, schoolYear: c.schoolYear, color: c.color });
-          pushed++;
-        } catch (e) { failed++; console.error("[StudyDesk] initial push subject failed:", c.id, e); }
-      }
-      const grades = (state.grades || []).filter(g => !g.deletedAt);
-      for (const g of grades) {
-        if (cancelled) return;
-        try {
-          await sync.upsertGrade({ id: g.id, subjectId: g.subjectId, grade: g.grade, weight: g.weight, date: g.date });
-          pushed++;
-        } catch (e) { failed++; console.error("[StudyDesk] initial push grade failed:", g.id, e); }
-      }
-      const sessions = (state.studySessions || []).filter(s => !s.deletedAt);
-      for (const s of sessions) {
-        if (cancelled) return;
-        try {
-          await sync.logStudySession({ id: s.id, subjectId: s.subjectId, startedAt: s.startedAt, durationMinutes: s.durationMinutes, notes: s.notes });
-          pushed++;
-        } catch (e) { failed++; console.error("[StudyDesk] initial push session failed:", s.id, e); }
-      }
-      // v1.7 (StudyDesk#6) — assignments/exams/actions. These run AFTER courses
-      // because both carry a NOT NULL subject_id FK; a course that failed above
-      // would take its homework down with it, which is why failures are counted
-      // rather than thrown (the flag stays set and the whole batch retries).
-      // Rows whose course no longer exists locally are skipped rather than
-      // attempted: the FK would reject them and burn a retry every launch.
-      for (const a of (state.assignments || [])) {
-        if (cancelled) return;
-        if (!a.courseId || !state.courses[a.courseId]) continue;
-        try {
-          await sync.upsertAssignment({ id: a.id, courseId: a.courseId, title: a.title, type: a.type, dueDate: a.dueDate, dueTime: a.dueTime, notes: a.notes, done: a.done });
-          pushed++;
-        } catch (e) { failed++; console.error("[StudyDesk] initial push assignment failed:", a.id, e); }
-      }
-      for (const ex of (state.exams || [])) {
-        if (cancelled) return;
-        if (!ex.courseId || !state.courses[ex.courseId]) continue;
-        try {
-          await sync.upsertExam({ id: ex.id, courseId: ex.courseId, title: ex.title, dueDate: ex.dueDate, difficulty: ex.difficulty, notes: ex.notes, done: ex.done, topics: ex.topics });
-          pushed++;
-        } catch (e) { failed++; console.error("[StudyDesk] initial push exam failed:", ex.id, e); }
-      }
-      // Only manual to-dos. The suggested ones are derived from assignments and
-      // exams on every render and must never reach the cloud, or they would
-      // come back as duplicate real rows alongside the freshly derived ones.
-      for (const ac of (state.actions || []).filter(x => !x.suggested)) {
-        if (cancelled) return;
-        try {
-          await sync.upsertAction({ id: ac.id, text: ac.text, bucket: ac.bucket, courseId: ac.courseId, done: ac.done });
-          pushed++;
-        } catch (e) { failed++; console.error("[StudyDesk] initial push action failed:", ac.id, e); }
-      }
-      if (failed === 0) {
-        try { localStorage.removeItem("studydesk-needs-initial-push"); } catch {}
-        if (pushed > 0) showFlash(t('av.flash.syncedLegacy', { n: pushed }));
-      } else {
-        showFlash(t('av.flash.syncedFailed', { pushed, failed }));
-      }
-    })();
-    return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user?.id]);
-
-  // ── v1.7 push reconciler for assignments / exams / actions (StudyDesk#6) ────
-  //
-  // Courses, grades and sessions enqueue their own pushes at each call site.
-  // These three deliberately do not, and the reason is structural: they are
-  // mutated from ~15 places across AsgnItem, ExamCard and ActionsView, none of
-  // which receive `session`. Threading it through every one of those props
-  // would be a wide change to working components, and any call site missed
-  // would be an edit that silently never syncs — the exact bug being fixed.
-  //
-  // Instead: diff the three arrays after every state change and enqueue what
-  // actually moved. One place, no call sites to miss, and it picks up any
-  // future mutation path for free.
-  const pushBaseline = useRef(null);
-  useEffect(() => {
-    if (!session) { pushBaseline.current = null; return; }
-    // Wait for the first pull to settle before arming. Pushing local rows
-    // before knowing the remote state would stamp them updated_at = now and
-    // let a stale device win against a newer edit made elsewhere.
-    if (!pulledOnceRef.current) return;
-
-    const snap = (list, fields) => {
-      const m = new Map();
-      for (const x of list || []) m.set(x.id, fields(x));
-      return m;
-    };
-    // Compare on updatedAt, not deep equality — every mutation stamps it, so
-    // this is both cheaper and immune to unrelated field churn.
-    const stamp = (x) => x.updatedAt || '';
-    const next = {
-      assignments: snap(state.assignments, stamp),
-      exams: snap(state.exams, stamp),
-      actions: snap((state.actions || []).filter((a) => !a.suggested), stamp),
-    };
-
-    // First run after a pull: record the baseline, push nothing. What is on
-    // screen right now is already reconciled with the cloud.
-    if (!pushBaseline.current) { pushBaseline.current = next; return; }
-
-    const prev = pushBaseline.current;
-    const byId = (list) => new Map((list || []).map((x) => [x.id, x]));
-    const assignmentsById = byId(state.assignments);
-    const examsById = byId(state.exams);
-    const actionsById = byId(state.actions);
-
-    // StudyDesk#72 — `stamps` is what the last pull returned. A row whose
-    // stamp moved because a pull brought the server's copy in is not a local
-    // edit, and a row that left because the pull carried its tombstone was
-    // deleted elsewhere; re-queueing either only moves the server's timestamp,
-    // which the next pull brings back here (Limekana/limecore#24).
-    const stamps = remoteStampsRef.current;
-
-    for (const [id, s] of next.assignments) {
-      if (prev.assignments.get(id) === s) continue;
-      const a = assignmentsById.get(id);
-      if (!a?.courseId) continue;
-      if (isInSync('assignments', a, stamps)) continue;
-      outbox.enqueue('upsert_assignment', { id, courseId: a.courseId, title: a.title, type: a.type, dueDate: a.dueDate, dueTime: a.dueTime, notes: a.notes, done: a.done, updatedAt: a.updatedAt });
-    }
-    for (const id of prev.assignments.keys()) {
-      if (!next.assignments.has(id) && !isRemoteTombstone('assignments', id, stamps)) outbox.enqueue('delete_assignment', { id });
-    }
-
-    for (const [id, s] of next.exams) {
-      if (prev.exams.get(id) === s) continue;
-      const e = examsById.get(id);
-      if (!e?.courseId) continue;
-      if (isInSync('exams', e, stamps)) continue;
-      outbox.enqueue('upsert_exam', { id, courseId: e.courseId, title: e.title, dueDate: e.dueDate, difficulty: e.difficulty, notes: e.notes, done: e.done, topics: e.topics, updatedAt: e.updatedAt });
-    }
-    for (const id of prev.exams.keys()) {
-      if (!next.exams.has(id) && !isRemoteTombstone('exams', id, stamps)) outbox.enqueue('delete_exam', { id });
-    }
-
-    for (const [id, s] of next.actions) {
-      if (prev.actions.get(id) === s) continue;
-      const a = actionsById.get(id);
-      if (!a) continue;
-      if (isInSync('actions', a, stamps)) continue;
-      outbox.enqueue('upsert_action', { id, text: a.text, bucket: a.bucket, courseId: a.courseId, done: a.done, updatedAt: a.updatedAt });
-    }
-    for (const id of prev.actions.keys()) {
-      if (!next.actions.has(id) && !isRemoteTombstone('actions', id, stamps)) outbox.enqueue('delete_action', { id });
-    }
-
-    pushBaseline.current = next;
-  // `session` is read for the sign-in gate only; the identity that matters is
-  // the user id, which the pull effect already keys on.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user?.id, state.assignments, state.exams, state.actions]);
+  useCloudPushers({ session, state, pulledOnceRef, remoteStampsRef, showFlash, t });
 
   // NOTE: the sign-out handler lives in SettingsView.onSignOut (identical logic
   // incl. the guestMode=true anti-auto-re-sign-in fix). An earlier duplicate
