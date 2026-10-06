@@ -962,56 +962,95 @@ function schedulePull(pullAll) {
 }
 
 /**
- * Start Realtime subscription to subjects/grades/study_sessions.
- * On any event, debounce 1.5s then call onChange() (which should pull+merge).
+ * Every table the channel binds. Each one must be in the `supabase_realtime`
+ * publication: the server rejects the whole channel for one that is not
+ * (limecore#24). `realtime.test.js` fails if a table here is missing from
+ * supabase/migrations/20261006_realtime_publish.sql.
  */
-export function startRealtime(onChange) {
-  if (channel) return;
-  const c = supabase.channel('studydesk-sync');
+export const REALTIME_TABLES = [
   // v1.7 — assignments/exams/study_actions joined the set (StudyDesk#6). All
   // six coalesce into the same debounced pull, so adding three tables costs one
   // extra subscription each, not three extra round-trips.
   // v1.10 — planned sessions, terms, timetable and attachments join the same
   // debounced pull. Ten subscriptions, still one round-trip per burst.
-  for (const table of [
-    'subjects', 'grades', 'study_sessions', 'assignments', 'exams', 'study_actions',
-    'planned_sessions', 'academic_terms', 'timetable_entries', 'assignment_attachments',
-    'commitments',
-    // v1.13 review. These three shipped without a subscription, so notes and
-    // attendance did not propagate live between devices at all — they appeared
-    // only when some OTHER table's event happened to trigger a pull. Notes are
-    // the most valuable thing in the app to see up to date on a second device.
-    'notebook_entries', 'notebook_attachments', 'lesson_attendance',
-  ]) {
+  'subjects', 'grades', 'study_sessions', 'assignments', 'exams', 'study_actions',
+  'planned_sessions', 'academic_terms', 'timetable_entries', 'assignment_attachments',
+  'commitments',
+  // v1.13 review. These three shipped without a subscription, so notes and
+  // attendance did not propagate live between devices at all — they appeared
+  // only when some OTHER table's event happened to trigger a pull. Notes are
+  // the most valuable thing in the app to see up to date on a second device.
+  'notebook_entries', 'notebook_attachments', 'lesson_attendance',
+];
+
+// What the channel is actually doing, for the sync panel (limecore#24). It
+// said "Realtime active" for every signed-in user through two months of a
+// dead channel. 'off' (not started) | 'connecting' | 'live' | 'down'.
+let realtimeState = 'off';
+const realtimeListeners = new Set();
+function setRealtimeState(next) {
+  if (next === realtimeState) return;
+  realtimeState = next;
+  for (const l of realtimeListeners) l();
+}
+export function subscribeRealtimeState(listener) {
+  realtimeListeners.add(listener);
+  return () => realtimeListeners.delete(listener);
+}
+export function getRealtimeState() {
+  return realtimeState;
+}
+
+/**
+ * Start the Realtime subscription to every table in REALTIME_TABLES.
+ * On any event, debounce 1.5s then call onChange() (which should pull+merge).
+ *
+ * `userId` scopes every binding to the user's own rows (limecore#24). RLS is
+ * still the boundary; the filter means the server stops evaluating everyone
+ * else's writes against this subscription. No table in the set is shared.
+ */
+export function startRealtime(onChange, userId) {
+  if (channel) return;
+  const c = supabase.channel('studydesk-sync');
+  const filter = userId ? { filter: `user_id=eq.${userId}` } : {};
+  for (const table of REALTIME_TABLES) {
     c.on(
       'postgres_changes',
-      { event: '*', schema: 'public', table },
+      { event: '*', schema: 'public', table, ...filter },
       () => schedulePull(onChange),
     );
   }
-  // Limekana/limecore#24 — this channel has been silently dead since v1.7: it
-  // binds tables that are not in the `supabase_realtime` publication, and the
-  // Realtime server rejects the WHOLE channel for one missing table (a
-  // `system` frame with status "error", never retried). Nothing logged it, so
-  // nobody saw it for two months. Log both paths so the next one is visible.
+  // Limekana/limecore#24 — this channel was silently dead from v1.7 to v1.17:
+  // it bound tables that were not in the `supabase_realtime` publication, and
+  // the Realtime server rejects the WHOLE channel for one missing table (a
+  // `system` frame with status "error", sent after the join succeeded, never
+  // retried). Log it, and show it in the sync panel.
   c.on('system', {}, (payload) => {
     if (payload?.status === 'error') {
       console.warn('[sync] realtime rejected the subscription:', payload.message || payload);
-    }
-  });
-  c.subscribe((status, err) => {
-    if (status !== 'SUBSCRIBED') {
-      console.warn(`[sync] realtime channel ${status}`, err?.message || '');
+      setRealtimeState('down');
     }
   });
   channel = c;
+  setRealtimeState('connecting');
+  c.subscribe((status, err) => {
+    if (status === 'SUBSCRIBED') {
+      setRealtimeState('live');
+      return;
+    }
+    console.warn(`[sync] realtime channel ${status}`, err?.message || '');
+    // CLOSED after stopRealtime() is expected; `channel` is already null then.
+    if (channel === c) setRealtimeState('down');
+  });
 }
 
 export function stopRealtime() {
   if (channel) {
-    try { supabase.removeChannel(channel); } catch { /* ignore */ }
+    const c = channel;
     channel = null;
+    try { supabase.removeChannel(c); } catch { /* ignore */ }
   }
+  setRealtimeState('off');
   if (pullTimer) {
     clearTimeout(pullTimer);
     pullTimer = null;

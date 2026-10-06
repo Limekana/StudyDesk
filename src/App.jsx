@@ -1808,7 +1808,7 @@ export default function App() {
       void doPull();
     };
     doPull();
-    sync.startRealtime(doPull);
+    sync.startRealtime(doPull, session.user?.id);
     return () => { cancelled = true; requestPullRef.current = null; sync.stopRealtime(); };
   // Only re-subscribe when the signed-in user id changes — not on every
   // session refresh (token refresh shouldn't tear down Realtime).

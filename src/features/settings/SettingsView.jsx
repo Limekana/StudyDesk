@@ -353,6 +353,11 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
     outbox.getStatus,
     outbox.getStatus,
   );
+  const realtimeState = useSyncExternalStore(
+    sync.subscribeRealtimeState,
+    sync.getRealtimeState,
+    sync.getRealtimeState,
+  );
 
   const onRetryNow = useCallback(async () => {
     setDraining(true);
@@ -785,13 +790,22 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
             <div className="sv2-stat"><div className="sv2-stat-num">{grades.length}</div><div className="sv2-stat-lbl">{t('settings.gradesLbl')}</div></div>
             <div className="sv2-stat"><div className="sv2-stat-num">{sessions.length}</div><div className="sv2-stat-lbl">{t('settings.sessionsLbl')}</div></div>
           </div>
+          {/* limecore#24: this row said "Realtime active" for every signed-in
+              user, including the two months the channel was rejected. It now
+              reports what the channel is doing. */}
           <div className="sv2-row">
             <span className="sv2-row-label">{t('settings.connection')}</span>
             <span className="sv2-row-value">
-              <span className="sv2-dot" style={{ background: session ? '#2e7d52' : 'var(--muted2)' }} />
-              {session ? t('settings.realtimeActive') : t('settings.offlineLocal')}
+              <span className="sv2-dot" style={{ background: !session ? 'var(--muted2)' : realtimeState === 'live' ? '#2e7d52' : realtimeState === 'down' ? 'var(--warning)' : 'var(--muted2)' }} />
+              {!session ? t('settings.offlineLocal')
+                : realtimeState === 'live' ? t('settings.realtimeActive')
+                : realtimeState === 'down' ? t('settings.realtimeOff')
+                : t('settings.realtimeConnecting')}
             </span>
           </div>
+          {session && realtimeState === 'down' && (
+            <div className="sv2-note" style={{ marginTop: 0, marginBottom: 9 }}>{t('settings.realtimeOffNote')}</div>
+          )}
           <div className="sv2-row">
             <span className="sv2-row-label">{t('settings.pendingQueue')}</span>
             <span className="sv2-row-value">
