@@ -129,6 +129,8 @@
     "desktopBrowser": "Viimeistele kirjautuminen selaimessa ja palaa tänne.",
     "errDesktopNoListener": "Työpöytäkirjautuminen ei ole käytettävissä tällä käynnistyskerralla. Käynnistä StudyDesk uudelleen tai kirjaudu sähköpostilla alta.",
     "errCallback": "Kirjautumisen paluukutsu epäonnistui",
+    "errLinkExpired": "Linkki on vanhentunut tai jo käytetty. Pyydä uusi.",
+    "errSignInFailed": "Kirjautuminen peruttiin tai se ei onnistunut. Yritä uudelleen.",
     "errGeneric": "Todennus epäonnistui",
     "errInvalidCredentials": "Väärä sähköposti tai salasana.",
     "errAlreadyRegistered": "Tälle sähköpostille on jo tili. Kokeile kirjautua sisään.",

@@ -129,6 +129,8 @@
     "desktopBrowser": "请在浏览器中完成登录，然后回到这里。",
     "errDesktopNoListener": "本次启动无法使用桌面登录。请重启 StudyDesk，或在下方使用邮箱登录。",
     "errCallback": "登录回调失败",
+    "errLinkExpired": "该链接已过期或已被使用。请重新获取一个。",
+    "errSignInFailed": "登录已取消或未完成。请重试。",
     "errGeneric": "身份验证失败",
     "errInvalidCredentials": "邮箱或密码不正确。",
     "errAlreadyRegistered": "该邮箱已注册。请尝试登录。",

@@ -130,6 +130,8 @@
     "desktopBrowser": "Terminez la connexion dans votre navigateur, puis revenez ici.",
     "errDesktopNoListener": "La connexion sur ordinateur est indisponible pour ce lancement. Redémarrez StudyDesk ou connectez-vous par e-mail ci-dessous.",
     "errCallback": "Échec du rappel de connexion",
+    "errLinkExpired": "Ce lien a expiré ou a déjà été utilisé. Demandez-en un nouveau.",
+    "errSignInFailed": "La connexion a été annulée ou n'a pas abouti. Réessayez.",
     "errGeneric": "Échec de l'authentification",
     "errInvalidCredentials": "E-mail ou mot de passe incorrect.",
     "errAlreadyRegistered": "Un compte existe déjà pour cet e-mail. Essayez de vous connecter.",
