@@ -29,6 +29,11 @@ jobs:
       - name: Secret scan
         run: node scripts/check-secrets.mjs --all
 
+      # v1.17 (limecore#20): no shipped image over 100 KB unless allow-listed,
+      # and no Android resource as both .png and .webp.
+      - name: Asset gate
+        run: node scripts/check-assets.mjs
+
       # The working agreement calls this gate mandatory. Two releases shipped
       # broken because it was skipped by hand; this makes it structural.
       # v1.12 Item 1. StudyDesk shipped `android.captureInput: true` for months,

@@ -24,6 +24,7 @@
     "check:boot": "node scripts/check-boot.mjs",
     "check:dep-tdz": "node scripts/check-dep-tdz.mjs",
     "check:line-endings": "node scripts/check-line-endings.mjs",
+    "check:assets": "node scripts/check-assets.mjs",
     "build": "vite build",
     "test": "vitest run",
     "test:watch": "vitest",
