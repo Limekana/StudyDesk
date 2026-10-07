@@ -10,9 +10,9 @@
 // is broken, which is worse than having no assertions at all.
 //
 // It also supplies the `with { type: 'json' }` attribute Node requires and
-// bundlers do not, for the same reason: `src/i18n/index.js` imports ten
-// locale JSON files, and annotating them in the app to satisfy a test would
-// be the test dictating source style.
+// bundlers do not, for the same reason: `src/i18n/index.js` imports the locale
+// JSON files (English statically, the others on demand), and annotating them
+// in the app to satisfy a test would be the test dictating source style.
 //
 // Deliberately NOT a change to the app: rewriting the import to
 // `./i18n/index.js` would work everywhere, but the next directory import

@@ -28,29 +28,14 @@
     "cancel": "Cancelar",
     "delete": "Eliminar",
     "edit": "Editar",
-    "add": "Añadir",
-    "done": "Hecho",
     "close": "Cerrar",
-    "back": "Atrás",
-    "confirm": "Confirmar",
-    "retry": "Reintentar",
-    "loading": "Cargando…",
-    "settings": "Ajustes",
-    "next": "Siguiente"
-  },
-  "academic": {
-    "period": "Periodo",
-    "semester": "Semestre",
-    "schoolYear": "Año escolar",
-    "course": "Asignatura",
-    "grade": "Nota"
+    "confirm": "Confirmar"
   },
   "nav": {
     "study": "Estudiar",
     "plan": "Plan",
     "grades": "Notas",
     "timer": "Temporizador",
-    "stats": "Estadísticas",
     "notebook": "Cuaderno"
   },
   "topbar": {
@@ -58,7 +43,6 @@
   },
   "course": {
     "edit": "Editar asignatura",
-    "add": "Añadir asignatura",
     "name": "Nombre de la asignatura",
     "namePlaceholder": "ej. Cálculo II",
     "credits": "Créditos (ponderación)",
@@ -71,7 +55,6 @@
     "deleteConfirm": "¿Eliminar todos los datos?",
     "yesDelete": "Sí, eliminar",
     "no": "No",
-    "updated": "Asignatura actualizada",
     "colorSwatch": "Color {{hex}}",
     "colorCustom": "Elegir cualquier color",
     "colorNone": "Sin color"
@@ -122,7 +105,6 @@
     "linkSignup": "Crear cuenta",
     "guest": "Continuar como invitado",
     "guestNote": "SOLO LOCAL · SIN SINCRONIZACIÓN · PUEDES INICIAR SESIÓN MÁS TARDE",
-    "infoConfirm": "Cuenta creada. Revisa tu correo para confirmarla.",
     "errNexus": "No se pudo heredar la sesión de Nexus.",
     "errNexusFailed": "Error al iniciar sesión con Nexus",
     "errGoogleStart": "No se pudo iniciar el acceso con Google",
@@ -633,8 +615,6 @@
       "lockInTitle": "Sin descansos, sin navegación, solo concentración",
       "studying": "Estudiando",
       "workingPlaceholder": "¿En qué trabajas? (opcional)",
-      "quickFillAria": "Rellenar rápido desde un curso",
-      "quickFillOption": "Rellenar desde un curso…",
       "weeklyHours": "Horas semanales",
       "thisWeek": "Esta semana",
       "wk": "Sem {{n}}",
@@ -659,7 +639,6 @@
       "noOpenAsgn": "No hay tareas pendientes.",
       "completed": "Completadas ({{count}})",
       "examsCalendar": "Exámenes y calendario",
-      "nothingComingUp": "Nada próximo.",
       "noExams": "Aún no hay exámenes.",
       "completedExams": "Exámenes completados ({{count}})",
       "courses": "Cursos",
@@ -671,22 +650,10 @@
       "next": "Siguiente:",
       "nothingDue": "Nada pendiente — todo libre",
       "edit": "Editar",
-      "examWord": "EXAMEN",
-      "studyWord": "ESTUDIO",
-      "dueWord": "VENCE",
       "exam_many": "{{count}} exámenes",
       "open": "{{count}} abiertas",
       "openTitle": "{{count}} abiertas, nada pendiente pronto",
       "dueTitle": "{{due}} pendientes pronto · {{open}} abiertas en total"
-    },
-    "cal": {
-      "sun": "Dom",
-      "mon": "Lun",
-      "tue": "Mar",
-      "wed": "Mié",
-      "thu": "Jue",
-      "fri": "Vie",
-      "sat": "Sáb"
     },
     "ec": {
       "examTag": "EXAMEN",
@@ -746,7 +713,6 @@
       "examPrefix": "EXAMEN: {{title}}",
       "loading": "CARGANDO…",
       "updateShort": "Actualización disponible",
-      "updateAvailable": "Actualización disponible: v{{version}}",
       "updateDownloading": "Descargando… {{percent}} %",
       "updateReady": "Reiniciar para actualizar"
     },

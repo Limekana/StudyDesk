@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import './i18n'
+import { i18nReady } from './i18n'
 import './index.css'
 import App from './App.jsx'
 import { ConfirmProvider } from './lib/ConfirmDialog.jsx'
@@ -10,6 +10,7 @@ import { watchForRecovery } from './lib/passwordRecovery.js'
 import ErrorBoundary from './features/errors/ErrorBoundary.jsx'
 import { notePolicyBaseline } from './lib/policyNotice.js'
 import { installGlobalErrorHandlers } from './lib/errorReports.js'
+import { installStaleChunkReload } from './lib/staleChunkReload.js'
 
 // No-op unless this bundle was built by Vercel — see webAnalytics.js.
 initWebAnalytics()
@@ -26,17 +27,24 @@ watchForRecovery(supabase)
 installGlobalErrorHandlers()
 // Before onboarding can run: a fresh install starts on the current policy.
 notePolicyBaseline()
+// Web only: a tab older than the current deploy reloads instead of failing to
+// load a view or language chunk (limecore#13).
+installStaleChunkReload()
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    {/* Outermost, so a throw anywhere below lands on the recovery screen
-        instead of a blank page (limecore#16). */}
-    <ErrorBoundary>
-      {/* Outside <App> so any view can call useConfirm(), including the auth
-          gate that renders before the app shell. */}
-      <ConfirmProvider>
-        <App />
-      </ConfirmProvider>
-    </ErrorBoundary>
-  </StrictMode>,
-)
+// v1.17 (limecore#18): the active language is its own chunk now. Render once it
+// has loaded, so the first paint is not English for a frame.
+void i18nReady.then(() => {
+  createRoot(document.getElementById('root')).render(
+    <StrictMode>
+      {/* Outermost, so a throw anywhere below lands on the recovery screen
+          instead of a blank page (limecore#16). */}
+      <ErrorBoundary>
+        {/* Outside <App> so any view can call useConfirm(), including the auth
+            gate that renders before the app shell. */}
+        <ConfirmProvider>
+          <App />
+        </ConfirmProvider>
+      </ErrorBoundary>
+    </StrictMode>,
+  )
+})

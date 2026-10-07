@@ -28,29 +28,14 @@
     "cancel": "Abbrechen",
     "delete": "Löschen",
     "edit": "Bearbeiten",
-    "add": "Hinzufügen",
-    "done": "Fertig",
     "close": "Schließen",
-    "back": "Zurück",
-    "confirm": "Bestätigen",
-    "retry": "Erneut versuchen",
-    "loading": "Wird geladen…",
-    "settings": "Einstellungen",
-    "next": "Weiter"
-  },
-  "academic": {
-    "period": "Lernperiode",
-    "semester": "Semester",
-    "schoolYear": "Schuljahr",
-    "course": "Kurs",
-    "grade": "Note"
+    "confirm": "Bestätigen"
   },
   "nav": {
     "study": "Lernen",
     "plan": "Plan",
     "grades": "Noten",
     "timer": "Timer",
-    "stats": "Statistik",
     "notebook": "Notizbuch"
   },
   "topbar": {
@@ -58,7 +43,6 @@
   },
   "course": {
     "edit": "Kurs bearbeiten",
-    "add": "Kurs hinzufügen",
     "name": "Kursname",
     "namePlaceholder": "z. B. Analysis II",
     "credits": "Punkte (Gewichtung)",
@@ -71,7 +55,6 @@
     "deleteConfirm": "Alle Daten löschen?",
     "yesDelete": "Ja, löschen",
     "no": "Nein",
-    "updated": "Kurs aktualisiert",
     "colorSwatch": "Farbe {{hex}}",
     "colorCustom": "Beliebige Farbe wählen",
     "colorNone": "Keine Farbe"
@@ -121,7 +104,6 @@
     "linkSignup": "Konto erstellen",
     "guest": "Als Gast fortfahren",
     "guestNote": "NUR LOKAL · KEINE CLOUD-SYNCHRONISIERUNG · SPÄTERE ANMELDUNG MÖGLICH",
-    "infoConfirm": "Konto erstellt. Prüfe deine E-Mails zur Bestätigung.",
     "errNexus": "Nexus-Sitzung konnte nicht übernommen werden.",
     "errNexusFailed": "Nexus-Anmeldung fehlgeschlagen",
     "errGoogleStart": "Google-Anmeldung konnte nicht gestartet werden",
@@ -629,8 +611,6 @@
       "lockInTitle": "Keine Pausen, keine Navigation, nur tiefer Fokus",
       "studying": "Lernen",
       "workingPlaceholder": "Woran arbeitest du? (optional)",
-      "quickFillAria": "Schnell aus Kurs ausfüllen",
-      "quickFillOption": "Schnell aus Kurs ausfüllen…",
       "weeklyHours": "Wochenstunden",
       "thisWeek": "Diese Woche",
       "wk": "KW {{n}}",
@@ -655,7 +635,6 @@
       "noOpenAsgn": "Keine offenen Aufgaben.",
       "completed": "Erledigt ({{count}})",
       "examsCalendar": "Prüfungen & Kalender",
-      "nothingComingUp": "Nichts geplant.",
       "noExams": "Noch keine Prüfungen.",
       "completedExams": "Erledigte Prüfungen ({{count}})",
       "courses": "Kurse",
@@ -667,21 +646,9 @@
       "next": "Nächstes:",
       "nothingDue": "Nichts fällig — alles frei",
       "edit": "Bearbeiten",
-      "examWord": "PRÜFUNG",
-      "studyWord": "LERNEN",
-      "dueWord": "FÄLLIG",
       "open": "{{count}} offen",
       "openTitle": "{{count}} offen, nichts bald fällig",
       "dueTitle": "{{due}} bald fällig · {{open}} offen insgesamt"
-    },
-    "cal": {
-      "sun": "So",
-      "mon": "Mo",
-      "tue": "Di",
-      "wed": "Mi",
-      "thu": "Do",
-      "fri": "Fr",
-      "sat": "Sa"
     },
     "ec": {
       "examTag": "PRÜFUNG",
@@ -741,7 +708,6 @@
       "examPrefix": "PRÜFUNG: {{title}}",
       "loading": "LÄDT…",
       "updateShort": "Update verfügbar",
-      "updateAvailable": "Update verfügbar: v{{version}}",
       "updateDownloading": "Wird geladen… {{percent}} %",
       "updateReady": "Neu starten und aktualisieren"
     },

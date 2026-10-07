@@ -28,29 +28,14 @@
     "cancel": "取消",
     "delete": "删除",
     "edit": "编辑",
-    "add": "添加",
-    "done": "完成",
     "close": "关闭",
-    "back": "返回",
-    "confirm": "确认",
-    "retry": "重试",
-    "loading": "加载中…",
-    "settings": "设置",
-    "next": "下一步"
-  },
-  "academic": {
-    "period": "学段",
-    "semester": "学期",
-    "schoolYear": "学年",
-    "course": "课程",
-    "grade": "成绩"
+    "confirm": "确认"
   },
   "nav": {
     "study": "学习",
     "plan": "计划",
     "grades": "成绩",
     "timer": "计时器",
-    "stats": "统计",
     "notebook": "笔记本"
   },
   "topbar": {
@@ -58,7 +43,6 @@
   },
   "course": {
     "edit": "编辑课程",
-    "add": "添加课程",
     "name": "课程名称",
     "namePlaceholder": "例如 微积分 II",
     "credits": "学分（绩点权重）",
@@ -71,7 +55,6 @@
     "deleteConfirm": "删除所有数据？",
     "yesDelete": "是，删除",
     "no": "否",
-    "updated": "课程已更新",
     "colorSwatch": "颜色 {{hex}}",
     "colorCustom": "选择任意颜色",
     "colorNone": "无颜色"
@@ -121,7 +104,6 @@
     "linkSignup": "创建账户",
     "guest": "以访客身份继续",
     "guestNote": "仅本地存储 · 不进行云同步 · 可稍后登录",
-    "infoConfirm": "账户已创建。请查收邮件完成确认。",
     "errNexus": "无法继承 Nexus 会话。",
     "errNexusFailed": "Nexus 登录失败",
     "errGoogleStart": "无法启动 Google 登录",
@@ -629,8 +611,6 @@
       "lockInTitle": "去除休息、隐藏导航，仅深度专注",
       "studying": "正在学习",
       "workingPlaceholder": "你在做什么？（可选）",
-      "quickFillAria": "从课程快速填充",
-      "quickFillOption": "从课程快速填充…",
       "weeklyHours": "每周时数",
       "thisWeek": "本周",
       "wk": "第 {{n}} 周",
@@ -655,7 +635,6 @@
       "noOpenAsgn": "没有未完成的作业。",
       "completed": "已完成（{{count}}）",
       "examsCalendar": "考试与日历",
-      "nothingComingUp": "没有即将到来的事项。",
       "noExams": "还没有考试。",
       "completedExams": "已完成的考试（{{count}}）",
       "courses": "课程",
@@ -667,21 +646,9 @@
       "next": "下一个：",
       "nothingDue": "没有到期项 — 全部清空",
       "edit": "编辑",
-      "examWord": "考试",
-      "studyWord": "学习",
-      "dueWord": "到期",
       "open": "{{count}} 项未完成",
       "openTitle": "{{count}} 项未完成，近期无到期",
       "dueTitle": "{{due}} 项即将到期 · 共 {{open}} 项未完成"
-    },
-    "cal": {
-      "sun": "日",
-      "mon": "一",
-      "tue": "二",
-      "wed": "三",
-      "thu": "四",
-      "fri": "五",
-      "sat": "六"
     },
     "ec": {
       "examTag": "考试",
@@ -741,7 +708,6 @@
       "examPrefix": "考试：{{title}}",
       "loading": "加载中…",
       "updateShort": "有可用更新",
-      "updateAvailable": "有可用更新：v{{version}}",
       "updateDownloading": "正在下载… {{percent}}%",
       "updateReady": "重启以更新"
     },

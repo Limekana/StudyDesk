@@ -28,29 +28,14 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
-    "add": "Add",
-    "done": "Done",
     "close": "Close",
-    "back": "Back",
-    "confirm": "Confirm",
-    "retry": "Retry",
-    "loading": "Loading…",
-    "settings": "Settings",
-    "next": "Next"
-  },
-  "academic": {
-    "period": "Period",
-    "semester": "Semester",
-    "schoolYear": "School year",
-    "course": "Course",
-    "grade": "Grade"
+    "confirm": "Confirm"
   },
   "nav": {
     "study": "Study",
     "plan": "Plan",
     "grades": "Grades",
     "timer": "Timer",
-    "stats": "Stats",
     "notebook": "Notebook"
   },
   "topbar": {
@@ -58,7 +43,6 @@
   },
   "course": {
     "edit": "Edit Course",
-    "add": "Add Course",
     "name": "Course name",
     "namePlaceholder": "e.g. Calculus II",
     "credits": "Credits (GPA weight)",
@@ -71,7 +55,6 @@
     "deleteConfirm": "Delete all data?",
     "yesDelete": "Yes, delete",
     "no": "No",
-    "updated": "Course updated",
     "colorSwatch": "Colour {{hex}}",
     "colorCustom": "Pick any colour",
     "colorNone": "No colour"
@@ -121,7 +104,6 @@
     "linkSignup": "Create account",
     "guest": "Continue as guest",
     "guestNote": "LOCAL ONLY · NO CLOUD SYNC · YOU CAN SIGN IN LATER",
-    "infoConfirm": "Account created. Check your email to confirm.",
     "errNexus": "Could not inherit Nexus session.",
     "errNexusFailed": "Nexus sign-in failed",
     "errGoogleStart": "Failed to start Google sign-in",
@@ -629,8 +611,6 @@
       "lockInTitle": "Strip breaks, hide nav, deep focus only",
       "studying": "Studying",
       "workingPlaceholder": "What are you working on? (optional)",
-      "quickFillAria": "Quick fill from course",
-      "quickFillOption": "Quick fill from course…",
       "weeklyHours": "Weekly hours",
       "thisWeek": "This week",
       "wk": "Wk {{n}}",
@@ -655,7 +635,6 @@
       "noOpenAsgn": "No open assignments.",
       "completed": "Completed ({{count}})",
       "examsCalendar": "Exams & Calendar",
-      "nothingComingUp": "Nothing coming up.",
       "noExams": "No exams yet.",
       "completedExams": "Completed exams ({{count}})",
       "courses": "Courses",
@@ -667,21 +646,9 @@
       "next": "Next:",
       "nothingDue": "Nothing due — all clear",
       "edit": "Edit",
-      "examWord": "EXAM",
-      "studyWord": "STUDY",
-      "dueWord": "DUE",
       "open": "{{count}} open",
       "openTitle": "{{count}} open, none due soon",
       "dueTitle": "{{due}} due soon · {{open}} open in total"
-    },
-    "cal": {
-      "sun": "Sun",
-      "mon": "Mon",
-      "tue": "Tue",
-      "wed": "Wed",
-      "thu": "Thu",
-      "fri": "Fri",
-      "sat": "Sat"
     },
     "ec": {
       "examTag": "EXAM",
@@ -741,7 +708,6 @@
       "examPrefix": "EXAM: {{title}}",
       "loading": "LOADING…",
       "updateShort": "Update available",
-      "updateAvailable": "Update available: v{{version}}",
       "updateDownloading": "Downloading… {{percent}}%",
       "updateReady": "Restart to update"
     },

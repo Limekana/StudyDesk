@@ -45,13 +45,6 @@ export const ATTENDANCE_STATES = [
   ATTENDANCE.RESCHEDULED,
 ];
 
-/** States that put a lesson in the denominator. */
-const COUNTED = new Set([ATTENDANCE.PRESENT, ATTENDANCE.ABSENT]);
-
-export function isCounted(status) {
-  return COUNTED.has(status);
-}
-
 /** One row's key. `(entryId, date)` is the identity — the same lesson on the
  *  same day is one fact, whatever device recorded it. */
 export function attendanceKey(entryId, iso) {

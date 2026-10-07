@@ -14,6 +14,7 @@
     "dev": "vite",
     "prepare": "git config core.hooksPath .githooks || true",
     "check:ime": "node scripts/check-ime.mjs",
+    "check:bundle-size": "node scripts/check-bundle-size.mjs",
     "check:secrets": "node scripts/check-secrets.mjs --all",
     "check:contrast": "node scripts/check-contrast.mjs",
     "check:logic": "node scripts/check-logic.mjs",

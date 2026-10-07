@@ -28,29 +28,14 @@
     "cancel": "Peruuta",
     "delete": "Poista",
     "edit": "Muokkaa",
-    "add": "Lisää",
-    "done": "Valmis",
     "close": "Sulje",
-    "back": "Takaisin",
-    "confirm": "Vahvista",
-    "retry": "Yritä uudelleen",
-    "loading": "Ladataan…",
-    "settings": "Asetukset",
-    "next": "Seuraava"
-  },
-  "academic": {
-    "period": "Jakso",
-    "semester": "Lukukausi",
-    "schoolYear": "Lukuvuosi",
-    "course": "Kurssi",
-    "grade": "Arvosana"
+    "confirm": "Vahvista"
   },
   "nav": {
     "study": "Opiskele",
     "plan": "Suunnitelma",
     "grades": "Arvosanat",
     "timer": "Ajastin",
-    "stats": "Tilastot",
     "notebook": "Muistikirja"
   },
   "topbar": {
@@ -58,7 +43,6 @@
   },
   "course": {
     "edit": "Muokkaa kurssia",
-    "add": "Lisää kurssi",
     "name": "Kurssin nimi",
     "namePlaceholder": "esim. Analyysi II",
     "credits": "Opintopisteet (painotus)",
@@ -71,7 +55,6 @@
     "deleteConfirm": "Poistetaanko kaikki tiedot?",
     "yesDelete": "Kyllä, poista",
     "no": "Ei",
-    "updated": "Kurssi päivitetty",
     "colorSwatch": "Väri {{hex}}",
     "colorCustom": "Valitse mikä tahansa väri",
     "colorNone": "Ei väriä"
@@ -121,7 +104,6 @@
     "linkSignup": "Luo tili",
     "guest": "Jatka vieraana",
     "guestNote": "VAIN PAIKALLINEN · EI PILVISYNKRONOINTIA · VOIT KIRJAUTUA MYÖHEMMIN",
-    "infoConfirm": "Tili luotu. Vahvista se sähköpostistasi.",
     "errNexus": "Nexus-istuntoa ei voitu periä.",
     "errNexusFailed": "Nexus-kirjautuminen epäonnistui",
     "errGoogleStart": "Google-kirjautumisen aloitus epäonnistui",
@@ -629,8 +611,6 @@
       "lockInTitle": "Ei taukoja, ei navigointia, vain syväkeskittyminen",
       "studying": "Opiskelu",
       "workingPlaceholder": "Mitä teet? (valinnainen)",
-      "quickFillAria": "Pikatäyttö kurssilta",
-      "quickFillOption": "Pikatäyttö kurssilta…",
       "weeklyHours": "Viikkotunnit",
       "thisWeek": "Tällä viikolla",
       "wk": "Vk {{n}}",
@@ -655,7 +635,6 @@
       "noOpenAsgn": "Ei avoimia tehtäviä.",
       "completed": "Valmiit ({{count}})",
       "examsCalendar": "Kokeet ja kalenteri",
-      "nothingComingUp": "Ei mitään tulossa.",
       "noExams": "Ei vielä kokeita.",
       "completedExams": "Valmiit kokeet ({{count}})",
       "courses": "Kurssit",
@@ -667,21 +646,9 @@
       "next": "Seuraava:",
       "nothingDue": "Ei erääntyviä — kaikki selvää",
       "edit": "Muokkaa",
-      "examWord": "KOE",
-      "studyWord": "OPISKELE",
-      "dueWord": "ERÄÄNTYY",
       "open": "{{count}} avoinna",
       "openTitle": "{{count}} avoinna, mikään ei eräänny pian",
       "dueTitle": "{{due}} erääntyy pian · {{open}} avoinna yhteensä"
-    },
-    "cal": {
-      "sun": "Su",
-      "mon": "Ma",
-      "tue": "Ti",
-      "wed": "Ke",
-      "thu": "To",
-      "fri": "Pe",
-      "sat": "La"
     },
     "ec": {
       "examTag": "KOE",
@@ -741,7 +708,6 @@
       "examPrefix": "KOE: {{title}}",
       "loading": "LADATAAN…",
       "updateShort": "Päivitys saatavilla",
-      "updateAvailable": "Päivitys saatavilla: v{{version}}",
       "updateDownloading": "Ladataan… {{percent}} %",
       "updateReady": "Käynnistä uudelleen ja päivitä"
     },
