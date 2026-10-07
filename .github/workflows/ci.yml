@@ -29,6 +29,11 @@ jobs:
       - name: Secret scan
         run: node scripts/check-secrets.mjs --all
 
+      # v1.17 (limecore#20): no shipped image over 100 KB unless allow-listed,
+      # and no Android resource as both .png and .webp.
+      - name: Asset gate
+        run: node scripts/check-assets.mjs
+
       # The working agreement calls this gate mandatory. Two releases shipped
       # broken because it was skipped by hand; this makes it structural.
       # v1.12 Item 1. StudyDesk shipped `android.captureInput: true` for months,
@@ -68,6 +73,12 @@ jobs:
       # checks after this one.
       - name: Build gate
         run: npm run build
+
+      # v1.17 (limecore#13). The JS a cold start loads has a budget, so a static
+      # import of a lazy screen or a heavy library cannot quietly undo the
+      # splitting. See the header of scripts/check-bundle-size.mjs.
+      - name: Bundle size gate
+        run: npm run check:bundle-size
 
       - name: Dist freshness gate
         run: npm run check:dist-fresh

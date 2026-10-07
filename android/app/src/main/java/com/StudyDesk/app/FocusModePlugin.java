@@ -31,6 +31,15 @@ package com.StudyDesk.app;
 // while the phone is in a pocket. That avoids FOREGROUND_SERVICE, a wake lock,
 // and a battery-exemption prompt — three permissions an F-Droid reviewer would
 // reasonably ask about, for a feature that is a label and a timer.
+//
+// ── v1.17 (#68): real fullscreen, the third half ──────────────────────────
+// User feedback asked for "a fullscreen Pomodoro timer". Lock In asks the web
+// Fullscreen API for it, which works in a desktop browser but not here: the
+// WebView accepts the request, but the status and navigation bars stay on
+// screen. This hides them natively while Lock In is active, with the swipe-to-peek
+// behaviour (a swipe slides the bars in over the timer, and they go away again
+// on their own). The bars come back whenever the app is backgrounded or Lock
+// In ends by any path, including stop() after a crash.
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -39,6 +48,11 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
+import android.view.Window;
+
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -56,6 +70,11 @@ public class FocusModePlugin extends Plugin {
      *  started by the user from Recents, and stopping a pin we did not start
      *  would yank the screen out from under them. */
     private boolean pinnedByUs = false;
+
+    /** Whether Lock In currently wants the system bars hidden. Kept apart from
+     *  what is on screen, because backgrounding shows the bars while Lock In is
+     *  still running, and resuming has to know to hide them again. */
+    private boolean immersiveWanted = false;
 
     /**
      * What this device can actually do, asked before anything is offered.
@@ -126,10 +145,16 @@ public class FocusModePlugin extends Plugin {
         long endsAt = call.getLong("endsAt", 0L);
         boolean wantChip = Boolean.TRUE.equals(call.getBoolean("chip", true));
         boolean wantPin = Boolean.TRUE.equals(call.getBoolean("pin", false));
+        boolean wantImmersive = Boolean.TRUE.equals(call.getBoolean("immersive", false));
 
         JSObject out = new JSObject();
         out.put("chip", false);
         out.put("pinned", false);
+
+        // Independent of the other two halves, like they are of each other:
+        // the bars hide even with the chip and pinning both switched off.
+        immersiveWanted = wantImmersive;
+        out.put("immersive", applySystemBars(wantImmersive));
 
         if (wantChip) {
             // Issue #39: check BEFORE posting. `nm.notify()` does not throw
@@ -160,11 +185,13 @@ public class FocusModePlugin extends Plugin {
         call.resolve(out);
     }
 
-    /** Stop focus mode. Always attempts both halves regardless of which were
+    /** Stop focus mode. Always attempts every half regardless of which were
      *  started, because a crash mid-session can leave one of them live. */
     @PluginMethod
     public void stop(PluginCall call) {
         JSObject out = new JSObject();
+        immersiveWanted = false;
+        applySystemBars(false);
         try {
             NotificationManager nm =
                     (NotificationManager) getContext().getSystemService(Context.NOTIFICATION_SERVICE);
@@ -176,6 +203,57 @@ public class FocusModePlugin extends Plugin {
         setPinned(false);
         out.put("pinned", false);
         call.resolve(out);
+    }
+
+    // ── System bars ────────────────────────────────────────────────────────
+
+    // Leaving the app shows the bars even though Lock In is still running:
+    // whatever comes up next (the launcher, Recents, another app) gets a normal
+    // screen. Coming back hides them again.
+    @Override
+    protected void handleOnPause() {
+        super.handleOnPause();
+        if (immersiveWanted) applySystemBars(false);
+    }
+
+    @Override
+    protected void handleOnResume() {
+        super.handleOnResume();
+        if (immersiveWanted) applySystemBars(true);
+    }
+
+    /**
+     * Hide or show the status and navigation bars together.
+     *
+     * TRANSIENT_BARS_BY_SWIPE rather than the default: with the default, a
+     * swipe brings the bars back for good and Lock In stops being fullscreen
+     * until something hides them again. This way a swipe shows them over the
+     * timer for a moment (to check the time, or to reach Back), without
+     * resizing the page under them.
+     *
+     * @return false when there is no activity to apply it to.
+     */
+    private boolean applySystemBars(boolean hide) {
+        final android.app.Activity activity = getActivity();
+        if (activity == null) return false;
+        getBridge().executeOnMainThread(() -> {
+            try {
+                Window window = activity.getWindow();
+                WindowInsetsControllerCompat controller =
+                        WindowCompat.getInsetsController(window, window.getDecorView());
+                if (hide) {
+                    controller.setSystemBarsBehavior(
+                            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                    controller.hide(WindowInsetsCompat.Type.systemBars());
+                } else {
+                    controller.show(WindowInsetsCompat.Type.systemBars());
+                }
+            } catch (Throwable ignored) {
+                // Bars that won't hide must not take the focus session with
+                // them. Lock In still works with the bars on screen.
+            }
+        });
+        return true;
     }
 
     // ── Notification ───────────────────────────────────────────────────────

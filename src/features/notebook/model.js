@@ -221,12 +221,6 @@ export function numbering(blocks) {
   return out;
 }
 
-/** An empty note is one empty paragraph, never zero blocks — the editor
- *  always needs somewhere for the caret to be. */
-export function emptyNote() {
-  return '';
-}
-
 /**
  * A short preview for the tree, taken from the first line with any content.
  *

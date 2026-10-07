@@ -14,6 +14,7 @@ import { reconcileUnsynced } from '../../lib/reconcile.js';
 import { clearEntitlement } from '../../lib/entitlement.js';
 import { clearAvatarCache } from '../../lib/profile.js';
 import ProfileSection from './ProfileSection.jsx';
+import ChangeEmail from './ChangeEmail.jsx';
 import SupporterBlock from './SupporterBlock.jsx';
 import Appearance from './Appearance.jsx';
 import CalendarFeeds from './CalendarFeeds.jsx';
@@ -31,6 +32,18 @@ import pkg from '../../../package.json';
 import { IS_DESKTOP } from '../../lib/desktop.js';
 import { checkForDesktopUpdate, runDesktopUpdateAction, useDesktopUpdate } from '../../lib/desktopUpdate.js';
 import { setUpdateCheckEnabled, useFdroidUpdate } from '../../lib/fdroidUpdate.js';
+import { feedbackStatus, SHOW_FEEDBACK_STATUS } from '../../lib/feedbackStatus.js';
+
+// Product names, the same in every language.
+const APP_NAMES = { ncc: 'NCC', limelog: 'LimeLog', studydesk: 'StudyDesk' };
+
+// limecore#17: newest first, one row per id. A server row replaces the local
+// copy made at send time, so the list never shows the same report twice.
+function mergeFeedback(incoming, current) {
+  const byId = new Map((current || []).map((r) => [r.id, r]));
+  for (const r of incoming) byId.set(r.id, r);
+  return [...byId.values()].sort((a, b) => (a.created_at < b.created_at ? 1 : -1)).slice(0, 20);
+}
 
 // A v4 uuid for a feedback row. crypto.randomUUID needs a secure context, and
 // the fallback builds one by hand rather than inventing a non-uuid id string —
@@ -61,6 +74,20 @@ const css = `
 .sv2-fb-star--on{color:var(--accent,#2e7d52);}
 .sv2-fb-text{width:100%;min-height:98px;resize:vertical;}
 .sv2-fb-count{font-family:var(--font-mono);font-size:10px;color:var(--muted2);text-align:end;margin-top:5px;}
+/* Your feedback (v1.17, limecore#17): a ruled list under the form, like the
+   lines of a notebook page, with the status as a small stamp. */
+.sv2-fb-list{margin-top:18px;padding-top:14px;border-top:1px dashed var(--border2);}
+.sv2-fb-list-title{font-family:var(--font-mono);font-size:10px;letter-spacing:0.18em;color:var(--muted2);text-transform:uppercase;}
+.sv2-fb-list-note{margin-top:6px;}
+.sv2-fb-list ul{list-style:none;margin:8px 0 0;padding:0;}
+.sv2-fb-item{padding:11px 0;border-bottom:1px solid var(--border);}
+.sv2-fb-item:last-child{border-bottom:none;padding-bottom:0;}
+.sv2-fb-item-head{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.sv2-fb-item-meta{font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted2);min-width:0;}
+.sv2-fb-item-text{margin-top:4px;font-size:13px;line-height:1.45;color:var(--text);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;}
+.sv2-fb-status{flex-shrink:0;font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;padding:3px 8px;border-radius:999px;border:1px solid var(--border2);color:var(--muted2);white-space:nowrap;}
+.sv2-fb-status--planned{border-color:var(--accent,#2e7d52);color:var(--accent,#2e7d52);}
+.sv2-fb-status--shipped{border-color:var(--accent,#2e7d52);background:var(--accent,#2e7d52);color:var(--bg);font-weight:600;}
 
 /* Language switcher grid (v1.5.1) */
 .sv2-lang-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:184px;overflow-y:auto;overscroll-behavior:contain;}
@@ -323,6 +350,19 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
   const [fbCategory, setFbCategory] = useState('bug');
   const [fbRating, setFbRating] = useState(0);
   const [fbMessage, setFbMessage] = useState('');
+  // v1.17 (limecore#17): what the user sent, newest first, with its status.
+  // Null until loaded; stays null when signed out or the request fails, and
+  // then the list simply isn't shown (it is a courtesy, not a sync surface).
+  const [fbList, setFbList] = useState(null);
+  const sessionUserId = session?.user?.id;
+  useEffect(() => {
+    if (!sessionUserId) { setFbList(null); return undefined; }
+    let live = true;
+    sync.myFeedback()
+      .then((rows) => { if (live) setFbList((cur) => mergeFeedback(rows, cur)); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, [sessionUserId]);
 
   const [focusCaps, setFocusCaps] = useState(null);
   // Remembers the time across an off/on round trip. Without it, switching the
@@ -352,6 +392,11 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
     outbox.subscribe,
     outbox.getStatus,
     outbox.getStatus,
+  );
+  const realtimeState = useSyncExternalStore(
+    sync.subscribeRealtimeState,
+    sync.getRealtimeState,
+    sync.getRealtimeState,
   );
 
   const onRetryNow = useCallback(async () => {
@@ -426,14 +471,21 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
     const message = fbMessage.trim();
     if (!message) { showFlash(t('settings.feedbackEmpty')); return; }
     if (!session) { showFlash(t('settings.feedbackSignIn')); return; }
+    const id = newFeedbackId();
     outbox.enqueue('submit_feedback', {
-      id: newFeedbackId(),
+      id,
       category: fbCategory,
       rating: fbRating || null,
       message,
       appVersion: pkg.version,
       platform: Capacitor.getPlatform(),
     });
+    // Shown at once, as "Sent". The outbox may not deliver it for a while
+    // (offline), and the list should not look as if nothing happened.
+    setFbList((cur) => mergeFeedback(
+      [{ id, app: 'studydesk', category: fbCategory, message, created_at: new Date().toISOString(), status: 'new' }],
+      cur,
+    ));
     setFbMessage('');
     setFbRating(0);
     showFlash(t('settings.feedbackThanks'));
@@ -575,6 +627,8 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
               <button className="sv2-signin" onClick={onSignIn}>{t('settings.signInToSync')}</button>
             )}
           </div>
+          {/* v1.17 (limecore#10): email/password accounts only. */}
+          {session && <ChangeEmail session={session} showFlash={showFlash} />}
           {!session && (
             <div className="sv2-note">
               {t('settings.guestNote')}
@@ -669,6 +723,37 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
             </button>
           </div>
           <div className="sv2-note">{t('settings.feedbackMeta', { app: 'StudyDesk', version: appVersion })}</div>
+
+          {/* v1.17 (limecore#17): what you sent, and the good news when there
+              is some. Positive states only; see lib/feedbackStatus.js. */}
+          {fbList?.length > 0 && (
+            <div className="sv2-fb-list">
+              <div className="sv2-fb-list-title">{t('settings.fbYours')}</div>
+              {SHOW_FEEDBACK_STATUS && <div className="sv2-note sv2-fb-list-note">{t('settings.fbYoursNote')}</div>}
+              <ul>
+                {fbList.map((r) => {
+                  const st = feedbackStatus(r);
+                  const when = new Date(r.created_at).toLocaleDateString(settingsLocale, { day: 'numeric', month: 'short', year: 'numeric' });
+                  return (
+                    <li key={r.id} className="sv2-fb-item">
+                      <div className="sv2-fb-item-head">
+                        <span className="sv2-fb-item-meta">
+                          {when} · {t(`settings.fbCat.${r.category}`, { defaultValue: r.category })}
+                          {r.app && r.app !== 'studydesk' && ` · ${APP_NAMES[r.app] || r.app}`}
+                        </span>
+                        {st && (
+                          <span className={`sv2-fb-status sv2-fb-status--${st.key === 'shippedIn' ? 'shipped' : st.key}`}>
+                            {t(`settings.fbStatus.${st.key}`, { version: st.version })}
+                          </span>
+                        )}
+                      </div>
+                      <div className="sv2-fb-item-text">{r.message}</div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
         </div>
 
         {/* ── Week start (v1.13 Tier 2) ──
@@ -785,13 +870,22 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
             <div className="sv2-stat"><div className="sv2-stat-num">{grades.length}</div><div className="sv2-stat-lbl">{t('settings.gradesLbl')}</div></div>
             <div className="sv2-stat"><div className="sv2-stat-num">{sessions.length}</div><div className="sv2-stat-lbl">{t('settings.sessionsLbl')}</div></div>
           </div>
+          {/* limecore#24: this row said "Realtime active" for every signed-in
+              user, including the two months the channel was rejected. It now
+              reports what the channel is doing. */}
           <div className="sv2-row">
             <span className="sv2-row-label">{t('settings.connection')}</span>
             <span className="sv2-row-value">
-              <span className="sv2-dot" style={{ background: session ? '#2e7d52' : 'var(--muted2)' }} />
-              {session ? t('settings.realtimeActive') : t('settings.offlineLocal')}
+              <span className="sv2-dot" style={{ background: !session ? 'var(--muted2)' : realtimeState === 'live' ? '#2e7d52' : realtimeState === 'down' ? 'var(--warning)' : 'var(--muted2)' }} />
+              {!session ? t('settings.offlineLocal')
+                : realtimeState === 'live' ? t('settings.realtimeActive')
+                : realtimeState === 'down' ? t('settings.realtimeOff')
+                : t('settings.realtimeConnecting')}
             </span>
           </div>
+          {session && realtimeState === 'down' && (
+            <div className="sv2-note" style={{ marginTop: 0, marginBottom: 9 }}>{t('settings.realtimeOffNote')}</div>
+          )}
           <div className="sv2-row">
             <span className="sv2-row-label">{t('settings.pendingQueue')}</span>
             <span className="sv2-row-value">

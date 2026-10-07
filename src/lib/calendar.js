@@ -394,13 +394,6 @@ export function layoutBands(bands, rowDays) {
 
 // ── Ranges ─────────────────────────────────────────────────────────────────
 
-/** Sessions on `iso`, ordered by clock time. Week view reads this per column. */
-export function sessionsOn(byDay, iso) {
-  return (byDay.get(iso) || [])
-    .filter((it) => it.kind === 'session')
-    .sort((a, b) => a.startMin - b.startMin);
-}
-
 /** Everything with a clock time on `iso` — logged sessions AND planned blocks,
  *  which share the hour grid because they occupy the same hours. Ordered by
  *  start, then planned before logged at an identical minute so a block and the

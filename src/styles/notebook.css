@@ -640,26 +640,6 @@ button.nb-check[aria-checked='true']::after {
 .nb-head-meta { font-family: var(--nb-font-meta); font-size: 10px; color: var(--nb-ink-muted); white-space: nowrap; }
 .nb-head-spacer { flex: 1; }
 
-/* The desktop format row. A FALLBACK — shortcuts are the real desktop path
-   (§2), and this exists so a mouse user can discover what is there. */
-.nb-format-row { display: flex; gap: 2px; }
-.nb-fmt {
-  min-width: 28px;
-  height: 28px;
-  padding: 0 6px;
-  background: none;
-  border: 0;
-  border-radius: 3px;
-  color: var(--nb-ink-muted);
-  font-family: var(--nb-font-meta);
-  font-size: 12px;
-  cursor: pointer;
-}
-.nb-fmt:hover { color: var(--nb-ink); }
-/* Active state is the GLYPH going to --nb-ink. No pills, no fills — the bar
-   has to sit quietly under a paper page (§4). */
-.nb-fmt.is-on { color: var(--nb-ink); }
-
 /* ══════════════════════════════════════════════════════════════════════════
    MOBILE FORMAT BAR  (§4) — docked, one row, 44px
    ══════════════════════════════════════════════════════════════════════════ */
