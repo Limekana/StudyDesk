@@ -111,6 +111,8 @@
     "desktopBrowser": "Schließe die Anmeldung im Browser ab und komm dann hierher zurück.",
     "errDesktopNoListener": "Die Desktop-Anmeldung ist bei diesem Start nicht verfügbar. Starte StudyDesk neu oder melde dich unten per E-Mail an.",
     "errCallback": "Anmelde-Rückruf fehlgeschlagen",
+    "errLinkExpired": "Der Link ist abgelaufen oder wurde schon verwendet. Fordere einen neuen an.",
+    "errSignInFailed": "Die Anmeldung wurde abgebrochen oder ist fehlgeschlagen. Versuch es noch einmal.",
     "errGeneric": "Authentifizierung fehlgeschlagen",
     "errInvalidCredentials": "E-Mail oder Passwort ist falsch.",
     "errAlreadyRegistered": "Für diese E-Mail existiert bereits ein Konto. Versuche dich anzumelden.",

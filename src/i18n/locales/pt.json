@@ -50,6 +50,8 @@
     "desktopBrowser": "Conclua o login no seu navegador e volte para cá.",
     "errDesktopNoListener": "O login no computador está indisponível nesta inicialização. Reinicie o StudyDesk ou entre com e-mail abaixo.",
     "errCallback": "Falha no retorno do login",
+    "errLinkExpired": "Esse link expirou ou já foi usado. Peça um novo.",
+    "errSignInFailed": "O login foi cancelado ou não foi concluído. Tente novamente.",
     "errGeneric": "Falha na autenticação",
     "errInvalidCredentials": "E-mail ou senha incorretos.",
     "errAlreadyRegistered": "Já existe uma conta com esse e-mail. Tente entrar.",

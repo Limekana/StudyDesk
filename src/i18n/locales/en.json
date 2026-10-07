@@ -111,6 +111,8 @@
     "desktopBrowser": "Finish signing in in your browser, then come back here.",
     "errDesktopNoListener": "Desktop sign-in is unavailable this launch. Restart StudyDesk, or sign in with email below.",
     "errCallback": "Sign-in callback failed",
+    "errLinkExpired": "That link has expired or was already used. Ask for a new one.",
+    "errSignInFailed": "Sign-in was cancelled or didn't finish. Try again.",
     "errGeneric": "Authentication failed",
     "errInvalidCredentials": "Incorrect email or password.",
     "errAlreadyRegistered": "That email already has an account. Try signing in instead.",
