@@ -21,6 +21,7 @@
     "check:notebook-colours": "node scripts/check-notebook-colours.mjs",
     "check:native-plugins": "node scripts/check-native-plugins.mjs",
     "check:dist-fresh": "node scripts/check-dist-fresh.mjs",
+    "check:desktop-paths": "node scripts/check-desktop-paths.mjs",
     "check:boot": "node scripts/check-boot.mjs",
     "check:dep-tdz": "node scripts/check-dep-tdz.mjs",
     "check:line-endings": "node scripts/check-line-endings.mjs",
@@ -32,7 +33,7 @@
     "preview": "vite preview",
     "cap:sync": "npm run build && npm run check:dist-fresh && cap sync android",
     "electron:dev": "electron .",
-    "electron:build": "npm run build && npm run check:dist-fresh && node electron/build.cjs --win --publish never"
+    "electron:build": "npm run build && npm run check:dist-fresh && node electron/build.cjs --win --publish never && npm run check:desktop-paths"
   },
   "dependencies": {
     "@capacitor/android": "^8.2.0",
@@ -76,7 +77,8 @@
     },
     "files": [
       "dist/**/*",
-      "electron/**/*"
+      "electron/**/*",
+      "!**/node_modules/**/{android,ios}/**"
     ],
     "win": {
       "target": "nsis",
@@ -85,6 +87,7 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
+      "include": "resources/installer.nsh",
       "artifactName": "StudyDesk-Desktop-Setup-${version}.${ext}"
     },
     "publish": [
