@@ -10,6 +10,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Capacitor } from '@capacitor/core';
 import { fmtTime } from '../../lib/dates.js';
 import { startFocus, stopFocus } from '../../lib/focusMode.js';
 import { enterSubmit } from '../../lib/imeSubmit.js';
@@ -455,6 +456,8 @@ export default function TimerView({ state, onTimerComplete }) {
       endsAt: running ? Date.now() + secsRef.current * 1000 : 0,
       chip: state.focusChip !== false,
       pin: state.focusPin === true,
+      // Not a setting: fullscreen is what Lock In is, on every platform.
+      immersive: true,
     });
   }, [lockedIn, running, state.focusChip, state.focusPin, t]);
 
@@ -470,10 +473,14 @@ export default function TimerView({ state, onTimerComplete }) {
   // is gated on a user gesture, and browsers reject it outright when the page
   // is not focused or the user has denied it. Lock In must still work as a
   // focus mode when the request is refused — losing fullscreen is a smaller
-  // loss than the timer not starting. Android's WebView has no fullscreen
-  // concept here either, so the same path covers it.
+  // loss than the timer not starting.
+  //
+  // Not on Android (#68). There the WebView accepts the request and sets
+  // `document.fullscreenElement`, but the status and navigation bars stay on
+  // screen, so it changed nothing a user could see. FocusMode hides the bars
+  // natively instead (`immersive` in the startFocus call above).
   useEffect(() => {
-    if (typeof document === 'undefined') return undefined;
+    if (typeof document === 'undefined' || Capacitor.isNativePlatform()) return undefined;
     const el = document.documentElement;
     if (lockedIn) {
       if (!document.fullscreenElement && el.requestFullscreen) {

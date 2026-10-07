@@ -189,26 +189,3 @@ export function commitmentsOn(state, iso) {
   return out;
 }
 
-/** Total committed minutes on `iso` — what the day has already spent before
- *  any studying is planned into it. */
-export function committedMinutesOn(state, iso) {
-  return commitmentsOn(state, iso).reduce((n, c) => n + c.durationMinutes, 0);
-}
-
-/** The next date on or after `from` that a weekly commitment lands on, so the
- *  editor can say what "every Tuesday" actually means for this row. Returns
- *  null for a one-off (its date is already explicit) or when the rule has
- *  already ended. */
-export function nextOccurrence(c, fromIso) {
-  if (!c || !isWeekly(c)) return null;
-  const start = c.startsOn > fromIso ? c.startsOn : fromIso;
-  const d = parseLocalDate(start);
-  if (!d || Number.isNaN(d.getTime())) return null;
-  // At most seven steps: one of them is the right weekday by definition.
-  for (let i = 0; i < 7; i++) {
-    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    if (occursOn(c, iso, d.getDay())) return iso;
-    d.setDate(d.getDate() + 1);
-  }
-  return null;
-}

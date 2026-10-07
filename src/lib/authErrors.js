@@ -65,3 +65,29 @@ export function translateAuthError(err, t, fallbackKey = 'auth.errGeneric') {
   // Unmapped — surface the server's own wording rather than hiding it.
   return message || t(fallbackKey);
 }
+
+/**
+ * The message for a failed OAuth or email-link callback, from the query
+ * parameters of the deep link that delivered it.
+ *
+ * Unlike `translateAuthError`, this never shows the incoming text. Any app, or
+ * any link on a web page, can open `com.studydesk.app://login-callback?...`,
+ * so `error_description` is attacker-controlled: showing it would let a
+ * stranger write "Your account is locked, contact ..." on the sign-in screen
+ * (limecore#37). Known codes get their translation, everything else a generic
+ * line.
+ *
+ * @param {URLSearchParams} params
+ * @param {(key: string) => string} t
+ * @returns {string}
+ */
+export function callbackErrorMessage(params, t) {
+  // GoTrue sends the specific reason in `error_code` and a generic OAuth
+  // `error` beside it (an expired recovery link arrives as
+  // error=access_denied&error_code=otp_expired).
+  const code = params.get('error_code') || '';
+  if (code === 'otp_expired') return t('auth.errLinkExpired');
+  // hasOwn, because the code is attacker-supplied and `__proto__` is truthy.
+  if (Object.hasOwn(CODE_KEYS, code)) return t(CODE_KEYS[code]);
+  return t('auth.errSignInFailed');
+}

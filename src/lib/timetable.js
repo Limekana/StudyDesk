@@ -453,31 +453,6 @@ export function lessonsOn(state, iso, weekStart = 1) {
   return out;
 }
 
-/** Free stretches between lessons on `iso`, within `[dayFrom, dayTo]` minutes.
- *  This is what makes the time-management framing work — "Tuesday evening is
- *  already gone" is only visible if the gaps are computed, not eyeballed.
- *  Gaps shorter than `minGap` are not free time in any useful sense. */
-export function freeGaps(lessons, dayFrom = 8 * 60, dayTo = 20 * 60, minGap = 30) {
-  const busy = lessons
-    .map((l) => ({ from: l.startMin, to: l.endMin }))
-    .sort((a, b) => a.from - b.from);
-  const merged = [];
-  for (const b of busy) {
-    const last = merged[merged.length - 1];
-    if (last && b.from <= last.to) last.to = Math.max(last.to, b.to);
-    else merged.push({ ...b });
-  }
-  const gaps = [];
-  let cursor = dayFrom;
-  for (const b of merged) {
-    if (b.from > cursor) gaps.push({ from: cursor, to: Math.min(b.from, dayTo) });
-    cursor = Math.max(cursor, b.to);
-    if (cursor >= dayTo) break;
-  }
-  if (cursor < dayTo) gaps.push({ from: cursor, to: dayTo });
-  return gaps.filter((g) => g.to - g.from >= minGap && g.to > g.from);
-}
-
 /** Local ISO timestamp for a planned block at `iso` + `minutes`.
  *  Built from local calendar fields rather than by adding milliseconds to a
  *  UTC midnight: a DST boundary shifts the offset mid-week, and arithmetic on

@@ -132,12 +132,6 @@ export function setPreferredMode(mode) {
   return applyTheme();
 }
 
-// Re-resolve after anything that can change entitlement: sign-in, sign-out, a
-// completed refresh. Cheap and idempotent, so call it freely.
-export function syncTheme() {
-  return applyTheme();
-}
-
 // ── Home-screen widget palette (v1.15) ───────────────────────────────────
 //
 // Feedback 2026-09-16: "other widget colors if that's possible". The widgets

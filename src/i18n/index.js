@@ -8,23 +8,32 @@
 //                               native @capacitor/device plugin is needed
 //   3. 'en' fallback
 //
-// Resources are bundled (imported below), so init is synchronous and no
-// Suspense boundary is required (react.useSuspense = false).
+// v1.17 (limecore#18): only English, the fallback, is bundled. Each other
+// language is its own chunk: the active one loads before first render (both
+// entry points wait on `i18nReady`), the rest only when the user switches. The
+// chunks are part of dist, so they ship inside the APK and load offline. Init
+// itself is still synchronous, so no Suspense boundary is required
+// (react.useSuspense = false).
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
 import en from './locales/en.json';
-import fi from './locales/fi.json';
-import fr from './locales/fr.json';
-import de from './locales/de.json';
-import es from './locales/es.json';
-import zh from './locales/zh.json';
-import hi from './locales/hi.json';
-import pt from './locales/pt.json';
-import id from './locales/id.json';
-import ar from './locales/ar.json';
 
 export const SUPPORTED_LANGS = ['en', 'fi', 'fr', 'de', 'es', 'zh', 'hi', 'pt', 'id', 'ar'];
+
+// Spelled out rather than globbed, so a missing locale file fails the build
+// instead of a user's first launch.
+const LOADERS = {
+  fi: () => import('./locales/fi.json'),
+  fr: () => import('./locales/fr.json'),
+  de: () => import('./locales/de.json'),
+  es: () => import('./locales/es.json'),
+  zh: () => import('./locales/zh.json'),
+  hi: () => import('./locales/hi.json'),
+  pt: () => import('./locales/pt.json'),
+  id: () => import('./locales/id.json'),
+  ar: () => import('./locales/ar.json'),
+};
 
 const LANG_STORAGE_KEY = 'limecore_lang';
 
@@ -67,13 +76,35 @@ function detectLanguage() {
 }
 
 /** Persist + apply a manual language choice (for the future Settings switcher). */
-export function setLanguage(lang) {
+export async function setLanguage(lang) {
   try {
     localStorage.setItem(LANG_STORAGE_KEY, lang);
   } catch {
     /* ignore persistence failure — still switch in-memory */
   }
-  i18n.changeLanguage(lang);
+  await applyLanguage(lang);
+}
+
+async function loadLanguage(lang) {
+  if (lang === 'en' || i18n.hasResourceBundle(lang, 'translation')) return;
+  const { default: strings } = await LOADERS[lang]();
+  i18n.addResourceBundle(lang, 'translation', strings);
+}
+
+// Loading is async, so two quick taps could finish out of order and leave the
+// app in the first language while storage holds the second. The last request
+// wins.
+let requested;
+
+// Boot and a live switch share this path, so <html dir> follows a switch too.
+// It used to be set at boot only, and choosing Arabic left the layout
+// left-to-right until a restart (#95).
+async function applyLanguage(lang) {
+  requested = lang;
+  await loadLanguage(lang);
+  if (requested !== lang) return;
+  applyDirection(lang);
+  await i18n.changeLanguage(lang);
 }
 
 
@@ -100,19 +131,8 @@ function applyDirection(lang) {
 }
 
 i18n.use(initReactI18next).init({
-  resources: {
-    en: { translation: en },
-    fi: { translation: fi },
-    fr: { translation: fr },
-    de: { translation: de },
-    es: { translation: es },
-    zh: { translation: zh },
-    hi: { translation: hi },
-    pt: { translation: pt },
-    id: { translation: id },
-    ar: { translation: ar },
-  },
-  lng: detectLanguage(),
+  resources: { en: { translation: en } },
+  lng: 'en',
   fallbackLng: 'en',
   supportedLngs: SUPPORTED_LANGS,
   interpolation: { escapeValue: false }, // React already escapes
@@ -120,7 +140,11 @@ i18n.use(initReactI18next).init({
   react: { useSuspense: false },
 });
 
-// Set <html dir>/<html lang> for the language i18n actually booted with.
-applyDirection(i18n.language || 'en');
+/**
+ * Resolves once the detected language is loaded and active, with <html dir>
+ * and <html lang> set for it. Never rejects: if the chunk cannot load, the app
+ * starts in English rather than not starting.
+ */
+export const i18nReady = applyLanguage(detectLanguage()).catch(() => {});
 
 export default i18n;

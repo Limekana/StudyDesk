@@ -7,7 +7,7 @@ import { supabase, OAUTH_REDIRECT_URL } from '../../lib/supabase.js';
 import { desktop, DESKTOP_REDIRECT_URL } from '../../lib/desktop.js';
 import { inheritFromNexus } from '../../lib/suiteSso.js';
 import { setGuestMode } from '../../lib/guestMode.js';
-import { translateAuthError } from '../../lib/authErrors.js';
+import { translateAuthError, callbackErrorMessage } from '../../lib/authErrors.js';
 import { withCaptcha } from '../../lib/captcha.js';
 import { beginRecovery, endRecovery, looksLikeRecovery } from '../../lib/passwordRecovery.js';
 
@@ -231,9 +231,10 @@ export default function AuthGate() {
         const qs = url.split('?')[1] || '';
         const params = new URLSearchParams(qs);
         const code = params.get('code');
-        const errParam = params.get('error_description') || params.get('error');
-        if (errParam) {
-          setErr(errParam);
+        // limecore#37: any app can open this link, so its error text is never
+        // shown. Only its code picks a message.
+        if (params.get('error') || params.get('error_code') || params.get('error_description')) {
+          setErr(callbackErrorMessage(params, t));
         } else if (code) {
           // #52 — the same deep link carries both Google sign-ins and password
           // recoveries, and the exchange below produces an indistinguishable
@@ -730,7 +731,7 @@ export default function AuthGate() {
           <div className="auth-legal-note">
             {t('auth.ageNote')}{' '}
             <a
-              href="https://limekana.github.io/nexus-command-center/legal/privacy.html"
+              href="https://limecore.dev/privacy"
               target="_blank"
               rel="noopener noreferrer"
             >

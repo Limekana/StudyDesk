@@ -7,5 +7,9 @@ version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
+    # v1.17 (limecore#42): without this, PRs target the default branch, `main`,
+    # which takes release merges only. Read from `main`, so it applies once a
+    # release carries it there.
+    target-branch: develop
     schedule:
       interval: monthly

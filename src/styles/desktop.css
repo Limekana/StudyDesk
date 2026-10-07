@@ -161,7 +161,6 @@
    spans instead of taking a column. */
 .app[data-tier="desktop"] .sd-bucket-tile > .quick-add-box,
 .app[data-tier="desktop"] .sd-bucket-tile > .nextup-unlock,
-.app[data-tier="desktop"] .sd-bucket-tile > .suggest-banner,
 .app[data-tier="desktop"] .sd-bucket-tile > .divider,
 .app[data-tier="desktop"] .sd-bucket-tile > .empty {
   grid-column: 1 / -1;

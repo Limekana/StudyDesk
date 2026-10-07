@@ -14,8 +14,8 @@ android {
         applicationId "com.StudyDesk.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 31
-        versionName "1.16.0"
+        versionCode 32
+        versionName "1.17.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -48,8 +48,15 @@ android {
     }
     buildTypes {
         release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // v1.17 (limecore#19): R8 shrinks and obfuscates the Java/Kotlin
+            // code, and the resource shrinker drops what nothing references.
+            // Keep rules: proguard-rules.pro. Both only run in release builds,
+            // so a missing rule shows up only there: device-test the release
+            // APK, and keep build/outputs/mapping/release/mapping.txt with
+            // each release so native stack traces can be read back.
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             if (keystorePropertiesFile.exists()) {
                 signingConfig signingConfigs.release
             }

@@ -70,12 +70,6 @@
 .nextup-unlock-body{flex:1;}
 .nextup-unlock-title{font-family:var(--font-display);font-size:17px;font-weight:500;color:var(--text);margin-bottom:8px;line-height:1.35;}
 .nextup-unlock-sub{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:16px;}
-.nextup-unlock-progress{display:flex;align-items:center;gap:8px;margin-bottom:16px;}
-.nextup-unlock-pip{width:32px;height:6px;border-radius:3px;background:var(--border2);transition:background 0.25s;}
-.nextup-unlock-pip.filled{background:var(--success);}
-.nextup-unlock-progress-label{font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-inline-start:4px;}
-.suggest-banner{background:var(--info-soft);border:1px dashed var(--info-soft-border);border-radius:5px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;font-size:13px;flex-wrap:wrap;}
-.suggest-banner-label{font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;color:var(--info);margin-inline-end:4px;}
 .quick-add-box{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px;margin-bottom:24px;box-shadow:var(--shadow);}
 /* ── Course detail (v1.9 Item 14a) ───────────────────────────────────────────
    The middle pane of the desktop three-pane layout. The sidebar is pane one

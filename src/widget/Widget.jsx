@@ -91,7 +91,7 @@ export default function Widget() {
         )}
 
         {status === 'error' && (
-          <p className="wg-quiet">{t('common.errorGeneric', '—')}</p>
+          <p className="wg-quiet">—</p>
         )}
 
         {status === 'ready' && !due && (

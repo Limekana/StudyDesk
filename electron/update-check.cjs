@@ -16,6 +16,7 @@
 'use strict';
 
 const { app, net } = require('electron');
+const { isReleasePage } = require('./release-page.cjs');
 
 const TIMEOUT_MS = 10_000;
 
@@ -43,7 +44,6 @@ function isNewer(latest, current) {
  */
 function createUpdateChecker({ repo, installerPrefix, log }) {
   const api = `https://api.github.com/repos/${repo}/releases/latest`;
-  const pagePrefix = `https://github.com/${repo}/releases/`.toLowerCase();
   let pending = null;
   let releaseUrl = null;
 
@@ -64,7 +64,7 @@ function createUpdateChecker({ repo, installerPrefix, log }) {
       const latest = parseVersion(body.tag_name);
       const cur = parseVersion(current);
       const url = typeof body.html_url === 'string' ? body.html_url : '';
-      if (!latest || !cur || !url.toLowerCase().startsWith(pagePrefix)) {
+      if (!latest || !cur || !isReleasePage(url, repo)) {
         throw new Error(`unusable release payload (tag=${body.tag_name})`);
       }
       const hasInstaller = Array.isArray(body.assets) && body.assets.some(
