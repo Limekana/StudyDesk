@@ -311,6 +311,14 @@
     "feedbackEmpty": "पहले एक संदेश लिखें।",
     "feedbackSignIn": "प्रतिक्रिया भेजने के लिए साइन इन करें।",
     "feedbackMeta": "{{app}} v{{version}} के साथ भेजा गया।",
+    "fbYours": "आपकी प्रतिक्रिया",
+    "fbYoursNote": "आपने जो भेजा, वह योजना में आने या जारी होने पर यहाँ दिखेगा।",
+    "fbStatus": {
+      "sent": "भेजा गया",
+      "planned": "योजना में",
+      "shipped": "जारी",
+      "shippedIn": "{{version}} में जारी"
+    },
     "fbCat": {
       "bug": "बग",
       "idea": "सुझाव",

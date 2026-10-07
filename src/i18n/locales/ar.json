@@ -319,6 +319,14 @@
     "feedbackEmpty": "اكتب رسالة أولاً.",
     "feedbackSignIn": "سجّل الدخول لإرسال الملاحظات.",
     "feedbackMeta": "تُرسل مع {{app}} v{{version}}.",
+    "fbYours": "ملاحظاتك",
+    "fbYoursNote": "عندما يُخطَّط لما أرسلته أو يُطلَق، يظهر هنا.",
+    "fbStatus": {
+      "sent": "أُرسلت",
+      "planned": "مُخطَّط لها",
+      "shipped": "أُطلقت",
+      "shippedIn": "أُطلقت في {{version}}"
+    },
     "fbCat": {
       "bug": "خلل",
       "idea": "فكرة",

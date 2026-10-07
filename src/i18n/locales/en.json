@@ -311,6 +311,14 @@
     "feedbackEmpty": "Write a message first.",
     "feedbackSignIn": "Sign in to send feedback.",
     "feedbackMeta": "Sent with {{app}} v{{version}}.",
+    "fbYours": "Your feedback",
+    "fbYoursNote": "When something you sent is planned or shipped, it shows here.",
+    "fbStatus": {
+      "sent": "Sent",
+      "planned": "Planned",
+      "shipped": "Shipped",
+      "shippedIn": "Shipped in {{version}}"
+    },
     "fbCat": {
       "bug": "Bug",
       "idea": "Idea",

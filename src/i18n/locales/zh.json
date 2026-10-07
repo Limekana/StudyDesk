@@ -311,6 +311,14 @@
     "feedbackEmpty": "请先写一条消息。",
     "feedbackSignIn": "登录后即可发送反馈。",
     "feedbackMeta": "随 {{app}} v{{version}} 一起发送。",
+    "fbYours": "你的反馈",
+    "fbYoursNote": "你发送的内容被列入计划或已发布时，会显示在这里。",
+    "fbStatus": {
+      "sent": "已发送",
+      "planned": "已计划",
+      "shipped": "已发布",
+      "shippedIn": "已在 {{version}} 发布"
+    },
     "fbCat": {
       "bug": "缺陷",
       "idea": "建议",

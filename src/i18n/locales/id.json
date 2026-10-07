@@ -309,6 +309,14 @@
     "feedbackEmpty": "Tulis pesan dulu.",
     "feedbackSignIn": "Masuk untuk mengirim masukan.",
     "feedbackMeta": "Dikirim dengan {{app}} v{{version}}.",
+    "fbYours": "Masukan Anda",
+    "fbYoursNote": "Saat sesuatu yang Anda kirim direncanakan atau dirilis, statusnya muncul di sini.",
+    "fbStatus": {
+      "sent": "Terkirim",
+      "planned": "Direncanakan",
+      "shipped": "Dirilis",
+      "shippedIn": "Dirilis di {{version}}"
+    },
     "fbCat": {
       "bug": "Bug",
       "idea": "Ide",
