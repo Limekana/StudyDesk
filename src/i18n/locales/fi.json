@@ -299,6 +299,7 @@
     "changeEmailTaken": "Toinen tili käyttää jo tätä osoitetta.",
     "changeEmailRateLimit": "Sähköposteja lähetettiin juuri liian monta. Yritä myöhemmin uudelleen.",
     "changeEmailFailed": "Linkkejä ei voitu lähettää. Tarkista yhteys ja yritä uudelleen.",
+    "changeEmailGoogle": "Kirjaudut Googlella, joten sähköpostisi on Google-osoitteesi.",
     "lockInLbl": "Lock In",
     "focusChip": "Keskittymismerkki",
     "focusPin": "Näytön kiinnitys",

@@ -307,6 +307,7 @@
     "changeEmailTaken": "هناك حساب آخر يستخدم هذا العنوان بالفعل.",
     "changeEmailRateLimit": "أُرسلت رسائل كثيرة جدًا للتو. حاول مرة أخرى لاحقًا.",
     "changeEmailFailed": "تعذّر إرسال الروابط. تحقّق من اتصالك وحاول مرة أخرى.",
+    "changeEmailGoogle": "تسجّل الدخول عبر Google، لذا بريدك الإلكتروني هو عنوان Google الخاص بك.",
     "lockInLbl": "Lock In",
     "focusChip": "شارة التركيز",
     "focusPin": "تثبيت الشاشة",

@@ -299,6 +299,7 @@
     "changeEmailTaken": "Another account already uses that address.",
     "changeEmailRateLimit": "Too many emails were sent just now. Try again later.",
     "changeEmailFailed": "Couldn't send the links. Check your connection and try again.",
+    "changeEmailGoogle": "You sign in with Google, so your email is your Google address.",
     "lockInLbl": "Lock In",
     "focusChip": "Focus chip",
     "focusPin": "Screen pinning",

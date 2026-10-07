@@ -301,6 +301,7 @@
     "changeEmailTaken": "Otra cuenta ya usa esa dirección.",
     "changeEmailRateLimit": "Se enviaron demasiados correos hace un momento. Inténtalo más tarde.",
     "changeEmailFailed": "No se pudieron enviar los enlaces. Revisa tu conexión e inténtalo de nuevo.",
+    "changeEmailGoogle": "Inicias sesión con Google, así que tu correo es tu dirección de Google.",
     "lockInLbl": "Lock In",
     "focusChip": "Chip de enfoque",
     "focusPin": "Fijar pantalla",

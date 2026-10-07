@@ -299,6 +299,7 @@
     "changeEmailTaken": "已有其他账户使用该地址。",
     "changeEmailRateLimit": "刚才发送的邮件太多。请稍后再试。",
     "changeEmailFailed": "无法发送链接。请检查网络连接后重试。",
+    "changeEmailGoogle": "你使用 Google 登录，因此你的邮箱就是你的 Google 地址。",
     "lockInLbl": "Lock In",
     "focusChip": "专注卡片",
     "focusPin": "屏幕固定",

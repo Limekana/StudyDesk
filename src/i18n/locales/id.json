@@ -297,6 +297,7 @@
     "changeEmailTaken": "Akun lain sudah memakai alamat itu.",
     "changeEmailRateLimit": "Terlalu banyak email baru saja dikirim. Coba lagi nanti.",
     "changeEmailFailed": "Tautan tidak bisa dikirim. Periksa koneksi Anda lalu coba lagi.",
+    "changeEmailGoogle": "Anda masuk dengan Google, jadi email Anda adalah alamat Google Anda.",
     "lockInLbl": "Lock In",
     "focusChip": "Chip fokus",
     "focusPin": "Sematkan layar",

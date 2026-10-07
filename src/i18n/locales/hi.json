@@ -299,6 +299,7 @@
     "changeEmailTaken": "यह पता पहले से किसी दूसरे खाते में इस्तेमाल हो रहा है।",
     "changeEmailRateLimit": "अभी बहुत सारे ईमेल भेजे गए। बाद में फिर कोशिश करें।",
     "changeEmailFailed": "लिंक नहीं भेजे जा सके। अपना कनेक्शन जाँचें और फिर कोशिश करें।",
+    "changeEmailGoogle": "आप Google से साइन इन करते हैं, इसलिए आपका ईमेल आपका Google पता है।",
     "lockInLbl": "Lock In",
     "focusChip": "फोकस चिप",
     "focusPin": "स्क्रीन पिन करें",
