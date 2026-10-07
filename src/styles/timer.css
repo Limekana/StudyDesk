@@ -57,7 +57,10 @@
 /* ── Lock In takeover (full-screen, dark, distraction-stripped) ── */
 .lockin-wrap{position:fixed;inset:0;z-index:50;background:radial-gradient(ellipse at center, var(--lockin-1) 0%, var(--lockin-2) 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:40px 20px;color:var(--lockin-ink);animation:lockin-fade 0.3s ease;}
 @keyframes lockin-fade{from{opacity:0;}to{opacity:1;}}
-.lockin-top{position:absolute;top:32px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;}
+/* #68: with the system bars hidden on Android, the top inset shrinks to the
+   camera cutout, if any, so the badge clears the punch hole. `max()` keeps the
+   original 32px wherever the inset is smaller (desktop, no cutout). */
+.lockin-top{position:absolute;top:max(32px, calc(var(--safe-area-inset-top, env(safe-area-inset-top)) + 12px));left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;}
 .lockin-badge{font-family:var(--font-mono);font-size:10px;letter-spacing:0.35em;color:rgba(250,248,244,0.45);}
 .lockin-task{font-family:var(--font-display);font-size:18px;color:rgba(250,248,244,0.85);max-width:80vw;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .lockin-ring{width:260px;height:260px;margin:0;}
