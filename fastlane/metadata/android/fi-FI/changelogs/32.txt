@@ -1,0 +1,3 @@
+Nopeampi ja kevyempi.
+
+StudyDesk käynnistyy nopeammin: kielet ja näkymät ladataan vasta kun tarvitset niitä, ja sovellus on pienempi. Muiden laitteidesi muutokset näkyvät taas heti. Lock In piilottaa nyt järjestelmäpalkit. Asetuksissa näet lähettämäsi palautteen tilan ja voit vaihtaa kirjautumissähköpostisi. Työpöytä: päivitykset asentuvat taas, myös versioista 1.15 ja 1.16.

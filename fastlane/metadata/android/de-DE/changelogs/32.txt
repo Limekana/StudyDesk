@@ -1,0 +1,3 @@
+Schneller und leichter.
+
+StudyDesk startet schneller: Sprachen und Ansichten werden erst geladen, wenn du sie brauchst, und die App ist kleiner. Änderungen von deinen anderen Geräten erscheinen wieder sofort. Lock In blendet jetzt die Systemleisten aus. In den Einstellungen siehst du den Status deines Feedbacks und kannst deine Login-E-Mail ändern. Desktop: Updates werden wieder installiert.

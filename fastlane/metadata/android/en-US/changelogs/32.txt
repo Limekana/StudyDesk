@@ -1,0 +1,3 @@
+Faster and lighter.
+
+StudyDesk starts faster: languages and screens load only when you need them, and the app is smaller. Changes from your other devices appear live again. Lock In now hides the system bars for true fullscreen. In Settings you can see the status of feedback you sent and change your login email. Desktop: updates install again, including from 1.15 and 1.16.

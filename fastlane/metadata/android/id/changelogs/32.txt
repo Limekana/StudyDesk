@@ -1,0 +1,3 @@
+Lebih cepat dan ringan.
+
+StudyDesk kini dibuka lebih cepat: bahasa dan layar dimuat hanya saat dibutuhkan, dan aplikasinya lebih kecil. Perubahan dari perangkat lain kembali tampil langsung. Lock In kini menyembunyikan bilah sistem. Di Pengaturan Anda bisa melihat status masukan yang dikirim dan mengganti email login. Desktop: pembaruan kembali terpasang, termasuk dari 1.15 dan 1.16.
