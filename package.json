@@ -47,11 +47,11 @@
     "@supabase/supabase-js": "^2.106.0",
     "@vercel/analytics": "^2.0.1",
     "electron-updater": "^6.8.9",
-    "i18next": "^23.16.8",
-    "lucide-react": "^0.414.0",
+    "i18next": "^26.4.2",
+    "lucide-react": "^1.52.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-i18next": "^14.1.3"
+    "react-i18next": "^17.0.16"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
