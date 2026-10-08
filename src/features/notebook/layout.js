@@ -117,11 +117,18 @@ export function joinBoxes(boxes) {
     .join(JOIN);
 }
 
+/** The id of the one box in a note nobody has arranged. FIXED, not random: an
+ *  unarranged note stores no layout, so NotebookView re-derives this box from
+ *  `content` on every change, and NoteCanvas keys the box's editor by its id.
+ *  A fresh id per read remounted the editor on every committed line, so Enter
+ *  in a plain note dropped the caret (v1.18). `newBoxId()` never returns this. */
+export const SOLE_BOX_ID = 'b0';
+
 /** One box holding the whole note, at the left margin, full width. What a note
  *  written before this feature is, and what a note whose layout went stale
  *  falls back to. */
 export function singleBox(content) {
-  return [{ id: newBoxId(), x: 0, y: 0, w: MAX_W, text: String(content ?? '') }];
+  return [{ id: SOLE_BOX_ID, x: 0, y: 0, w: MAX_W, text: String(content ?? '') }];
 }
 
 export function makeBox({ x, y, w = DEFAULT_W, text = '' }) {
