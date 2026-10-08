@@ -30,12 +30,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import NoteEditor from './NoteEditor.jsx';
-import { GRID, MIN_W, MAX_W, DEFAULT_W, makeBox, snapY } from './layout.js';
+import { GRID, MIN_W, MAX_W, DEFAULT_W, TRAILING_ROWS, makeBox, snapY, pageHeight } from './layout.js';
 
-/** Room left under the lowest box so there is always empty page to start a new
- *  box on — without it the only way to add one below your work is to scroll to
- *  a gap that does not exist. */
-const TRAILING_SPACE = 6 * GRID;
+/** The element that scrolls the page. The notebook does not scroll itself; an
+ *  app-level container (or the document) does, and which one depends on the
+ *  shell, so it is found rather than assumed. */
+function scrollParent(el) {
+  for (let p = el?.parentElement; p; p = p.parentElement) {
+    const oy = getComputedStyle(p).overflowY;
+    if (oy === 'auto' || oy === 'scroll') return p;
+  }
+  return document.documentElement;
+}
 
 export default function NoteCanvas({
   boxes,
@@ -62,6 +68,76 @@ export default function NoteCanvas({
   const [typingIn, setTypingIn] = useState(null);
 
   const pageWidth = () => pageRef.current?.getBoundingClientRect().width || 1;
+
+  // ── The endless sheet (StudyDesk#111) ───────────────────────────────────
+  //
+  // The writable area has to reach well below the lowest box's BOTTOM, and
+  // fill the paper in the window. Boxes are absolutely positioned, so the page
+  // cannot learn their heights from layout; they are measured instead.
+  const [heights, setHeights] = useState({});
+  const [paper, setPaper] = useState({ fill: 0, trailing: TRAILING_ROWS * GRID });
+  const resizeObs = useRef(null);
+  const boxEls = useRef(new Set());
+
+  useEffect(() => {
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver((entries) => {
+      setHeights((prev) => {
+        let next = prev;
+        for (const entry of entries) {
+          const id = entry.target.dataset.boxId;
+          const h = Math.round(entry.target.getBoundingClientRect().height);
+          if (id && prev[id] !== h) {
+            if (next === prev) next = { ...prev };
+            next[id] = h;
+          }
+        }
+        return next;
+      });
+    });
+    resizeObs.current = ro;
+    for (const el of boxEls.current) ro.observe(el);
+    return () => { ro.disconnect(); resizeObs.current = null; };
+  }, []);
+
+  // Stable, so React attaches it once per box rather than on every render;
+  // the returned cleanup (React 19) runs when the box unmounts.
+  const observeBox = useCallback((el) => {
+    if (!el) return undefined;
+    boxEls.current.add(el);
+    resizeObs.current?.observe(el);
+    return () => {
+      boxEls.current.delete(el);
+      resizeObs.current?.unobserve(el);
+    };
+  }, []);
+
+  useEffect(() => {
+    const area = pageRef.current;
+    if (!area) return undefined;
+    const scroller = scrollParent(area);
+    const isDoc = scroller === document.documentElement;
+    const measure = () => {
+      const viewH = isDoc ? window.innerHeight : scroller.clientHeight;
+      // The area's offset inside the scrolled content, independent of how far
+      // it is scrolled right now.
+      const top = area.getBoundingClientRect().top
+        - (isDoc ? 0 : scroller.getBoundingClientRect().top)
+        + (isDoc ? window.scrollY : scroller.scrollTop);
+      const fill = Math.max(0, Math.round(viewH - top));
+      const trailing = Math.max(TRAILING_ROWS * GRID, Math.round(window.innerHeight * 0.4));
+      setPaper((p) => (Math.abs(p.fill - fill) > 1 || p.trailing !== trailing ? { fill, trailing } : p));
+    };
+    const raf = requestAnimationFrame(measure);
+    window.addEventListener('resize', measure);
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+    ro?.observe(scroller);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', measure);
+      ro?.disconnect();
+    };
+  }, []);
 
   const commit = useCallback((next) => { onChange(next); }, [onChange]);
 
@@ -162,7 +238,10 @@ export default function NoteCanvas({
     return () => window.clearTimeout(id);
   }, [createdId]);
 
-  const lowest = boxes.reduce((m, b) => Math.max(m, b.y), 0);
+  // The box being dragged counts where it is being dragged TO, so the page
+  // grows under it and it can be carried below the current end.
+  const placed = drag ? boxes.map((b) => (b.id === drag.id ? { ...b, y: drag.y } : b)) : boxes;
+  const minHeight = pageHeight(placed, heights, paper);
 
   return (
     <div className="nb-page-wrap">
@@ -182,13 +261,15 @@ export default function NoteCanvas({
         ref={pageRef}
         className="nb-canvas-area"
         onPointerDown={onPagePointerDown}
-        style={{ minHeight: `${lowest + TRAILING_SPACE}px` }}
+        style={{ minHeight: `${minHeight}px` }}
       >
         {boxes.map((b) => {
           const live = drag && drag.id === b.id ? drag : b;
           return (
             <div
               key={b.id}
+              ref={observeBox}
+              data-box-id={b.id}
               className={`nb-box${drag?.id === b.id ? ' is-dragging' : ''}${typingIn === b.id ? ' is-typing' : ''}`}
               style={{
                 left: `${live.x * 100}%`,
