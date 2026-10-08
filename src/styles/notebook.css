@@ -803,6 +803,102 @@ button.nb-check[aria-checked='true']::after {
   .nb-bar, .nb-swatches { transition: none; }
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   DESKTOP FORMAT ROW  (StudyDesk#113) — the row the rule above promised
+   ══════════════════════════════════════════════════════════════════════════
+   Under the note header, sticky, one quiet line. The editor holding the caret
+   portals the live bar into `.nb-format-slot`; until then the row shows an
+   idle copy, muted and inert, so the controls are findable before the first
+   click. The "?" at the end stays live in both. */
+
+.nb-format-row { display: none; }
+
+@media (min-width: 769px) {
+  .nb-format-row {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 10px;
+    background: var(--nb-page);
+    border-bottom: 1px solid var(--nb-bar-rule);
+  }
+  .nb-format-slot:empty { display: none; }
+  .nb-format-inline { position: relative; }
+
+  /* Beats the `display: none` above on specificity, not on order. */
+  .nb-bar.is-inline {
+    position: static;
+    display: flex;
+    height: 36px;
+    overflow: visible;
+    background: none;
+    border-top: 0;
+  }
+  .nb-bar.is-inline .nb-bar-btn { height: 36px; min-width: 30px; }
+  .nb-bar.is-inline .nb-bar-btn:hover { color: var(--nb-ink); }
+  .nb-bar.is-idle .nb-bar-btn { opacity: 0.5; cursor: default; }
+  .nb-bar.is-idle .nb-bar-btn:hover { color: var(--nb-ink-muted); }
+  .nb-bar.is-idle .nb-bar-btn:last-child { opacity: 1; cursor: pointer; }
+
+  /* The highlight swatches hang from the bar here, not from the window. */
+  .nb-format-inline .nb-swatches {
+    display: flex;
+    position: absolute;
+    top: 100%;
+    bottom: auto;
+    inset-inline-start: 0;
+    border: 1px solid var(--nb-bar-rule);
+    border-top: 0;
+  }
+}
+
+/* The "?" sheet. The app's own modal; only its contents are styled here. */
+.nb-help { width: min(440px, calc(100vw - 32px)); max-height: 85vh; overflow-y: auto; }
+.nb-help-cols { display: grid; grid-template-columns: 1fr; gap: 18px 28px; }
+@media (min-width: 769px) {
+  .nb-help.has-keys { width: min(720px, calc(100vw - 32px)); }
+  .nb-help.has-keys .nb-help-cols { grid-template-columns: 1fr 1fr; }
+}
+.nb-help-section + .nb-help-section { margin-top: 18px; }
+/* The app's own section-title voice (Settings), not the notebook meta face,
+   which renders uppercase unevenly. */
+.nb-help-h {
+  margin: 0 0 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--nb-ink-muted);
+}
+.nb-help-list { margin: 0; }
+.nb-help-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--nb-bar-rule);
+  font-size: 13px;
+  color: var(--nb-ink);
+}
+.nb-help-row dd { margin: 0; }
+.nb-help kbd,
+.nb-help code {
+  font-family: var(--nb-font-meta);
+  font-size: 12px;
+  white-space: pre;
+  color: var(--nb-ink);
+  background: var(--nb-bar-bg);
+  border: 1px solid var(--nb-bar-rule);
+  border-radius: 3px;
+  padding: 1px 6px;
+}
+.nb-help-actions { display: flex; justify-content: flex-end; margin-top: 18px; }
+
 /* Delete, in the note header. Sized to the 44px touch target the rest of the
    app uses; muted until pressed, because a destructive control that draws the
    eye on every note is a control people learn to avoid rather than trust. */
