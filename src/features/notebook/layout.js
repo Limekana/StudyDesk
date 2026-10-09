@@ -227,6 +227,42 @@ export function writeLayout(boxes) {
  * keeps the storage cost and the stale-detection surface at zero for everyone
  * who never drags anything.
  */
+// ── Moving and resizing (StudyDesk#112: "the text boxes are still not fully
+// moveable") ─────────────────────────────────────────────────────────────────
+//
+// Measured on the desktop build before this: a full-width box could not move
+// sideways at all (x was clamped to 1 - w, which is 0 for every note written
+// before free placement), and a vertical drag jumped a whole rule at a time
+// because every pointer move snapped. Both read as resistance.
+
+/**
+ * Where a box is while it is being moved. `dx` is a fraction of the page
+ * width, `dy` is px, both measured from where the drag began.
+ *
+ * The box follows the pointer exactly; it is snapped once, on release
+ * (`settle`). Pushed against the right edge it narrows rather than stopping,
+ * down to MIN_W, and gets its width back if pulled away again in the same
+ * drag, because the width is always derived from the drag's ORIGIN.
+ */
+export function moveTo(origin, dx, dy) {
+  const x = clamp(origin.x + dx, 0, 1 - MIN_W);
+  return {
+    x,
+    y: Math.max(0, origin.y + dy),
+    w: Math.max(MIN_W, Math.min(origin.w, MAX_W - x)),
+  };
+}
+
+/** A resize keeps the left edge, so the width can grow only to the page edge. */
+export function resizeTo(origin, dx) {
+  return { w: clamp(origin.w + dx, MIN_W, MAX_W - origin.x) };
+}
+
+/** Where a released box comes to rest: its top on a rule. */
+export function settle(live) {
+  return { x: live.x, y: snapY(live.y), w: live.w };
+}
+
 /** Empty paper kept under the lowest box, in rules, as a floor. The canvas
  *  also keeps at least 40% of the window, so a raised keyboard never covers
  *  the last line (the page's old 40vh padding did that job, but nothing could

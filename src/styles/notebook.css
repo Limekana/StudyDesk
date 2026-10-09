@@ -449,7 +449,25 @@ button.nb-check[aria-checked='true']::after {
   box-shadow: 0 0 0 1px var(--nb-bar-rule);
   border-radius: 3px;
 }
-.nb-box.is-dragging { opacity: 0.85; }
+.nb-box.is-dragging { opacity: 0.85; z-index: 3; }
+
+/* StudyDesk#112. With a mouse, a box that is not being typed in can be picked
+   up anywhere (a click still opens it), so it says so. While typing, the
+   cursor is the editor's again: a drag there selects text. */
+@media (pointer: fine) {
+  .nb-box:not(.is-typing) { cursor: grab; }
+  .nb-box.is-dragging,
+  .nb-box.is-dragging * { cursor: grabbing; }
+}
+
+/* The box follows the pointer exactly while it moves and comes to rest on a
+   rule when it is let go. The short settle is what makes the snap read as
+   paper finding its line, not as the box jumping. */
+.nb-box { transition: top 90ms ease-out; }
+.nb-box.is-dragging { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  .nb-box { transition: none; }
+}
 
 .nb-box-handle,
 .nb-box-grip {

@@ -1,5 +1,49 @@
 import { describe, it, expect } from 'vitest';
-import { readLayout, writeLayout, singleBox, isUnarranged, pageHeight, MAX_W, GRID, TRAILING_ROWS } from './layout.js';
+import {
+  readLayout, writeLayout, singleBox, isUnarranged, pageHeight, moveTo, resizeTo, settle,
+  MAX_W, MIN_W, GRID, TRAILING_ROWS,
+} from './layout.js';
+
+describe('moving a box (StudyDesk issue 112)', () => {
+  const full = { x: 0, y: 0, w: MAX_W };
+  it('a full-width box can be dragged sideways: it narrows against the page edge', () => {
+    // The bug: x was clamped to 1 - w, so a full-width box could not move at all.
+    const r = moveTo(full, 0.3, 0);
+    expect(r.x).toBeCloseTo(0.3);
+    expect(r.w).toBeCloseTo(0.7);
+  });
+  it('never narrower than MIN_W, never off the page', () => {
+    const r = moveTo(full, 5, 0);
+    expect(r.x).toBeCloseTo(1 - MIN_W);
+    expect(r.w).toBeCloseTo(MIN_W);
+    expect(moveTo(full, -5, 0).x).toBe(0);
+  });
+  it('pulled back in the same drag, it gets its width back', () => {
+    expect(moveTo(full, 0.3, 0).w).toBeCloseTo(0.7);
+    expect(moveTo(full, 0.1, 0).w).toBeCloseTo(0.9);
+    expect(moveTo(full, 0, 0).w).toBe(MAX_W);
+  });
+  it('a box that fits keeps its width', () => {
+    const r = moveTo({ x: 0.1, y: 0, w: 0.4 }, 0.2, 0);
+    expect(r.x).toBeCloseTo(0.3);
+    expect(r.w).toBeCloseTo(0.4);
+  });
+  it('follows the pointer vertically during the drag: no 28px steps', () => {
+    // The bug: every move snapped, so the box jumped a rule at a time.
+    expect(moveTo(full, 0, 13).y).toBe(13);
+    expect(moveTo(full, 0, 41).y).toBe(41);
+    expect(moveTo({ ...full, y: 56 }, 0, -500).y).toBe(0);
+  });
+  it('settles onto the ruling on release', () => {
+    expect(settle({ x: 0.2, y: 13, w: 0.5 })).toEqual({ x: 0.2, y: 0, w: 0.5 });
+    expect(settle({ x: 0.2, y: 15, w: 0.5 })).toEqual({ x: 0.2, y: GRID, w: 0.5 });
+    expect(settle({ x: 0.2, y: 60, w: 0.5 }).y).toBe(2 * GRID);
+  });
+  it('resizing keeps the left edge and stays on the page', () => {
+    expect(resizeTo({ x: 0.5, y: 0, w: 0.3 }, 0.4).w).toBeCloseTo(0.5);
+    expect(resizeTo({ x: 0.5, y: 0, w: 0.3 }, -1).w).toBeCloseTo(MIN_W);
+  });
+});
 
 describe('pageHeight (StudyDesk issue 111)', () => {
   const T = TRAILING_ROWS * GRID;
