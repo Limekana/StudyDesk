@@ -154,6 +154,10 @@ export default function NoteCanvas({
     window.addEventListener('resize', measure);
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
     ro?.observe(scroller);
+    // And the area itself: on a phone the canvas stays mounted but hidden
+    // behind the note list, and a fill measured while hidden (top 0) was never
+    // redone when it came back (StudyDesk#131).
+    ro?.observe(area);
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', measure);
@@ -173,13 +177,14 @@ export default function NoteCanvas({
 
   // ── Creating ────────────────────────────────────────────────────────────
   //
-  // Only a press that lands on the page ITSELF, not on a box. `preventDefault`
-  // for the reason Block.jsx gives: without it the browser's default focus
-  // handling blurs the textarea we are about to mount, and the new box closes
-  // inside the same tap that opened it.
-  const onPagePointerDown = useCallback((e) => {
+  // Only a tap or click that lands on the page ITSELF, not on a box. On
+  // `click`, not `pointerdown` (StudyDesk#131): a finger that starts a scroll
+  // on empty paper sends pointerdown before the browser knows it is a pan, so
+  // every scroll over the paper started a box and raised the keyboard. A pan
+  // never ends in a click. By the time a click arrives the browser's own focus
+  // handling for the press is over, so it no longer blurs the box this mounts.
+  const onPageClick = useCallback((e) => {
     if (e.target !== e.currentTarget) return;
-    e.preventDefault();
     const rect = e.currentTarget.getBoundingClientRect();
     const w = rect.width || 1;
     const px = e.clientX - rect.left;
@@ -232,13 +237,19 @@ export default function NoteCanvas({
       : project(d, e.clientX, e.clientY, widthOf(pageRef.current), scrollTopOf(scrollerRef.current))));
   }, []);
 
+  // Released: the final position is projected from the release itself, so it
+  // does not depend on the last pointermove having rendered, and the note is
+  // written outside any state updater (React warns about a dispatch inside
+  // one, and StrictMode would send it twice). A release where it started
+  // writes nothing (StudyDesk#131).
   const endDrag = useCallback((e) => {
-    setDrag((d) => {
-      if (!d || d.pointerId !== e.pointerId) return d;
-      if (d.mode === 'resize') patchBox(d.id, { w: d.w });
-      else patchBox(d.id, settle(d));
-      return null;
-    });
+    const d = dragRef.current;
+    setDrag((cur) => (cur && cur.pointerId === e.pointerId ? null : cur));
+    if (!d || d.pointerId !== e.pointerId) return;
+    const fin = project(d, e.clientX, e.clientY, widthOf(pageRef.current), scrollTopOf(scrollerRef.current));
+    const rest = d.mode === 'resize' ? { x: d.originX, y: d.originY, w: fin.w } : settle(fin);
+    if (rest.x === d.originX && rest.y === d.originY && rest.w === d.originW) return;
+    patchBox(d.id, d.mode === 'resize' ? { w: rest.w } : rest);
   }, [patchBox]);
 
   // The box itself, with a mouse or pen, when it is not being typed in: a
@@ -247,10 +258,21 @@ export default function NoteCanvas({
   // as it always has (Block opens it on mousedown). Touch is left alone, so a
   // finger on a box still scrolls the page; the handle moves it there.
   const pressRef = useRef(null);
+
+  // A cancelled pointer (a pen pan, an OS gesture) puts the box back where it
+  // was and opens nothing; it used to commit the half-done move like a
+  // release (StudyDesk#131).
+  const cancelDrag = useCallback((e) => {
+    if (pressRef.current?.pointerId === e.pointerId) pressRef.current = null;
+    setDrag((cur) => (cur && cur.pointerId === e.pointerId ? null : cur));
+  }, []);
+
   const onBoxPointerDown = useCallback((e, id) => {
     if (e.pointerType === 'touch' || e.button !== 0) return;
     if (typingIn === id) return; // while typing, a drag selects text, as in any editor
-    if (e.target.closest('button, a, input, select, textarea, .nb-photo, .nb-check')) return;
+    // `button` covers the checkbox. `.nb-check` also matched the whole
+    // checklist LINE, so a checklist could not be picked up by its text (#131).
+    if (e.target.closest('button, a, input, select, textarea, .nb-photo')) return;
     e.preventDefault(); // holds back the mousedown, and with it the editor
     pressRef.current = { id, pointerId: e.pointerId, x: e.clientX, y: e.clientY, target: e.target, moved: false };
     try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* older WebView */ }
@@ -287,17 +309,29 @@ export default function NoteCanvas({
   useEffect(() => {
     if (!dragging) return undefined;
     let raf = 0;
-    const tick = () => {
+    let last = 0;
+    // The bottom edge is the bottom of what can be SEEN: on a phone the tab
+    // bar (or the docked format bar) covers the bottom of the scroller, and an
+    // edge zone measured from the scroller sat behind it (StudyDesk#131).
+    const covers = [...document.querySelectorAll('.mobile-tabbar, body > .nb-bar')]
+      .filter((el) => getComputedStyle(el).display !== 'none')
+      .map((el) => el.getBoundingClientRect().top);
+    const tick = (ts) => {
       raf = requestAnimationFrame(tick);
+      // Per millisecond, not per frame, so a 120 Hz screen does not scroll
+      // twice as fast as a 60 Hz one.
+      const dt = last ? Math.min(ts - last, 50) : 16;
+      last = ts;
       const d = dragRef.current;
       const s = scrollerRef.current;
       if (!d || !s || d.mode !== 'move') return;
       const isDoc = s === document.documentElement;
       const top = isDoc ? 0 : s.getBoundingClientRect().top;
-      const bottom = isDoc ? window.innerHeight : s.getBoundingClientRect().bottom;
-      let step = 0;
-      if (d.lastY > bottom - SCROLL_EDGE) step = Math.ceil((d.lastY - (bottom - SCROLL_EDGE)) / 3);
-      else if (d.lastY < top + SCROLL_EDGE) step = -Math.ceil((top + SCROLL_EDGE - d.lastY) / 3);
+      const bottom = Math.min(isDoc ? window.innerHeight : s.getBoundingClientRect().bottom, ...covers);
+      let speed = 0;
+      if (d.lastY > bottom - SCROLL_EDGE) speed = Math.min(d.lastY - (bottom - SCROLL_EDGE), SCROLL_EDGE) / 3;
+      else if (d.lastY < top + SCROLL_EDGE) speed = -Math.min(top + SCROLL_EDGE - d.lastY, SCROLL_EDGE) / 3;
+      const step = Math.sign(speed) * Math.ceil(Math.abs(speed) * (dt / 16));
       if (!step) return;
       if (isDoc) window.scrollBy(0, step); else s.scrollTop += step;
       setDrag((cur) => (cur
@@ -331,7 +365,11 @@ export default function NoteCanvas({
   // The box being dragged counts where it is being dragged TO, so the page
   // grows under it and it can be carried below the current end.
   const placed = drag ? boxes.map((b) => (b.id === drag.id ? { ...b, y: drag.y } : b)) : boxes;
-  const minHeight = pageHeight(placed, heights, paper);
+  // Grows under a box carried down, but never shrinks under one carried up:
+  // shrinking clamped the scroll at the end of the page, and the box stalled
+  // under the pointer (StudyDesk#131).
+  const restHeight = pageHeight(boxes, heights, paper);
+  const minHeight = drag ? Math.max(restHeight, pageHeight(placed, heights, paper)) : restHeight;
 
   return (
     <div className="nb-page-wrap">
@@ -350,7 +388,7 @@ export default function NoteCanvas({
       <div
         ref={pageRef}
         className="nb-canvas-area"
-        onPointerDown={onPagePointerDown}
+        onClick={onPageClick}
         style={{ minHeight: `${minHeight}px` }}
       >
         {boxes.map((b) => {
@@ -363,7 +401,7 @@ export default function NoteCanvas({
               onPointerDown={(e) => onBoxPointerDown(e, b.id)}
               onPointerMove={onBoxPointerMove}
               onPointerUp={onBoxPointerUp}
-              onPointerCancel={onBoxPointerUp}
+              onPointerCancel={cancelDrag}
               className={`nb-box${drag?.id === b.id ? ' is-dragging' : ''}${typingIn === b.id ? ' is-typing' : ''}`}
               style={{
                 left: `${live.x * 100}%`,
@@ -398,7 +436,7 @@ export default function NoteCanvas({
                 onPointerDown={(e) => startDrag(e, b.id, 'move')}
                 onPointerMove={onDragMove}
                 onPointerUp={endDrag}
-                onPointerCancel={endDrag}
+                onPointerCancel={cancelDrag}
               >
                 <span aria-hidden="true">⠿</span>
               </button>
@@ -409,7 +447,7 @@ export default function NoteCanvas({
                 onPointerDown={(e) => startDrag(e, b.id, 'resize')}
                 onPointerMove={onDragMove}
                 onPointerUp={endDrag}
-                onPointerCancel={endDrag}
+                onPointerCancel={cancelDrag}
               />
             </div>
           );

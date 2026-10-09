@@ -219,14 +219,6 @@ export function writeLayout(boxes) {
   };
 }
 
-/**
- * Is this note still a single box at the default position?
- *
- * Used to avoid writing a layout column for notes nobody has arranged — a
- * plain linear note stays exactly the row it was before this feature, which
- * keeps the storage cost and the stale-detection surface at zero for everyone
- * who never drags anything.
- */
 // ── Moving and resizing (StudyDesk#112: "the text boxes are still not fully
 // moveable") ─────────────────────────────────────────────────────────────────
 //
@@ -258,9 +250,20 @@ export function resizeTo(origin, dx) {
   return { w: clamp(origin.w + dx, MIN_W, MAX_W - origin.x) };
 }
 
-/** Where a released box comes to rest: its top on a rule. */
+/** How close to the margin, or to the page's right edge, a released box
+ *  snaps onto it, as a fraction of the page: about 8px on a desktop page,
+ *  5px on a phone. */
+export const EDGE_SNAP = 0.015;
+
+/** Where a released box comes to rest: its top on a rule, and onto the margin
+ *  or the right edge when it was let go just short of them. Without the edge
+ *  snap a press that jittered by 2px wrote `x: 0.004, w: 0.996` for a note
+ *  nobody meant to arrange, and it could never become unarranged again, since
+ *  `isUnarranged` wants exactly 0 and 1 (StudyDesk#131, P1). */
 export function settle(live) {
-  return { x: live.x, y: snapY(live.y), w: live.w };
+  const x = live.x < EDGE_SNAP ? 0 : live.x;
+  const w = x + live.w > MAX_W - EDGE_SNAP ? MAX_W - x : live.w;
+  return { x, y: snapY(live.y), w };
 }
 
 /** Empty paper kept under the lowest box, in rules, as a floor. The canvas
@@ -292,6 +295,14 @@ export function pageHeight(boxes, heights, { trailing = TRAILING_ROWS * GRID, fi
   return Math.ceil(Math.max(bottom + trailing, fill));
 }
 
+/**
+ * Is this note still a single box at the default position?
+ *
+ * Used to avoid writing a layout column for notes nobody has arranged — a
+ * plain linear note stays exactly the row it was before this feature, which
+ * keeps the storage cost and the stale-detection surface at zero for everyone
+ * who never drags anything.
+ */
 export function isUnarranged(boxes) {
   return boxes.length === 1
     && boxes[0].x === 0
