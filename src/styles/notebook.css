@@ -596,13 +596,7 @@ button.nb-check[aria-checked='true']::after {
     opacity: 0;
     pointer-events: none;
   }
-  /* Still in the keyboard order and the accessibility tree: "Move box" and
-     "Resize box" stay reachable, and show when focused. */
-  .nb-canvas-area.is-single .nb-box:not(.is-typing) .nb-box-handle:focus-visible,
-  .nb-canvas-area.is-single .nb-box:not(.is-typing) .nb-box-grip:focus-visible {
-    opacity: 1;
-    pointer-events: auto;
-  }
+
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -983,9 +977,11 @@ body.nb-editing .mobile-tabbar { display: none !important; }
     top: 0;
     z-index: 5;
   }
-  /* With the timer pill in the header the line is full: the edited time gives
-     way, so the controls, bin and pill stay on one line (#134 review). */
-  .nb-head:has(.timer-pill) .nb-head-meta-edited { display: none; }
+  /* The course picker can give up width, with an ellipsis, rather than push
+     the timer pill onto a line of its own: the line breaks by each item's
+     basis, so the picker's basis is small and it grows back into free room. */
+  .nb-head-course { flex: 1 1 120px; min-width: 0; }
+  .nb-head-course-select { min-width: 0; max-width: 100%; text-overflow: ellipsis; }
   .nb-format-row {
     display: flex;
     align-items: center;
@@ -1030,6 +1026,12 @@ body.nb-editing .mobile-tabbar { display: none !important; }
 .nb > .nb-page-wrap { container: nb-pane / inline-size; }
 @container nb-pane (max-width: 700px) {
   .nb-head .nb-format-row { order: 5; flex-basis: 100%; }
+}
+/* With the timer pill in a pane under about 1000px, the line is full: the
+   edited time and "Saved to session" give way, so the controls, bin and pill
+   stay on one line (#134 review). In a wider pane they all fit. */
+@container nb-pane (max-width: 1000px) {
+  .nb-head:has(.timer-pill) .nb-head-meta { display: none; }
 }
 
 /* The "?" sheet. The app's own modal; only its contents are styled here. */

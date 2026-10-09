@@ -54,6 +54,18 @@ describe('starting a box with a tap (StudyDesk issue 114)', () => {
     expect(s.x).toBeCloseTo(0.1);
     expect(s.x + s.w).toBeLessThanOrEqual(0.5 + 1e-9);
   });
+  it('a line with no room for a box starts none, rather than overlapping (issue 134 review)', () => {
+    // A gap narrower than MIN_W between two boxes.
+    expect(placeNewBox(0.5, 515, [{ x: 0, w: 0.45 }, { x: 0.55, w: 0.45 }])).toBeNull();
+    // A strip narrower than MIN_W at the right edge.
+    expect(placeNewBox(0.95, 515, [{ x: 0, w: 0.9 }])).toBeNull();
+    // A tap within a box's own span on that line.
+    expect(placeNewBox(0.25, 515, [{ x: 0, w: 0.5 }])).toBeNull();
+    // Exactly MIN_W of room is enough.
+    const r = placeNewBox(0.9, 515, [{ x: 0, w: 1 - MIN_W }]);
+    expect(r.w).toBeCloseTo(MIN_W);
+    expect(r.x).toBeCloseTo(1 - MIN_W);
+  });
   it('a tap just right of the margin starts at the margin', () => {
     expect(placeNewBox(0.01, 515).x).toBe(0);
   });

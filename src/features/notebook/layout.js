@@ -150,7 +150,10 @@ export function singleBox(content) {
  *  (COMFY_PX, or DEFAULT_W if that is narrower). Nearer an edge or a
  *  neighbour the box keeps that width and moves left, but never onto a box
  *  already on the line: it narrows to the free stretch instead (#134 review).
- *  A tap just right of the margin starts AT the margin, like a release does. */
+ *  A tap just right of the margin starts AT the margin, like a release does.
+ *  Returns null when the line has no room: the tap is within a box's span,
+ *  or the free stretch is narrower than MIN_W. Nothing is started then,
+ *  rather than a box half on top of a neighbour. */
 export function placeNewBox(fx, pagePx, row = []) {
   let x0 = clamp(fx, 0, 1);
   if (x0 < EDGE_SNAP) x0 = 0;
@@ -160,7 +163,9 @@ export function placeNewBox(fx, pagePx, row = []) {
     const right = b.x + b.w;
     if (right <= x0 + 1e-9) lo = Math.max(lo, right);
     else if (b.x >= x0 - 1e-9) hi = Math.min(hi, b.x);
+    else return null;
   }
+  if (hi - lo < MIN_W - 1e-9) return null;
   const comfy = clamp(pagePx > 0 ? COMFY_PX / pagePx : DEFAULT_W, MIN_W, DEFAULT_W);
   const want = Math.max(Math.min(DEFAULT_W, hi - x0), comfy);
   const w = Math.max(MIN_W, Math.min(want, hi - lo));
