@@ -51,7 +51,7 @@ const hold = (e) => e.preventDefault();
 // during render is a NEW type on every render, so React unmounts and remounts
 // every button each time — which on this bar means losing the active press
 // mid-tap.
-function Btn({ label, on, onPress, aria, title }) {
+function Btn({ label, on, onPress, aria, title, inert }) {
   return (
     <button
       type="button"
@@ -60,6 +60,7 @@ function Btn({ label, on, onPress, aria, title }) {
       onTouchStart={hold}
       onClick={onPress}
       aria-pressed={on || undefined}
+      aria-disabled={inert || undefined}
       aria-label={aria}
       title={title}
     >
@@ -128,11 +129,12 @@ export default function FormatBar({
         className={`nb-bar${inline ? ' is-inline' : ''}${idle ? ' is-idle' : ''}`}
         role="toolbar"
         aria-label={t('nb.formatBar')}
-        aria-disabled={idle || undefined}
       >
-        <Btn label="B" aria={t('nb.bold')} title={tip('bold', 'nb.bold')} onPress={() => act('mark', { mark: MARK.BOLD })} />
-        <Btn label="I" aria={t('nb.italic')} title={tip('italic', 'nb.italic')} onPress={() => act('mark', { mark: MARK.ITALIC })} />
-        <Btn label="U" aria={t('nb.underline')} title={tip('underline', 'nb.underline')} onPress={() => act('mark', { mark: MARK.UNDERLINE })} />
+        {/* The idle copy marks each inert control rather than the whole
+            toolbar, which announced the live "?" as disabled too (#130). */}
+        <Btn inert={idle} label="B" aria={t('nb.bold')} title={tip('bold', 'nb.bold')} onPress={() => act('mark', { mark: MARK.BOLD })} />
+        <Btn inert={idle} label="I" aria={t('nb.italic')} title={tip('italic', 'nb.italic')} onPress={() => act('mark', { mark: MARK.ITALIC })} />
+        <Btn inert={idle} label="U" aria={t('nb.underline')} title={tip('underline', 'nb.underline')} onPress={() => act('mark', { mark: MARK.UNDERLINE })} />
         {/* Highlight: tap applies the last role, long-press opens the three
             swatches. No free colour picker (§4) — and no fourth swatch. */}
         <button
@@ -143,6 +145,10 @@ export default function FormatBar({
           onMouseLeave={() => window.clearTimeout(timer.current)}
           onTouchStart={(e) => { hold(e); startHl(); }}
           onTouchEnd={endHl}
+          // Enter or Space on the focused button: a click with detail 0. The
+          // pointer paths above already handled every other click (#130).
+          onClick={(e) => { if (e.detail === 0) act('mark', { mark: MARK.HL, role: lastRole.current }); }}
+          aria-disabled={idle || undefined}
           aria-label={t('nb.highlight')}
           title={tip('highlight', 'nb.highlight')}
         >
@@ -151,14 +157,14 @@ export default function FormatBar({
 
         <span className="nb-bar-sep" aria-hidden="true" />
 
-        <Btn label="H1" aria={t('nb.h1')} title={tip('h1', 'nb.h1')} on={activeType === BLOCK.H1} onPress={() => act('block', BLOCK.H1)} />
-        <Btn label="H2" aria={t('nb.h2')} title={tip('h2', 'nb.h2')} on={activeType === BLOCK.H2} onPress={() => act('block', BLOCK.H2)} />
+        <Btn inert={idle} label="H1" aria={t('nb.h1')} title={tip('h1', 'nb.h1')} on={activeType === BLOCK.H1} onPress={() => act('block', BLOCK.H1)} />
+        <Btn inert={idle} label="H2" aria={t('nb.h2')} title={tip('h2', 'nb.h2')} on={activeType === BLOCK.H2} onPress={() => act('block', BLOCK.H2)} />
 
         <span className="nb-bar-sep" aria-hidden="true" />
 
-        <Btn label="•" aria={t('nb.bullet')} title={tip('bullet', 'nb.bullet')} on={activeType === BLOCK.BULLET} onPress={() => act('block', BLOCK.BULLET)} />
-        <Btn label="1." aria={t('nb.numbered')} title={tip('numbered', 'nb.numbered')} on={activeType === BLOCK.NUMBER} onPress={() => act('block', BLOCK.NUMBER)} />
-        <Btn label="☐" aria={t('nb.checklist')} title={tip('checklist', 'nb.checklist')} on={activeType === BLOCK.CHECK} onPress={() => act('block', BLOCK.CHECK)} />
+        <Btn inert={idle} label="•" aria={t('nb.bullet')} title={tip('bullet', 'nb.bullet')} on={activeType === BLOCK.BULLET} onPress={() => act('block', BLOCK.BULLET)} />
+        <Btn inert={idle} label="1." aria={t('nb.numbered')} title={tip('numbered', 'nb.numbered')} on={activeType === BLOCK.NUMBER} onPress={() => act('block', BLOCK.NUMBER)} />
+        <Btn inert={idle} label="☐" aria={t('nb.checklist')} title={tip('checklist', 'nb.checklist')} on={activeType === BLOCK.CHECK} onPress={() => act('block', BLOCK.CHECK)} />
 
         <span className="nb-bar-sep" aria-hidden="true" />
 

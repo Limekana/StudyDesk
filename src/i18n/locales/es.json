@@ -1061,7 +1061,7 @@
     "clearFormat": "Quitar formato",
     "toggleCheck": "Marcar o desmarcar",
     "mathInline": "Matemáticas",
-    "mathBlock": "Matemáticas en su propia línea",
+    "chemEquation": "Ecuación química",
     "insertPhoto": "Insertar foto",
     "hlRole": {
       "1": "Marca — importante",

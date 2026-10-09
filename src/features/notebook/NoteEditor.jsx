@@ -597,13 +597,12 @@ export default function NoteEditor({
   // idle copy for as long as this live one is there.
   const fmt = useFormatSlot();
   const slot = fmt?.slot ?? null;
-  const setEditing = fmt?.setEditing;
+  const holdEditing = fmt?.holdEditing;
   const editingHere = focus >= 0;
-  useEffect(() => {
-    if (!slot || !editingHere || !setEditing) return undefined;
-    setEditing(true);
-    return () => setEditing(false);
-  }, [slot, editingHere, setEditing]);
+  useEffect(
+    () => (slot && editingHere && holdEditing ? holdEditing() : undefined),
+    [slot, editingHere, holdEditing],
+  );
 
   const bar = focus >= 0 ? (
     <FormatBar

@@ -8,6 +8,7 @@ import { BLOCK } from './model.js';
 
 const event = (keys, mac) => ({
   key: keys.key,
+  code: /^[0-9]$/.test(keys.key) ? `Digit${keys.key}` : undefined,
   metaKey: !!keys.mod && mac,
   ctrlKey: !!keys.mod && !mac,
   shiftKey: !!keys.shift,
@@ -26,6 +27,24 @@ describe('the shortcut sheet tells the truth (StudyDesk issue 113)', () => {
     expect(matchShortcut({ key: '*', ctrlKey: true, shiftKey: true })).toEqual({ kind: 'block', type: BLOCK.BULLET });
     expect(matchShortcut({ key: '&', ctrlKey: true, shiftKey: true })).toEqual({ kind: 'block', type: BLOCK.NUMBER });
     expect(matchShortcut({ key: '(', ctrlKey: true, shiftKey: true })).toEqual({ kind: 'block', type: BLOCK.CHECK });
+  });
+
+  it('number-row chords go by key position, whatever the layout types (issue 130)', () => {
+    // Finnish/German/Spanish: Shift+8 is "(", Shift+7 is "/", Shift+9 is ")".
+    const fi = (key, code) => ({ key, code, ctrlKey: true, shiftKey: true });
+    expect(matchShortcut(fi('(', 'Digit8'))).toEqual({ kind: 'block', type: BLOCK.BULLET });
+    expect(matchShortcut(fi('/', 'Digit7'))).toEqual({ kind: 'block', type: BLOCK.NUMBER });
+    expect(matchShortcut(fi(')', 'Digit9'))).toEqual({ kind: 'block', type: BLOCK.CHECK });
+    // US: Shift+9 is "(" on Digit9, still the checklist.
+    expect(matchShortcut(fi('(', 'Digit9'))).toEqual({ kind: 'block', type: BLOCK.CHECK });
+    // Mac Option+1 / Option+2 type "¡" / "™".
+    expect(matchShortcut({ key: '¡', code: 'Digit1', metaKey: true, altKey: true })).toEqual({ kind: 'block', type: BLOCK.H1 });
+    expect(matchShortcut({ key: '™', code: 'Digit2', metaKey: true, altKey: true })).toEqual({ kind: 'block', type: BLOCK.H2 });
+  });
+
+  it('$$…$$ is listed as chemistry, because that is what it renders as', () => {
+    expect(SHORTCUTS.find((s) => s.action.open === '$$').label).toBe('nb.chemEquation');
+    expect(TYPE_RULES.around.find(([typed]) => typed === '$$…$$')[1]).toBe('nb.chemEquation');
   });
 
   it('every line-start rule the sheet lists really converts a line', () => {

@@ -1056,7 +1056,7 @@
     "clearFormat": "清除格式",
     "toggleCheck": "勾选或取消勾选",
     "mathInline": "数学公式",
-    "mathBlock": "单独成行的数学公式",
+    "chemEquation": "化学方程式",
     "insertPhoto": "插入照片",
     "hlRole": {
       "1": "标记 — 重要",

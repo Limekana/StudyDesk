@@ -18,16 +18,23 @@ export function matchShortcut(e) {
   const mod = e.metaKey || e.ctrlKey;
   if (!mod) return null;
   const k = e.key.toLowerCase();
+  // Number-row chords go by key POSITION. By character they broke on most
+  // layouts that are not US English: on Finnish, German or Spanish keys
+  // Shift+8 types "(", which matched the checklist, and Option+1 on a Mac
+  // types "¡" (StudyDesk#130). `key` stays the fallback for an event with no
+  // `code`; letters stay by character, so they follow the layout.
+  const digit = /^Digit([0-9])$/.exec(e.code || '')?.[1];
+  const d = digit ?? k;
   if (e.altKey) {
-    if (k === '1') return { kind: 'block', type: BLOCK.H1 };
-    if (k === '2') return { kind: 'block', type: BLOCK.H2 };
+    if (d === '1') return { kind: 'block', type: BLOCK.H1 };
+    if (d === '2') return { kind: 'block', type: BLOCK.H2 };
     return null;
   }
   if (e.shiftKey) {
     if (k === 'h') return { kind: 'mark', mark: MARK.HL, role: 1 };
-    if (k === '*' || k === '8') return { kind: 'block', type: BLOCK.BULLET };
-    if (k === '&' || k === '7') return { kind: 'block', type: BLOCK.NUMBER };
-    if (k === '(' || k === '9') return { kind: 'block', type: BLOCK.CHECK };
+    if (d === '8' || (!digit && k === '*')) return { kind: 'block', type: BLOCK.BULLET };
+    if (d === '7' || (!digit && k === '&')) return { kind: 'block', type: BLOCK.NUMBER };
+    if (d === '9' || (!digit && k === '(')) return { kind: 'block', type: BLOCK.CHECK };
     if (k === 'p') return { kind: 'photo' };
     if (k === 'm') return { kind: 'span', open: '$', close: '$' };
     if (k === 'e') return { kind: 'span', open: '$$', close: '$$' };
@@ -60,7 +67,9 @@ export const SHORTCUTS = [
   { id: 'checklist', label: 'nb.checklist', keys: { mod: true, shift: true, key: '9' }, action: { kind: 'block', type: BLOCK.CHECK } },
   { id: 'toggleCheck', label: 'nb.toggleCheck', keys: { mod: true, key: 'Enter' }, action: { kind: 'toggleCheck' } },
   { id: 'mathInline', label: 'nb.mathInline', keys: { mod: true, shift: true, key: 'M' }, action: { kind: 'span', open: '$', close: '$' } },
-  { id: 'mathBlock', label: 'nb.mathBlock', keys: { mod: true, shift: true, key: 'E' }, action: { kind: 'span', open: '$$', close: '$$' } },
+  // `$$…$$` is chemistry (Block.jsx sends it to renderChem). This was listed
+  // as "Maths on its own line", and maths typed into it does not render (#130).
+  { id: 'chem', label: 'nb.chemEquation', keys: { mod: true, shift: true, key: 'E' }, action: { kind: 'span', open: '$$', close: '$$' } },
   { id: 'clear', label: 'nb.clearFormat', keys: { mod: true, key: '\\' }, action: { kind: 'clear' } },
 ];
 
@@ -80,6 +89,7 @@ export const TYPE_RULES = {
     ['__…__', 'nb.underline'],
     ['==…==', 'nb.highlight'],
     ['$…$', 'nb.mathInline'],
+    ['$$…$$', 'nb.chemEquation'],
   ],
 };
 

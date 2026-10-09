@@ -1076,7 +1076,7 @@
     "clearFormat": "مسح التنسيق",
     "toggleCheck": "تحديد أو إلغاء التحديد",
     "mathInline": "رياضيات",
-    "mathBlock": "رياضيات في سطر مستقل",
+    "chemEquation": "معادلة كيميائية",
     "insertPhoto": "إدراج صورة",
     "hlRole": {
       "1": "علامة — مهم",

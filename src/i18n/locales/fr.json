@@ -1061,7 +1061,7 @@
     "clearFormat": "Effacer la mise en forme",
     "toggleCheck": "Cocher ou décocher",
     "mathInline": "Maths",
-    "mathBlock": "Maths sur une ligne à part",
+    "chemEquation": "Équation chimique",
     "insertPhoto": "Insérer une photo",
     "hlRole": {
       "1": "Repère — important",
