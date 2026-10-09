@@ -382,6 +382,13 @@ button.nb-check[aria-checked='true']::after {
    pinned to the margin. */
 .nb-canvas { position: relative; }
 
+/* StudyDesk#111. The page's 40vh of trailing padding became part of the
+   writable area itself (NoteCanvas sizes it from the lowest box's bottom plus
+   at least 40% of the window). As padding it kept a raised keyboard clear of
+   the last line but could not be tapped: ruled paper you could see and not
+   write on, which read as "the page ends here". */
+.nb-canvas.nb-page { padding-bottom: 0; }
+
 /* Everything right of the margin rule. `x` is a fraction of THIS, so a note
    written before free placement (x=0) still starts exactly where it always
    did. */

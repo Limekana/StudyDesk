@@ -227,6 +227,35 @@ export function writeLayout(boxes) {
  * keeps the storage cost and the stale-detection surface at zero for everyone
  * who never drags anything.
  */
+/** Empty paper kept under the lowest box, in rules, as a floor. The canvas
+ *  also keeps at least 40% of the window, so a raised keyboard never covers
+ *  the last line (the page's old 40vh padding did that job, but nothing could
+ *  be tapped there). */
+export const TRAILING_ROWS = 12;
+
+/**
+ * How tall the writable page has to be (StudyDesk#111: "the notes page ends
+ * quite quickly").
+ *
+ * Measured from the lowest box's BOTTOM. A box is absolutely positioned, so it
+ * adds nothing to its parent's height, and measuring from its top (as the page
+ * did) let a long box hang hundreds of pixels past the end of the page, with
+ * no paper under it to start the next box on. Then `trailing` of empty,
+ * tappable paper, and never less than `fill`, the paper visible in the window,
+ * so a short note is writable all the way down the screen.
+ *
+ * @param {Array<{id: string, y: number}>} boxes
+ * @param {Record<string, number>} heights measured px; a box not measured yet counts as one rule
+ * @param {{trailing?: number, fill?: number}} [opts]
+ */
+export function pageHeight(boxes, heights, { trailing = TRAILING_ROWS * GRID, fill = 0 } = {}) {
+  const bottom = boxes.reduce(
+    (m, b) => Math.max(m, b.y + Math.max(Number(heights?.[b.id]) || 0, GRID)),
+    0,
+  );
+  return Math.ceil(Math.max(bottom + trailing, fill));
+}
+
 export function isUnarranged(boxes) {
   return boxes.length === 1
     && boxes[0].x === 0
