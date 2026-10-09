@@ -42,6 +42,17 @@ describe('the shortcut sheet tells the truth (StudyDesk issue 113)', () => {
     expect(matchShortcut({ key: '™', code: 'Digit2', metaKey: true, altKey: true })).toEqual({ kind: 'block', type: BLOCK.H2 });
   });
 
+  it('AltGr is typing, not a chord: AltGr+2 is "@" on a Finnish keyboard', () => {
+    const altGr = (key, code) => ({
+      key, code, ctrlKey: true, altKey: true, getModifierState: (m) => m === 'AltGraph',
+    });
+    expect(matchShortcut(altGr('@', 'Digit2'))).toBeNull();
+    expect(matchShortcut(altGr('|', 'Digit1'))).toBeNull();
+    // Without AltGr, Ctrl+Alt+2 is still H2.
+    expect(matchShortcut({ key: '2', code: 'Digit2', ctrlKey: true, altKey: true, getModifierState: () => false }))
+      .toEqual({ kind: 'block', type: BLOCK.H2 });
+  });
+
   it('$$…$$ is listed as chemistry, because that is what it renders as', () => {
     expect(SHORTCUTS.find((s) => s.action.open === '$$').label).toBe('nb.chemEquation');
     expect(TYPE_RULES.around.find(([typed]) => typed === '$$…$$')[1]).toBe('nb.chemEquation');

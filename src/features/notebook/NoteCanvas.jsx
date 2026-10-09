@@ -183,8 +183,16 @@ export default function NoteCanvas({
   // every scroll over the paper started a box and raised the keyboard. A pan
   // never ends in a click. By the time a click arrives the browser's own focus
   // handling for the press is over, so it no longer blurs the box this mounts.
+  // Where the press began: a click is dispatched to the common ancestor of the
+  // press and the release, so a text selection dragged out of a box and let
+  // go over the paper arrived here as a click on the paper (#128 review).
+  const pressedPaper = useRef(false);
+  const onPagePointerDown = useCallback((e) => {
+    pressedPaper.current = e.target === e.currentTarget;
+  }, []);
   const onPageClick = useCallback((e) => {
-    if (e.target !== e.currentTarget) return;
+    if (e.target !== e.currentTarget || !pressedPaper.current) return;
+    pressedPaper.current = false;
     const rect = e.currentTarget.getBoundingClientRect();
     const w = rect.width || 1;
     const px = e.clientX - rect.left;
@@ -247,9 +255,11 @@ export default function NoteCanvas({
     setDrag((cur) => (cur && cur.pointerId === e.pointerId ? null : cur));
     if (!d || d.pointerId !== e.pointerId) return;
     const fin = project(d, e.clientX, e.clientY, widthOf(pageRef.current), scrollTopOf(scrollerRef.current));
-    const rest = d.mode === 'resize' ? { x: d.originX, y: d.originY, w: fin.w } : settle(fin);
+    // A resize settles too, so a grip let go a pixel short of the edge does
+    // not arrange a note nobody arranged (P1, #128 review).
+    const rest = settle(d.mode === 'resize' ? { x: d.originX, y: d.originY, w: fin.w } : fin);
     if (rest.x === d.originX && rest.y === d.originY && rest.w === d.originW) return;
-    patchBox(d.id, d.mode === 'resize' ? { w: rest.w } : rest);
+    patchBox(d.id, rest);
   }, [patchBox]);
 
   // The box itself, with a mouse or pen, when it is not being typed in: a
@@ -388,6 +398,7 @@ export default function NoteCanvas({
       <div
         ref={pageRef}
         className="nb-canvas-area"
+        onPointerDown={onPagePointerDown}
         onClick={onPageClick}
         style={{ minHeight: `${minHeight}px` }}
       >

@@ -111,7 +111,7 @@ export default function FormatBar({
   const bar = (
     <>
       {swatchesOpen && (
-        <div className="nb-swatches" role="group" aria-label={t('nb.highlightRoles')}>
+        <div className="nb-swatches" role="group" aria-label={t('nb.highlightRoles')} onMouseDown={hold}>
           {[1, 2, 3].map((role) => (
             <button
               key={role}

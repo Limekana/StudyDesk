@@ -713,6 +713,9 @@ button.nb-check[aria-checked='true']::after {
      buttons. Every other theme leaves it unset. */
   background: var(--nb-dock-bg, var(--nb-bar-bg));
   border-top: 1px solid var(--nb-bar-rule);
+  /* The bar's own ground carried down over the safe-area inset it is lifted
+     by, so the page does not show in a strip beneath it. */
+  box-shadow: 0 var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) 0 0 var(--nb-dock-bg, var(--nb-bar-bg));
 }
 .nb-bar::-webkit-scrollbar { display: none; }
 

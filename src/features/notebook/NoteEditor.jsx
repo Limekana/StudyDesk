@@ -110,6 +110,7 @@ export default function NoteEditor({
     // and nudge every line below it off the ruling while it is open (#128).
     const lh = parseFloat(getComputedStyle(el).lineHeight) || el.scrollHeight;
     el.style.height = `${Math.max(1, Math.round(el.scrollHeight / lh)) * lh}px`;
+    el.scrollTop = 0;
   }, []);
 
   useEffect(() => { autosize(); }, [draft, autosize]);
@@ -143,9 +144,12 @@ export default function NoteEditor({
   // A line opened by a tap or click gets its caret at the END, where carrying
   // on writing starts, instead of at 0 in front of its own source (#132).
   const openLine = useCallback((i) => {
+    // Already open: leave its caret alone. Setting one here would be held
+    // until some later render and land mid-word then (#128 review).
+    if (i === focus) return;
     setFocus(i);
     placeCaret(Number.MAX_SAFE_INTEGER);
-  }, [placeCaret]);
+  }, [focus, placeCaret]);
 
   // ── Committing ──────────────────────────────────────────────────────────
   //
@@ -482,12 +486,19 @@ export default function NoteEditor({
     // Arrow out of the top / bottom of a block moves to the neighbour, which
     // is what makes the page feel like one document rather than a stack of
     // fields.
-    if (e.key === 'ArrowUp' && at === 0 && focus > 0) {
+    // A one-line block is left by ArrowUp/ArrowDown from anywhere in it: with
+    // the caret at the end (#132), ArrowUp first went to column 0 and needed a
+    // second press. A wrapped block keeps the rule of its first/last offset.
+    const oneLine = () => {
+      const lh = parseFloat(getComputedStyle(e.target).lineHeight) || 0;
+      return lh > 0 && e.target.clientHeight <= lh * 1.5;
+    };
+    if (e.key === 'ArrowUp' && (at === 0 || oneLine()) && focus > 0) {
       e.preventDefault();
       commitDraft(draft, focus - 1);
       return;
     }
-    if (e.key === 'ArrowDown' && at === draft.length && focus < blocks.length - 1) {
+    if (e.key === 'ArrowDown' && (at === draft.length || oneLine()) && focus < blocks.length - 1) {
       e.preventDefault();
       commitDraft(draft, focus + 1);
     }

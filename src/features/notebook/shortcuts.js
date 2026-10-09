@@ -25,6 +25,10 @@ export function matchShortcut(e) {
   // `code`; letters stay by character, so they follow the layout.
   const digit = /^Digit([0-9])$/.exec(e.code || '')?.[1];
   const d = digit ?? k;
+  // AltGr. Windows reports it as Ctrl+Alt, and on most European layouts
+  // AltGr+2 types "@" (Finnish, Spanish), "²" or "~": by position that was
+  // Ctrl+Alt+2, the H2 chord, and the character never arrived.
+  if (e.getModifierState?.('AltGraph')) return null;
   if (e.altKey) {
     if (d === '1') return { kind: 'block', type: BLOCK.H1 };
     if (d === '2') return { kind: 'block', type: BLOCK.H2 };
