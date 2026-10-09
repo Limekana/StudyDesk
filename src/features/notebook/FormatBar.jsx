@@ -84,6 +84,11 @@ export default function FormatBar({
   const act = idle ? () => {} : onAction;
   const timer = useRef(0);
   const longFired = useRef(false);
+  // A tap is followed by the browser's compatibility mouse events, and the
+  // highlight runs on both touchend and mouseup, so one tap toggled it twice
+  // (`word========`). Mouse events this soon after a touch are ignored (#128).
+  const touchedAt = useRef(0);
+  const fromTouch = () => Date.now() - touchedAt.current < 800;
   // §4: "one tap applies the LAST-USED role; long-press opens the three-swatch
   // popover." Remembering the role is what makes the single tap worth having —
   // a user marking a page in rose should not reopen the popover every line.
@@ -129,6 +134,9 @@ export default function FormatBar({
         className={`nb-bar${inline ? ' is-inline' : ''}${idle ? ' is-idle' : ''}`}
         role="toolbar"
         aria-label={t('nb.formatBar')}
+        // A press between the buttons (a separator, the padding) must not take
+        // focus from the line either, or it closes the editor (#128).
+        onMouseDown={hold}
       >
         {/* The idle copy marks each inert control rather than the whole
             toolbar, which announced the live "?" as disabled too (#130). */}
@@ -140,10 +148,10 @@ export default function FormatBar({
         <button
           type="button"
           className="nb-bar-btn"
-          onMouseDown={(e) => { hold(e); startHl(); }}
-          onMouseUp={endHl}
+          onMouseDown={(e) => { hold(e); if (!fromTouch()) startHl(); }}
+          onMouseUp={() => { if (!fromTouch()) endHl(); }}
           onMouseLeave={() => window.clearTimeout(timer.current)}
-          onTouchStart={(e) => { hold(e); startHl(); }}
+          onTouchStart={(e) => { touchedAt.current = Date.now(); hold(e); startHl(); }}
           onTouchEnd={endHl}
           // Enter or Space on the focused button: a click with detail 0. The
           // pointer paths above already handled every other click (#130).

@@ -285,6 +285,9 @@
   /* The board has no panels, so the bar sits directly on the slate with only
      a hairline above it. The theme's own rule, not an exception to it. */
   --nb-bar-bg:transparent;
+  /* Except docked over the page on a phone, where text would show through
+     its buttons (notebook.css .nb-bar). */
+  --nb-dock-bg:var(--nb-page);
   --nb-bar-rule:#2C3A34;
   --nb-font-body:'Kalam',cursive;
   --nb-font-head:'Kalam',cursive;

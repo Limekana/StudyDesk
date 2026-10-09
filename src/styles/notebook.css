@@ -698,7 +698,9 @@ button.nb-check[aria-checked='true']::after {
   /* Anchored to the VISUAL viewport via --nb-kb, set from JS. A bar
      positioned against the layout viewport sits BEHIND the keyboard on
      Android — the exact failure §4 names. See useKeyboardInset.js. */
-  bottom: var(--nb-kb, 0px);
+  /* Above the keyboard, or with it down, above the gesture area: the bar is
+     on screen now (#127), and the tab bar it replaces pads the same inset. */
+  bottom: max(var(--nb-kb, 0px), var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
   z-index: 60;
   height: 44px;
   display: flex;
@@ -706,7 +708,10 @@ button.nb-check[aria-checked='true']::after {
   gap: 0;
   overflow-x: auto;
   scrollbar-width: none;
-  background: var(--nb-bar-bg);
+  /* --nb-dock-bg exists for Slate, whose --nb-bar-bg is transparent: docked
+     over the page, a transparent bar drew the note's text through its
+     buttons. Every other theme leaves it unset. */
+  background: var(--nb-dock-bg, var(--nb-bar-bg));
   border-top: 1px solid var(--nb-bar-rule);
 }
 .nb-bar::-webkit-scrollbar { display: none; }
@@ -747,7 +752,7 @@ body.nb-editing .mobile-tabbar { display: none !important; }
 .nb-swatches {
   position: fixed;
   inset-inline-start: 0;
-  bottom: calc(var(--nb-kb, 0px) + 44px);
+  bottom: calc(max(var(--nb-kb, 0px), var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))) + 44px);
   z-index: 61;
   display: flex;
   gap: 8px;

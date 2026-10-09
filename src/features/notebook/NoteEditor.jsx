@@ -19,6 +19,11 @@ import {
 import { useKeyboardInset } from './useKeyboardInset.js';
 import { isComposing, compositionTracking } from '../../lib/imeSubmit.js';
 
+// The shortcut table moved to shortcuts.js (StudyDesk#113), next to the list
+// the format bar's tooltips and the "?" sheet show, so the two cannot drift.
+import { matchShortcut } from './shortcuts.js';
+import { useFormatSlot } from './formatSlot.js';
+
 // Counted rather than toggled: moving the caret to another box mounts that
 // box's bar before the first box's editor lets go of its own, so a plain
 // add/remove would drop the class while a bar is still up.
@@ -31,10 +36,6 @@ function holdDockedBar() {
     if (!dockedBars) document.body.classList.remove('nb-editing');
   };
 }
-// The shortcut table moved to shortcuts.js (StudyDesk#113), next to the list
-// the format bar's tooltips and the "?" sheet show, so the two cannot drift.
-import { matchShortcut } from './shortcuts.js';
-import { useFormatSlot } from './formatSlot.js';
 
 
 export default function NoteEditor({
@@ -104,7 +105,11 @@ export default function NoteEditor({
     const el = taRef.current;
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = `${el.scrollHeight}px`;
+    // Whole line boxes. A face whose glyphs overflow the 28px line (Slate's
+    // Kalam in an H2 measures 29) would otherwise grow the editor by a pixel
+    // and nudge every line below it off the ruling while it is open (#128).
+    const lh = parseFloat(getComputedStyle(el).lineHeight) || el.scrollHeight;
+    el.style.height = `${Math.max(1, Math.round(el.scrollHeight / lh)) * lh}px`;
   }, []);
 
   useEffect(() => { autosize(); }, [draft, autosize]);
@@ -128,6 +133,13 @@ export default function NoteEditor({
       el.setSelectionRange(off, off);
     });
   }, []);
+
+  // A line opened by a tap or click gets its caret at the END, where carrying
+  // on writing starts, instead of at 0 in front of its own source (#132).
+  const openLine = useCallback((i) => {
+    setFocus(i);
+    placeCaret(Number.MAX_SAFE_INTEGER);
+  }, [placeCaret]);
 
   // ── Committing ──────────────────────────────────────────────────────────
   //
@@ -538,7 +550,7 @@ export default function NoteEditor({
         // is about to mount, and the editor closes inside the same click.
         if (e.target === e.currentTarget && blocks.length) {
           e.preventDefault();
-          setFocus(blocks.length - 1);
+          openLine(blocks.length - 1);
         }
       }}>
         {blocks.map((b, i) => (
@@ -574,7 +586,7 @@ export default function NoteEditor({
               block={b}
               index={i}
               number={numbers.get(i)}
-              onFocus={setFocus}
+              onFocus={openLine}
               onToggleCheck={(idx) => {
                 const next = [...blocks];
                 next[idx] = { ...next[idx], checked: !next[idx].checked };
