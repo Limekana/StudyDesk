@@ -115,6 +115,20 @@ export default function NoteEditor({
     if (el) { el.focus(); autosize(); }
   }, [focus, autosize]);
 
+  // Where the caret goes in a line that has just been mounted (StudyDesk#129).
+  // A fresh textarea starts with the caret at 0, which in a list put the next
+  // character in FRONT of the new line's `- `: "- item", Enter, "item2" saved
+  // the paragraph "item2- ". Run on the next frame, after the focus change has
+  // mounted the line, as the Backspace merge below already does.
+  const placeCaret = useCallback((offset) => {
+    requestAnimationFrame(() => {
+      const el = taRef.current;
+      if (!el) return;
+      const off = Math.max(0, Math.min(offset, el.value.length));
+      el.setSelectionRange(off, off);
+    });
+  }, []);
+
   // ── Committing ──────────────────────────────────────────────────────────
   //
   // The whole note is rebuilt from blocks each time. Cheap (a note is tens of
@@ -243,7 +257,9 @@ export default function NoteEditor({
     if (split) {
       commit(split.blocks, split.focus);
       // Not setDraft(text) — the focus change re-syncs the draft to the last
-      // pasted block, which is where the caret now is.
+      // pasted block, which is where the caret now is: at the end of what was
+      // pasted, ahead of whatever followed the caret before the paste.
+      placeCaret(caret - text.lastIndexOf('\n', caret - 1) - 1);
       pendingUndo.current = null;
       return;
     }
@@ -268,7 +284,7 @@ export default function NoteEditor({
     // is dropped — otherwise typing a list item and then Backspacing to the
     // start of it would surprise them by dissolving the bullet they wanted.
     pendingUndo.current = null;
-  }, [blocks, focus, onChange, commit]);
+  }, [blocks, focus, onChange, commit, placeCaret]);
 
   // ── Keys ────────────────────────────────────────────────────────────────
 
@@ -386,6 +402,10 @@ export default function NoteEditor({
         text: parse(tail)[0].text,
       });
       commit(next, focus + 1);
+      // Right after the new line's marker: the start of anything the split
+      // carried down with it.
+      const moved = next[focus + 1];
+      placeCaret(serializeBlock(moved).length - moved.text.length);
       return;
     }
 
@@ -459,7 +479,7 @@ export default function NoteEditor({
       e.preventDefault();
       commitDraft(draft, focus + 1);
     }
-  }, [draft, blocks, focus, commit, commitDraft, onChange, onInsertPhoto]);
+  }, [draft, blocks, focus, commit, commitDraft, onChange, onInsertPhoto, placeCaret]);
 
   // ── Bar actions ─────────────────────────────────────────────────────────
 
