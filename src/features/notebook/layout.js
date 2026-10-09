@@ -117,11 +117,18 @@ export function joinBoxes(boxes) {
     .join(JOIN);
 }
 
+/** The id of the one box in a note nobody has arranged. FIXED, not random: an
+ *  unarranged note stores no layout, so NotebookView re-derives this box from
+ *  `content` on every change, and NoteCanvas keys the box's editor by its id.
+ *  A fresh id per read remounted the editor on every committed line, so Enter
+ *  in a plain note dropped the caret (v1.18). `newBoxId()` never returns this. */
+export const SOLE_BOX_ID = 'b0';
+
 /** One box holding the whole note, at the left margin, full width. What a note
  *  written before this feature is, and what a note whose layout went stale
  *  falls back to. */
 export function singleBox(content) {
-  return [{ id: newBoxId(), x: 0, y: 0, w: MAX_W, text: String(content ?? '') }];
+  return [{ id: SOLE_BOX_ID, x: 0, y: 0, w: MAX_W, text: String(content ?? '') }];
 }
 
 export function makeBox({ x, y, w = DEFAULT_W, text = '' }) {
@@ -220,6 +227,71 @@ export function writeLayout(boxes) {
  * keeps the storage cost and the stale-detection surface at zero for everyone
  * who never drags anything.
  */
+// ── Moving and resizing (StudyDesk#112: "the text boxes are still not fully
+// moveable") ─────────────────────────────────────────────────────────────────
+//
+// Measured on the desktop build before this: a full-width box could not move
+// sideways at all (x was clamped to 1 - w, which is 0 for every note written
+// before free placement), and a vertical drag jumped a whole rule at a time
+// because every pointer move snapped. Both read as resistance.
+
+/**
+ * Where a box is while it is being moved. `dx` is a fraction of the page
+ * width, `dy` is px, both measured from where the drag began.
+ *
+ * The box follows the pointer exactly; it is snapped once, on release
+ * (`settle`). Pushed against the right edge it narrows rather than stopping,
+ * down to MIN_W, and gets its width back if pulled away again in the same
+ * drag, because the width is always derived from the drag's ORIGIN.
+ */
+export function moveTo(origin, dx, dy) {
+  const x = clamp(origin.x + dx, 0, 1 - MIN_W);
+  return {
+    x,
+    y: Math.max(0, origin.y + dy),
+    w: Math.max(MIN_W, Math.min(origin.w, MAX_W - x)),
+  };
+}
+
+/** A resize keeps the left edge, so the width can grow only to the page edge. */
+export function resizeTo(origin, dx) {
+  return { w: clamp(origin.w + dx, MIN_W, MAX_W - origin.x) };
+}
+
+/** Where a released box comes to rest: its top on a rule. */
+export function settle(live) {
+  return { x: live.x, y: snapY(live.y), w: live.w };
+}
+
+/** Empty paper kept under the lowest box, in rules, as a floor. The canvas
+ *  also keeps at least 40% of the window, so a raised keyboard never covers
+ *  the last line (the page's old 40vh padding did that job, but nothing could
+ *  be tapped there). */
+export const TRAILING_ROWS = 12;
+
+/**
+ * How tall the writable page has to be (StudyDesk#111: "the notes page ends
+ * quite quickly").
+ *
+ * Measured from the lowest box's BOTTOM. A box is absolutely positioned, so it
+ * adds nothing to its parent's height, and measuring from its top (as the page
+ * did) let a long box hang hundreds of pixels past the end of the page, with
+ * no paper under it to start the next box on. Then `trailing` of empty,
+ * tappable paper, and never less than `fill`, the paper visible in the window,
+ * so a short note is writable all the way down the screen.
+ *
+ * @param {Array<{id: string, y: number}>} boxes
+ * @param {Record<string, number>} heights measured px; a box not measured yet counts as one rule
+ * @param {{trailing?: number, fill?: number}} [opts]
+ */
+export function pageHeight(boxes, heights, { trailing = TRAILING_ROWS * GRID, fill = 0 } = {}) {
+  const bottom = boxes.reduce(
+    (m, b) => Math.max(m, b.y + Math.max(Number(heights?.[b.id]) || 0, GRID)),
+    0,
+  );
+  return Math.ceil(Math.max(bottom + trailing, fill));
+}
+
 export function isUnarranged(boxes) {
   return boxes.length === 1
     && boxes[0].x === 0

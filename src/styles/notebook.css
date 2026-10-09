@@ -405,6 +405,13 @@ button.nb-check[aria-checked='true']::after {
    pinned to the margin. */
 .nb-canvas { position: relative; }
 
+/* StudyDesk#111. The page's 40vh of trailing padding became part of the
+   writable area itself (NoteCanvas sizes it from the lowest box's bottom plus
+   at least 40% of the window). As padding it kept a raised keyboard clear of
+   the last line but could not be tapped: ruled paper you could see and not
+   write on, which read as "the page ends here". */
+.nb-canvas.nb-page { padding-bottom: 0; }
+
 /* Everything right of the margin rule. `x` is a fraction of THIS, so a note
    written before free placement (x=0) still starts exactly where it always
    did. */
@@ -465,7 +472,25 @@ button.nb-check[aria-checked='true']::after {
   box-shadow: 0 0 0 1px var(--nb-bar-rule);
   border-radius: 3px;
 }
-.nb-box.is-dragging { opacity: 0.85; }
+.nb-box.is-dragging { opacity: 0.85; z-index: 3; }
+
+/* StudyDesk#112. With a mouse, a box that is not being typed in can be picked
+   up anywhere (a click still opens it), so it says so. While typing, the
+   cursor is the editor's again: a drag there selects text. */
+@media (pointer: fine) {
+  .nb-box:not(.is-typing) { cursor: grab; }
+  .nb-box.is-dragging,
+  .nb-box.is-dragging * { cursor: grabbing; }
+}
+
+/* The box follows the pointer exactly while it moves and comes to rest on a
+   rule when it is let go. The short settle is what makes the snap read as
+   paper finding its line, not as the box jumping. */
+.nb-box { transition: top 90ms ease-out; }
+.nb-box.is-dragging { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  .nb-box { transition: none; }
+}
 
 .nb-box-handle,
 .nb-box-grip {

@@ -30,12 +30,41 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import NoteEditor from './NoteEditor.jsx';
-import { GRID, MIN_W, MAX_W, DEFAULT_W, makeBox, snapY } from './layout.js';
+import {
+  GRID, MIN_W, MAX_W, DEFAULT_W, TRAILING_ROWS, makeBox, pageHeight, moveTo, resizeTo, settle,
+} from './layout.js';
 
-/** Room left under the lowest box so there is always empty page to start a new
- *  box on — without it the only way to add one below your work is to scroll to
- *  a gap that does not exist. */
-const TRAILING_SPACE = 6 * GRID;
+/** How far a mouse press on a box travels before it is a move, not a click. */
+const DRAG_SLOP = 4;
+/** Within this many px of the window's top or bottom, a drag scrolls the page. */
+const SCROLL_EDGE = 48;
+
+const widthOf = (el) => el?.getBoundingClientRect().width || 1;
+/** Events from the handle and grip bubble to the box; they run their own drag. */
+const fromGrip = (e) => !!e.target.closest?.('.nb-box-handle, .nb-box-grip');
+const scrollTopOf = (s) => (!s ? 0 : s === document.documentElement ? window.scrollY : s.scrollTop);
+
+/** A drag in flight, moved to a pointer position. The page may have scrolled
+ *  since the drag began, and the box travels with the scroll. */
+function project(d, clientX, clientY, pageW, scrollNow) {
+  const dx = (clientX - d.startX) / pageW;
+  const dy = clientY - d.startY + (scrollNow - d.scroll0);
+  const next = d.mode === 'resize'
+    ? resizeTo({ x: d.originX, w: d.originW }, dx)
+    : moveTo({ x: d.originX, y: d.originY, w: d.originW }, dx, dy);
+  return { ...d, ...next, lastX: clientX, lastY: clientY };
+}
+
+/** The element that scrolls the page. The notebook does not scroll itself; an
+ *  app-level container (or the document) does, and which one depends on the
+ *  shell, so it is found rather than assumed. */
+function scrollParent(el) {
+  for (let p = el?.parentElement; p; p = p.parentElement) {
+    const oy = getComputedStyle(p).overflowY;
+    if (oy === 'auto' || oy === 'scroll') return p;
+  }
+  return document.documentElement;
+}
 
 export default function NoteCanvas({
   boxes,
@@ -61,7 +90,76 @@ export default function NoteCanvas({
   // move a box by accident.
   const [typingIn, setTypingIn] = useState(null);
 
-  const pageWidth = () => pageRef.current?.getBoundingClientRect().width || 1;
+
+  // ── The endless sheet (StudyDesk#111) ───────────────────────────────────
+  //
+  // The writable area has to reach well below the lowest box's BOTTOM, and
+  // fill the paper in the window. Boxes are absolutely positioned, so the page
+  // cannot learn their heights from layout; they are measured instead.
+  const [heights, setHeights] = useState({});
+  const [paper, setPaper] = useState({ fill: 0, trailing: TRAILING_ROWS * GRID });
+  const resizeObs = useRef(null);
+  const boxEls = useRef(new Set());
+
+  useEffect(() => {
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver((entries) => {
+      setHeights((prev) => {
+        let next = prev;
+        for (const entry of entries) {
+          const id = entry.target.dataset.boxId;
+          const h = Math.round(entry.target.getBoundingClientRect().height);
+          if (id && prev[id] !== h) {
+            if (next === prev) next = { ...prev };
+            next[id] = h;
+          }
+        }
+        return next;
+      });
+    });
+    resizeObs.current = ro;
+    for (const el of boxEls.current) ro.observe(el);
+    return () => { ro.disconnect(); resizeObs.current = null; };
+  }, []);
+
+  // Stable, so React attaches it once per box rather than on every render;
+  // the returned cleanup (React 19) runs when the box unmounts.
+  const observeBox = useCallback((el) => {
+    if (!el) return undefined;
+    boxEls.current.add(el);
+    resizeObs.current?.observe(el);
+    return () => {
+      boxEls.current.delete(el);
+      resizeObs.current?.unobserve(el);
+    };
+  }, []);
+
+  useEffect(() => {
+    const area = pageRef.current;
+    if (!area) return undefined;
+    const scroller = scrollParent(area);
+    const isDoc = scroller === document.documentElement;
+    const measure = () => {
+      const viewH = isDoc ? window.innerHeight : scroller.clientHeight;
+      // The area's offset inside the scrolled content, independent of how far
+      // it is scrolled right now.
+      const top = area.getBoundingClientRect().top
+        - (isDoc ? 0 : scroller.getBoundingClientRect().top)
+        + (isDoc ? window.scrollY : scroller.scrollTop);
+      const fill = Math.max(0, Math.round(viewH - top));
+      const trailing = Math.max(TRAILING_ROWS * GRID, Math.round(window.innerHeight * 0.4));
+      setPaper((p) => (Math.abs(p.fill - fill) > 1 || p.trailing !== trailing ? { fill, trailing } : p));
+    };
+    const raf = requestAnimationFrame(measure);
+    window.addEventListener('resize', measure);
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+    ro?.observe(scroller);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', measure);
+      ro?.disconnect();
+    };
+  }, []);
 
   const commit = useCallback((next) => { onChange(next); }, [onChange]);
 
@@ -96,51 +194,119 @@ export default function NoteCanvas({
     commit([...boxes, box]);
   }, [boxes, commit]);
 
-  // ── Moving and resizing ─────────────────────────────────────────────────
+  // ── Moving and resizing (StudyDesk#112) ─────────────────────────────────
+  //
+  // The maths is in layout.js (moveTo / resizeTo / settle, tested): the box
+  // follows the pointer and only snaps to a rule on release, and a full-width
+  // box narrows against the page edge instead of refusing to move. This part
+  // is where the gesture comes from, and auto-scroll.
 
-  const startDrag = useCallback((e, id, mode) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const scrollerRef = useRef(null);
+  const dragRef = useRef(null);
+  useEffect(() => { dragRef.current = drag; });
+
+  const beginDrag = useCallback((id, mode, pointerId, clientX, clientY) => {
     const box = boxes.find((b) => b.id === id);
     if (!box) return;
-    try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* older WebView */ }
+    scrollerRef.current = scrollParent(pageRef.current);
     setDrag({
-      id, mode,
-      pointerId: e.pointerId,
-      startX: e.clientX,
-      startY: e.clientY,
-      originX: box.x,
-      originY: box.y,
-      originW: box.w,
+      id, mode, pointerId,
+      startX: clientX, startY: clientY, lastX: clientX, lastY: clientY,
+      scroll0: scrollTopOf(scrollerRef.current),
+      originX: box.x, originY: box.y, originW: box.w,
       x: box.x, y: box.y, w: box.w,
     });
   }, [boxes]);
 
+  // The handle and the grip: an explicit grab, on every device.
+  const startDrag = useCallback((e, id, mode) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* older WebView */ }
+    beginDrag(id, mode, e.pointerId, e.clientX, e.clientY);
+  }, [beginDrag]);
+
   const onDragMove = useCallback((e) => {
-    setDrag((d) => {
-      if (!d || d.pointerId !== e.pointerId) return d;
-      const w = pageWidth();
-      const dx = (e.clientX - d.startX) / w;
-      const dy = e.clientY - d.startY;
-      if (d.mode === 'resize') {
-        // The left edge stays put, so the width can grow only as far as the
-        // page edge.
-        const next = Math.min(Math.max(d.originW + dx, MIN_W), MAX_W - d.originX);
-        return { ...d, w: next };
-      }
-      const nx = Math.min(Math.max(d.originX + dx, 0), MAX_W - d.originW);
-      return { ...d, x: nx, y: snapY(d.originY + dy) };
-    });
+    setDrag((d) => (!d || d.pointerId !== e.pointerId
+      ? d
+      : project(d, e.clientX, e.clientY, widthOf(pageRef.current), scrollTopOf(scrollerRef.current))));
   }, []);
 
   const endDrag = useCallback((e) => {
     setDrag((d) => {
       if (!d || d.pointerId !== e.pointerId) return d;
       if (d.mode === 'resize') patchBox(d.id, { w: d.w });
-      else patchBox(d.id, { x: d.x, y: d.y });
+      else patchBox(d.id, settle(d));
       return null;
     });
   }, [patchBox]);
+
+  // The box itself, with a mouse or pen, when it is not being typed in: a
+  // press is held back until it is clear whether it is a drag or a click. A
+  // click is replayed to the block it landed on, so the editor opens exactly
+  // as it always has (Block opens it on mousedown). Touch is left alone, so a
+  // finger on a box still scrolls the page; the handle moves it there.
+  const pressRef = useRef(null);
+  const onBoxPointerDown = useCallback((e, id) => {
+    if (e.pointerType === 'touch' || e.button !== 0) return;
+    if (typingIn === id) return; // while typing, a drag selects text, as in any editor
+    if (e.target.closest('button, a, input, select, textarea, .nb-photo, .nb-check')) return;
+    e.preventDefault(); // holds back the mousedown, and with it the editor
+    pressRef.current = { id, pointerId: e.pointerId, x: e.clientX, y: e.clientY, target: e.target, moved: false };
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* older WebView */ }
+  }, [typingIn]);
+
+  const onBoxPointerMove = useCallback((e) => {
+    if (fromGrip(e)) return; // the handle and grip run their own drag
+    const p = pressRef.current;
+    if (p && !p.moved && p.pointerId === e.pointerId
+        && Math.hypot(e.clientX - p.x, e.clientY - p.y) > DRAG_SLOP) {
+      p.moved = true;
+      beginDrag(p.id, 'move', e.pointerId, p.x, p.y);
+    }
+    onDragMove(e);
+  }, [beginDrag, onDragMove]);
+
+  const onBoxPointerUp = useCallback((e) => {
+    if (fromGrip(e)) return;
+    const p = pressRef.current;
+    pressRef.current = null;
+    if (p && !p.moved && p.pointerId === e.pointerId) {
+      p.target.dispatchEvent(new MouseEvent('mousedown', {
+        bubbles: true, cancelable: true, button: 0, clientX: e.clientX, clientY: e.clientY,
+      }));
+      return;
+    }
+    endDrag(e);
+  }, [endDrag]);
+
+  // Held at the top or bottom edge of the window, the page scrolls, and the
+  // box goes with it: without this a box could only travel as far as the
+  // screen showed.
+  const dragging = drag !== null;
+  useEffect(() => {
+    if (!dragging) return undefined;
+    let raf = 0;
+    const tick = () => {
+      raf = requestAnimationFrame(tick);
+      const d = dragRef.current;
+      const s = scrollerRef.current;
+      if (!d || !s || d.mode !== 'move') return;
+      const isDoc = s === document.documentElement;
+      const top = isDoc ? 0 : s.getBoundingClientRect().top;
+      const bottom = isDoc ? window.innerHeight : s.getBoundingClientRect().bottom;
+      let step = 0;
+      if (d.lastY > bottom - SCROLL_EDGE) step = Math.ceil((d.lastY - (bottom - SCROLL_EDGE)) / 3);
+      else if (d.lastY < top + SCROLL_EDGE) step = -Math.ceil((top + SCROLL_EDGE - d.lastY) / 3);
+      if (!step) return;
+      if (isDoc) window.scrollBy(0, step); else s.scrollTop += step;
+      setDrag((cur) => (cur
+        ? project(cur, cur.lastX, cur.lastY, widthOf(pageRef.current), scrollTopOf(s))
+        : cur));
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [dragging]);
 
   // ── Litter ──────────────────────────────────────────────────────────────
   //
@@ -162,7 +328,10 @@ export default function NoteCanvas({
     return () => window.clearTimeout(id);
   }, [createdId]);
 
-  const lowest = boxes.reduce((m, b) => Math.max(m, b.y), 0);
+  // The box being dragged counts where it is being dragged TO, so the page
+  // grows under it and it can be carried below the current end.
+  const placed = drag ? boxes.map((b) => (b.id === drag.id ? { ...b, y: drag.y } : b)) : boxes;
+  const minHeight = pageHeight(placed, heights, paper);
 
   return (
     <div className="nb-page-wrap">
@@ -182,13 +351,19 @@ export default function NoteCanvas({
         ref={pageRef}
         className="nb-canvas-area"
         onPointerDown={onPagePointerDown}
-        style={{ minHeight: `${lowest + TRAILING_SPACE}px` }}
+        style={{ minHeight: `${minHeight}px` }}
       >
         {boxes.map((b) => {
           const live = drag && drag.id === b.id ? drag : b;
           return (
             <div
               key={b.id}
+              ref={observeBox}
+              data-box-id={b.id}
+              onPointerDown={(e) => onBoxPointerDown(e, b.id)}
+              onPointerMove={onBoxPointerMove}
+              onPointerUp={onBoxPointerUp}
+              onPointerCancel={onBoxPointerUp}
               className={`nb-box${drag?.id === b.id ? ' is-dragging' : ''}${typingIn === b.id ? ' is-typing' : ''}`}
               style={{
                 left: `${live.x * 100}%`,
