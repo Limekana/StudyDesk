@@ -118,7 +118,9 @@ h1,h2,h3,h4,h5,h6{font-weight:inherit;font-size:inherit;}
   --nb-caret:#1a1814;
   --nb-marker:#6b6560;
   --nb-check-line:#6b6560;
-  --nb-check-fill:#6b6560;
+  /* A done item fills with ink: filled in the muted grey it read as
+     disabled rather than done (StudyDesk#114). */
+  --nb-check-fill:#1a1814;
   --nb-hl-1:#EDD98A;
   --nb-hl-2:#EFC5C0;
   --nb-hl-3:#C9DCC4;

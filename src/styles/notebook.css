@@ -429,6 +429,11 @@ button.nb-check[aria-checked='true']::after {
      places a box instead highlights the paper. */
   touch-action: pan-y;
   user-select: none;
+  /* The page's own margin and text column, captured here because every box
+     narrows both to 24px below. A box against the margin needs the page's
+     values to hang its markers in the margin (see .is-at-margin). */
+  --nb-page-margin-w: var(--nb-margin-w);
+  --nb-page-text-x: var(--nb-text-x);
 }
 
 .nb-box {
@@ -463,6 +468,28 @@ button.nb-check[aria-checked='true']::after {
   --nb-margin-w: 24px;
 }
 .nb-box .nb-block { padding-inline-end: 0; }
+
+/* StudyDesk#114. A box against the margin hangs its list numbers, bullets and
+   checkboxes IN the margin, left of the rule, the way an exercise book is
+   numbered. In the box's own 24px gutter they sat on the margin rule, which
+   ran straight through "1." and through every checkbox, in every theme.
+   --nb-rule-at is where the page's margin rule falls inside the box: the box
+   starts at (page text-x - 24px), the rule at page margin-w. The text column
+   does not move. Nested items keep their markers right of the rule. */
+.nb-box.is-at-margin {
+  --nb-rule-at: calc(var(--nb-page-margin-w) - var(--nb-page-text-x) + 24px);
+}
+.nb-box.is-at-margin .nb-block[data-indent='0'] .nb-marker {
+  inset-inline-start: auto;
+  inset-inline-end: calc(100% - var(--nb-rule-at) + 7px);
+  width: auto;
+  /* Shrink-to-fit into the margin, and the block's `overflow-wrap: anywhere`
+     would otherwise let "12." break after any digit. */
+  white-space: nowrap;
+}
+.nb-box.is-at-margin .nb-block[data-indent='0'] > button.nb-check {
+  inset-inline-start: calc(var(--nb-rule-at) - 22px);
+}
 
 /* Only while the box holds the caret, and only then — an outline on every box
    all the time turns a page of notes into a page of widgets. */
@@ -547,10 +574,19 @@ button.nb-check[aria-checked='true']::after {
    a phone. Inside the box there instead, over its own first line. */
 @media (max-width: 768px) {
   .nb-box-handle { inset-inline-start: -18px; width: 18px; }
-  .nb-box[style*="left: 0%"] .nb-box-handle { inset-inline-start: 0; }
+  .nb-box.is-at-margin .nb-box-handle { inset-inline-start: 0; }
   /* Touch has no hover, so the handles show for the box being typed in and
      stay legible rather than depending on a pointer that never arrives. */
   .nb-box-handle, .nb-box-grip { opacity: 0.45; }
+  /* StudyDesk#114: a note that is one box has nothing to arrange, so its
+     handle and grip stay out of the way (and out of reach of a stray tap)
+     until the box is being typed in. On every note, at rest, they read as a
+     widget and the grip as a scrollbar. */
+  .nb-canvas-area.is-single .nb-box:not(.is-typing) .nb-box-handle,
+  .nb-canvas-area.is-single .nb-box:not(.is-typing) .nb-box-grip {
+    opacity: 0;
+    visibility: hidden;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -643,6 +679,9 @@ button.nb-check[aria-checked='true']::after {
 }
 .nb-note-row:hover { background: var(--nb-bar-bg); }
 .nb-note-row.is-active { color: var(--nb-ink); background: var(--nb-bar-bg); }
+/* The per-course "New note": an action, not a note. */
+.nb-note-row.is-new { font-family: var(--nb-font-meta); font-size: 11px; }
+.nb-note-row.is-new > span { margin-inline-end: 6px; }
 
 /* The collapsed-courses line while a session is scoping the tree. Dim, one
    line, and every course in it stays tappable — §3 rule 1: "The scope is
@@ -718,6 +757,16 @@ button.nb-check[aria-checked='true']::after {
   box-shadow: 0 var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) 0 0 var(--nb-dock-bg, var(--nb-bar-bg));
 }
 .nb-bar::-webkit-scrollbar { display: none; }
+
+/* The highlight control: a letter on the role-1 wash. */
+.nb-bar-hl-glyph {
+  display: inline-block;
+  padding: 0 3px;
+  line-height: 1.3;
+  border-radius: 2px;
+  background: var(--nb-hl-1);
+  color: var(--nb-ink);
+}
 
 /* Eleven controls across 360px is 32px each — under the 44px minimum. Each
    control's HIT AREA spans the full 44px bar height with a smaller glyph
@@ -853,6 +902,19 @@ body.nb-editing .mobile-tabbar { display: none !important; }
 
   /* 560px measure, centred in the remaining width. */
   .nb-page { max-width: 560px; }
+
+  /* A box against the margin hangs its markers where its drag handle used to
+     be, so on desktop the handle goes further out, past them. */
+  .nb-box.is-at-margin .nb-box-handle { inset-inline-start: calc(var(--nb-rule-at) - 44px); }
+
+  /* StudyDesk#114, direction C: the page gets the room. On the notebook route
+     (App.jsx sets `is-notebook`) the app's title bar and the content gutter
+     above the notebook go, so the first line of a note sits about 160px
+     higher. The notebook keeps its own corner timer pill, and Settings stays
+     one click away on every other screen. */
+  .main.is-notebook .topbar { display: none; }
+  .main.is-notebook .content { padding-block: 0; }
+  .main.is-notebook .nb { min-height: 100dvh; }
   /* The docked bar is a phone answer to a phone problem — there is no soft
      keyboard to fight on desktop, and the always-visible format row in the
      note header takes its place. */
@@ -874,16 +936,22 @@ body.nb-editing .mobile-tabbar { display: none !important; }
 .nb-format-row { display: none; }
 
 @media (min-width: 769px) {
-  .nb-format-row {
+  /* StudyDesk#114: the row moved INTO the note header, on its line, so the
+     header is the sticky element now and the controls stay in reach on a long
+     note. It may wrap to a second line in a narrow window rather than clip. */
+  .nb-head {
     position: sticky;
     top: 0;
     z-index: 5;
+    height: auto;
+    min-height: 44px;
+    flex-wrap: wrap;
+    background: var(--nb-page);
+  }
+  .nb-format-row {
     display: flex;
     align-items: center;
     min-height: 36px;
-    padding: 0 10px;
-    background: var(--nb-page);
-    border-bottom: 1px solid var(--nb-bar-rule);
   }
   .nb-format-slot:empty { display: none; }
   .nb-format-inline { position: relative; }
@@ -899,7 +967,7 @@ body.nb-editing .mobile-tabbar { display: none !important; }
   }
   .nb-bar.is-inline .nb-bar-btn { height: 36px; min-width: 30px; }
   .nb-bar.is-inline .nb-bar-btn:hover { color: var(--nb-ink); }
-  .nb-bar.is-idle .nb-bar-btn { opacity: 0.5; cursor: default; }
+  .nb-bar.is-idle .nb-bar-btn { opacity: 0.7; cursor: default; }
   .nb-bar.is-idle .nb-bar-btn:hover { color: var(--nb-ink-muted); }
   .nb-bar.is-idle .nb-bar-btn:last-child { opacity: 1; cursor: pointer; }
 
@@ -963,11 +1031,12 @@ body.nb-editing .mobile-tabbar { display: none !important; }
    app uses; muted until pressed, because a destructive control that draws the
    eye on every note is a control people learn to avoid rather than trust. */
 .nb-head-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 0;
   background: none;
   color: var(--nb-ink-muted);
-  font-size: 1.4rem;
-  line-height: 1;
   min-width: 44px;
   min-height: 44px;
   cursor: pointer;

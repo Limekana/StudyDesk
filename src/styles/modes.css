@@ -148,7 +148,7 @@
   --nb-caret:#EDE7DA;
   --nb-marker:#938B82;
   --nb-check-line:#A8A096;
-  --nb-check-fill:#A8A096;
+  --nb-check-fill:#EDE7DA;
   /* Highlights DEEPEN. On a dark ground marking something means making it
      darker — this is what stops the yellow becoming a glowing scar. */
   --nb-hl-1:#4A3F1C;
@@ -263,7 +263,7 @@
   --nb-caret:#EDE7DA;
   --nb-marker:#938B82;
   --nb-check-line:#A8A096;
-  --nb-check-fill:#A8A096;
+  --nb-check-fill:#EDE7DA;
   --nb-hl-1:#3D3417;
   --nb-hl-2:#4E2723;
   --nb-hl-3:#1E3B26;

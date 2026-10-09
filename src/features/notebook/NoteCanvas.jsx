@@ -31,7 +31,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import NoteEditor from './NoteEditor.jsx';
 import {
-  GRID, MIN_W, MAX_W, DEFAULT_W, TRAILING_ROWS, makeBox, pageHeight, moveTo, resizeTo, settle,
+  GRID, TRAILING_ROWS, makeBox, placeNewBox, pageHeight, moveTo, resizeTo, settle,
 } from './layout.js';
 
 /** How far a mouse press on a box travels before it is a move, not a click. */
@@ -197,11 +197,9 @@ export default function NoteCanvas({
     const w = rect.width || 1;
     const px = e.clientX - rect.left;
     const py = e.clientY - rect.top + e.currentTarget.scrollTop;
-    // Placed so the tap is the box's TOP-LEFT, which is where a person expects
-    // the caret to appear. Clamped so a tap near the right edge still yields a
-    // box wide enough to type in rather than a sliver.
-    const x = Math.min(Math.max(px / w, 0), 1 - MIN_W);
-    const width = Math.min(DEFAULT_W, MAX_W - x);
+    // The tap is the box's top-left, unless that would leave a sliver: see
+    // placeNewBox in layout.js.
+    const { x, w: width } = placeNewBox(px / w, w);
     const box = makeBox({ x, y: py, w: width });
     setCreatedId(box.id);
     commit([...boxes, box]);
@@ -397,7 +395,7 @@ export default function NoteCanvas({
           move `left: 0` at all. */}
       <div
         ref={pageRef}
-        className="nb-canvas-area"
+        className={`nb-canvas-area${boxes.length === 1 ? ' is-single' : ''}`}
         onPointerDown={onPagePointerDown}
         onClick={onPageClick}
         style={{ minHeight: `${minHeight}px` }}
@@ -413,7 +411,7 @@ export default function NoteCanvas({
               onPointerMove={onBoxPointerMove}
               onPointerUp={onBoxPointerUp}
               onPointerCancel={cancelDrag}
-              className={`nb-box${drag?.id === b.id ? ' is-dragging' : ''}${typingIn === b.id ? ' is-typing' : ''}`}
+              className={`nb-box${drag?.id === b.id ? ' is-dragging' : ''}${typingIn === b.id ? ' is-typing' : ''}${live.x < 0.001 ? ' is-at-margin' : ''}`}
               style={{
                 left: `${live.x * 100}%`,
                 top: `${live.y}px`,

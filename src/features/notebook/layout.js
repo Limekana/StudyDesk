@@ -62,6 +62,11 @@ export const DEFAULT_W = 0.56;
 
 export const LAYOUT_VERSION = 1;
 
+/** The narrowest a NEW box starts, in px. A tap near the right edge used to
+ *  give whatever width was left, down to MIN_W: about 77px on a desktop page,
+ *  which split "Mitochondria" over two lines (StudyDesk#114). */
+export const COMFY_PX = 180;
+
 /** Boxes are joined by a blank line so that a version with no layout reads the
  *  note as separated paragraphs rather than one run-on block. */
 const JOIN = '\n\n';
@@ -129,6 +134,18 @@ export const SOLE_BOX_ID = 'b0';
  *  falls back to. */
 export function singleBox(content) {
   return [{ id: SOLE_BOX_ID, x: 0, y: 0, w: MAX_W, text: String(content ?? '') }];
+}
+
+/** Where a box started by a tap goes. `fx` is the tap as a fraction of the
+ *  page, `pagePx` the page width. The tap is the box's top-left, which is where
+ *  a person expects the caret, as long as a box of comfortable width fits
+ *  there (COMFY_PX, or DEFAULT_W if that is narrower). Nearer the right edge
+ *  the box keeps that width and moves left, rather than shrinking to a sliver. */
+export function placeNewBox(fx, pagePx) {
+  const x0 = clamp(fx, 0, 1);
+  const comfy = clamp(pagePx > 0 ? COMFY_PX / pagePx : DEFAULT_W, MIN_W, DEFAULT_W);
+  const w = Math.max(Math.min(DEFAULT_W, MAX_W - x0), comfy);
+  return { x: Math.min(x0, MAX_W - w), w };
 }
 
 export function makeBox({ x, y, w = DEFAULT_W, text = '' }) {
