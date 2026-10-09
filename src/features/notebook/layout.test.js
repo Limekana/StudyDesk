@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   readLayout, writeLayout, singleBox, isUnarranged, pageHeight, moveTo, resizeTo, settle,
-  MAX_W, MIN_W, GRID, TRAILING_ROWS,
+  placeNewBox, MAX_W, MIN_W, GRID, TRAILING_ROWS, DEFAULT_W, COMFY_PX,
 } from './layout.js';
 
 describe('a press that barely moved leaves a note unarranged (StudyDesk issue 131, P1)', () => {
@@ -20,6 +20,62 @@ describe('a press that barely moved leaves a note unarranged (StudyDesk issue 13
   it('a box let go just short of the right edge reaches it', () => {
     expect(settle({ x: 0.5, y: 0, w: 0.49 }).w).toBeCloseTo(0.5);
     expect(settle({ x: 0.5, y: 0, w: 0.4 }).w).toBeCloseTo(0.4);
+  });
+});
+
+describe('starting a box with a tap (StudyDesk issue 114)', () => {
+  it('the tap is the top-left when the default width fits there', () => {
+    expect(placeNewBox(0.2, 515)).toEqual({ x: 0.2, w: DEFAULT_W });
+  });
+  it('with less room it narrows, but only down to a comfortable width', () => {
+    const r = placeNewBox(0.5, 515);
+    expect(r.x).toBeCloseTo(0.5);
+    expect(r.w).toBeCloseTo(0.5);
+  });
+  it('near the right edge it moves left instead of becoming a sliver', () => {
+    // The reported case: a tap at 80% of a 515px page gave a box 77px wide.
+    const r = placeNewBox(0.8, 515);
+    expect(r.w * 515).toBeGreaterThanOrEqual(COMFY_PX - 0.001);
+    expect(r.x + r.w).toBeCloseTo(MAX_W);
+  });
+  it('on a phone-width page a new box always gets the default width', () => {
+    const r = placeNewBox(0.9, 322);
+    expect(r.w).toBeCloseTo(DEFAULT_W);
+    expect(r.x).toBeCloseTo(MAX_W - DEFAULT_W);
+  });
+  it('never on top of a box already on the tapped line (issue 134 review)', () => {
+    // A phone page, box A at the margin taking 55%; a tap at 80% used to
+    // start a default-width box at 44%, over A's text.
+    const r = placeNewBox(0.8, 322, [{ x: 0, w: 0.55 }]);
+    expect(r.x).toBeGreaterThanOrEqual(0.55 - 1e-9);
+    expect(r.x + r.w).toBeLessThanOrEqual(MAX_W + 1e-9);
+    // A box to the right of the tap bounds it on that side.
+    const s = placeNewBox(0.1, 515, [{ x: 0.5, w: 0.5 }]);
+    expect(s.x).toBeCloseTo(0.1);
+    expect(s.x + s.w).toBeLessThanOrEqual(0.5 + 1e-9);
+  });
+  it('a line with no room for a box starts none, rather than overlapping (issue 134 review)', () => {
+    // A gap narrower than MIN_W between two boxes.
+    expect(placeNewBox(0.5, 515, [{ x: 0, w: 0.45 }, { x: 0.55, w: 0.45 }])).toBeNull();
+    // A strip narrower than MIN_W at the right edge.
+    expect(placeNewBox(0.95, 515, [{ x: 0, w: 0.9 }])).toBeNull();
+    // A tap within a box's own span on that line.
+    expect(placeNewBox(0.25, 515, [{ x: 0, w: 0.5 }])).toBeNull();
+    // Exactly MIN_W of room is enough.
+    const r = placeNewBox(0.9, 515, [{ x: 0, w: 1 - MIN_W }]);
+    expect(r.w).toBeCloseTo(MIN_W);
+    expect(r.x).toBeCloseTo(1 - MIN_W);
+  });
+  it('a tap just right of the margin starts at the margin', () => {
+    expect(placeNewBox(0.01, 515).x).toBe(0);
+  });
+  it('never off the page, never narrower than MIN_W, whatever it is given', () => {
+    for (const [fx, px] of [[-1, 500], [2, 500], [NaN, 500], [0.5, 0], [0.99, 5000]]) {
+      const r = placeNewBox(fx, px);
+      expect(r.x).toBeGreaterThanOrEqual(0);
+      expect(r.w).toBeGreaterThanOrEqual(MIN_W);
+      expect(r.x + r.w).toBeLessThanOrEqual(MAX_W + 1e-9);
+    }
   });
 });
 

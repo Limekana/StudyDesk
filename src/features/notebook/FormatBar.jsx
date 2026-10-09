@@ -15,7 +15,7 @@
 // half ruled lines. A two-row bar takes 26% and is rejected on that basis
 // alone.
 //
-// **Order: B I U ▨ | H1 H2 | • 1. ☐ | ＋.** Character formats first because
+// **Order: B I U highlight | H1 H2 | • 1. ☐ | ＋.** Character formats first because
 // they are used mid-sentence, so the thumb reaches them while reading the
 // line; then blocks; then insert.
 //
@@ -160,7 +160,9 @@ export default function FormatBar({
           aria-label={t('nb.highlight')}
           title={tip('highlight', 'nb.highlight')}
         >
-          ▨
+          {/* A letter on the role-1 wash: what a highlight does, not a
+              hatched square that meant nothing (StudyDesk#114). */}
+          <span className="nb-bar-hl-glyph" aria-hidden="true">A</span>
         </button>
 
         <span className="nb-bar-sep" aria-hidden="true" />

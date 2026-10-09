@@ -31,7 +31,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import NoteEditor from './NoteEditor.jsx';
 import {
-  GRID, MIN_W, MAX_W, DEFAULT_W, TRAILING_ROWS, makeBox, pageHeight, moveTo, resizeTo, settle,
+  GRID, TRAILING_ROWS, makeBox, placeNewBox, pageHeight, moveTo, resizeTo, settle,
 } from './layout.js';
 
 /** How far a mouse press on a box travels before it is a move, not a click. */
@@ -197,15 +197,21 @@ export default function NoteCanvas({
     const w = rect.width || 1;
     const px = e.clientX - rect.left;
     const py = e.clientY - rect.top + e.currentTarget.scrollTop;
-    // Placed so the tap is the box's TOP-LEFT, which is where a person expects
-    // the caret to appear. Clamped so a tap near the right edge still yields a
-    // box wide enough to type in rather than a sliver.
-    const x = Math.min(Math.max(px / w, 0), 1 - MIN_W);
-    const width = Math.min(DEFAULT_W, MAX_W - x);
-    const box = makeBox({ x, y: py, w: width });
+    // The line that was tapped: the rule ABOVE the tap, not the nearest one.
+    // Rounded, a tap in the lower half of a line started the box a line
+    // further down, and a tap just above a box landed on that box's first
+    // line, over its text (#134 review).
+    const top = Math.floor(Math.max(0, py) / GRID) * GRID;
+    // The boxes already on that line, so the new one is not dropped on top of
+    // one of them. The tap is the box's top-left unless that would leave a
+    // sliver or overlap: see placeNewBox in layout.js.
+    const row = boxes.filter((b) => b.y < top + GRID && b.y + Math.max(heights[b.id] || 0, GRID) > top);
+    const spot = placeNewBox(px / w, w, row);
+    if (!spot) return;
+    const box = makeBox({ x: spot.x, y: top, w: spot.w });
     setCreatedId(box.id);
     commit([...boxes, box]);
-  }, [boxes, commit]);
+  }, [boxes, heights, commit]);
 
   // ── Moving and resizing (StudyDesk#112) ─────────────────────────────────
   //
@@ -397,7 +403,7 @@ export default function NoteCanvas({
           move `left: 0` at all. */}
       <div
         ref={pageRef}
-        className="nb-canvas-area"
+        className={`nb-canvas-area${boxes.length === 1 ? ' is-single' : ''}`}
         onPointerDown={onPagePointerDown}
         onClick={onPageClick}
         style={{ minHeight: `${minHeight}px` }}
@@ -413,7 +419,7 @@ export default function NoteCanvas({
               onPointerMove={onBoxPointerMove}
               onPointerUp={onBoxPointerUp}
               onPointerCancel={cancelDrag}
-              className={`nb-box${drag?.id === b.id ? ' is-dragging' : ''}${typingIn === b.id ? ' is-typing' : ''}`}
+              className={`nb-box${drag?.id === b.id ? ' is-dragging' : ''}${typingIn === b.id ? ' is-typing' : ''}${live.x < 0.001 ? ' is-at-margin' : ''}`}
               style={{
                 left: `${live.x * 100}%`,
                 top: `${live.y}px`,
@@ -443,6 +449,10 @@ export default function NoteCanvas({
               <button
                 type="button"
                 className="nb-box-handle"
+                // Out of the tab order on a one-box note, where the handles are
+                // hidden at rest: they move only by pointer, so as tab stops
+                // they were "Move box" with nothing to do (#134 review).
+                tabIndex={boxes.length === 1 ? -1 : undefined}
                 aria-label={t('nb.moveBox')}
                 onPointerDown={(e) => startDrag(e, b.id, 'move')}
                 onPointerMove={onDragMove}
@@ -454,6 +464,7 @@ export default function NoteCanvas({
               <button
                 type="button"
                 className="nb-box-grip"
+                tabIndex={boxes.length === 1 ? -1 : undefined}
                 aria-label={t('nb.resizeBox')}
                 onPointerDown={(e) => startDrag(e, b.id, 'resize')}
                 onPointerMove={onDragMove}

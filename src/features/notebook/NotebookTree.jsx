@@ -94,7 +94,10 @@ export default function NotebookTree({
               </button>
             ))}
             {open && (
-              <button type="button" className="nb-note-row" onClick={() => onNewNote(course.id)}>
+              <button type="button" className="nb-note-row is-new" onClick={() => onNewNote(course.id)}>
+                {/* An action, marked as one: as a plain row it read like a note
+                    called "New note" (StudyDesk#114). */}
+                <span aria-hidden="true">+</span>
                 {t('nb.newNote')}
               </button>
             )}

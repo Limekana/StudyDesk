@@ -401,6 +401,11 @@ export default function App() {
   // v1.3 — sub-tab within the Timer view (Timer / Log / Stats), so Log + Stats
   // don't need their own bottom-bar slots.
   const [timerSub, setTimerSub] = useState("timer");
+  // StudyDesk#114 — whether the Timer hub's notebook is showing a note (rather
+  // than its list). On a phone the sub-tabs step aside while it is, so the note
+  // gets the screen; NotebookView reports it and its "All notes" link is the
+  // way back.
+  const [noteOpen, setNoteOpen] = useState(false);
   // v1.9 Item 14a — sub-tab within Plan (List / Calendar), same shape as the
   // Timer hub above rather than a fifth bottom tab: the four-tab bar was sized
   // and tuned in v1.9 Item 6 against the longest label the app ships, and a
@@ -564,6 +569,9 @@ export default function App() {
     // profile avatar (matches NCC/LimeLog). Still a valid `state.view`.
   ];
   const activeView = views.find(v=>v.id===state.view);
+  // A note open in the Timer hub's notebook, on a phone: the sub-tabs give the
+  // note their space and the screen is titled for what it shows (#114).
+  const notesTucked = state.view==="timer" && timerSub==="notes" && noteOpen && shellTier==="phone";
 
   // Auth gate: show login UI until Supabase confirms a session.
   // (session === undefined while the initial getSession() call is in flight.)
@@ -660,7 +668,9 @@ export default function App() {
       </aside>
 
       {/* ── Main content ── */}
-      <main className="main">
+      {/* `is-notebook`: the desktop notebook route drops the title bar and the
+          content gutter above the page (notebook.css, StudyDesk#114). */}
+      <main className={"main"+(state.view==="notebook"?" is-notebook":"")}>
         <div className="topbar">
           {/* v1.9 Item 14 — the inner wrapper carries the gutter and shares
               `.content`'s max-width, so the title stays aligned with the column
@@ -671,7 +681,8 @@ export default function App() {
               visible half of the dead-route bug fixed below. It names the
               course, which is what the pane is showing. */}
           <h1 className="topbar-title">{
-            state.view==="actions" ? t('topbar.nextUp')
+            notesTucked ? t('nav.notebook')
+            : state.view==="actions" ? t('topbar.nextUp')
             : state.view==="status" ? (state.courses[state.activeCourse]?.name || t('nav.plan'))
             : activeView?.label
           }</h1>
@@ -810,13 +821,13 @@ export default function App() {
           )}
           {state.view==="timer"   &&(
             <>
-              <div className="timer-subtabs" role="tablist" aria-label="Timer sections">
+              {!notesTucked && <div className="timer-subtabs" role="tablist" aria-label="Timer sections">
                 {[["timer","av.tm.timerTab"],["notes","nav.notebook"],["log","av.tm.logTab"],["stats","av.tm.statsTab"]].map(([id,key])=>(
                   <button key={id} type="button" role="tab" aria-selected={timerSub===id}
                     className={"timer-subtab"+(timerSub===id?" active":"")}
                     onClick={()=>setTimerSub(id)}>{t(key)}</button>
                 ))}
-              </div>
+              </div>}
               <div className="page-turn" key={timerSub}>
                 <Suspense fallback={null}>
                 {timerSub==="timer" &&<TimerView   state={state} dispatch={dispatch} session={session} showFlash={showFlash} onTimerComplete={(payload)=>setPendingSession(payload)}/>}
@@ -825,7 +836,7 @@ export default function App() {
                 {/* The mobile home for the notebook. Same component as the
                     desktop route below — one implementation, two entry
                     points, so the two cannot drift. */}
-                {timerSub==="notes" &&<NotebookView state={state} dispatch={dispatch} onDeleteNote={onDeleteNote} onOpenTimer={()=>setTimerSub("timer")}/>}
+                {timerSub==="notes" &&<NotebookView state={state} dispatch={dispatch} onDeleteNote={onDeleteNote} onOpenTimer={()=>setTimerSub("timer")} onNoteOpenChange={setNoteOpen}/>}
                 </Suspense>
               </div>
             </>

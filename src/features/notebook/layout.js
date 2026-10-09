@@ -62,6 +62,18 @@ export const DEFAULT_W = 0.56;
 
 export const LAYOUT_VERSION = 1;
 
+/** The narrowest a NEW box starts, in px. A tap near the right edge used to
+ *  give whatever width was left, down to MIN_W: about 77px on a desktop page,
+ *  which split "Mitochondria" over two lines (StudyDesk#114). */
+export const COMFY_PX = 180;
+
+/** How close to the margin, or to the page's right edge, a released or newly
+ *  tapped box snaps onto it, as a fraction of the page: about 15px on a
+ *  desktop page, 10px on a phone. Wide enough that a box which is "at the
+ *  margin" to the eye is at it in fact, so its markers hang in the margin
+ *  rather than across the rule (#134 review). */
+export const EDGE_SNAP = 0.03;
+
 /** Boxes are joined by a blank line so that a version with no layout reads the
  *  note as separated paragraphs rather than one run-on block. */
 const JOIN = '\n\n';
@@ -129,6 +141,36 @@ export const SOLE_BOX_ID = 'b0';
  *  falls back to. */
 export function singleBox(content) {
   return [{ id: SOLE_BOX_ID, x: 0, y: 0, w: MAX_W, text: String(content ?? '') }];
+}
+
+/** Where a box started by a tap goes. `fx` is the tap as a fraction of the
+ *  page, `pagePx` the page width, `row` the boxes ({x, w}) already on the line
+ *  that was tapped. The tap is the box's top-left, which is where a person
+ *  expects the caret, as long as a box of comfortable width fits there
+ *  (COMFY_PX, or DEFAULT_W if that is narrower). Nearer an edge or a
+ *  neighbour the box keeps that width and moves left, but never onto a box
+ *  already on the line: it narrows to the free stretch instead (#134 review).
+ *  A tap just right of the margin starts AT the margin, like a release does.
+ *  Returns null when the line has no room: the tap is within a box's span,
+ *  or the free stretch is narrower than MIN_W. Nothing is started then,
+ *  rather than a box half on top of a neighbour. */
+export function placeNewBox(fx, pagePx, row = []) {
+  let x0 = clamp(fx, 0, 1);
+  if (x0 < EDGE_SNAP) x0 = 0;
+  let lo = 0;
+  let hi = MAX_W;
+  for (const b of row) {
+    const right = b.x + b.w;
+    if (right <= x0 + 1e-9) lo = Math.max(lo, right);
+    else if (b.x >= x0 - 1e-9) hi = Math.min(hi, b.x);
+    else return null;
+  }
+  if (hi - lo < MIN_W - 1e-9) return null;
+  const comfy = clamp(pagePx > 0 ? COMFY_PX / pagePx : DEFAULT_W, MIN_W, DEFAULT_W);
+  const want = Math.max(Math.min(DEFAULT_W, hi - x0), comfy);
+  const w = Math.max(MIN_W, Math.min(want, hi - lo));
+  const x = Math.max(lo, Math.min(x0, hi - w));
+  return { x, w: Math.max(MIN_W, Math.min(w, MAX_W - x)) };
 }
 
 export function makeBox({ x, y, w = DEFAULT_W, text = '' }) {
@@ -250,10 +292,6 @@ export function resizeTo(origin, dx) {
   return { w: clamp(origin.w + dx, MIN_W, MAX_W - origin.x) };
 }
 
-/** How close to the margin, or to the page's right edge, a released box
- *  snaps onto it, as a fraction of the page: about 8px on a desktop page,
- *  5px on a phone. */
-export const EDGE_SNAP = 0.015;
 
 /** Where a released box comes to rest: its top on a rule, and onto the margin
  *  or the right edge when it was let go just short of them. Without the edge
