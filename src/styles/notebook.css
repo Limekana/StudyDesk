@@ -272,6 +272,29 @@ button.nb-check[aria-checked='true']::after {
 }
 .nb-input:focus-visible { outline: none; }
 
+/* StudyDesk#126. Two app-wide field rules reach this textarea and the course
+   picker in the note header, and both outrank a single class:
+     - forms.css `textarea { min-height: 80px }`. A one-line block became an
+       80px editor, so every tap moved the rest of the page down by 52px, off
+       the 28px ruling, which is the jump the rule above exists to prevent.
+     - themes.css `html[data-theme] :where(input, textarea, select)`, (0,1,1).
+       Stacks drew the line being typed as a filled, bordered field, Slate gave
+       it a dashed frame, and both boxed the course picker.
+   Scoped under `.nb` (0,2,0) so these resets win without !important. The
+   picker's hover rule further down is also (0,2,0) and later, so it still
+   applies. */
+.nb .nb-input {
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.nb .nb-head-course-select {
+  border: 0;
+  background: none;
+}
+
 /* Revealed source. Marks and commands show in --nb-src so the line the caret
    is on reads as source rather than as broken prose. */
 .nb-src { color: var(--nb-src); }
@@ -689,6 +712,10 @@ button.nb-check[aria-checked='true']::after {
   margin: 0 4px;
   background: var(--nb-bar-rule);
 }
+
+/* StudyDesk#127: the tab bar is hidden while the docked bar is up (the
+   editor sets `nb-editing` on <body>). Same pattern as Lock In in timer.css. */
+body.nb-editing .mobile-tabbar { display: none !important; }
 
 /* Highlight long-press popover — three swatches, above the bar. No free
    colour picker (§4). */

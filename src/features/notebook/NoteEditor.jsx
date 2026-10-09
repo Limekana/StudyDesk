@@ -18,6 +18,19 @@ import {
 } from './inputRules.js';
 import { useKeyboardInset } from './useKeyboardInset.js';
 import { isComposing, compositionTracking } from '../../lib/imeSubmit.js';
+
+// Counted rather than toggled: moving the caret to another box mounts that
+// box's bar before the first box's editor lets go of its own, so a plain
+// add/remove would drop the class while a bar is still up.
+let dockedBars = 0;
+function holdDockedBar() {
+  dockedBars += 1;
+  document.body.classList.add('nb-editing');
+  return () => {
+    dockedBars = Math.max(0, dockedBars - 1);
+    if (!dockedBars) document.body.classList.remove('nb-editing');
+  };
+}
 // The shortcut table moved to shortcuts.js (StudyDesk#113), next to the list
 // the format bar's tooltips and the "?" sheet show, so the two cannot drift.
 import { matchShortcut } from './shortcuts.js';
@@ -584,7 +597,17 @@ export default function NoteEditor({
       onHelp={fmt?.openHelp}
     />
   ) : null;
-  const placedBar = bar && slot ? createPortal(bar, slot) : bar;
+  // On a phone the bar docks to the window, so it is portalled to <body>
+  // (StudyDesk#127). Rendered in place it was a child of `.nb-box`, whose
+  // `z-index` makes a stacking context: the bar's own z-index then counted
+  // only inside the box, and the app's tab bar painted over it.
+  const placedBar = bar ? createPortal(bar, slot || document.body) : null;
+
+  // The tab bar steps aside while a line is being edited on a narrow screen,
+  // the way Lock In hides it: the docked bar takes the bottom edge, and over a
+  // taller tab bar the tab icons would show above it.
+  const docked = focus >= 0 && !slot;
+  useEffect(() => (docked ? holdDockedBar() : undefined), [docked]);
 
   if (embedded) {
     return (
