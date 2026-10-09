@@ -272,6 +272,29 @@ button.nb-check[aria-checked='true']::after {
 }
 .nb-input:focus-visible { outline: none; }
 
+/* StudyDesk#126. Two app-wide field rules reach this textarea and the course
+   picker in the note header, and both outrank a single class:
+     - forms.css `textarea { min-height: 80px }`. A one-line block became an
+       80px editor, so every tap moved the rest of the page down by 52px, off
+       the 28px ruling, which is the jump the rule above exists to prevent.
+     - themes.css `html[data-theme] :where(input, textarea, select)`, (0,1,1).
+       Stacks drew the line being typed as a filled, bordered field, Slate gave
+       it a dashed frame, and both boxed the course picker.
+   Scoped under `.nb` (0,2,0) so these resets win without !important. The
+   picker's hover rule further down is also (0,2,0) and later, so it still
+   applies. */
+.nb .nb-input {
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.nb .nb-head-course-select {
+  border: 0;
+  background: none;
+}
+
 /* Revealed source. Marks and commands show in --nb-src so the line the caret
    is on reads as source rather than as broken prose. */
 .nb-src { color: var(--nb-src); }
@@ -675,7 +698,9 @@ button.nb-check[aria-checked='true']::after {
   /* Anchored to the VISUAL viewport via --nb-kb, set from JS. A bar
      positioned against the layout viewport sits BEHIND the keyboard on
      Android — the exact failure §4 names. See useKeyboardInset.js. */
-  bottom: var(--nb-kb, 0px);
+  /* Above the keyboard, or with it down, above the gesture area: the bar is
+     on screen now (#127), and the tab bar it replaces pads the same inset. */
+  bottom: max(var(--nb-kb, 0px), var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
   z-index: 60;
   height: 44px;
   display: flex;
@@ -683,8 +708,14 @@ button.nb-check[aria-checked='true']::after {
   gap: 0;
   overflow-x: auto;
   scrollbar-width: none;
-  background: var(--nb-bar-bg);
+  /* --nb-dock-bg exists for Slate, whose --nb-bar-bg is transparent: docked
+     over the page, a transparent bar drew the note's text through its
+     buttons. Every other theme leaves it unset. */
+  background: var(--nb-dock-bg, var(--nb-bar-bg));
   border-top: 1px solid var(--nb-bar-rule);
+  /* The bar's own ground carried down over the safe-area inset it is lifted
+     by, so the page does not show in a strip beneath it. */
+  box-shadow: 0 var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) 0 0 var(--nb-dock-bg, var(--nb-bar-bg));
 }
 .nb-bar::-webkit-scrollbar { display: none; }
 
@@ -715,12 +746,16 @@ button.nb-check[aria-checked='true']::after {
   background: var(--nb-bar-rule);
 }
 
+/* StudyDesk#127: the tab bar is hidden while the docked bar is up (the
+   editor sets `nb-editing` on <body>). Same pattern as Lock In in timer.css. */
+body.nb-editing .mobile-tabbar { display: none !important; }
+
 /* Highlight long-press popover — three swatches, above the bar. No free
    colour picker (§4). */
 .nb-swatches {
   position: fixed;
   inset-inline-start: 0;
-  bottom: calc(var(--nb-kb, 0px) + 44px);
+  bottom: calc(max(var(--nb-kb, 0px), var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))) + 44px);
   z-index: 61;
   display: flex;
   gap: 8px;

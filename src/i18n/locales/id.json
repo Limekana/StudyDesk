@@ -1051,7 +1051,7 @@
     "clearFormat": "Hapus format",
     "toggleCheck": "Centang atau hapus centang",
     "mathInline": "Matematika",
-    "mathBlock": "Matematika di baris sendiri",
+    "chemEquation": "Persamaan reaksi kimia",
     "insertPhoto": "Sisipkan foto",
     "hlRole": {
       "1": "Tanda — penting",

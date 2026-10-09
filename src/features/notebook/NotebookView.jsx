@@ -47,13 +47,21 @@ export default function NotebookView({ state, dispatch, onDeleteNote, onOpenTime
   // The desktop format row and the "?" sheet (StudyDesk#113, formatSlot.js).
   const wide = useMediaQuery(WIDE);
   const [slotEl, setSlotEl] = useState(null);
-  const [editing, setEditing] = useState(false);
+  // How many editors hold the row, not a flag: moving the caret from box A to
+  // box B mounts B's bar before A lets go, and A's "false" then landed after
+  // B's "true", showing the idle copy beside the live bar (#130).
+  const [editors, setEditors] = useState(0);
+  const editing = editors > 0;
+  const holdEditing = useCallback(() => {
+    setEditors((n) => n + 1);
+    return () => setEditors((n) => Math.max(0, n - 1));
+  }, []);
   const [helpOpen, setHelpOpen] = useState(false);
   const openHelp = useCallback(() => setHelpOpen(true), []);
   const closeHelp = useCallback(() => setHelpOpen(false), []);
   const formatSlot = useMemo(
-    () => ({ slot: wide ? slotEl : null, setEditing, openHelp }),
-    [wide, slotEl, openHelp],
+    () => ({ slot: wide ? slotEl : null, holdEditing, openHelp }),
+    [wide, slotEl, holdEditing, openHelp],
   );
 
   const courses = useMemo(

@@ -1056,7 +1056,7 @@
     "clearFormat": "फ़ॉर्मैटिंग हटाएँ",
     "toggleCheck": "टिक करें या टिक हटाएँ",
     "mathInline": "गणित",
-    "mathBlock": "अलग पंक्ति में गणित",
+    "chemEquation": "रासायनिक समीकरण",
     "insertPhoto": "फ़ोटो जोड़ें",
     "hlRole": {
       "1": "चिह्न — महत्वपूर्ण",

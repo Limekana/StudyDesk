@@ -1056,7 +1056,7 @@
     "clearFormat": "Formatierung entfernen",
     "toggleCheck": "Abhaken oder Haken entfernen",
     "mathInline": "Mathe",
-    "mathBlock": "Mathe in eigener Zeile",
+    "chemEquation": "Chemische Gleichung",
     "insertPhoto": "Foto einfügen",
     "hlRole": {
       "1": "Merken — wichtig",

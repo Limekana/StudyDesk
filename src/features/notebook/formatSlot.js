@@ -13,7 +13,9 @@ import { createContext, useContext, useEffect, useState } from 'react';
 
 export const FormatSlotContext = createContext(null);
 
-/** `{ slot, setEditing, openHelp }`, or null outside the notebook. `slot` is
+/** `{ slot, holdEditing, openHelp }`, or null outside the notebook.
+ *  `holdEditing()` registers an editor whose live bar is in the row and
+ *  returns its release; the row shows its idle copy while none is held. `slot` is
  *  null on narrow screens, where the docked bar is used. */
 export const useFormatSlot = () => useContext(FormatSlotContext);
 

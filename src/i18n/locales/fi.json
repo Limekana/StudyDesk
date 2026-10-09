@@ -1056,7 +1056,7 @@
     "clearFormat": "Poista muotoilu",
     "toggleCheck": "Merkitse tai poista merkintä",
     "mathInline": "Matematiikka",
-    "mathBlock": "Matematiikka omalla rivillään",
+    "chemEquation": "Reaktioyhtälö",
     "insertPhoto": "Lisää kuva",
     "hlRole": {
       "1": "Merkintä — tärkeä",

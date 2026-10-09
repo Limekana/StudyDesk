@@ -4,6 +4,25 @@ import {
   MAX_W, MIN_W, GRID, TRAILING_ROWS,
 } from './layout.js';
 
+describe('a press that barely moved leaves a note unarranged (StudyDesk issue 131, P1)', () => {
+  const full = { x: 0, y: 0, w: MAX_W };
+  it('a 2px jitter on a full-width box settles back to exactly x 0, w 1, y 0', () => {
+    const r = settle(moveTo(full, 0.004, 5));
+    expect(r).toEqual({ x: 0, y: 0, w: MAX_W });
+    expect(isUnarranged([{ ...r, id: 'b0', text: '' }])).toBe(true);
+  });
+  it('a real move is kept', () => {
+    const r = settle(moveTo(full, 0.2, 60));
+    expect(r.x).toBeCloseTo(0.2);
+    expect(r.w).toBeCloseTo(0.8);
+    expect(r.y).toBe(56);
+  });
+  it('a box let go just short of the right edge reaches it', () => {
+    expect(settle({ x: 0.5, y: 0, w: 0.49 }).w).toBeCloseTo(0.5);
+    expect(settle({ x: 0.5, y: 0, w: 0.4 }).w).toBeCloseTo(0.4);
+  });
+});
+
 describe('moving a box (StudyDesk issue 112)', () => {
   const full = { x: 0, y: 0, w: MAX_W };
   it('a full-width box can be dragged sideways: it narrows against the page edge', () => {
