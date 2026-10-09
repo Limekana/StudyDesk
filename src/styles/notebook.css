@@ -791,7 +791,9 @@ button.nb-check[aria-checked='true']::after {
   align-self: center;
   width: 1px;
   height: 18px;
-  margin: 0 4px;
+  /* 2px, not 4: with "?" added (#113) the bar measured 367px on a 360px
+     phone and scrolled sideways; the buttons were already at min-width (#130). */
+  margin: 0 2px;
   background: var(--nb-bar-rule);
 }
 
