@@ -22,6 +22,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import NotebookTree from './NotebookTree.jsx';
 import NoteCanvas from './NoteCanvas.jsx';
+import FormatBar from './FormatBar.jsx';
+import ShortcutSheet from './ShortcutSheet.jsx';
+import { FormatSlotContext, useMediaQuery, WIDE } from './formatSlot.js';
 import { readLayout, writeLayout, isUnarranged } from './layout.js';
 import TimerPill from '../timer/TimerPill.jsx';
 import { readTimerSnapshot, subscribeTimer } from '../../lib/timerSnapshot.js';
@@ -40,6 +43,18 @@ function newId() {
 
 export default function NotebookView({ state, dispatch, onDeleteNote, onOpenTimer }) {
   const { t } = useTranslation();
+
+  // The desktop format row and the "?" sheet (StudyDesk#113, formatSlot.js).
+  const wide = useMediaQuery(WIDE);
+  const [slotEl, setSlotEl] = useState(null);
+  const [editing, setEditing] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const openHelp = useCallback(() => setHelpOpen(true), []);
+  const closeHelp = useCallback(() => setHelpOpen(false), []);
+  const formatSlot = useMemo(
+    () => ({ slot: wide ? slotEl : null, setEditing, openHelp }),
+    [wide, slotEl, openHelp],
+  );
 
   const courses = useMemo(
     () => Object.values(state.courses || {}).filter((c) => c && !c.deletedAt && !c.archivedAt),
@@ -297,12 +312,34 @@ export default function NotebookView({ state, dispatch, onDeleteNote, onOpenTime
           <TimerPill onOpen={onOpenTimer} />
         </header>
 
+        {/* Desktop only. The editor holding the caret portals its own bar into
+            the slot; until one does, an idle copy shows the controls, so
+            formatting can be found before clicking into the page. */}
+        {wide && active && (
+          <div className="nb-format-row">
+            <div className="nb-format-slot" ref={setSlotEl} />
+            {!editing && (
+              <FormatBar
+                idle
+                inline
+                activeType={null}
+                swatchesOpen={false}
+                onSwatches={() => {}}
+                onAction={() => {}}
+                onHelp={openHelp}
+              />
+            )}
+          </div>
+        )}
+
         {active ? (
-          <NoteCanvas
-            key={active.id}
-            boxes={boxes}
-            onChange={updateBoxes}
-          />
+          <FormatSlotContext.Provider value={formatSlot}>
+            <NoteCanvas
+              key={active.id}
+              boxes={boxes}
+              onChange={updateBoxes}
+            />
+          </FormatSlotContext.Provider>
         ) : (
           <div className="nb-empty">
             <p>{t('nb.emptyTitle')}</p>
@@ -311,6 +348,7 @@ export default function NotebookView({ state, dispatch, onDeleteNote, onOpenTime
             </button>
           </div>
         )}
+        {helpOpen && <ShortcutSheet onClose={closeHelp} />}
       </div>
     </div>
   );

@@ -6,6 +6,7 @@
 // is typing into, so an IME's composition is never disturbed.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import Block from './Block.jsx';
 import FormatBar from './FormatBar.jsx';
@@ -17,41 +18,11 @@ import {
 } from './inputRules.js';
 import { useKeyboardInset } from './useKeyboardInset.js';
 import { isComposing, compositionTracking } from '../../lib/imeSubmit.js';
+// The shortcut table moved to shortcuts.js (StudyDesk#113), next to the list
+// the format bar's tooltips and the "?" sheet show, so the two cannot drift.
+import { matchShortcut } from './shortcuts.js';
+import { useFormatSlot } from './formatSlot.js';
 
-// Desktop shortcuts, §5. Word/Docs conventions, unchanged — people arrive
-// already knowing these and an app that reassigns them is picking a fight it
-// cannot win.
-function matchShortcut(e) {
-  const mod = e.metaKey || e.ctrlKey;
-  if (!mod) return null;
-  const k = e.key.toLowerCase();
-
-  if (e.altKey) {
-    if (k === '1') return { kind: 'block', type: BLOCK.H1 };
-    if (k === '2') return { kind: 'block', type: BLOCK.H2 };
-    return null;
-  }
-  if (e.shiftKey) {
-    if (k === 'h') return { kind: 'mark', mark: MARK.HL, role: 1 };
-    if (k === '*' || k === '8') return { kind: 'block', type: BLOCK.BULLET };
-    if (k === '&' || k === '7') return { kind: 'block', type: BLOCK.NUMBER };
-    if (k === '(' || k === '9') return { kind: 'block', type: BLOCK.CHECK };
-    if (k === 'p') return { kind: 'photo' };
-    if (k === 'm') return { kind: 'span', open: '$', close: '$' };
-    if (k === 'e') return { kind: 'span', open: '$$', close: '$$' };
-    return null;
-  }
-  if (k === 'b') return { kind: 'mark', mark: MARK.BOLD };
-  if (k === 'i') return { kind: 'mark', mark: MARK.ITALIC };
-  if (k === 'u') return { kind: 'mark', mark: MARK.UNDERLINE };
-  if (k === '\\') return { kind: 'clear' };
-  // ime-ok: this matcher is pure and is only ever reached from NoteEditor's
-  // keydown, which returns on `isComposing(e, el)` before calling it. It is
-  // also mod-gated — every branch above requires Ctrl/Cmd — so the keystroke
-  // is Ctrl+Enter, not the bare Enter an IME commits with.
-  if (e.key === 'Enter') return { kind: 'toggleCheck' };
-  return null;
-}
 
 export default function NoteEditor({
   value,
@@ -587,6 +558,20 @@ export default function NoteEditor({
   // The bar is rendered by whichever editor holds the caret, and `focus >= 0`
   // is true in at most one of them — so a page of twenty boxes still has one
   // docked bar, not twenty stacked.
+  //
+  // On desktop it goes into the notebook's format row instead of docking
+  // (StudyDesk#113, formatSlot.js), and the row is told, so it can hide its
+  // idle copy for as long as this live one is there.
+  const fmt = useFormatSlot();
+  const slot = fmt?.slot ?? null;
+  const setEditing = fmt?.setEditing;
+  const editingHere = focus >= 0;
+  useEffect(() => {
+    if (!slot || !editingHere || !setEditing) return undefined;
+    setEditing(true);
+    return () => setEditing(false);
+  }, [slot, editingHere, setEditing]);
+
   const bar = focus >= 0 ? (
     <FormatBar
       activeType={currentType}
@@ -595,14 +580,17 @@ export default function NoteEditor({
       onSwatches={setSwatches}
       onAction={applyFromBar}
       canInsertPhoto={typeof onInsertPhoto === 'function'}
+      inline={!!slot}
+      onHelp={fmt?.openHelp}
     />
   ) : null;
+  const placedBar = bar && slot ? createPortal(bar, slot) : bar;
 
   if (embedded) {
     return (
       <div className="nb-box-body" aria-label={ariaLabel}>
         {page}
-        {bar}
+        {placedBar}
       </div>
     );
   }
@@ -610,7 +598,7 @@ export default function NoteEditor({
   return (
     <div className="nb-page-wrap">
       {page}
-      {bar}
+      {placedBar}
     </div>
   );
 }
