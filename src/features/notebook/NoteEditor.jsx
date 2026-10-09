@@ -5,7 +5,7 @@
 // here follows from that one decision: nothing rewrites the element the user
 // is typing into, so an IME's composition is never disturbed.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import Block from './Block.jsx';
@@ -123,16 +123,22 @@ export default function NoteEditor({
   // Where the caret goes in a line that has just been mounted (StudyDesk#129).
   // A fresh textarea starts with the caret at 0, which in a list put the next
   // character in FRONT of the new line's `- `: "- item", Enter, "item2" saved
-  // the paragraph "item2- ". Run on the next frame, after the focus change has
-  // mounted the line, as the Backspace merge below already does.
-  const placeCaret = useCallback((offset) => {
-    requestAnimationFrame(() => {
-      const el = taRef.current;
-      if (!el) return;
-      const off = Math.max(0, Math.min(offset, el.value.length));
-      el.setSelectionRange(off, off);
-    });
-  }, []);
+  // the paragraph "item2- ". Enter, a paste, Backspace-merge and opening a
+  // line all set it here.
+  //
+  // Applied in a layout effect, in the same commit that mounts the line, not
+  // on the next animation frame: a key typed straight after Enter arrived
+  // before the frame and went in at 0 ("more" became "m-ore").
+  const caretTo = useRef(null);
+  const placeCaret = useCallback((offset) => { caretTo.current = offset; }, []);
+  useLayoutEffect(() => {
+    if (caretTo.current === null) return;
+    const el = taRef.current;
+    if (!el) return;
+    const off = Math.max(0, Math.min(caretTo.current, el.value.length));
+    caretTo.current = null;
+    el.setSelectionRange(off, off);
+  });
 
   // A line opened by a tap or click gets its caret at the END, where carrying
   // on writing starts, instead of at 0 in front of its own source (#132).
@@ -468,13 +474,7 @@ export default function NoteEditor({
         all.splice(focus, 1);
         commit(all, focus - 1);
         setDraft(serializeBlock(prev));
-        requestAnimationFrame(() => {
-          const el2 = taRef.current;
-          if (el2) {
-            const off = serializeBlock(prev).length - prev.text.length + caret;
-            el2.setSelectionRange(off, off);
-          }
-        });
+        placeCaret(serializeBlock(prev).length - prev.text.length + caret);
       }
       return;
     }
