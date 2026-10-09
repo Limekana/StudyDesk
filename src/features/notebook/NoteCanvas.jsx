@@ -31,7 +31,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import NoteEditor from './NoteEditor.jsx';
 import {
-  GRID, TRAILING_ROWS, makeBox, placeNewBox, pageHeight, moveTo, resizeTo, settle,
+  GRID, TRAILING_ROWS, makeBox, placeNewBox, pageHeight, moveTo, resizeTo, settle, snapY,
 } from './layout.js';
 
 /** How far a mouse press on a box travels before it is a move, not a click. */
@@ -199,11 +199,15 @@ export default function NoteCanvas({
     const py = e.clientY - rect.top + e.currentTarget.scrollTop;
     // The tap is the box's top-left, unless that would leave a sliver: see
     // placeNewBox in layout.js.
-    const { x, w: width } = placeNewBox(px / w, w);
+    // The boxes already on the line that was tapped, so the new one is not
+    // dropped on top of one of them.
+    const top = snapY(py);
+    const row = boxes.filter((b) => b.y < top + GRID && b.y + Math.max(heights[b.id] || 0, GRID) > top);
+    const { x, w: width } = placeNewBox(px / w, w, row);
     const box = makeBox({ x, y: py, w: width });
     setCreatedId(box.id);
     commit([...boxes, box]);
-  }, [boxes, commit]);
+  }, [boxes, heights, commit]);
 
   // ── Moving and resizing (StudyDesk#112) ─────────────────────────────────
   //

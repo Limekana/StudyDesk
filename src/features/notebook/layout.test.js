@@ -43,6 +43,20 @@ describe('starting a box with a tap (StudyDesk issue 114)', () => {
     expect(r.w).toBeCloseTo(DEFAULT_W);
     expect(r.x).toBeCloseTo(MAX_W - DEFAULT_W);
   });
+  it('never on top of a box already on the tapped line (issue 134 review)', () => {
+    // A phone page, box A at the margin taking 55%; a tap at 80% used to
+    // start a default-width box at 44%, over A's text.
+    const r = placeNewBox(0.8, 322, [{ x: 0, w: 0.55 }]);
+    expect(r.x).toBeGreaterThanOrEqual(0.55 - 1e-9);
+    expect(r.x + r.w).toBeLessThanOrEqual(MAX_W + 1e-9);
+    // A box to the right of the tap bounds it on that side.
+    const s = placeNewBox(0.1, 515, [{ x: 0.5, w: 0.5 }]);
+    expect(s.x).toBeCloseTo(0.1);
+    expect(s.x + s.w).toBeLessThanOrEqual(0.5 + 1e-9);
+  });
+  it('a tap just right of the margin starts at the margin', () => {
+    expect(placeNewBox(0.01, 515).x).toBe(0);
+  });
   it('never off the page, never narrower than MIN_W, whatever it is given', () => {
     for (const [fx, px] of [[-1, 500], [2, 500], [NaN, 500], [0.5, 0], [0.99, 5000]]) {
       const r = placeNewBox(fx, px);

@@ -326,7 +326,7 @@ export default function NotebookView({ state, dispatch, onDeleteNote, onOpenTime
           )}
           {/* Not on a note with nothing in it yet: creating one stamps it, and
               "Edited" on a blank page claims an edit nobody made. */}
-          {active?.updatedAt && String(active.content || '').trim() && (
+          {active?.updatedAt && String(active.content || '').trim() && editedLabel(active.updatedAt) && (
             <span className="nb-head-meta nb-head-meta-edited">
               {t('nb.edited', { when: editedLabel(active.updatedAt) })}
             </span>

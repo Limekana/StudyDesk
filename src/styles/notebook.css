@@ -422,7 +422,7 @@ button.nb-check[aria-checked='true']::after {
      unarranged note has to open pixel-identical to the way it opened before
      this feature, or every existing note visibly shifts on upgrade. The
      markers hang back into this strip, which is where they were too. */
-  margin-inline-start: calc(var(--nb-text-x) - 24px);
+  margin-inline-start: calc(var(--nb-text-x) - var(--nb-box-gutter));
   margin-inline-end: 8px;
   /* The area is the create surface: a press on it starts a box. Without this
      the browser treats a drag here as a text selection and the gesture that
@@ -434,6 +434,9 @@ button.nb-check[aria-checked='true']::after {
      values to hang its markers in the margin (see .is-at-margin). */
   --nb-page-margin-w: var(--nb-margin-w);
   --nb-page-text-x: var(--nb-text-x);
+  /* The gutter inside every box (see .nb-box below), one value for the three
+     places that depend on it. */
+  --nb-box-gutter: 24px;
 }
 
 .nb-box {
@@ -464,8 +467,8 @@ button.nb-check[aria-checked='true']::after {
    column, and spending it again inside every box would cost half the measure
    of a narrow one. */
 .nb-box {
-  --nb-text-x: 24px;
-  --nb-margin-w: 24px;
+  --nb-text-x: var(--nb-box-gutter);
+  --nb-margin-w: var(--nb-box-gutter);
 }
 .nb-box .nb-block { padding-inline-end: 0; }
 
@@ -477,7 +480,13 @@ button.nb-check[aria-checked='true']::after {
    starts at (page text-x - 24px), the rule at page margin-w. The text column
    does not move. Nested items keep their markers right of the rule. */
 .nb-box.is-at-margin {
-  --nb-rule-at: calc(var(--nb-page-margin-w) - var(--nb-page-text-x) + 24px);
+  --nb-rule-at: calc(var(--nb-page-margin-w) - var(--nb-page-text-x) + var(--nb-box-gutter));
+}
+/* While typing, the box's outline leaves its left side to the margin rule:
+   drawn there it ran through the hung markers too. */
+.nb-box.is-at-margin.is-typing .nb-box-body {
+  box-shadow: 0 -1px 0 0 var(--nb-bar-rule), 0 1px 0 0 var(--nb-bar-rule), 1px 0 0 0 var(--nb-bar-rule);
+  border-radius: 0 3px 3px 0;
 }
 .nb-box.is-at-margin .nb-block[data-indent='0'] .nb-marker {
   inset-inline-start: auto;
@@ -585,7 +594,14 @@ button.nb-check[aria-checked='true']::after {
   .nb-canvas-area.is-single .nb-box:not(.is-typing) .nb-box-handle,
   .nb-canvas-area.is-single .nb-box:not(.is-typing) .nb-box-grip {
     opacity: 0;
-    visibility: hidden;
+    pointer-events: none;
+  }
+  /* Still in the keyboard order and the accessibility tree: "Move box" and
+     "Resize box" stay reachable, and show when focused. */
+  .nb-canvas-area.is-single .nb-box:not(.is-typing) .nb-box-handle:focus-visible,
+  .nb-canvas-area.is-single .nb-box:not(.is-typing) .nb-box-grip:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
   }
 }
 
@@ -877,11 +893,11 @@ body.nb-editing .mobile-tabbar { display: none !important; }
   .nb-head-browse-chev::before { content: '\2039'; }
   [dir='rtl'] .nb-head-browse-chev::before { content: '\203A'; }
 
-  /* A full `toLocaleString()` does not fit a 393px bar next to the course
-     select and the two buttons — it squeezed the course name down to "Phy".
-     The list rows are already ordered most-recently-edited first, which is
-     what the timestamp is read for; "Saved to session" stays, because that is
-     §3's meta line and it is three words. */
+  /* No room for "Edited 08:06" in a 384px bar next to the back link, the
+     course picker and the bin: the course name is what gets squeezed. The
+     list rows are already ordered most-recently-edited first, which is what
+     the time is read for; "Saved to session" stays, because that is §3's meta
+     line and it is three words. */
   .nb-head-meta-edited { display: none; }
   .nb-head-course { min-width: 0; }
   .nb-head-course-select { min-width: 0; }
@@ -914,7 +930,19 @@ body.nb-editing .mobile-tabbar { display: none !important; }
      above the notebook go, so the first line of a note sits about 160px
      higher. The notebook keeps its own corner timer pill, and Settings stays
      one click away on every other screen. */
-  .main.is-notebook .topbar { display: none; }
+  /* The title bar leaves the screen but its title stays for screen readers:
+     every other route has an h1, and this one would have had none. The bar's
+     buttons go with it (Settings is a click away on any other screen). */
+  .main.is-notebook .topbar {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    visibility: hidden;
+  }
+  .main.is-notebook .topbar-title { visibility: visible; }
   .main.is-notebook .content { padding-block: 0; }
   .main.is-notebook .nb { min-height: 100dvh; }
   /* The docked bar is a phone answer to a phone problem — there is no soft
@@ -942,14 +970,22 @@ body.nb-editing .mobile-tabbar { display: none !important; }
      header is the sticky element now and the controls stay in reach on a long
      note. It may wrap to a second line in a narrow window rather than clip. */
   .nb-head {
-    position: sticky;
-    top: 0;
-    z-index: 5;
     height: auto;
     min-height: 44px;
     flex-wrap: wrap;
     background: var(--nb-page);
   }
+  /* Sticky only on the notebook's own route, where nothing sits above it. In
+     the Timer hub's Notebook tab the app's title bar is sticky at the same
+     spot and covered it (#134 review). */
+  .main.is-notebook .nb-head {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  /* With the timer pill in the header the line is full: the edited time gives
+     way, so the controls, bin and pill stay on one line (#134 review). */
+  .nb-head:has(.timer-pill) .nb-head-meta-edited { display: none; }
   .nb-format-row {
     display: flex;
     align-items: center;
@@ -967,7 +1003,7 @@ body.nb-editing .mobile-tabbar { display: none !important; }
     background: none;
     border-top: 0;
   }
-  .nb-bar.is-inline .nb-bar-btn { height: 36px; min-width: 30px; }
+  .nb-bar.is-inline .nb-bar-btn { height: 36px; min-width: 28px; }
   .nb-bar.is-inline .nb-bar-btn:hover { color: var(--nb-ink); }
   .nb-bar.is-idle .nb-bar-btn { opacity: 0.7; cursor: default; }
   .nb-bar.is-idle .nb-bar-btn:hover { color: var(--nb-ink-muted); }
@@ -983,6 +1019,17 @@ body.nb-editing .mobile-tabbar { display: none !important; }
     border: 1px solid var(--nb-bar-rule);
     border-top: 0;
   }
+}
+
+/* In a pane narrower than about 700px the header line cannot hold the
+   controls as well: they take a line of their own under it, as the format
+   row always did, rather than wrapping the bin or the timer pill onto a line
+   alone. Measured on the pane, not the window, because the app sidebar, its
+   rail and the notes list all change how much of the window it gets. The
+   outer pane only: the canvas and the editor render their own .nb-page-wrap. */
+.nb > .nb-page-wrap { container: nb-pane / inline-size; }
+@container nb-pane (max-width: 700px) {
+  .nb-head .nb-format-row { order: 5; flex-basis: 100%; }
 }
 
 /* The "?" sheet. The app's own modal; only its contents are styled here. */
