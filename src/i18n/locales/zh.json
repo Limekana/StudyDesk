@@ -980,7 +980,7 @@
     "focusChipPaused": "已暂停"
   },
   "notif": {
-    "planSoonTitle": "学习时段将在 {{n}} 分钟后开始",
+    "planLeadTitle": "学习时段将于 {{time}} 开始",
     "planNowTitle": "学习时段现在开始",
     "planFallback": "学习时段"
   },

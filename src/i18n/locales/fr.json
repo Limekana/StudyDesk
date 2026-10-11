@@ -985,7 +985,7 @@
     "focusChipPaused": "En pause"
   },
   "notif": {
-    "planSoonTitle": "Bloc de révision dans {{n}} min",
+    "planLeadTitle": "Bloc de révision à {{time}}",
     "planNowTitle": "Le bloc de révision commence",
     "planFallback": "Session de révision"
   },

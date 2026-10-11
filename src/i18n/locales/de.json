@@ -980,7 +980,7 @@
     "focusChipPaused": "Pausiert"
   },
   "notif": {
-    "planSoonTitle": "Lernblock in {{n}} Min",
+    "planLeadTitle": "Lernblock um {{time}}",
     "planNowTitle": "Lernblock beginnt jetzt",
     "planFallback": "Lernsitzung"
   },

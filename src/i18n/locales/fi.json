@@ -980,7 +980,7 @@
     "focusChipPaused": "Tauolla"
   },
   "notif": {
-    "planSoonTitle": "Opiskelujakso {{n}} min kuluttua",
+    "planLeadTitle": "Opiskelujakso alkaa klo {{time}}",
     "planNowTitle": "Opiskelujakso alkaa nyt",
     "planFallback": "Opiskelujakso"
   },

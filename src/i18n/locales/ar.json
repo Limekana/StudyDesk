@@ -1000,7 +1000,7 @@
     "focusChipPaused": "موقفة مؤقتاً"
   },
   "notif": {
-    "planSoonTitle": "فترة دراسة بعد {{n}} دقيقة",
+    "planLeadTitle": "فترة الدراسة تبدأ الساعة {{time}}",
     "planNowTitle": "فترة الدراسة تبدأ الآن",
     "planFallback": "جلسة دراسة"
   },

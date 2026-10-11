@@ -2,7 +2,7 @@
 // Moved out of App.jsx unchanged and called from the same place (limecore#12).
 import { useEffect, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
-import { cancelAllNotifications, scheduleNotifications } from "../lib/planNotifications.js";
+import { cancelAllNotifications, scheduleNotifications, planLeadTitle } from "../lib/planNotifications.js";
 import { startPlanReminderLoop, webNotifySupported } from "../lib/webNotify.js";
 
 export function useReminders({ onboarded, state, t }) {
@@ -59,7 +59,7 @@ export function useReminders({ onboarded, state, t }) {
     labels: {
       fallback: t('notif.planFallback'),
       now: t('notif.planNowTitle'),
-      soon: (n) => t('notif.planSoonTitle', { n }),
+      soon: (at) => planLeadTitle(t, at),
     },
   };
   useEffect(() => {

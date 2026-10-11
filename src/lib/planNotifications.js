@@ -1,5 +1,5 @@
 import { LocalNotifications } from "@capacitor/local-notifications";
-import { parseLocalDate, addDays } from "./dates.js";
+import { parseLocalDate, addDays, fmtTime } from "./dates.js";
 import { DIFFICULTY_DAYS } from "./examDifficulty.js";
 import { dueDayReminderAt } from "./dueAt.js";
 import { studyStartDate } from "./deadlines.js";
@@ -55,6 +55,25 @@ export async function cancelAllNotifications() {
  *  ones that survive the cap are the ones arriving soonest. */
 const PLAN_NOTIFY_HORIZON_DAYS = 30;
 const PLAN_NOTIFY_MAX = 60;
+
+/** v1.19 — SD#137: every reminder is allowed to fire while the phone idles.
+ *  Without the flag the plugin schedules `setExact(RTC)`, a non-wakeup alarm
+ *  that Doze holds until the next maintenance window or until the screen comes
+ *  on, which is how a "30 min" reminder reached an S24 13 minutes before the
+ *  block. With it the plugin uses `setExactAndAllowWhileIdle(RTC_WAKEUP)`.
+ *  Applied once, where the batch is handed over, so a reminder added later
+ *  cannot leave it out. */
+const allowWhileIdle = (n) => ({ ...n, schedule: { ...n.schedule, allowWhileIdle: true } });
+
+/** The lead reminder's title, naming the block's start time.
+ *  v1.19 — SD#137: it used to say "in {n} min", worked out at schedule time,
+ *  while Android stamps the notification with its delivery time, so a late
+ *  alarm showed a countdown that was wrong by however late it was. "at 15:00"
+ *  stays true whenever it lands. Shared with the web loop (useReminders.js) so
+ *  both paths say the same thing. */
+export function planLeadTitle(t, at) {
+  return t('notif.planLeadTitle', { time: fmtTime(at) });
+}
 
 export async function scheduleNotifications(exams, assignments, courses, plannedSessions, planPrefs, t) {
   try {
@@ -156,7 +175,7 @@ export async function scheduleNotifications(exams, assignments, courses, planned
           const leadAt = at - lead * 60 * 1000;
           if (leadAt > now) {
             notes.push({
-              id: id++, title: t('notif.planSoonTitle', { n: lead }), body: label,
+              id: id++, title: planLeadTitle(t, at), body: label,
               schedule: { at: new Date(leadAt) },
               smallIcon: "ic_stat_studydesk", iconColor: "#8b4a62",
               extra: { view: "timer" },
@@ -176,7 +195,7 @@ export async function scheduleNotifications(exams, assignments, courses, planned
       }
     }
 
-    if (notes.length > 0) await LocalNotifications.schedule({ notifications: notes });
+    if (notes.length > 0) await LocalNotifications.schedule({ notifications: notes.map(allowWhileIdle) });
   } catch(e) {
     console.error("[StudyDesk] scheduleNotifications failed:", e);
   }

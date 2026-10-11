@@ -975,7 +975,7 @@
     "focusChipPaused": "Dijeda"
   },
   "notif": {
-    "planSoonTitle": "Blok belajar dalam {{n}} mnt",
+    "planLeadTitle": "Blok belajar pukul {{time}}",
     "planNowTitle": "Blok belajar dimulai sekarang",
     "planFallback": "Sesi belajar"
   },

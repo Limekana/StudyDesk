@@ -985,7 +985,7 @@
     "focusChipPaused": "Em pausa"
   },
   "notif": {
-    "planSoonTitle": "Bloco de estudo em {{n}} min",
+    "planLeadTitle": "Bloco de estudo às {{time}}",
     "planNowTitle": "O bloco de estudo começa agora",
     "planFallback": "Sessão de estudo"
   },

@@ -980,7 +980,7 @@
     "focusChipPaused": "रोका गया"
   },
   "notif": {
-    "planSoonTitle": "{{n}} मिनट में अध्ययन ब्लॉक",
+    "planLeadTitle": "अध्ययन ब्लॉक {{time}} बजे शुरू",
     "planNowTitle": "अध्ययन ब्लॉक अब शुरू",
     "planFallback": "अध्ययन सत्र"
   },
