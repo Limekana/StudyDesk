@@ -5,14 +5,14 @@ import { setErrorReportsEnabled, useErrorReportsEnabled } from '../../lib/errorR
 import { useTranslation } from 'react-i18next';
 import { setLanguage, SUPPORTED_LANGS, LANGUAGE_NAMES } from '../../i18n/index.js';
 import { useScrollSelectedIntoView } from '../../lib/useScrollSelectedIntoView.js';
-import { supabase } from '../../lib/supabase.js';
+import { supabase, clearStoredSession } from '../../lib/supabase.js';
+import { clearOwner } from '../../lib/deviceOwner.js';
 import { setGuestMode } from '../../lib/guestMode.js';
 import PeriodHistory from '../grades/PeriodHistory.jsx';
 import * as sync from '../../lib/sync.js';
 import * as outbox from '../../lib/outbox.js';
 import { reconcileUnsynced } from '../../lib/reconcile.js';
-import { clearEntitlement } from '../../lib/entitlement.js';
-import { clearAvatarCache } from '../../lib/profile.js';
+import { wipeAccountLocalData } from '../../lib/accountWipe.js';
 import ProfileSection from './ProfileSection.jsx';
 import ChangeEmail from './ChangeEmail.jsx';
 import SupporterBlock from './SupporterBlock.jsx';
@@ -36,6 +36,9 @@ import { feedbackStatus, SHOW_FEEDBACK_STATUS } from '../../lib/feedbackStatus.j
 
 // Product names, the same in every language.
 const APP_NAMES = { ncc: 'NCC', limelog: 'LimeLog', studydesk: 'StudyDesk' };
+// v1.18.1 (StudyDesk#139): how long sign-out waits for the server before
+// signing out on this device only.
+const SIGN_OUT_WAIT_MS = 3000;
 
 // limecore#17: newest first, one row per id. A server row replaces the local
 // copy made at send time, so the list never shows the same report twice.
@@ -492,25 +495,55 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
   }, [fbMessage, fbCategory, fbRating, session, showFlash, t]);
 
   const onSignOut = useCallback(async () => {
-    if (!(await confirm(t('settings.signOutConfirm')))) return;
+    // v1.18.1 (StudyDesk#139): the wipe below drops whatever has not reached
+    // the cloud yet. Say how much, rather than a confirm that promises the
+    // data "stays in the cloud".
+    const unsent = outbox.getStatus().pending;
+    const question = unsent > 0
+      ? t('settings.signOutUnsynced', { count: unsent })
+      : t('settings.signOutConfirm');
+    if (!(await confirm(question))) return;
     setSigningOut(true);
     try {
       // Drain-then-wipe order preserved from the v1.1.1 / AUDIT-SD-FSG-2 work:
       // clear the outbox + reset reducer state BEFORE the auth round-trip so a
       // queued retry can't replay user A's writes against the next user, and a
       // shared device shows no residue.
-      outbox.clear();
-      // v1.12 Item 5 — leaving the previous account's entitlement behind would
-      // hand the next user of a shared device a paid perk. Same reasoning as
-      // every other on-signout local wipe in the suite.
-      clearEntitlement();
-      // v1.12 Item 9 - same shared-device reasoning: a cached signed URL would
-      // show user A's face to user B.
-      clearAvatarCache();
+      // v1.12 Items 5 and 9: the entitlement (a paid perk) and the cached
+      // avatar URL go too. v1.18.1: one list for every wipe, calendar feeds
+      // included (src/lib/accountWipe.js).
+      wipeAccountLocalData();
       dispatch({ type: 'RESET_AFTER_SIGNOUT' });
       setGuestMode(true);
       window.dispatchEvent(new CustomEvent('studydesk:guest-mode-changed'));
-      await supabase.auth.signOut({ scope: 'local' });
+      // v1.18.1 (limecore#59 §1): the local data is wiped, so it has no owner.
+      clearOwner();
+      // v1.18.1 (StudyDesk#139): offline, auth-js resolves the session first
+      // (an expired token means its refresh retry chain) and then returns a
+      // network error WITHOUT removing the session: the user saw "signed out"
+      // and came back signed in. Give it a few seconds; past that, or on any
+      // error, remove the stored session here and tell App, since auth-js
+      // emits no SIGNED_OUT then.
+      let timer;
+      const call = supabase.auth.signOut({ scope: 'local' }).then(({ error }) => error ?? null, (error) => error);
+      const outcome = await Promise.race([
+        call,
+        new Promise((res) => { timer = setTimeout(() => res('timeout'), SIGN_OUT_WAIT_MS); }),
+      ]);
+      clearTimeout(timer);
+      if (outcome) {
+        console.warn('[studydesk] sign-out did not reach the server; removing the local session:', outcome === 'timeout' ? 'timed out' : outcome.message);
+        await clearStoredSession();
+        window.dispatchEvent(new CustomEvent('studydesk:signed-out-local'));
+        // The call is still queued behind any refresh in flight, which may
+        // save the old session again first. When the call finally settles,
+        // remove it once more if the call failed, then let App accept
+        // sessions again.
+        void call.then(async (lateError) => {
+          if (lateError) await clearStoredSession();
+          window.dispatchEvent(new CustomEvent('studydesk:sign-out-settled'));
+        });
+      }
       showFlash(t('settings.signedOutLocal'));
     } catch (e) {
       showFlash(t('settings.signOutFailed', { msg: e.message }));
@@ -539,9 +572,11 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
     try {
       await deleteAccount({
         clearLocal: async () => {
-          outbox.clear();
-          clearEntitlement();
-          clearAvatarCache();
+          wipeAccountLocalData();
+          // v1.18.1 (limecore#59 §1): the data is gone, so it has no owner;
+          // otherwise guest data made afterwards would be wiped by the next
+          // account to sign in.
+          clearOwner();
           dispatch({ type: 'RESET_AFTER_SIGNOUT' });
           for (const k of ['studydesk-v1', 'studydesk-needs-initial-push',
                            'studydesk-onboarded', 'studydesk-grade-mode', 'sd-timer']) {

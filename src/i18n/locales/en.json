@@ -189,6 +189,8 @@
     "profileSaved": "Profile saved",
     "profileSaveFailed": "Couldn't save profile: {{msg}}",
     "signOutConfirm": "Sign out of StudyDesk? Your synced data stays in the cloud and will reappear when you sign back in.",
+    "signOutUnsynced_one": "Sign out? 1 change on this device hasn't reached the cloud yet and will be lost.",
+    "signOutUnsynced_other": "Sign out? {{count}} changes on this device haven't reached the cloud yet and will be lost.",
     "signedOutLocal": "Signed out · local mode",
     "signOutFailed": "Sign-out failed: {{msg}}",
     "notSignedIn": "Not signed in",

@@ -6,6 +6,7 @@
 
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { supabase } from './supabase.js';
+import { tokenUserId } from './deviceOwner.js';
 
 const SuiteSso = registerPlugin('SuiteSso');
 
@@ -153,8 +154,13 @@ async function fallbackSession(bundle) {
 }
 
 /** Pull NCC's active session and apply it to StudyDesk's Supabase client.
- *  No-op on web. Returns { ok, reason?, email? }. */
-export async function inheritFromNexus() {
+ *  No-op on web. Returns { ok, reason?, email? }.
+ *
+ *  v1.18.1 (limecore#59 §1): `onlyUserId`, when given, refuses a bundle for a
+ *  different account (`reason: 'other-account'`). The automatic sign-in at
+ *  startup passes this device's data owner, so another account signed in to
+ *  NCC is never adopted silently; the user can still pick it on AuthGate. */
+export async function inheritFromNexus({ onlyUserId } = {}) {
   if (!Capacitor.isNativePlatform()) {
     return { ok: false, reason: 'Cross-app sign-in is only available on Android.' };
   }
@@ -175,6 +181,9 @@ export async function inheritFromNexus() {
   }
   if (!bundle.access_token || !bundle.refresh_token) {
     return { ok: false, reason: 'Nexus session missing required tokens.' };
+  }
+  if (onlyUserId && tokenUserId(bundle.access_token) !== onlyUserId) {
+    return { ok: false, reason: 'other-account' };
   }
   return adoptSession(bundle);
 }

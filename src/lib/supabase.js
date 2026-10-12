@@ -43,11 +43,13 @@ const capacitorStorage = {
 };
 
 const isNative = Capacitor.isNativePlatform();
+// Also read by readStoredSession() below.
+const SESSION_STORAGE_KEY = 'studydesk-supabase-session';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     storage: isNative ? capacitorStorage : undefined,
-    storageKey: 'studydesk-supabase-session',
+    storageKey: SESSION_STORAGE_KEY,
     autoRefreshToken: true,
     persistSession: true,
     // Native handles the OAuth callback manually via the `appUrlOpen` deep-link
@@ -59,6 +61,37 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     flowType: 'pkce',
   },
 });
+
+// v1.18.1 (StudyDesk#142, #139) — the session supabase-js stored, read and
+// removed without the network. Offline with an expired access token,
+// getSession() refreshes first and retries for ~50 s before answering null;
+// App opens on this stored copy after a short head start instead. And auth-js
+// only removes the session after its logout call succeeds, so an offline
+// sign-out removes it here. Same storage and key as the client above.
+const sessionStorage_ = isNative
+  ? capacitorStorage
+  : {
+      getItem: async (k) => localStorage.getItem(k),
+      removeItem: async (k) => localStorage.removeItem(k),
+    };
+
+export async function readStoredSession() {
+  try {
+    const raw = await sessionStorage_.getItem(SESSION_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || !parsed.user?.id || !parsed.refresh_token) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export async function clearStoredSession() {
+  try {
+    await sessionStorage_.removeItem(SESSION_STORAGE_KEY);
+  } catch { /* nothing stored, or storage unavailable */ }
+}
 
 // ── Mobile session durability (v1.10) ───────────────────────────────────
 // Ported from NCC's supabase.ts, which got this in v1.7; this app never did.

@@ -189,6 +189,8 @@
     "profileSaved": "Profiili tallennettu",
     "profileSaveFailed": "Profiilin tallennus epäonnistui: {{msg}}",
     "signOutConfirm": "Kirjaudutaanko ulos StudyDeskistä? Synkronoidut tietosi säilyvät pilvessä ja palaavat kun kirjaudut takaisin.",
+    "signOutUnsynced_one": "Kirjaudutaanko ulos? 1 muutos tällä laitteella ei ole vielä pilvessä ja menetetään.",
+    "signOutUnsynced_other": "Kirjaudutaanko ulos? {{count}} muutosta tällä laitteella ei ole vielä pilvessä ja ne menetetään.",
     "signedOutLocal": "Kirjauduttu ulos · paikallinen tila",
     "signOutFailed": "Uloskirjautuminen epäonnistui: {{msg}}",
     "notSignedIn": "Ei kirjautunut",

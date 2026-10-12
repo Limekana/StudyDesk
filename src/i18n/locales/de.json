@@ -189,6 +189,8 @@
     "profileSaved": "Profil gespeichert",
     "profileSaveFailed": "Profil konnte nicht gespeichert werden: {{msg}}",
     "signOutConfirm": "Von StudyDesk abmelden? Deine synchronisierten Daten bleiben in der Cloud und erscheinen wieder, wenn du dich erneut anmeldest.",
+    "signOutUnsynced_one": "Abmelden? 1 Änderung auf diesem Gerät ist noch nicht in der Cloud und geht verloren.",
+    "signOutUnsynced_other": "Abmelden? {{count}} Änderungen auf diesem Gerät sind noch nicht in der Cloud und gehen verloren.",
     "signedOutLocal": "Abgemeldet · lokaler Modus",
     "signOutFailed": "Abmeldung fehlgeschlagen: {{msg}}",
     "notSignedIn": "Nicht angemeldet",

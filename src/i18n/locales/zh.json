@@ -189,6 +189,7 @@
     "profileSaved": "资料已保存",
     "profileSaveFailed": "无法保存资料：{{msg}}",
     "signOutConfirm": "退出 StudyDesk？你的同步数据保留在云端，重新登录后会重新出现。",
+    "signOutUnsynced_other": "要退出登录吗？此设备上有 {{count}} 项更改尚未同步到云端，将会丢失。",
     "signedOutLocal": "已退出 · 本地模式",
     "signOutFailed": "退出失败：{{msg}}",
     "notSignedIn": "未登录",

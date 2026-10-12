@@ -3,7 +3,9 @@ import { useTranslation } from "react-i18next";
 import { fmtToday } from "./lib/dates.js";
 import { App as CapApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
-import { supabase } from "./lib/supabase.js";
+import { supabase, readStoredSession } from "./lib/supabase.js";
+import { startSessionBoot } from "./lib/sessionBoot.js";
+import { claimForUser, readOwner } from "./lib/deviceOwner.js";
 import AuthGate from "./features/auth/AuthGate.jsx";
 import SetPasswordScreen from "./features/auth/SetPasswordScreen.jsx";
 import { isRecoveryPending, subscribeRecovery } from "./lib/passwordRecovery.js";
@@ -11,6 +13,7 @@ import { isGuestMode, setGuestMode } from "./lib/guestMode.js";
 import { scheduleOriginStamp } from "./lib/originMarker.js";
 import { watchAppOpens } from "./lib/appOpens.js";
 import { refreshEntitlement } from "./lib/entitlement.js";
+import { wipeAccountLocalData } from "./lib/accountWipe.js";
 import { downloadExport } from "./lib/dataRights.js";
 import StorageAlert from "./features/settings/StorageAlert.jsx";
 import FdroidUpdateNote from "./features/update/FdroidUpdateNote.jsx";
@@ -243,49 +246,31 @@ export default function App() {
     if (!session) { setOnboardChecked(true); return; }
     let cancelled = false;
     setOnboardChecked(false);
+    // v1.18.1 (StudyDesk#142): offline on a stored session, this check waits
+    // on the same ~50 s token refresh, and until it answers neither the
+    // wizard nor the app renders. Stop waiting after a few seconds; a late
+    // "already onboarded" still lands.
+    const giveUp = setTimeout(() => { if (!cancelled) setOnboardChecked(true); }, 5000);
     hydrateOnboardedFromCloud().then((done) => {
+      clearTimeout(giveUp);
       if (cancelled) return;
       if (done) setOnboarded(true);
       setOnboardChecked(true);
     });
-    return () => { cancelled = true; };
+    return () => { cancelled = true; clearTimeout(giveUp); };
   }, [session]);
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      let { data } = await supabase.auth.getSession();
-
-      // v1.1 — auto-inherit from NCC on cold start when no local session.
-      //
-      // Why: Supabase rotates refresh_tokens on every refresh. NCC and
-      // StudyDesk share ONE logical session via the SSO bundle but each
-      // app's supabase client persists its own copy. When NCC's background
-      // auto-refresh rotates the token, StudyDesk's stored refresh_token
-      // becomes stale; its next refresh attempt fails; onAuthStateChange
-      // fires SIGNED_OUT. Symptom: every cold start lands the user on
-      // AuthGate needing to tap Continue with Nexus again.
-      //
-      // Fix: when getSession() returns null, probe NCC's ContentProvider
-      // and silently inherit. As long as NCC is signed in, this re-syncs
-      // StudyDesk to the latest published bundle without user-visible
-      // re-auth. Guest mode and the web platform short-circuit this path.
-      if (!data.session && !isGuestMode() && Capacitor.isNativePlatform()) {
-        try {
-          const result = await inheritFromNexus();
-          if (result.ok) {
-            ({ data } = await supabase.auth.getSession());
-          }
-        } catch (e) {
-          console.warn("[studydesk] auto-inherit on init failed:", e);
-        }
+    // v1.18.1 (limecore#59 §1): one place every session passes through. When
+    // it belongs to a different account than the local data, that data (and
+    // the outbox) is wiped BEFORE the pull and the reconciler see the new
+    // session; otherwise the second account would see the first account's
+    // courses, grades and notes, and upload its unsynced rows as its own.
+    const applySession = (s, event) => {
+      if (claimForUser(s?.user?.id)) {
+        console.warn("[studydesk] a different account signed in; clearing the previous account's local data");
+        wipeAccountLocalData();
+        dispatch({ type: "RESET_AFTER_SIGNOUT" });
       }
-
-      if (!cancelled) setSession(data.session);
-      // ACT-5 — cover the restored-session path too, not just fresh sign-ins.
-      // Every account that predates this instrumentation only ever appears here.
-      scheduleOriginStamp(data.session?.user ?? null);
-    })();
-    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       scheduleOriginStamp(s?.user ?? null);
       // v1.1 — any successful sign-in clears guestMode so the user resumes
@@ -301,8 +286,50 @@ export default function App() {
         setGuestMode(false);
         window.dispatchEvent(new CustomEvent("studydesk:guest-mode-changed"));
       }
-    });
-    return () => { cancelled = true; sub.subscription.unsubscribe(); };
+    };
+
+    // v1.1 — auto-inherit from NCC on cold start when no local session.
+    //
+    // Why: Supabase rotates refresh_tokens on every refresh. NCC and
+    // StudyDesk share ONE logical session via the SSO bundle but each
+    // app's supabase client persists its own copy. When NCC's background
+    // auto-refresh rotates the token, StudyDesk's stored refresh_token
+    // becomes stale; its next refresh attempt fails; onAuthStateChange
+    // fires SIGNED_OUT. Symptom: every cold start lands the user on
+    // AuthGate needing to tap Continue with Nexus again.
+    //
+    // Fix: when there is no session, probe NCC's ContentProvider and
+    // silently inherit. As long as NCC is signed in, this re-syncs
+    // StudyDesk to the latest published bundle without user-visible
+    // re-auth. Guest mode and the web platform short-circuit this path.
+    // v1.18.1 (limecore#59 §1): only the account that owns this device's
+    // data is inherited silently; another one waits for the user on AuthGate.
+    const inherit = async () => {
+      if (isGuestMode() || !Capacitor.isNativePlatform()) return null;
+      try {
+        const result = await inheritFromNexus({ onlyUserId: readOwner() || undefined });
+        if (result.ok) return (await supabase.auth.getSession()).data.session;
+      } catch (e) {
+        console.warn("[studydesk] auto-inherit on init failed:", e);
+      }
+      return null;
+    };
+
+    // v1.18.1 (StudyDesk#142): see src/lib/sessionBoot.js.
+    const boot = startSessionBoot({ auth: supabase.auth, readStoredSession, inherit, apply: applySession });
+    // A sign-out that could not reach the server (SettingsView) removes the
+    // stored session itself; auth-js then emits nothing, so it says so here.
+    // Held until SettingsView reports the signOut call settled, so a refresh
+    // still in flight cannot sign the user back in meanwhile.
+    const onLocalSignOut = () => { boot.holdSignedOut(true); setSession(null); };
+    const onSignOutSettled = () => boot.holdSignedOut(false);
+    window.addEventListener("studydesk:signed-out-local", onLocalSignOut);
+    window.addEventListener("studydesk:sign-out-settled", onSignOutSettled);
+    return () => {
+      boot.cancel();
+      window.removeEventListener("studydesk:signed-out-local", onLocalSignOut);
+      window.removeEventListener("studydesk:sign-out-settled", onSignOutSettled);
+    };
   }, []);
   // Listen for guest-mode flag changes triggered by AuthGate (set) or the
   // sign-out path below (clear). localStorage doesn't emit change events

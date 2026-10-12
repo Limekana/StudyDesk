@@ -188,6 +188,7 @@
     "profileSaved": "Profil disimpan",
     "profileSaveFailed": "Gagal menyimpan profil: {{msg}}",
     "signOutConfirm": "Keluar dari StudyDesk? Data yang sudah tersinkron tetap ada di awan dan akan muncul lagi saat kamu masuk kembali.",
+    "signOutUnsynced_other": "Keluar? {{count}} perubahan di perangkat ini belum sampai ke cloud dan akan hilang.",
     "signedOutLocal": "Sudah keluar · mode lokal",
     "signOutFailed": "Gagal keluar: {{msg}}",
     "notSignedIn": "Belum masuk",
