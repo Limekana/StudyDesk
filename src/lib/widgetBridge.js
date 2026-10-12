@@ -11,6 +11,8 @@
 
 import { registerPlugin, Capacitor } from '@capacitor/core';
 import { resolveWidgetPalette } from './theme.js';
+import { parseLocalDate } from './dates.js';
+import { rankOpenDeadlines as rank } from './dueAt.js';
 
 const WidgetBridge = registerPlugin('WidgetBridge');
 
@@ -58,23 +60,6 @@ export function onWidgetNavigate(handler) {
 }
 
 /**
- * Ranking, identical to the daily Next Up digest in App.jsx: everything not
- * done that has a due date, soonest first. Exams before assignments on ties,
- * because an exam is the less reschedulable of the two.
- */
-function rank(assignments, exams) {
-  const live = [
-    ...exams.filter((e) => !e.done && e.dueDate).map((e) => ({ ...e, kind: 'exam' })),
-    ...assignments.filter((a) => !a.done && a.dueDate).map((a) => ({ ...a, kind: 'assignment' })),
-  ];
-  return live.sort((a, b) => {
-    const d = new Date(a.dueDate) - new Date(b.dueDate);
-    if (d !== 0) return d;
-    return a.kind === b.kind ? 0 : a.kind === 'exam' ? -1 : 1;
-  });
-}
-
-/**
  * "Today" / "Tomorrow" / a short date.
  *
  * Uses the device locale rather than the app's i18n bundle: the widget is
@@ -83,8 +68,11 @@ function rank(assignments, exams) {
  * dates, not elapsed hours — something due at 09:00 tomorrow is "Tomorrow" at
  * 23:00 tonight, even though that is only ten hours away.
  */
-function whenLabel(dueDate, locale) {
-  const due = new Date(dueDate);
+export function whenLabel(dueDate, locale) {
+  // v1.18.1 (StudyDesk#151): LOCAL midnight. `new Date('YYYY-MM-DD')` is UTC
+  // midnight, which west of UTC is the previous evening: an item due today
+  // read as yesterday, and one due tomorrow as "Today".
+  const due = parseLocalDate(dueDate);
   const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   const days = Math.round((startOfDay(due) - startOfDay(new Date())) / 86400000);
   if (days === 0) return { days, today: true, text: null };

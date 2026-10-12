@@ -2,6 +2,7 @@
 import { isGradeMode, normalizeScale, DEFAULT_CUSTOM_SCALE } from "./gradeScale.js";
 import { applyRemotePull } from "./merge.js";
 import { normalizeDueTime } from "./dueAt.js";
+import { toLocalISO } from "./dates.js";
 
 function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 // IDs that flow into Supabase MUST be proper UUIDs — the columns are typed `uuid`.
@@ -204,7 +205,7 @@ export function reducer(state, action) {
     case "SET_VIEW":      return {...state,view:action.view,activeCourse:action.course!==undefined?action.course:state.activeCourse};
 
     // ── Grades (new schema: per-grade rows linked to a subject) ──
-    case "ADD_GRADE":    { const g={id:action.id||newSyncId(),subjectId:action.subjectId,grade:Number(action.grade),weight:Number(action.weight??1),date:action.date||new Date().toISOString().slice(0,10),updatedAt:action.updatedAt||new Date().toISOString(),deletedAt:null}; return {...state,grades:[...(state.grades||[]),g]}; }
+    case "ADD_GRADE":    { const g={id:action.id||newSyncId(),subjectId:action.subjectId,grade:Number(action.grade),weight:Number(action.weight??1),date:action.date||toLocalISO(new Date()), /* v1.18.1 (#151): local date, not UTC */updatedAt:action.updatedAt||new Date().toISOString(),deletedAt:null}; return {...state,grades:[...(state.grades||[]),g]}; }
     case "EDIT_GRADE":   return {...state,grades:(state.grades||[]).map(g=>g.id===action.id?{...g,subjectId:action.subjectId??g.subjectId,grade:action.grade!==undefined?Number(action.grade):g.grade,weight:action.weight!==undefined?Number(action.weight):g.weight,date:action.date??g.date,updatedAt:new Date().toISOString()}:g)};
     case "DELETE_GRADE": { const stamp=new Date().toISOString(); return {...state,grades:(state.grades||[]).map(g=>g.id===action.id?{...g,deletedAt:stamp,updatedAt:stamp}:g)}; }
 

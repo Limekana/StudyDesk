@@ -1093,7 +1093,7 @@
       "http": "Server mengembalikan galat.",
       "network": "Tidak dapat menghubungi alamat itu."
     },
-    "repeatingNote": "{{count}} acara berulang diimpor sebagai satu tanggal",
+    "repeatingNote_one": "{{count}} acara berulang diimpor sebagai satu tanggal",
     "repeatingNote_other": "{{count}} acara berulang diimpor sebagai satu tanggal masing-masing"
   },
   "att": {

@@ -1103,7 +1103,7 @@
       "http": "El servidor devolvió un error.",
       "network": "No se pudo acceder a esa dirección."
     },
-    "repeatingNote": "{{count}} evento repetido importado como una sola fecha",
+    "repeatingNote_one": "{{count}} evento repetido importado como una sola fecha",
     "repeatingNote_other": "{{count}} eventos repetidos importados como una sola fecha cada uno"
   },
   "att": {

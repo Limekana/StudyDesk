@@ -1098,7 +1098,7 @@
       "http": "Der Server meldete einen Fehler.",
       "network": "Diese Adresse war nicht erreichbar."
     },
-    "repeatingNote": "{{count}} wiederkehrender Termin als einzelnes Datum importiert",
+    "repeatingNote_one": "{{count}} wiederkehrender Termin als einzelnes Datum importiert",
     "repeatingNote_other": "{{count}} wiederkehrende Termine als je ein einzelnes Datum importiert"
   },
   "att": {

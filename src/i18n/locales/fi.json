@@ -1098,7 +1098,7 @@
       "http": "Palvelin palautti virheen.",
       "network": "Osoitteeseen ei saatu yhteyttä."
     },
-    "repeatingNote": "{{count}} toistuva tapahtuma tuotiin yhtenä päivänä",
+    "repeatingNote_one": "{{count}} toistuva tapahtuma tuotiin yhtenä päivänä",
     "repeatingNote_other": "{{count}} toistuvaa tapahtumaa tuotiin kukin yhtenä päivänä"
   },
   "att": {

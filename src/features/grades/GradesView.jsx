@@ -10,6 +10,7 @@ import {
   toFactor, fromFactor, shareOfCourse,
 } from '../../lib/gradeWeight.js';
 import PastCourseModal from './PastCourseModal.jsx';
+import { toLocalISO } from '../../lib/dates.js';
 
 // Grade rows go straight to Supabase, where `id` is a strict UUID column.
 // crypto.randomUUID() is browser-native (since Chromium 92 / 2021) — Capacitor's
@@ -283,8 +284,8 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
           <div className="gv-gpa">
             {/* Three modes, and this had two branches — so 'custom' fell into
                 the IB arm and a Finnish 4-10 average was captioned "IB
-                Average". The number underneath was right; the word above it
-                was not, which is the worse of the two ways to be wrong. */}
+                Average". (The number was wrong too until v1.18.1, #147: it
+                went through the US percent ladder.) */}
             <div className="gv-gpa-label">
               {mode === 'us' ? t('gv.gpa')
                 : mode === 'custom' ? (scale.name || t('gv.customAverage'))
@@ -418,7 +419,8 @@ function GradeEditModal({ mode, scale, subjects, archivedSubjects = [], allGrade
   const everyCourse = [...subjects, ...archivedSubjects];
   const [subjectId, setSubjectId] = useState(initial.subjectId || everyCourse[0]?.id || '');
   const [grade, setGrade] = useState(initial.grade != null ? String(initial.grade) : '');
-  const [date, setDate] = useState(initial.date || new Date().toISOString().slice(0, 10));
+  // v1.18.1 (StudyDesk#151): today's LOCAL date, not the UTC one.
+  const [date, setDate] = useState(initial.date || toLocalISO(new Date()));
 
   // v1.14 Item 8b. The mode is remembered per device, so a user who thinks in
   // percentages says so once. The stored factor is unchanged by any of it.

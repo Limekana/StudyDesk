@@ -1,7 +1,7 @@
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { parseLocalDate, addDays } from "./dates.js";
 import { DIFFICULTY_DAYS } from "./examDifficulty.js";
-import { dueDayReminderAt } from "./dueAt.js";
+import { dueDayReminderAt, rankOpenDeadlines } from "./dueAt.js";
 import { studyStartDate } from "./deadlines.js";
 
 // ── Notifications ─────────────────────────────────────────────────────────────
@@ -75,8 +75,9 @@ export async function scheduleNotifications(exams, assignments, courses, planned
     let id = 1000;
 
     // ── Daily 9am Next Up digest — fires every day for next 30 days ──
-    const topItem = [...exams.filter(e=>!e.done&&e.dueDate), ...assignments.filter(a=>!a.done&&a.dueDate)]
-      .sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate))[0];
+    // v1.18.1: the widget's ranking (local dates, due times, exams first on
+    // a tie), so the digest and the widget name the same item.
+    const topItem = rankOpenDeadlines(assignments, exams)[0];
     if (topItem) {
       const topCourse = courses[topItem.courseId];
       const topLabel = topCourse ? `${topItem.title} — ${topCourse.name}` : topItem.title;

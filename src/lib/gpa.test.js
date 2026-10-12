@@ -68,8 +68,11 @@ describe('calculateGPA — degenerate input', () => {
     expect(calculateGPA(undefined, 'ib')).toBe(0);
   });
 
-  it('is zero rather than NaN when every credit is zero', () => {
-    expect(calculateGPA([{ grade: 6, credits: 0 }], 'ib')).toBe(0);
+  // v1.18.1 (StudyDesk#147): was 0. With 0-credit courses no longer counted
+  // as 1, an all-pass/fail list would read 0.00; it shows the plain mean.
+  it('is the plain mean, not NaN or 0, when every credit is zero', () => {
+    expect(calculateGPA([{ grade: 6, credits: 0 }], 'ib')).toBe(6);
+    expect(calculateGPA([{ grade: 6, credits: 0 }, { grade: 5, credits: 0 }], 'ib')).toBe(5.5);
   });
 
   it('coerces a non-numeric grade or credit to zero instead of producing NaN', () => {
@@ -148,5 +151,32 @@ describe('subjectsWithEffectiveGrades', () => {
     ]);
     // (7×2 + 5×3) / 5
     expect(calculateGPA(rows, 'ib')).toBe(5.8);
+  });
+});
+
+// v1.18.1 (StudyDesk#147): custom scales took the US percent ladder, so any
+// grade under 60 scored 0 and a Finnish 9 and 8 averaged "0.00".
+describe('calculateGPA — custom mode', () => {
+  it('is the straight weighted mean on the scale\'s own numbers', () => {
+    expect(calculateGPA([{ grade: 9, credits: 1 }, { grade: 8, credits: 1 }], 'custom')).toBe(8.5);
+    expect(calculateGPA([{ grade: 16, credits: 2 }, { grade: 14, credits: 2 }], 'custom')).toBe(15);
+    expect(calculateGPA([{ grade: 3.7, credits: 3 }, { grade: 3, credits: 1 }], 'custom')).toBe(3.53);
+  });
+});
+
+describe('subjectsWithEffectiveGrades — credits (StudyDesk#147)', () => {
+  const grades = [{ subjectId: 'm', grade: 7 }, { subjectId: 's', grade: 1 }];
+  it('a 0-credit course counts for nothing towards the average', () => {
+    const subjects = { m: { id: 'm', name: 'Maths HL', credits: 5 }, s: { id: 's', name: 'Seminar', credits: 0 } };
+    expect(calculateGPA(subjectsWithEffectiveGrades(subjects, grades), 'ib')).toBe(7);
+  });
+  it('when every course has 0 credits, shows the plain mean rather than 0', () => {
+    const subjects = { a: { id: 'a', credits: 0 }, b: { id: 'b', credits: 0 } };
+    const g = [{ subjectId: 'a', grade: 6 }, { subjectId: 'b', grade: 5 }];
+    expect(calculateGPA(subjectsWithEffectiveGrades(subjects, g), 'ib')).toBe(5.5);
+  });
+  it('a course with no credits set still counts as 1', () => {
+    const subjects = { m: { id: 'm', name: 'Maths HL', credits: null }, s: { id: 's', name: 'Seminar', credits: '' } };
+    expect(subjectsWithEffectiveGrades(subjects, grades).map((c) => c.credits)).toEqual([1, 1]);
   });
 });

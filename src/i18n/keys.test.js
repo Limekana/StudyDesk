@@ -44,3 +44,51 @@ describe('i18n keys', () => {
     expect(missing).toEqual([]);
   });
 });
+
+// v1.18.1 (StudyDesk#152): a plural form a locale lacks falls back to
+// English, so Arabic read "3 items" in the middle of an Arabic screen. Every
+// plural key in en.json must carry, in each locale, every CLDR category that
+// counts 0–1000 can select there (Arabic: zero, one, two, few, many, other).
+// French and Portuguese "many" only applies from a million, so it is not
+// required.
+describe('i18n plurals', () => {
+  const SUFFIX = /_(zero|one|two|few|many|other)$/;
+  const LOCALES = join(SRC, 'i18n/locales');
+
+  const pluralForms = (tree) => {
+    const out = new Map();
+    const walk = (node, prefix) => {
+      for (const [k, v] of Object.entries(node)) {
+        if (v && typeof v === 'object') walk(v, `${prefix}${k}.`);
+        else {
+          const m = k.match(SUFFIX);
+          if (!m) continue;
+          const base = prefix + k.slice(0, -m[0].length);
+          if (!out.has(base)) out.set(base, new Set());
+          out.get(base).add(m[1]);
+        }
+      }
+    };
+    walk(tree, '');
+    return out;
+  };
+
+  it('every locale has every plural form its counts can select', () => {
+    const enBases = [...pluralForms(en).keys()];
+    expect(enBases.length).toBeGreaterThan(5);
+    const gaps = [];
+    for (const file of readdirSync(LOCALES).filter((f) => f.endsWith('.json'))) {
+      const lng = file.slice(0, -5);
+      const forms = pluralForms(JSON.parse(readFileSync(join(LOCALES, file), 'utf8')));
+      const rules = new Intl.PluralRules(lng);
+      const needed = new Set();
+      for (let n = 0; n <= 1000; n++) needed.add(rules.select(n));
+      for (const base of enBases) {
+        const have = forms.get(base) ?? new Set();
+        const missing = [...needed].filter((c) => !have.has(c));
+        if (missing.length) gaps.push(`${lng} ${base}: ${missing.join('/')}`);
+      }
+    }
+    expect(gaps).toEqual([]);
+  });
+});

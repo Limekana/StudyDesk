@@ -27,7 +27,8 @@ export default function CourseDetailView({ state, dispatch, session, showFlash, 
   const done = assignments.filter(a => a.done)
     .sort(byDueDesc);
   const exams = state.exams.filter(e => e.courseId === ac);
-  const openExams = exams.filter(e => !e.done).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+  // v1.18.1 (#148): byDueAsc puts an exam with no date last.
+  const openExams = exams.filter(e => !e.done).sort(byDueAsc);
 
   const sessions = (state.studySessions || []).filter(s => !s.deletedAt && s.subjectId === ac);
   const totalMin = sessions.reduce((n, s) => n + (s.durationMinutes || 0), 0);

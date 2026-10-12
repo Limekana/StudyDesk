@@ -12,6 +12,7 @@ import { supabase } from './supabase.js';
 import { selectAll } from './selectAll.js';
 import { pushStamp, recordPull } from './editStamp.js';
 import { dueTimeToSql } from './dueAt.js';
+import { toLocalISO } from './dates.js';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -22,7 +23,9 @@ async function currentUserId() {
 }
 
 function nowISO() { return new Date().toISOString(); }
-function todayISO() { return new Date().toISOString().slice(0, 10); }
+// v1.18.1 (StudyDesk#151): the LOCAL calendar date. toISOString() gave the UTC
+// one: yesterday in Auckland before noon, tomorrow in New York after 20:00.
+function todayISO() { return toLocalISO(new Date()); }
 
 // ── retention (v1.12 Item 0) ─────────────────────────────────────────────────
 

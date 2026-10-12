@@ -1098,7 +1098,7 @@
       "http": "The server returned an error.",
       "network": "Could not reach that address."
     },
-    "repeatingNote": "{{count}} repeating event imported as a single date",
+    "repeatingNote_one": "{{count}} repeating event imported as a single date",
     "repeatingNote_other": "{{count}} repeating events imported as a single date each"
   },
   "att": {

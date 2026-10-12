@@ -10,4 +10,7 @@ function todayMidnight(){ const d = new Date(); d.setHours(0,0,0,0); return d; }
 export function daysUntil(s){ if(!s) return null; return Math.round((parseLocalDate(s)-todayMidnight())/86400000); }
 export function urgencyColor(d){ if(d===null) return "#aaa"; if(d<0) return "#c0392b"; if(d<=2) return "#c0392b"; if(d<=7) return "#d4860a"; return "#2e7d52"; }
 export function urgencyLabel(d, t){ if(d===null||!t) return ""; if(d<0) return t('av.urgency.overdue',{n:Math.abs(d)}); if(d===0) return t('av.urgency.dueToday'); if(d===1) return t('av.urgency.dueTomorrow'); return t('av.urgency.daysLeft',{n:d}); }
-export function studyStartDate(e){ return addDays(e.dueDate,-DIFFICULTY_DAYS[e.difficulty||"medium"]); }
+// v1.18.1 (StudyDesk#148): an exam's date may be cleared (exams.due_date is
+// nullable), and addDays(null) threw, taking the Plan tab down on every device
+// that pulled the row. No date, no study start.
+export function studyStartDate(e){ if(!e?.dueDate) return null; return addDays(e.dueDate,-DIFFICULTY_DAYS[e.difficulty||"medium"]); }

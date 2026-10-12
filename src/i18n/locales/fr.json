@@ -1103,7 +1103,7 @@
       "http": "Le serveur a renvoyé une erreur.",
       "network": "Impossible d'atteindre cette adresse."
     },
-    "repeatingNote": "{{count}} événement récurrent importé comme une seule date",
+    "repeatingNote_one": "{{count}} événement récurrent importé comme une seule date",
     "repeatingNote_other": "{{count}} événements récurrents importés comme une seule date chacun"
   },
   "att": {

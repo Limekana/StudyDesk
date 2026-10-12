@@ -157,7 +157,7 @@ export default function CalendarFeeds({ state, dispatch, session, showFlash }) {
     writeJson(ITEMS_KEY, next);
     removeFeed(feed.id);
     setFeeds(loadFeeds());
-    showFlash(t('feed.removed', { n: rows.length }));
+    showFlash(t('feed.removed', { count: rows.length, n: rows.length }));
   };
 
   return (

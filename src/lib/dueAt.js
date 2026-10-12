@@ -150,3 +150,25 @@ export function dueDayReminderAt(dueDate, dueTime) {
   if (hourBefore < day) return null;
   return hourBefore < nine ? hourBefore : nine;
 }
+
+/**
+ * What is due next, for the home-screen widget and the daily 9am Next Up
+ * digest (one ranking, so the two never name different items): everything not
+ * done that has a due date, soonest first. Exams before assignments on ties,
+ * because an exam is the less reschedulable of the two. Moved here from
+ * widgetBridge.js in v1.18.1, when the digest started sharing it.
+ */
+export function rankOpenDeadlines(assignments, exams) {
+  const live = [
+    ...exams.filter((e) => !e.done && e.dueDate).map((e) => ({ ...e, kind: 'exam' })),
+    ...assignments.filter((a) => !a.done && a.dueDate).map((a) => ({ ...a, kind: 'assignment' })),
+  ];
+  // v1.18.1 (StudyDesk#151): compared as local date keys. `new Date('YYYY-MM-DD')`
+  // is UTC midnight, which mixed with timed items sorts by two clocks.
+  return live.sort((a, b) => {
+    const ka = dueSortKey(a.dueDate, a.dueTime);
+    const kb = dueSortKey(b.dueDate, b.dueTime);
+    if (ka !== kb) return ka < kb ? -1 : 1;
+    return a.kind === b.kind ? 0 : a.kind === 'exam' ? -1 : 1;
+  });
+}

@@ -1098,7 +1098,7 @@
       "http": "服务器返回了错误。",
       "network": "无法连接该地址。"
     },
-    "repeatingNote": "{{count}} 个重复事件仅导入为单个日期",
+    "repeatingNote_one": "{{count}} 个重复事件仅导入为单个日期",
     "repeatingNote_other": "{{count}} 个重复事件各仅导入为单个日期"
   },
   "att": {

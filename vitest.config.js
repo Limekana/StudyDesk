@@ -7,6 +7,10 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     environment: 'node',
+    // Pinned (vitest 3's default): each test file runs in its own process, so
+    // a file that sets process.env.TZ (widgetBridge.test.js) changes the
+    // clock for itself only. Worker threads share the zone and would not.
+    pool: 'forks',
     // `test/` holds tests for code outside `src` (the Electron main process),
     // kept out of `electron/` so electron-builder does not ship them.
     include: ['src/**/*.test.js', 'test/**/*.test.mjs'],
