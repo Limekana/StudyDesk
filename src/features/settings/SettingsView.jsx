@@ -5,6 +5,7 @@ import { setErrorReportsEnabled, useErrorReportsEnabled } from '../../lib/errorR
 import { useTranslation } from 'react-i18next';
 import { setLanguage, SUPPORTED_LANGS, LANGUAGE_NAMES } from '../../i18n/index.js';
 import { useScrollSelectedIntoView } from '../../lib/useScrollSelectedIntoView.js';
+import { requestNoteFlush } from '../../lib/noteFlush.js';
 import { supabase, clearStoredSession } from '../../lib/supabase.js';
 import { clearOwner } from '../../lib/deviceOwner.js';
 import { setGuestMode } from '../../lib/guestMode.js';
@@ -498,6 +499,9 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
     // v1.18.1 (StudyDesk#139): the wipe below drops whatever has not reached
     // the cloud yet. Say how much, rather than a confirm that promises the
     // data "stays in the cloud".
+    // v1.18.1 (StudyDesk#161): a note edit still in its 1.5 s debounce is
+    // queued first, so it is counted.
+    requestNoteFlush();
     const unsent = outbox.getStatus().pending;
     const question = unsent > 0
       ? t('settings.signOutUnsynced', { count: unsent })

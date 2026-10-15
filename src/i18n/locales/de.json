@@ -412,7 +412,10 @@
     "updateRestart": "Neu starten und aktualisieren",
     "updateDownload": "Herunterladen & installieren",
     "fdroidCheck": "Auf F-Droid nach Updates suchen",
-    "fdroidCheckNote": "Einmal am Tag fragt StudyDesk bei f-droid.org nach der neuesten Version. Über dich wird nichts gesendet. Ausgeschaltet unterbleibt die Anfrage ganz."
+    "fdroidCheckNote": "Einmal am Tag fragt StudyDesk bei f-droid.org nach der neuesten Version. Über dich wird nichts gesendet. Ausgeschaltet unterbleibt die Anfrage ganz.",
+    "otherAccountCleared": "Du hast dich mit einem anderen Konto angemeldet, daher wurden die Daten des vorherigen Kontos von diesem Gerät entfernt.",
+    "otherAccountClearedUnsent_one": "Du hast dich mit einem anderen Konto angemeldet, daher wurden die Daten des vorherigen Kontos von diesem Gerät entfernt, darunter {{count}} nicht synchronisierte Änderung.",
+    "otherAccountClearedUnsent_other": "Du hast dich mit einem anderen Konto angemeldet, daher wurden die Daten des vorherigen Kontos von diesem Gerät entfernt, darunter {{count}} nicht synchronisierte Änderungen."
   },
   "sdob": {
     "brand": "Schluss mit Grübeln. Fang an zu lernen.",

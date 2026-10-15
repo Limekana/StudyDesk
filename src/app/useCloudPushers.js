@@ -98,8 +98,17 @@ export function useCloudPushers({ session, state, pulledOnceRef, remoteStampsRef
   // actually moved. One place, no call sites to miss, and it picks up any
   // future mutation path for free.
   const pushBaseline = useRef(null);
+  // v1.18.1 (StudyDesk#161): whose rows the baseline holds. Switching straight
+  // from one account to another kept the first account's baseline, and after
+  // the wipe every one of its rows looked deleted: a delete was queued for
+  // each, under the new account (RLS made them no-ops; the queue churned).
+  const baselineUser = useRef(null);
   useEffect(() => {
-    if (!session) { pushBaseline.current = null; return; }
+    if (!session) { pushBaseline.current = null; baselineUser.current = null; return; }
+    if (baselineUser.current !== (session.user?.id ?? null)) {
+      pushBaseline.current = null;
+      baselineUser.current = session.user?.id ?? null;
+    }
     // Wait for the first pull to settle before arming. Pushing local rows
     // before knowing the remote state would stamp them updated_at = now and
     // let a stale device win against a newer edit made elsewhere.

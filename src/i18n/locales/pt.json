@@ -415,7 +415,11 @@
     "updateRestart": "Reiniciar para atualizar",
     "updateDownload": "Baixar e instalar",
     "fdroidCheck": "Procurar atualizações no F-Droid",
-    "fdroidCheckNote": "Uma vez por dia, o StudyDesk pergunta ao f-droid.org qual é a versão mais recente. Nada sobre você é enviado. Desativado, o pedido deixa de ser feito."
+    "fdroidCheckNote": "Uma vez por dia, o StudyDesk pergunta ao f-droid.org qual é a versão mais recente. Nada sobre você é enviado. Desativado, o pedido deixa de ser feito.",
+    "otherAccountCleared": "Você entrou com outra conta, então os dados da conta anterior foram removidos deste dispositivo.",
+    "otherAccountClearedUnsent_one": "Você entrou com outra conta, então os dados da conta anterior foram removidos deste dispositivo, incluindo {{count}} alteração não sincronizada.",
+    "otherAccountClearedUnsent_many": "Você entrou com outra conta, então os dados da conta anterior foram removidos deste dispositivo, incluindo {{count}} alterações não sincronizadas.",
+    "otherAccountClearedUnsent_other": "Você entrou com outra conta, então os dados da conta anterior foram removidos deste dispositivo, incluindo {{count}} alterações não sincronizadas."
   },
   "sdob": {
     "brand": "Pare de decidir. Comece a estudar.",

@@ -1,6 +1,7 @@
 // Note edits to the outbox: debounced pushes, the flush on backgrounding, deletes.
 // Moved out of App.jsx unchanged and called from the same place (limecore#12).
 import { useEffect, useCallback, useRef } from "react";
+import { FLUSH_NOTE_EDITS_EVENT } from "../lib/noteFlush.js";
 import * as outbox from "../lib/outbox.js";
 import { isInSync } from "../lib/syncStamps.js";
 
@@ -112,9 +113,13 @@ export function useNoteSync({ state, session, pulledOnce, remoteStampsRef, dispa
     const onPageHide = () => flush();
     document.addEventListener("visibilitychange", onHide);
     window.addEventListener("pagehide", onPageHide);
+    // v1.18.1 (StudyDesk#161): and on request, so sign-out counts an edit
+    // still inside the debounce (lib/noteFlush.js).
+    window.addEventListener(FLUSH_NOTE_EDITS_EVENT, onPageHide);
     return () => {
       document.removeEventListener("visibilitychange", onHide);
       window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener(FLUSH_NOTE_EDITS_EVENT, onPageHide);
       flush();
     };
   }, []);
