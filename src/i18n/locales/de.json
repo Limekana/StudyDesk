@@ -982,7 +982,16 @@
   "notif": {
     "planLeadTitle": "Lernblock um {{time}}",
     "planNowTitle": "Lernblock beginnt jetzt",
-    "planFallback": "Lernsitzung"
+    "planFallback": "Lernsitzung",
+    "digestTitle": "📚 StudyDesk — Als Nächstes",
+    "examStartTitle": "📚 Zeit, mit dem Lernen anzufangen",
+    "examStartBody_one": "{{label}} — noch {{count}} Tag",
+    "examStartBody_other": "{{label}} — noch {{count}} Tage",
+    "examSoonTitle": "⚠️ Prüfung in 2 Tagen",
+    "examTodayTitle": "📝 Heute Prüfung — viel Erfolg",
+    "dueTomorrowTitle": "📋 Morgen fällig",
+    "dueTodayTitle": "📋 Heute fällig",
+    "markDone": "Als erledigt markieren"
   },
   "referral": {
     "eyebrow": "EINE FRAGE",

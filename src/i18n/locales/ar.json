@@ -1002,7 +1002,20 @@
   "notif": {
     "planLeadTitle": "فترة الدراسة تبدأ الساعة {{time}}",
     "planNowTitle": "فترة الدراسة تبدأ الآن",
-    "planFallback": "جلسة دراسة"
+    "planFallback": "جلسة دراسة",
+    "digestTitle": "📚 StudyDesk — التالي",
+    "examStartTitle": "📚 حان وقت بدء المذاكرة",
+    "examStartBody_zero": "{{label}} — لم يتبقَّ أي يوم",
+    "examStartBody_one": "{{label}} — يتبقى يوم واحد",
+    "examStartBody_two": "{{label}} — يتبقى يومان",
+    "examStartBody_few": "{{label}} — تتبقى {{count}} أيام",
+    "examStartBody_many": "{{label}} — يتبقى {{count}} يومًا",
+    "examStartBody_other": "{{label}} — يتبقى {{count}} يوم",
+    "examSoonTitle": "⚠️ الاختبار بعد يومين",
+    "examTodayTitle": "📝 الاختبار اليوم — بالتوفيق",
+    "dueTomorrowTitle": "📋 موعد التسليم غدًا",
+    "dueTodayTitle": "📋 موعد التسليم اليوم",
+    "markDone": "تحديد كمنجز"
   },
   "referral": {
     "eyebrow": "سؤال واحد",

@@ -982,7 +982,16 @@
   "notif": {
     "planLeadTitle": "अध्ययन ब्लॉक {{time}} बजे शुरू",
     "planNowTitle": "अध्ययन ब्लॉक अब शुरू",
-    "planFallback": "अध्ययन सत्र"
+    "planFallback": "अध्ययन सत्र",
+    "digestTitle": "📚 StudyDesk — आगे क्या है",
+    "examStartTitle": "📚 पढ़ाई शुरू करने का समय",
+    "examStartBody_one": "{{label}} — {{count}} दिन बाकी",
+    "examStartBody_other": "{{label}} — {{count}} दिन बाकी",
+    "examSoonTitle": "⚠️ 2 दिन में परीक्षा",
+    "examTodayTitle": "📝 आज परीक्षा है — शुभकामनाएँ",
+    "dueTomorrowTitle": "📋 कल जमा करना है",
+    "dueTodayTitle": "📋 आज जमा करना है",
+    "markDone": "पूरा हुआ चिह्नित करें"
   },
   "referral": {
     "eyebrow": "एक सवाल",

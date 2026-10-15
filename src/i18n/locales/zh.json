@@ -982,7 +982,15 @@
   "notif": {
     "planLeadTitle": "学习时段将于 {{time}} 开始",
     "planNowTitle": "学习时段现在开始",
-    "planFallback": "学习时段"
+    "planFallback": "学习时段",
+    "digestTitle": "📚 StudyDesk — 接下来",
+    "examStartTitle": "📚 该开始复习了",
+    "examStartBody_other": "{{label}} — 还有 {{count}} 天",
+    "examSoonTitle": "⚠️ 2 天后考试",
+    "examTodayTitle": "📝 今天考试 — 祝你好运",
+    "dueTomorrowTitle": "📋 明天截止",
+    "dueTodayTitle": "📋 今天截止",
+    "markDone": "标记为完成"
   },
   "referral": {
     "eyebrow": "一个问题",

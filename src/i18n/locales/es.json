@@ -987,7 +987,17 @@
   "notif": {
     "planLeadTitle": "Bloque de estudio a las {{time}}",
     "planNowTitle": "El bloque de estudio empieza ahora",
-    "planFallback": "Sesión de estudio"
+    "planFallback": "Sesión de estudio",
+    "digestTitle": "📚 StudyDesk — A continuación",
+    "examStartTitle": "📚 Hora de empezar a estudiar",
+    "examStartBody_one": "{{label}} — falta {{count}} día",
+    "examStartBody_many": "{{label}} — faltan {{count}} días",
+    "examStartBody_other": "{{label}} — faltan {{count}} días",
+    "examSoonTitle": "⚠️ Examen en 2 días",
+    "examTodayTitle": "📝 Examen hoy — mucha suerte",
+    "dueTomorrowTitle": "📋 Vence mañana",
+    "dueTodayTitle": "📋 Vence hoy",
+    "markDone": "Marcar como hecho"
   },
   "referral": {
     "eyebrow": "UNA PREGUNTA",

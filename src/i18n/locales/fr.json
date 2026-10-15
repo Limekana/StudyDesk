@@ -987,7 +987,17 @@
   "notif": {
     "planLeadTitle": "Bloc de révision à {{time}}",
     "planNowTitle": "Le bloc de révision commence",
-    "planFallback": "Session de révision"
+    "planFallback": "Session de révision",
+    "digestTitle": "📚 StudyDesk — À suivre",
+    "examStartTitle": "📚 C’est le moment de commencer à réviser",
+    "examStartBody_one": "{{label}} — encore {{count}} jour",
+    "examStartBody_many": "{{label}} — encore {{count}} jours",
+    "examStartBody_other": "{{label}} — encore {{count}} jours",
+    "examSoonTitle": "⚠️ Examen dans 2 jours",
+    "examTodayTitle": "📝 Examen aujourd’hui — bonne chance",
+    "dueTomorrowTitle": "📋 À rendre demain",
+    "dueTodayTitle": "📋 À rendre aujourd’hui",
+    "markDone": "Marquer comme fait"
   },
   "referral": {
     "eyebrow": "UNE QUESTION",

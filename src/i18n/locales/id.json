@@ -977,7 +977,15 @@
   "notif": {
     "planLeadTitle": "Blok belajar pukul {{time}}",
     "planNowTitle": "Blok belajar dimulai sekarang",
-    "planFallback": "Sesi belajar"
+    "planFallback": "Sesi belajar",
+    "digestTitle": "📚 StudyDesk — Berikutnya",
+    "examStartTitle": "📚 Saatnya mulai belajar",
+    "examStartBody_other": "{{label}} — {{count}} hari lagi",
+    "examSoonTitle": "⚠️ Ujian 2 hari lagi",
+    "examTodayTitle": "📝 Ujian hari ini — semoga sukses",
+    "dueTomorrowTitle": "📋 Tenggat besok",
+    "dueTodayTitle": "📋 Tenggat hari ini",
+    "markDone": "Tandai selesai"
   },
   "referral": {
     "eyebrow": "SATU PERTANYAAN",

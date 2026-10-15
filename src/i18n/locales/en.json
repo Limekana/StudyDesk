@@ -982,7 +982,16 @@
   "notif": {
     "planLeadTitle": "Study block at {{time}}",
     "planNowTitle": "Study block starting now",
-    "planFallback": "Study session"
+    "planFallback": "Study session",
+    "digestTitle": "📚 StudyDesk — Next Up",
+    "examStartTitle": "📚 Time to start studying",
+    "examStartBody_one": "{{label}} — {{count}} day to go",
+    "examStartBody_other": "{{label}} — {{count}} days to go",
+    "examSoonTitle": "⚠️ Exam in 2 days",
+    "examTodayTitle": "📝 Exam today — good luck",
+    "dueTomorrowTitle": "📋 Due tomorrow",
+    "dueTodayTitle": "📋 Due today",
+    "markDone": "Mark done"
   },
   "referral": {
     "eyebrow": "ONE QUESTION",
