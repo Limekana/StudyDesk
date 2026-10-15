@@ -17,12 +17,18 @@
 //      here. A table added later is covered automatically, as long as it
 //      declares the same foreign key. That is deliberate: an explicit delete
 //      list is a thing you forget to update, and the failure is silent.
+//   4. What the cascade cannot reach is removed here (v1.18.1, limecore#61):
+//      the user's files in every Storage bucket, before the account goes, and
+//      the AI rate-limit rows keyed to the user id, after it. A file failure
+//      is logged for the owner and does not block the erasure. See
+//      userFiles.js (eraseAccount).
 //
 // Deploy:  supabase functions deploy delete-account
 // Secrets: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are injected by the
 //          platform; nothing needs to be set by hand.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { eraseAccount } from './userFiles.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -69,11 +75,8 @@ Deno.serve(async (req: Request) => {
   }
   if (!confirmed) return json({ error: 'Missing confirmation' }, 400);
 
-  const { error: delErr } = await admin.auth.admin.deleteUser(user.id);
-  if (delErr) {
-    console.error('delete-account failed', { userId: user.id, message: delErr.message });
-    return json({ error: 'Deletion failed' }, 500);
-  }
+  const result = await eraseAccount(admin, user.id);
+  if (!result.ok) return json({ error: 'Deletion failed' }, 500);
 
   // Deliberately logged without the email address: this line exists to prove a
   // deletion happened if anyone ever asks, and writing the identifier of a user

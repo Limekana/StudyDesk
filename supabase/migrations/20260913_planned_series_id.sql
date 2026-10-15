@@ -2,7 +2,8 @@
 --
 --   > "planned study sessions can't repeat, only the blockers can"
 --
--- ── NOT YET APPLIED ──────────────────────────────────────────────────────
+-- ── APPLIED (checked against production 2026-10-13, limecore#63) ─────────
+-- The note below is kept as written at the time.
 -- Written 2026-09-13, alongside 20260913_timetable_series_id.sql and not
 -- applied for the same reason: the owner authorised the two v1.14 migrations
 -- specifically, and production DDL is a per-migration decision.

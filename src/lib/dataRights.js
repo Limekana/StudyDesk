@@ -145,6 +145,9 @@ export async function deleteAccount({ clearLocal }) {
   // Deliberately not fatal: erasure of the account must not be blocked by a
   // storage hiccup. A failure here leaves one 256 KB object, which is a
   // housekeeping problem; a failure to delete the account is a GDPR one.
+  // v1.18.1 (limecore#61): the Edge Function now also removes the user's
+  // files from every bucket (attachments included) before deleting the
+  // account, on the same terms. This stays for a function not yet redeployed.
   try {
     await removeForUser(AVATAR_BUCKET, AVATAR_FILE);
   } catch (e) {

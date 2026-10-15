@@ -5,7 +5,8 @@
 -- carry boxes at arbitrary positions, which is what a maths or physics
 -- notebook page actually looks like.
 --
--- ── NOT YET APPLIED ──────────────────────────────────────────────────────
+-- ── APPLIED (checked against production 2026-10-13, limecore#63) ─────────
+-- The note below is kept as written at the time.
 -- Awaiting the owner's instruction, like 20260903_notebook.sql before it.
 -- The client MUST NOT ship ahead of this one: `upsertNote` sends `layout` on
 -- every note push, and PostgREST rejects an insert naming a column that does

@@ -2,7 +2,8 @@
 --
 --   > "there's no way to say this is the same course, just also on Wednesday"
 --
--- ── NOT YET APPLIED ──────────────────────────────────────────────────────
+-- ── APPLIED (checked against production 2026-10-13, limecore#63) ─────────
+-- The note below is kept as written at the time.
 -- Written 2026-09-13. Unlike the two migrations beside it, this one has not
 -- been applied: the owner authorised those two specifically, and DDL against
 -- production is a per-migration decision, not a standing one.
