@@ -387,6 +387,7 @@ export function lessonsOn(state, iso, weekStart = 1) {
   if (!covering.length) return [];
 
   const live = entries.filter((e) => e && !e.deletedAt);
+  const byId = termIndex(state.academicTerms || []);
   // Highest specificity that actually has entries for this weekday wins.
   // Ranked by level, so a period beats the semester above it. Terms at the
   // SAME level are not an override of one another — two semesters covering one
@@ -402,7 +403,11 @@ export function lessonsOn(state, iso, weekStart = 1) {
     // different levels can therefore both be right about "week A" without
     // agreeing with each other, which is the only reading that survives a
     // period being inserted mid-semester.
-    const parity = weekParityOf(iso, term.startsOn, weekStart);
+    // v1.18.1 (StudyDesk#150): the term's RESOLVED start. A term that leaves
+    // its dates blank inherits its parent's (the form suggests exactly that),
+    // and its own `startsOn` is then '' — parity came out null, and a
+    // fortnightly lesson showed every week.
+    const parity = weekParityOf(iso, resolveTermRange(term, byId).from, weekStart);
     const forTerm = live.filter((e) => (
       e.termId === term.id && e.weekday === weekday && entryRunsOnParity(e, parity)
     ));

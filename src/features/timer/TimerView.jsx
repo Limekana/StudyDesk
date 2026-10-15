@@ -14,7 +14,7 @@ import { Capacitor } from '@capacitor/core';
 import { fmtTime } from '../../lib/dates.js';
 import { startFocus, stopFocus } from '../../lib/focusMode.js';
 import { enterSubmit } from '../../lib/imeSubmit.js';
-import { TIMER_CHANGE_EVENT } from '../../lib/timerSnapshot.js';
+import { TIMER_CHANGE_EVENT, finishedWhileAway } from '../../lib/timerSnapshot.js';
 import { pastSessionDraft } from '../../lib/pastSession.js';
 import { preferredDayStart, studyDayKey, todayStudyDayKey, dayKeyToDate } from '../../lib/studyDay.js';
 import '../../styles/timer.css';
@@ -62,6 +62,11 @@ function FocusMinutesInput({ text, setText, commit, disabled, className, label }
   );
 }
 
+// v1.18.1 (StudyDesk#149): the run whose away-completion has been handled,
+// by its start time. Module-level so React's StrictMode double effect, or a
+// quick remount, cannot complete the same block twice.
+let completedAwayRun = null;
+
 export default function TimerView({ state, onTimerComplete }) {
   const { t } = useTranslation();
   // #54 — the user's day boundary, read once. Declared up here with the rest
@@ -72,13 +77,16 @@ export default function TimerView({ state, onTimerComplete }) {
 
   // Restore persisted timer state from localStorage so tab-switching doesn't reset
   const _saved = (() => { try { return JSON.parse(localStorage.getItem('sd-timer')||'{}'); } catch { return {}; } })();
+  // One clock reading for the restore and the away check below, so they
+  // cannot disagree at a second boundary (v1.18.1, StudyDesk#149).
+  const _now = Date.now();
 
   const [customFocus, setCustomFocus] = useState(_saved.customFocus||25);
   const [phase, setPhase] = useState(_saved.phase||"focus"); // focus | short | long
   // If timer was running when user left, compute corrected secsLeft
   const _initSecs = (() => {
     if (_saved.running && _saved.startedAt && _saved.secsAtStart != null) {
-      const elapsed = Math.floor((Date.now() - _saved.startedAt) / 1000);
+      const elapsed = Math.floor((_now - _saved.startedAt) / 1000);
       if (_saved.mode === 'stopwatch') return _saved.secsAtStart + elapsed;
       const corrected = _saved.secsAtStart - elapsed;
       return corrected > 0 ? corrected : 0;
@@ -88,6 +96,9 @@ export default function TimerView({ state, onTimerComplete }) {
   const [secsLeft, setSecsLeft] = useState(_initSecs);
   // If timer ran out while away, don't auto-resume
   const [running, setRunning] = useState(_saved.running && _initSecs > 0 ? true : false);
+  // v1.18.1 (StudyDesk#149): ...but do finish it (see the effect below
+  // handlePhaseEnd). Read once, from the state this mount restored.
+  const [endedAway] = useState(() => (finishedWhileAway(_saved, _now) ? _saved.startedAt : null));
   const [session, setSession] = useState(_saved.session||0); // 0-3, cycles every 4
   const [focusDone, setFocusDone] = useState(_saved.focusDone||0); // total focus sessions today
   const [task, setTask] = useState(_saved.task||"");
@@ -161,24 +172,6 @@ export default function TimerView({ state, onTimerComplete }) {
   const courseIdRef = useRef(courseId);
   useEffect(()=>{ courseIdRef.current = courseId; },[courseId]);
 
-  // Persist timer state to localStorage so tab-switching preserves it
-  useEffect(() => {
-    try {
-      localStorage.setItem('sd-timer', JSON.stringify({
-        customFocus, phase, secsLeft, running, session, focusDone, task, lockedIn, mode,
-        // v1.13 — read by timerSnapshot for the notebook's session scoping.
-        courseId: courseId || null,
-        startedAt: startedAtRef.current,
-        secsAtStart: secsAtStartRef.current,
-        phaseStartedAt: phaseStartedAtRef.current,
-      }));
-      // v1.12 Item 8e — tell the app-level pill. localStorage does not raise
-      // `storage` for same-document writes, so without this the pill would only
-      // notice a start or stop on its next one-second tick.
-      window.dispatchEvent(new CustomEvent(TIMER_CHANGE_EVENT));
-    } catch {}
-  }, [customFocus, phase, secsLeft, running, session, focusDone, task, lockedIn, mode, courseId]);
-
   // Background-safe elapsed tracking refs
   const startedAtRef = useRef(null);
   const secsAtStartRef = useRef(null);
@@ -203,13 +196,16 @@ export default function TimerView({ state, onTimerComplete }) {
   const lockedInRef = useRef(lockedIn);
   useEffect(()=>{ lockedInRef.current = lockedIn; }, [lockedIn]);
 
-  const handlePhaseEnd = useCallback(() => {
+  const handlePhaseEnd = useCallback(({ quiet = false } = {}) => {
     clearInterval(intervalRef.current);
     startedAtRef.current = null;
     setRunning(false);
     setTimerDone(true);
     setTimeout(()=>setTimerDone(false), 1500);
-    fireCompletionAlert();
+    // A block finished while away (v1.18.1, StudyDesk#149) is completed
+    // without the beep: it ended minutes or hours ago, and the save sheet says
+    // so.
+    if (!quiet) fireCompletionAlert();
     const p=phaseRef.current, sess=sessionRef.current, fd=focusDoneRef.current, cf=customFocusRef.current;
     if (p==='focus') {
       setFocusDone(fd+1);
@@ -241,6 +237,18 @@ export default function TimerView({ state, onTimerComplete }) {
       setSecsLeft(cf*60);
     }
   }, [fireCompletionAlert, onTimerComplete]);
+
+  // v1.18.1 (StudyDesk#149): a block that reached zero while this view was
+  // not mounted (another tab, or Android killed the process) was lost: the
+  // restore above starts it at 0 and paused, so handlePhaseEnd never ran. No
+  // alert, no save sheet, no focusDone count, no break. Finish it now, once
+  // per run, as the tick would have.
+  useEffect(() => {
+    if (endedAway == null || completedAwayRun === endedAway) return;
+    completedAwayRun = endedAway;
+    handlePhaseEnd({ quiet: true });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const tick = useCallback(() => {
     // A stopwatch has no zero to reach, so it never calls handlePhaseEnd - no
@@ -311,6 +319,31 @@ export default function TimerView({ state, onTimerComplete }) {
     return () => clearInterval(intervalRef.current);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [running, tick]);
+
+  // Persist timer state to localStorage so tab-switching preserves it.
+  // v1.18.1 (StudyDesk#149): declared AFTER the running effect above, so it
+  // runs after it in the same commit and saves the start time that effect
+  // just set. Before it, every Start (and every resume on mount) was saved as
+  // running with startedAt null until the first tick: leave within that
+  // second and the pill hid, the away check could not tell the block had
+  // ended, and the block resumed as if no time had passed.
+  useEffect(() => {
+    try {
+      localStorage.setItem('sd-timer', JSON.stringify({
+        customFocus, phase, secsLeft, running, session, focusDone, task, lockedIn, mode,
+        // v1.13 — read by timerSnapshot for the notebook's session scoping.
+        courseId: courseId || null,
+        startedAt: startedAtRef.current,
+        secsAtStart: secsAtStartRef.current,
+        phaseStartedAt: phaseStartedAtRef.current,
+      }));
+      // v1.12 Item 8e — tell the app-level pill. localStorage does not raise
+      // `storage` for same-document writes, so without this the pill would only
+      // notice a start or stop on its next one-second tick.
+      window.dispatchEvent(new CustomEvent(TIMER_CHANGE_EVENT));
+    } catch {}
+  }, [customFocus, phase, secsLeft, running, session, focusDone, task, lockedIn, mode, courseId]);
+
 
   const toggle = () => setRunning(r=>!r);
   const reset = () => {
@@ -405,22 +438,28 @@ export default function TimerView({ state, onTimerComplete }) {
   // Exiting Lock In stops the timer cleanly so the user explicitly chooses
   // whether to keep going in regular mode.
   const toggleLockIn = () => {
-    setLockedIn(li => {
-      const next = !li;
-      if (next) {
-        // Entering Lock In — reset to a fresh focus block at current custom duration.
-        // Lock In counts down by definition, so it always runs in Pomodoro mode;
-        // changing that is out of scope for this milestone.
-        setMode('pomodoro');
-        setPhase("focus");
-        setSecsLeft(customFocus * 60);
-        setSession(0);
-      } else {
-        // Exiting Lock In — stop and let the user reorient.
-        setRunning(false);
-      }
-      return next;
-    });
+    const next = !lockedIn;
+    if (next) {
+      // v1.18.1 (StudyDesk#149): a run in progress stops first, and the focus
+      // time so far (running or paused) is offered for saving, as Stop, Skip
+      // and a mode switch do. The display was reset to a full block while the
+      // run's start time and seconds stayed behind, so a resume jumped back to
+      // the old run's countdown, or finished a "25-minute" block that was a
+      // break. harvestFocus ignores a break, a full block and under a minute.
+      setRunning(false);
+      harvestFocus();
+      // Entering Lock In — reset to a fresh focus block at current custom duration.
+      // Lock In counts down by definition, so it always runs in Pomodoro mode;
+      // changing that is out of scope for this milestone.
+      setMode('pomodoro');
+      setPhase("focus");
+      setSecsLeft(customFocus * 60);
+      setSession(0);
+    } else {
+      // Exiting Lock In — stop and let the user reorient.
+      setRunning(false);
+    }
+    setLockedIn(next);
   };
 
   // While locked in we add a body class so the bottom mobile tab bar and

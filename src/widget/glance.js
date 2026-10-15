@@ -13,7 +13,8 @@
 // user is looking at in the main window.
 
 import { lessonsOn, dayAndMinuteOf } from '../lib/timetable.js';
-import { parseLocalDate } from '../lib/dates.js';
+import { parseLocalDate, formatLocale } from '../lib/dates.js';
+import { resolveWeekStart } from '../lib/calendar.js';
 import { dueSortKey } from '../lib/dueAt.js';
 
 /** Whole days from `fromIso` to `toIso`. Negative when `toIso` is in the past. */
@@ -73,7 +74,9 @@ export function nextDue(state, todayIso) {
  * keeps it too.
  */
 export function todayPlan(state, todayIso) {
-  const lessons = lessonsOn(state, todayIso).map((l) => ({
+  // v1.18.1 (StudyDesk#150): the user's week start, as the Calendar and
+  // Attendance use, so the widget agrees with them about A/B weeks.
+  const lessons = lessonsOn(state, todayIso, resolveWeekStart(formatLocale())).map((l) => ({
     kind: 'lesson',
     id: l.id,
     startMin: l.startMin,

@@ -1339,11 +1339,15 @@ export default function CalendarView({ state, dispatch, session, showFlash, tier
     const isos = new Set(days.map((d) => d.iso));
     if (selected) isos.add(selected);
     for (const iso of isos) {
-      const list = lessonsOn(state, iso);
+      // v1.18.1 (StudyDesk#150): with the user's week start, as Attendance
+      // passes it. Without it A/B parity snapped to Monday, so on a term
+      // starting on a Sunday, or a Sunday-to-Thursday week, the Calendar and
+      // Attendance showed opposite weeks.
+      const list = lessonsOn(state, iso, weekStart);
       if (list.length) map.set(iso, list);
     }
     return map;
-  }, [state, days, selected]);
+  }, [state, days, selected, weekStart]);
 
   // Commitments are expanded per date for the same reason lessons are — a
   // weekly rule is not a stored event — but over a WIDER set of dates: unlike

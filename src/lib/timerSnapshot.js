@@ -117,3 +117,15 @@ export function subscribeTimer(listener) {
     window.removeEventListener('storage', listener);
   };
 }
+
+/**
+ * v1.18.1 (StudyDesk#149): whether a saved countdown ran out while TimerView
+ * was not mounted (another tab, or the process killed). Same arithmetic as
+ * readTimerSnapshot and TimerView's restore. A stopwatch never runs out.
+ */
+export function finishedWhileAway(rec, now = Date.now()) {
+  if (!rec || !rec.running || rec.mode === 'stopwatch') return false;
+  if (!rec.startedAt || rec.secsAtStart == null) return false;
+  const elapsed = Math.floor((now - rec.startedAt) / 1000);
+  return rec.secsAtStart - elapsed <= 0;
+}
