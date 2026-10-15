@@ -398,6 +398,9 @@ export function findUnsynced(state, remote) {
  */
 export function reconcileUnsynced(state, remote, outbox) {
   const items = findUnsynced(state, remote);
-  for (const { kind, payload } of items) outbox.enqueue(kind, payload);
+  // v1.18.1 (StudyDesk#146): in one batch. After the id migration every row
+  // of an old install is local-only, and queueing them one by one froze the
+  // first launch for seconds (see `outbox.enqueueMany`).
+  if (items.length) outbox.enqueueMany(items);
   return items.length;
 }

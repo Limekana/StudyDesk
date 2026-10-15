@@ -31,9 +31,13 @@
 // the first pull; until then an edit falls back to the plain device clock,
 // which is exactly the behaviour before this file existed.
 
+import { serverNow } from './serverClock.js';
+
 /** Outbox kinds whose push writes `updated_at`, and the table each lands in.
- *  Deletes are absent on purpose: under "delete wins" the server accepts a
- *  tombstone whatever its stamp. */
+ *  Deletes are absent on purpose, but for one: under "delete wins" the server
+ *  accepts a tombstone whatever its stamp. The exception is the attendance
+ *  clear, which can be followed by a re-mark that has to be newer than it
+ *  (see below). */
 export const STAMPED_KINDS = {
   upsert_subject: 'subjects',
   upsert_grade: 'grades',
@@ -49,6 +53,9 @@ export const STAMPED_KINDS = {
   upsert_note: 'notebook_entries',
   upsert_note_attachment: 'notebook_attachments',
   upsert_attendance: 'lesson_attendance',
+  // v1.18.1 (StudyDesk#143): a clear is an edit too, stamped when the user
+  // made it, so a later re-mark is newer than it.
+  delete_attendance: 'lesson_attendance',
 };
 
 /** `pullAllStudyData()` result key → table. */
@@ -101,12 +108,13 @@ export function recordPull(remote) {
 }
 
 /**
- * The stamp this edit should carry, or null for a kind that writes no
- * `updated_at` (feedback, app opens, bulk semester archive) or a payload with
- * no row identity. Records the result, so the next edit of the same row on
+ * The stamp this edit should carry, or null for a kind not stamped here
+ * (feedback, app opens; the bulk semester archive writes only archived_at
+ * with a push-time stamp, see sync.setArchivedAt) or a payload with no row
+ * identity. Records the result, so the next edit of the same row on
  * this device is newer again even if the clock steps backwards.
  */
-export function editStamp(kind, payload, now = Date.now()) {
+export function editStamp(kind, payload, now = serverNow()) {
   const table = STAMPED_KINDS[kind];
   if (!table) return null;
   const key = keyOf(table, payload);
@@ -124,7 +132,7 @@ export function editStamp(kind, payload, now = Date.now()) {
  *  device clock now, which is what every push sent before. */
 export function pushStamp(updatedAt) {
   const at = ms(updatedAt);
-  return new Date(Number.isFinite(at) ? at : Date.now()).toISOString();
+  return new Date(Number.isFinite(at) ? at : serverNow()).toISOString();
 }
 
 /** Test seam. */

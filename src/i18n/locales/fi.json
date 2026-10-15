@@ -741,8 +741,8 @@
       "assignmentAdded": "Tehtävä lisätty",
       "examAdded": "Koe lisätty",
       "logged": "Kirjattu {{n}} min",
-      "syncedLegacy": "Synkronoitu {{n}} vanhaa kohdetta",
-      "syncedFailed": "{{pushed}} synkronoitu, {{failed}} epäonnistui — yritetään uudelleen"
+      "queuedLegacy_one": "{{count}} vanha tehtävälistan kohta odottaa synkronointia",
+      "queuedLegacy_other": "{{count}} vanhaa tehtävälistan kohtaa odottaa synkronointia"
     }
   },
   "widget": {

@@ -741,8 +741,8 @@
       "assignmentAdded": "Assignment added",
       "examAdded": "Exam added",
       "logged": "Logged {{n}}m",
-      "syncedLegacy": "Synced {{n}} legacy items",
-      "syncedFailed": "{{pushed}} synced, {{failed}} failed — will retry"
+      "queuedLegacy_one": "{{count}} older to-do waiting to sync",
+      "queuedLegacy_other": "{{count}} older to-dos waiting to sync"
     }
   },
   "widget": {

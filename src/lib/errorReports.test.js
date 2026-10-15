@@ -152,12 +152,32 @@ describe('when a report is sent', () => {
 describe('the export includes what exists only on the server', () => {
   it('reads the user\'s feedback and error reports, and nobody else\'s', async () => {
     holder.client = fakeClient({
-      feedback: [{ id: 'f1', user_id: USER.id }, { id: 'f2', user_id: 'someone-else' }],
-      client_errors: [{ id: 'e1', user_id: USER.id }],
+      // RLS returns only the caller's own feedback rows.
+      feedback: [{ id: 'f1', user_id: USER.id }],
+      client_errors: [{ id: 'e1', user_id: USER.id }, { id: 'e2', user_id: 'someone-else' }],
     });
     const server = await serverOnlyData(USER.id);
     expect(server.feedback.map((r) => r.id)).toEqual(['f1']);
     expect(server.client_errors.map((r) => r.id)).toEqual(['e1']);
+  });
+
+  // v1.18.1 (StudyDesk#153): production grants signed-in users nine feedback
+  // columns, not user_id; a request naming any other column, or `*`, fails as
+  // a whole with 42501. This fake refuses the same way.
+  it('asks feedback only for the columns a signed-in user may read', async () => {
+    const GRANTED = new Set(['id', 'app', 'app_version', 'category', 'rating', 'message', 'status', 'shipped_in', 'created_at']);
+    holder.client = fakeClient(
+      { feedback: [{ id: 'f1', message: 'hi' }] },
+      {
+        failWhen: (req) => {
+          if (req.table !== 'feedback') return null;
+          const cols = (req.columns ?? '*').split(',').map((c) => c.trim());
+          const named = [...cols, ...req.filters.map(([, col]) => col)];
+          return named.every((c) => GRANTED.has(c)) ? null : { code: '42501', message: 'permission denied for table feedback' };
+        },
+      },
+    );
+    expect((await serverOnlyData(USER.id)).feedback).toEqual([{ id: 'f1', message: 'hi' }]);
   });
 
   it('records a failed read instead of leaving the table out', async () => {

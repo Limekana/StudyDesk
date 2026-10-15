@@ -2,6 +2,8 @@
 import { isGradeMode, normalizeScale, DEFAULT_CUSTOM_SCALE } from "./gradeScale.js";
 import { applyRemotePull } from "./merge.js";
 import { normalizeDueTime } from "./dueAt.js";
+// v1.18.1 (StudyDesk#144): edit stamps in server time; see serverClock.js.
+import { stampNow } from "./serverClock.js";
 
 function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 // IDs that flow into Supabase MUST be proper UUIDs — the columns are typed `uuid`.
@@ -62,8 +64,8 @@ export function reducer(state, action) {
     // born archived: that is how a finished term's grades get entered without
     // the course first appearing in the live GPA, the Plan tab and every
     // course picker. Defaults to null, so every existing caller is unchanged.
-    case "ADD_COURSE":    { const id=action.id||newSyncId(); return {...state,courses:{...state.courses,[id]:{id,name:action.name,color:action.color,notes:[],credits:action.credits??1,semester:action.semester??null,schoolYear:action.schoolYear??null,archivedAt:action.archivedAt??null,updatedAt:action.updatedAt||new Date().toISOString(),deletedAt:null}}}; }
-    case "EDIT_COURSE":  return {...state,courses:{...state.courses,[action.id]:{...state.courses[action.id],name:action.name,color:action.color,credits:action.credits!==undefined?action.credits:state.courses[action.id]?.credits,semester:action.semester!==undefined?action.semester:state.courses[action.id]?.semester,schoolYear:action.schoolYear!==undefined?action.schoolYear:state.courses[action.id]?.schoolYear,updatedAt:new Date().toISOString()}}};
+    case "ADD_COURSE":    { const id=action.id||newSyncId(); return {...state,courses:{...state.courses,[id]:{id,name:action.name,color:action.color,notes:[],credits:action.credits??1,semester:action.semester??null,schoolYear:action.schoolYear??null,archivedAt:action.archivedAt??null,updatedAt:action.updatedAt||stampNow(),deletedAt:null}}}; }
+    case "EDIT_COURSE":  return {...state,courses:{...state.courses,[action.id]:{...state.courses[action.id],name:action.name,color:action.color,credits:action.credits!==undefined?action.credits:state.courses[action.id]?.credits,semester:action.semester!==undefined?action.semester:state.courses[action.id]?.semester,schoolYear:action.schoolYear!==undefined?action.schoolYear:state.courses[action.id]?.schoolYear,updatedAt:stampNow()}}};
     // v1.2 — semester archiving. ARCHIVE_SEMESTER stamps archivedAt on
     // every active course matching the semester string; RESTORE_SEMESTER
     // clears it. Per-course variants for the case where the user wants
@@ -71,7 +73,7 @@ export function reducer(state, action) {
     // (e.g. dropped a class mid-term). Updating archivedAt bumps
     // updatedAt so LWW wins against any concurrent stale write.
     case "ARCHIVE_SEMESTER": {
-      const stamp = action.stamp || new Date().toISOString();
+      const stamp = action.stamp || stampNow();
       const next = { ...state.courses };
       for (const c of Object.values(state.courses || {})) {
         if (!c.deletedAt && !c.archivedAt && c.semester === action.semester) {
@@ -81,7 +83,7 @@ export function reducer(state, action) {
       return { ...state, courses: next };
     }
     case "RESTORE_SEMESTER": {
-      const stamp = action.stamp || new Date().toISOString();
+      const stamp = action.stamp || stampNow();
       const next = { ...state.courses };
       for (const c of Object.values(state.courses || {})) {
         if (!c.deletedAt && c.archivedAt && c.semester === action.semester) {
@@ -91,13 +93,13 @@ export function reducer(state, action) {
       return { ...state, courses: next };
     }
     case "ARCHIVE_COURSE": {
-      const stamp = action.stamp || new Date().toISOString();
+      const stamp = action.stamp || stampNow();
       const c = state.courses[action.id];
       if (!c) return state;
       return { ...state, courses: { ...state.courses, [action.id]: { ...c, archivedAt: stamp, updatedAt: stamp } } };
     }
     case "RESTORE_COURSE": {
-      const stamp = action.stamp || new Date().toISOString();
+      const stamp = action.stamp || stampNow();
       const c = state.courses[action.id];
       if (!c) return state;
       return { ...state, courses: { ...state.courses, [action.id]: { ...c, archivedAt: null, updatedAt: stamp } } };
@@ -106,7 +108,7 @@ export function reducer(state, action) {
       // Soft-delete the course in local state (mirrors what we push to Supabase).
       // Also tombstone any grades for the subject so the GPA recalculates,
       // and clear assignments/exams (those are local-only and harmless to drop).
-      const stamp=new Date().toISOString();
+      const stamp=stampNow();
       const c=state.courses[action.id];
       const courses={...state.courses};
       if(c) courses[action.id]={...c,deletedAt:stamp,updatedAt:stamp};
@@ -123,9 +125,9 @@ export function reducer(state, action) {
     // LWW and use newSyncId() (a real UUID) instead of uid(). Deletes stay hard
     // removals: applyRemotePull drops remotely-deleted rows the same way, so
     // local state never holds a tombstone and no render site needs a new guard.
-    case "ADD_ASSIGNMENT":  { const a={id:action.id||newSyncId(),courseId:action.courseId,title:action.title,type:action.assignType,dueDate:action.dueDate,dueTime:normalizeDueTime(action.dueTime),notes:action.notes||"",done:false,updatedAt:action.updatedAt||new Date().toISOString()}; return {...state,assignments:[...state.assignments,a]}; }
-    case "TOGGLE_ASSIGNMENT": return {...state,assignments:state.assignments.map(a=>a.id===action.id?{...a,done:!a.done,updatedAt:new Date().toISOString()}:a)};
-    case "EDIT_ASSIGNMENT":   return {...state,assignments:state.assignments.map(a=>a.id===action.id?{...a,title:action.title,dueDate:action.dueDate,dueTime:normalizeDueTime(action.dueTime),notes:action.notes,updatedAt:new Date().toISOString()}:a)};
+    case "ADD_ASSIGNMENT":  { const a={id:action.id||newSyncId(),courseId:action.courseId,title:action.title,type:action.assignType,dueDate:action.dueDate,dueTime:normalizeDueTime(action.dueTime),notes:action.notes||"",done:false,updatedAt:action.updatedAt||stampNow()}; return {...state,assignments:[...state.assignments,a]}; }
+    case "TOGGLE_ASSIGNMENT": return {...state,assignments:state.assignments.map(a=>a.id===action.id?{...a,done:!a.done,updatedAt:stampNow()}:a)};
+    case "EDIT_ASSIGNMENT":   return {...state,assignments:state.assignments.map(a=>a.id===action.id?{...a,title:action.title,dueDate:action.dueDate,dueTime:normalizeDueTime(action.dueTime),notes:action.notes,updatedAt:stampNow()}:a)};
     case "DELETE_ASSIGNMENT": return {...state,assignments:state.assignments.filter(a=>a.id!==action.id)};
     // v1.13 Tier 3 — upsert by id, for the calendar feed.
     //
@@ -142,7 +144,7 @@ export function reducer(state, action) {
     case "UPSERT_ASSIGNMENT": {
       const row = action.row || {};
       if (!row.id) return state;
-      const now = new Date().toISOString();
+      const now = stampNow();
       const i = state.assignments.findIndex(a => a.id === row.id);
       const next = {
         id: row.id,
@@ -166,8 +168,8 @@ export function reducer(state, action) {
       copy[i] = { ...copy[i], ...next };
       return {...state, assignments: copy};
     }
-    case "ADD_EXAM":    { const e={id:action.id||newSyncId(),courseId:action.courseId,title:action.title,dueDate:action.dueDate,difficulty:action.difficulty||"medium",notes:action.notes||"",done:false,topics:[],updatedAt:action.updatedAt||new Date().toISOString()}; return {...state,exams:[...state.exams,e]}; }
-    case "TOGGLE_EXAM": return {...state,exams:state.exams.map(e=>e.id===action.id?{...e,done:!e.done,updatedAt:new Date().toISOString()}:e)};
+    case "ADD_EXAM":    { const e={id:action.id||newSyncId(),courseId:action.courseId,title:action.title,dueDate:action.dueDate,difficulty:action.difficulty||"medium",notes:action.notes||"",done:false,topics:[],updatedAt:action.updatedAt||stampNow()}; return {...state,exams:[...state.exams,e]}; }
+    case "TOGGLE_EXAM": return {...state,exams:state.exams.map(e=>e.id===action.id?{...e,done:!e.done,updatedAt:stampNow()}:e)};
     // v1.13 (#45) — `deflate8818`, 2026-08-31: "Sometimes exams get
     // rescheduled, change name, aren't as difficult as once thought."
     // Assignments have had EDIT_ASSIGNMENT since v1.0; exams never did, so the
@@ -189,29 +191,29 @@ export function reducer(state, action) {
       notes: action.notes !== undefined ? action.notes : e.notes,
       difficulty: action.difficulty !== undefined ? action.difficulty : e.difficulty,
       courseId: action.courseId !== undefined ? action.courseId : e.courseId,
-      updatedAt: new Date().toISOString(),
+      updatedAt: stampNow(),
     })};
     case "DELETE_EXAM": return {...state,exams:state.exams.filter(e=>e.id!==action.id)};
-    case "UPDATE_EXAM_DIFFICULTY": return {...state,exams:state.exams.map(e=>e.id===action.id?{...e,difficulty:action.difficulty,updatedAt:new Date().toISOString()}:e)};
+    case "UPDATE_EXAM_DIFFICULTY": return {...state,exams:state.exams.map(e=>e.id===action.id?{...e,difficulty:action.difficulty,updatedAt:stampNow()}:e)};
     // Topic ids stay uid(): they live inside the exam's jsonb payload and are
     // never rows of their own, so Postgres never sees them as a uuid column.
-    case "ADD_EXAM_TOPIC":    return {...state,exams:state.exams.map(e=>e.id===action.examId?{...e,topics:[...(e.topics||[]),{id:uid(),title:action.title,done:false}],updatedAt:new Date().toISOString()}:e)};
-    case "TOGGLE_EXAM_TOPIC": return {...state,exams:state.exams.map(e=>e.id===action.examId?{...e,topics:(e.topics||[]).map(t=>t.id===action.topicId?{...t,done:!t.done}:t),updatedAt:new Date().toISOString()}:e)};
-    case "DELETE_EXAM_TOPIC": return {...state,exams:state.exams.map(e=>e.id===action.examId?{...e,topics:(e.topics||[]).filter(t=>t.id!==action.topicId),updatedAt:new Date().toISOString()}:e)};
-    case "ADD_ACTION":    { const a={id:action.id||newSyncId(),text:action.text,bucket:action.bucket||"today",courseId:action.courseId||null,done:false,suggested:action.suggested||false,sourceId:action.sourceId||null,updatedAt:action.updatedAt||new Date().toISOString()}; return {...state,actions:[...state.actions,a]}; }
-    case "TOGGLE_ACTION": return {...state,actions:state.actions.map(a=>a.id===action.id?{...a,done:!a.done,doneAt:!a.done?Date.now():null,updatedAt:new Date().toISOString()}:a)};
+    case "ADD_EXAM_TOPIC":    return {...state,exams:state.exams.map(e=>e.id===action.examId?{...e,topics:[...(e.topics||[]),{id:uid(),title:action.title,done:false}],updatedAt:stampNow()}:e)};
+    case "TOGGLE_EXAM_TOPIC": return {...state,exams:state.exams.map(e=>e.id===action.examId?{...e,topics:(e.topics||[]).map(t=>t.id===action.topicId?{...t,done:!t.done}:t),updatedAt:stampNow()}:e)};
+    case "DELETE_EXAM_TOPIC": return {...state,exams:state.exams.map(e=>e.id===action.examId?{...e,topics:(e.topics||[]).filter(t=>t.id!==action.topicId),updatedAt:stampNow()}:e)};
+    case "ADD_ACTION":    { const a={id:action.id||newSyncId(),text:action.text,bucket:action.bucket||"today",courseId:action.courseId||null,done:false,suggested:action.suggested||false,sourceId:action.sourceId||null,updatedAt:action.updatedAt||stampNow()}; return {...state,actions:[...state.actions,a]}; }
+    case "TOGGLE_ACTION": return {...state,actions:state.actions.map(a=>a.id===action.id?{...a,done:!a.done,doneAt:!a.done?Date.now():null,updatedAt:stampNow()}:a)};
     case "DELETE_ACTION": return {...state,actions:state.actions.filter(a=>a.id!==action.id)};
     case "SET_VIEW":      return {...state,view:action.view,activeCourse:action.course!==undefined?action.course:state.activeCourse};
 
     // ── Grades (new schema: per-grade rows linked to a subject) ──
-    case "ADD_GRADE":    { const g={id:action.id||newSyncId(),subjectId:action.subjectId,grade:Number(action.grade),weight:Number(action.weight??1),date:action.date||new Date().toISOString().slice(0,10),updatedAt:action.updatedAt||new Date().toISOString(),deletedAt:null}; return {...state,grades:[...(state.grades||[]),g]}; }
-    case "EDIT_GRADE":   return {...state,grades:(state.grades||[]).map(g=>g.id===action.id?{...g,subjectId:action.subjectId??g.subjectId,grade:action.grade!==undefined?Number(action.grade):g.grade,weight:action.weight!==undefined?Number(action.weight):g.weight,date:action.date??g.date,updatedAt:new Date().toISOString()}:g)};
-    case "DELETE_GRADE": { const stamp=new Date().toISOString(); return {...state,grades:(state.grades||[]).map(g=>g.id===action.id?{...g,deletedAt:stamp,updatedAt:stamp}:g)}; }
+    case "ADD_GRADE":    { const g={id:action.id||newSyncId(),subjectId:action.subjectId,grade:Number(action.grade),weight:Number(action.weight??1),date:action.date||new Date().toISOString().slice(0,10),updatedAt:action.updatedAt||stampNow(),deletedAt:null}; return {...state,grades:[...(state.grades||[]),g]}; }
+    case "EDIT_GRADE":   return {...state,grades:(state.grades||[]).map(g=>g.id===action.id?{...g,subjectId:action.subjectId??g.subjectId,grade:action.grade!==undefined?Number(action.grade):g.grade,weight:action.weight!==undefined?Number(action.weight):g.weight,date:action.date??g.date,updatedAt:stampNow()}:g)};
+    case "DELETE_GRADE": { const stamp=stampNow(); return {...state,grades:(state.grades||[]).map(g=>g.id===action.id?{...g,deletedAt:stamp,updatedAt:stamp}:g)}; }
 
     // ── Study sessions ──
-    case "ADD_SESSION":    { const s={id:action.id||newSyncId(),subjectId:action.subjectId||null,startedAt:action.startedAt,durationMinutes:Math.max(1,Math.min(1440,Math.round(action.durationMinutes))),notes:action.notes||null,focusRating:action.focusRating!=null?Math.max(1,Math.min(5,Math.round(action.focusRating))):null,aiDebriefRaw:action.aiDebriefRaw??null,aiSubjectCovered:action.aiSubjectCovered??null,aiComprehension:action.aiComprehension!=null?Math.max(1,Math.min(5,Math.round(action.aiComprehension))):null,aiConfusionFlags:Array.isArray(action.aiConfusionFlags)?action.aiConfusionFlags:null,aiSessionSummary:action.aiSessionSummary??null,updatedAt:action.updatedAt||new Date().toISOString(),deletedAt:null}; return {...state,studySessions:[...(state.studySessions||[]),s]}; }
-    case "EDIT_SESSION":   return {...state,studySessions:(state.studySessions||[]).map(s=>s.id===action.id?{...s,subjectId:action.subjectId!==undefined?(action.subjectId||null):s.subjectId,startedAt:action.startedAt??s.startedAt,durationMinutes:action.durationMinutes!==undefined?Math.max(1,Math.min(1440,Math.round(action.durationMinutes))):s.durationMinutes,notes:action.notes!==undefined?(action.notes||null):s.notes,focusRating:action.focusRating!==undefined?(action.focusRating!=null?Math.max(1,Math.min(5,Math.round(action.focusRating))):null):s.focusRating,aiDebriefRaw:action.aiDebriefRaw!==undefined?action.aiDebriefRaw:s.aiDebriefRaw,aiSubjectCovered:action.aiSubjectCovered!==undefined?action.aiSubjectCovered:s.aiSubjectCovered,aiComprehension:action.aiComprehension!==undefined?(action.aiComprehension!=null?Math.max(1,Math.min(5,Math.round(action.aiComprehension))):null):s.aiComprehension,aiConfusionFlags:action.aiConfusionFlags!==undefined?(Array.isArray(action.aiConfusionFlags)?action.aiConfusionFlags:null):s.aiConfusionFlags,aiSessionSummary:action.aiSessionSummary!==undefined?action.aiSessionSummary:s.aiSessionSummary,updatedAt:new Date().toISOString()}:s)};
-    case "DELETE_SESSION": { const stamp=new Date().toISOString(); return {...state,studySessions:(state.studySessions||[]).map(s=>s.id===action.id?{...s,deletedAt:stamp,updatedAt:stamp}:s)}; }
+    case "ADD_SESSION":    { const s={id:action.id||newSyncId(),subjectId:action.subjectId||null,startedAt:action.startedAt,durationMinutes:Math.max(1,Math.min(1440,Math.round(action.durationMinutes))),notes:action.notes||null,focusRating:action.focusRating!=null?Math.max(1,Math.min(5,Math.round(action.focusRating))):null,aiDebriefRaw:action.aiDebriefRaw??null,aiSubjectCovered:action.aiSubjectCovered??null,aiComprehension:action.aiComprehension!=null?Math.max(1,Math.min(5,Math.round(action.aiComprehension))):null,aiConfusionFlags:Array.isArray(action.aiConfusionFlags)?action.aiConfusionFlags:null,aiSessionSummary:action.aiSessionSummary??null,updatedAt:action.updatedAt||stampNow(),deletedAt:null}; return {...state,studySessions:[...(state.studySessions||[]),s]}; }
+    case "EDIT_SESSION":   return {...state,studySessions:(state.studySessions||[]).map(s=>s.id===action.id?{...s,subjectId:action.subjectId!==undefined?(action.subjectId||null):s.subjectId,startedAt:action.startedAt??s.startedAt,durationMinutes:action.durationMinutes!==undefined?Math.max(1,Math.min(1440,Math.round(action.durationMinutes))):s.durationMinutes,notes:action.notes!==undefined?(action.notes||null):s.notes,focusRating:action.focusRating!==undefined?(action.focusRating!=null?Math.max(1,Math.min(5,Math.round(action.focusRating))):null):s.focusRating,aiDebriefRaw:action.aiDebriefRaw!==undefined?action.aiDebriefRaw:s.aiDebriefRaw,aiSubjectCovered:action.aiSubjectCovered!==undefined?action.aiSubjectCovered:s.aiSubjectCovered,aiComprehension:action.aiComprehension!==undefined?(action.aiComprehension!=null?Math.max(1,Math.min(5,Math.round(action.aiComprehension))):null):s.aiComprehension,aiConfusionFlags:action.aiConfusionFlags!==undefined?(Array.isArray(action.aiConfusionFlags)?action.aiConfusionFlags:null):s.aiConfusionFlags,aiSessionSummary:action.aiSessionSummary!==undefined?action.aiSessionSummary:s.aiSessionSummary,updatedAt:stampNow()}:s)};
+    case "DELETE_SESSION": { const stamp=stampNow(); return {...state,studySessions:(state.studySessions||[]).map(s=>s.id===action.id?{...s,deletedAt:stamp,updatedAt:stamp}:s)}; }
 
     // ── Planned study blocks (v1.10) ──
     // A block the user INTENDS to study. Never written to studySessions — see
@@ -232,7 +234,7 @@ export function reducer(state, action) {
         // a one-off. Every occurrence is an ordinary independent row; this is
         // a label so "stop repeating" can find the rest of them, not a parent.
         seriesId: action.seriesId || null,
-        updatedAt: action.updatedAt || new Date().toISOString(),
+        updatedAt: action.updatedAt || stampNow(),
       };
       return { ...state, plannedSessions: [...(state.plannedSessions || []), p] };
     }
@@ -246,7 +248,7 @@ export function reducer(state, action) {
           : p.durationMinutes,
         title: action.title !== undefined ? (action.title || "") : p.title,
         notes: action.notes !== undefined ? (action.notes || "") : p.notes,
-        updatedAt: new Date().toISOString(),
+        updatedAt: stampNow(),
       })};
     // The two outcomes are mutually exclusive, and the DB enforces that. Each
     // clears the other rather than only setting its own, so a block dismissed
@@ -256,7 +258,7 @@ export function reducer(state, action) {
         ...p,
         fulfilledBy: action.fulfilledBy || null,
         dismissedAt: action.fulfilledBy ? null : (action.dismissedAt || null),
-        updatedAt: new Date().toISOString(),
+        updatedAt: stampNow(),
       })};
     // v1.14 Item 7a — dropping the remaining occurrences of a repeating plan.
     // Explicit ids, like DELETE_TT_ENTRIES: the caller counted them and showed
@@ -279,7 +281,7 @@ export function reducer(state, action) {
         startsOn: action.startsOn || "",
         endsOn: action.endsOn || "",
         position: Number.isFinite(Number(action.position)) ? Number(action.position) : 0,
-        updatedAt: action.updatedAt || new Date().toISOString(),
+        updatedAt: action.updatedAt || stampNow(),
       };
       return { ...state, academicTerms: [...(state.academicTerms || []), term] };
     }
@@ -290,7 +292,7 @@ export function reducer(state, action) {
         startsOn: action.startsOn !== undefined ? (action.startsOn || "") : x.startsOn,
         endsOn: action.endsOn !== undefined ? (action.endsOn || "") : x.endsOn,
         position: action.position !== undefined ? Number(action.position) || 0 : x.position,
-        updatedAt: new Date().toISOString(),
+        updatedAt: stampNow(),
       })};
     case "DELETE_TERM": {
       // Takes the whole subtree and every lesson attached to any of it.
@@ -322,7 +324,7 @@ export function reducer(state, action) {
         // else normalises to null here rather than being stored and having to
         // be defended against at every read.
         weekParity: action.weekParity === 1 || action.weekParity === 2 ? action.weekParity : null,
-        updatedAt: action.updatedAt || new Date().toISOString(),
+        updatedAt: action.updatedAt || stampNow(),
       };
       return { ...state, timetableEntries: [...(state.timetableEntries || []), e] };
     }
@@ -346,7 +348,7 @@ export function reducer(state, action) {
         weekParity: action.weekParity !== undefined
           ? (action.weekParity === 1 || action.weekParity === 2 ? action.weekParity : null)
           : (e.weekParity ?? null),
-        updatedAt: new Date().toISOString(),
+        updatedAt: stampNow(),
       })};
     case "DELETE_TT_ENTRY":
       return { ...state, timetableEntries: (state.timetableEntries || []).filter(e => e.id !== action.id) };
@@ -390,7 +392,7 @@ export function reducer(state, action) {
         startTime: action.startTime,
         endTime: action.endTime,
         notes: action.notes || "",
-        updatedAt: action.updatedAt || new Date().toISOString(),
+        updatedAt: action.updatedAt || stampNow(),
       };
       // An end date on a one-off is meaningless and the DB rejects it, and an
       // interval describes a recurrence a one-off does not have.
@@ -418,7 +420,7 @@ export function reducer(state, action) {
           startTime: action.startTime ?? c.startTime,
           endTime: action.endTime ?? c.endTime,
           notes: action.notes !== undefined ? (action.notes || "") : c.notes,
-          updatedAt: new Date().toISOString(),
+          updatedAt: stampNow(),
         };
         if (next.weekday === null) { next.endsOn = ""; next.intervalWeeks = null; }
         return next;
@@ -475,7 +477,7 @@ export function reducer(state, action) {
         // layout at all.
         layout: action.note.layout ?? null,
         sessionId: action.note.sessionId ?? null,
-        updatedAt: new Date().toISOString(),
+        updatedAt: stampNow(),
         deletedAt: null,
       };
       return { ...state, notes: [...(state.notes || []), n] };
@@ -483,7 +485,7 @@ export function reducer(state, action) {
     case "UPDATE_NOTE": {
       const notes = (state.notes || []).map((n) => (
         n.id === action.id
-          ? { ...n, ...action.patch, updatedAt: new Date().toISOString() }
+          ? { ...n, ...action.patch, updatedAt: stampNow() }
           : n
       ));
       return { ...state, notes };
@@ -494,7 +496,7 @@ export function reducer(state, action) {
     case "DELETE_NOTE": {
       const notes = (state.notes || []).map((n) => (
         n.id === action.id
-          ? { ...n, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+          ? { ...n, deletedAt: stampNow(), updatedAt: stampNow() }
           : n
       ));
       return { ...state, notes };
@@ -526,7 +528,7 @@ export function reducer(state, action) {
       const i = rows.findIndex((r) => (
         r.timetableEntryId === action.timetableEntryId && r.date === action.date
       ));
-      const now = new Date().toISOString();
+      const now = stampNow();
       // A null status means "unmark" — the cycle returns to unmarked, and an
       // unmarked lesson must leave NO live row, or it would sit in the
       // denominator as a status the summariser does not recognise.

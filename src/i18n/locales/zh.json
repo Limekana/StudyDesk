@@ -741,8 +741,7 @@
       "assignmentAdded": "作业已添加",
       "examAdded": "考试已添加",
       "logged": "已记录 {{n}} 分钟",
-      "syncedLegacy": "已同步 {{n}} 项旧数据",
-      "syncedFailed": "{{pushed}} 已同步，{{failed}} 失败 — 将重试"
+      "queuedLegacy_other": "{{count}} 项旧待办等待同步"
     }
   },
   "widget": {

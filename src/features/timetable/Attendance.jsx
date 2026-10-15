@@ -147,7 +147,9 @@ export default function Attendance({ state, dispatch, session, term }) {
     if (next === null) {
       // Nothing to delete if the row was never created locally, and nothing to
       // tell the server about either.
-      if (existing) outbox.enqueue('delete_attendance', { id });
+      // v1.18.1 (StudyDesk#143): the natural key goes along; the server row
+      // may carry another device's id.
+      if (existing) outbox.enqueue('delete_attendance', { id, timetableEntryId: entryId, date: iso });
       return;
     }
     // `id` is carried for the outbox's own identity (`kind::payload.id`, which

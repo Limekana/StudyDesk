@@ -1082,16 +1082,20 @@ check('upsert -> delete -> upsert keeps the user\'s final state', () => {
   // upserts and deletes never coalesce together — and taking the FIRST match
   // moved the newer upsert behind the older delete. Three offline taps on one
   // lesson (present -> ... -> null -> present) ended with the row DELETED.
+  //
+  // v1.18.1 (StudyDesk#143): the clear now also drops the mark queued before
+  // it, so a failed mark cannot retry after the clear and re-insert the row.
+  // The sequence that is left is the one that matters: clear, then re-mark.
   outbox.clear();
   outbox.enqueue('upsert_attendance', { id: 'att-1', status: 'present' });
   outbox.enqueue('delete_attendance', { id: 'att-1' });
   outbox.enqueue('upsert_attendance', { id: 'att-1', status: 'present' });
 
   const after = queued();
-  assert.equal(after.length, 3, 'the newer upsert must not fold into the older one');
+  assert.deepEqual(after.map((i) => i.kind), ['delete_attendance', 'upsert_attendance'],
+    'the newer upsert must not fold into anything older, and the clear drops the mark before it');
   assert.equal(after[after.length - 1].kind, 'upsert_attendance',
     'the last thing to drain must be the upsert, or the lesson ends up deleted');
-  assert.equal(after[1].kind, 'delete_attendance', 'the delete keeps its place in the sequence');
 });
 
 check('a repeated upsert after a delete still coalesces, staying bounded', () => {

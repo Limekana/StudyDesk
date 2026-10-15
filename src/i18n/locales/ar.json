@@ -761,8 +761,12 @@
       "assignmentAdded": "تمت إضافة الواجب",
       "examAdded": "تمت إضافة الاختبار",
       "logged": "سُجِّلت {{n}} دقيقة",
-      "syncedLegacy": "تمت مزامنة {{n}} عنصرًا قديمًا",
-      "syncedFailed": "{{pushed}} متزامنة، {{failed}} فاشلة — ستُعاد المحاولة"
+      "queuedLegacy_zero": "لا مهام قديمة بانتظار المزامنة",
+      "queuedLegacy_one": "مهمة قديمة واحدة بانتظار المزامنة",
+      "queuedLegacy_two": "مهمتان قديمتان بانتظار المزامنة",
+      "queuedLegacy_few": "{{count}} مهام قديمة بانتظار المزامنة",
+      "queuedLegacy_many": "{{count}} مهمةً قديمةً بانتظار المزامنة",
+      "queuedLegacy_other": "{{count}} مهمة قديمة بانتظار المزامنة"
     }
   },
   "widget": {

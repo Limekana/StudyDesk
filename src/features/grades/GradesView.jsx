@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { calculateGPA, subjectEffectiveGrade, subjectsWithEffectiveGrades } from '../../lib/gpa.js';
 import { scaleFor, describeScale } from '../../lib/gradeScale.js';
 import * as outbox from '../../lib/outbox.js';
+import { stampNow } from '../../lib/serverClock.js';
 import { enterSubmit } from '../../lib/imeSubmit.js';
 import WeightBlocks from '../../lib/WeightBlocks.jsx';
 import {
@@ -176,18 +177,19 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
   // change (LWW will reconcile on next pull). "Unscoped" semester (null)
   // can't be archived as a group — the user has to either tag those
   // courses with a semester first or archive them individually.
+  // v1.18.1 (StudyDesk#144): stamps in server time; see serverClock.js.
   function archiveSem(semester) {
     if (!semester) return;
-    const stamp = new Date().toISOString();
+    const stamp = stampNow();
     dispatch({ type: 'ARCHIVE_SEMESTER', semester, stamp });
     showFlash(t('gv.archived', { name: semester }));
     // Snapshot the courses map at enqueue time so a queued retry doesn't
     // miss courses added later — the batch is what the user intended now.
-    if (session) outbox.enqueue('archive_semester', { courses: state.courses, semester });
+    if (session) outbox.enqueue('archive_semester', { courses: state.courses, semester, stamp });
   }
   function restoreSem(semester) {
     if (!semester) return;
-    const stamp = new Date().toISOString();
+    const stamp = stampNow();
     dispatch({ type: 'RESTORE_SEMESTER', semester, stamp });
     showFlash(t('gv.restored', { name: semester }));
     if (session) outbox.enqueue('restore_semester', { courses: state.courses, semester });

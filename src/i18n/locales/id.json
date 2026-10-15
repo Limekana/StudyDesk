@@ -736,8 +736,7 @@
       "assignmentAdded": "Tugas ditambahkan",
       "examAdded": "Ujian ditambahkan",
       "logged": "{{n}} mnt tercatat",
-      "syncedLegacy": "{{n}} item lama tersinkron",
-      "syncedFailed": "{{pushed}} tersinkron, {{failed}} gagal — akan dicoba lagi"
+      "queuedLegacy_other": "{{count}} to-do lama menunggu disinkronkan"
     }
   },
   "widget": {

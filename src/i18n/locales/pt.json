@@ -746,8 +746,9 @@
       "assignmentAdded": "Trabalho adicionado",
       "examAdded": "Prova adicionada",
       "logged": "{{n}}min registrados",
-      "syncedLegacy": "{{n}} itens antigos sincronizados",
-      "syncedFailed": "{{pushed}} sincronizados, {{failed}} falharam — vamos tentar de novo"
+      "queuedLegacy_one": "{{count}} tarefa antiga aguardando sincronização",
+      "queuedLegacy_many": "{{count}} tarefas antigas aguardando sincronização",
+      "queuedLegacy_other": "{{count}} tarefas antigas aguardando sincronização"
     }
   },
   "widget": {

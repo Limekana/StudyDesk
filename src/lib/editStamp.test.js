@@ -98,9 +98,11 @@ describe('editStamp — what it does not stamp', () => {
     expect(editStamp('upsert_attendance', { timetableEntryId: 't1' }, NOON)).toBeNull();
   });
 
-  it('covers every upsert kind the outbox can send to a table with updated_at', () => {
+  // v1.18.1 (StudyDesk#143): plus the attendance clear, the one delete that
+  // must carry the time of the user's action (a re-mark has to be newer).
+  it('covers every upsert kind the outbox can send to a table with updated_at, and the attendance clear', () => {
     expect(Object.keys(STAMPED_KINDS).sort()).toEqual([
-      'log_session', 'update_session', 'upsert_action', 'upsert_assignment', 'upsert_attendance',
+      'delete_attendance', 'log_session', 'update_session', 'upsert_action', 'upsert_assignment', 'upsert_attendance',
       'upsert_commitment', 'upsert_exam', 'upsert_grade', 'upsert_note', 'upsert_note_attachment',
       'upsert_planned', 'upsert_subject', 'upsert_term', 'upsert_timetable',
     ]);

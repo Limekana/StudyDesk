@@ -1,89 +1,37 @@
 // The two pushers that diff state instead of enqueueing at call sites.
 // Moved out of App.jsx unchanged and called from the same place (limecore#12).
 import { useEffect, useRef } from "react";
-import * as sync from "../lib/sync.js";
 import * as outbox from "../lib/outbox.js";
 import { isInSync, isRemoteTombstone } from "../lib/syncStamps.js";
+import { runLegacyPush } from "../lib/legacyPush.js";
 
-export function useCloudPushers({ session, state, pulledOnceRef, remoteStampsRef, showFlash, t }) {
+export function useCloudPushers({ session, state, pulledOnce, pulledOnceRef, remoteStampsRef, showFlash, t }) {
   // ── v1.0.4 one-shot post-migration push ─────────────────────────────────────
   // The UUID migration in the reducer init may have rewritten local IDs. Those
   // rewritten rows have never reached Supabase (the old short-ID pushes were
   // failing silently). Push everything once after sign-in. Subjects must go
   // before grades (FK), grades before sessions doesn't matter (no FK between).
   // Fire-and-forget per row, log failures — next user edit will retry.
+  //
+  // v1.18.1 (StudyDesk#146): queued through the outbox after the first pull,
+  // instead of pushed directly before it, and the flag is cleared once the
+  // queue write lands. Pushed directly, each row was stamped with the push
+  // time, and one row that could never succeed (a to-do whose course was
+  // deleted before it synced fails its foreign key) kept the flag set, so
+  // EVERY launch re-sent the whole dataset stamped "now" and overwrote edits
+  // made on other devices. Now only the to-dos the server lacks are queued:
+  // reconcile, in the same pull, queues every other row it lacks (see
+  // legacyPush.js). The flash says "waiting to sync", since queued is not
+  // yet synced.
   useEffect(() => {
-    if (!session) return;
-    if (localStorage.getItem("studydesk-needs-initial-push") !== "1") return;
-    let cancelled = false;
-    (async () => {
-      let pushed = 0, failed = 0;
-      const courses = Object.values(state.courses).filter(c => !c.deletedAt);
-      for (const c of courses) {
-        if (cancelled) return;
-        try {
-          await sync.upsertSubject({ id: c.id, name: c.name, credits: c.credits, semester: c.semester, schoolYear: c.schoolYear, color: c.color });
-          pushed++;
-        } catch (e) { failed++; console.error("[StudyDesk] initial push subject failed:", c.id, e); }
-      }
-      const grades = (state.grades || []).filter(g => !g.deletedAt);
-      for (const g of grades) {
-        if (cancelled) return;
-        try {
-          await sync.upsertGrade({ id: g.id, subjectId: g.subjectId, grade: g.grade, weight: g.weight, date: g.date });
-          pushed++;
-        } catch (e) { failed++; console.error("[StudyDesk] initial push grade failed:", g.id, e); }
-      }
-      const sessions = (state.studySessions || []).filter(s => !s.deletedAt);
-      for (const s of sessions) {
-        if (cancelled) return;
-        try {
-          await sync.logStudySession({ id: s.id, subjectId: s.subjectId, startedAt: s.startedAt, durationMinutes: s.durationMinutes, notes: s.notes });
-          pushed++;
-        } catch (e) { failed++; console.error("[StudyDesk] initial push session failed:", s.id, e); }
-      }
-      // v1.7 (StudyDesk#6) — assignments/exams/actions. These run AFTER courses
-      // because both carry a NOT NULL subject_id FK; a course that failed above
-      // would take its homework down with it, which is why failures are counted
-      // rather than thrown (the flag stays set and the whole batch retries).
-      // Rows whose course no longer exists locally are skipped rather than
-      // attempted: the FK would reject them and burn a retry every launch.
-      for (const a of (state.assignments || [])) {
-        if (cancelled) return;
-        if (!a.courseId || !state.courses[a.courseId]) continue;
-        try {
-          await sync.upsertAssignment({ id: a.id, courseId: a.courseId, title: a.title, type: a.type, dueDate: a.dueDate, dueTime: a.dueTime, notes: a.notes, done: a.done });
-          pushed++;
-        } catch (e) { failed++; console.error("[StudyDesk] initial push assignment failed:", a.id, e); }
-      }
-      for (const ex of (state.exams || [])) {
-        if (cancelled) return;
-        if (!ex.courseId || !state.courses[ex.courseId]) continue;
-        try {
-          await sync.upsertExam({ id: ex.id, courseId: ex.courseId, title: ex.title, dueDate: ex.dueDate, difficulty: ex.difficulty, notes: ex.notes, done: ex.done, topics: ex.topics });
-          pushed++;
-        } catch (e) { failed++; console.error("[StudyDesk] initial push exam failed:", ex.id, e); }
-      }
-      // Only manual to-dos. The suggested ones are derived from assignments and
-      // exams on every render and must never reach the cloud, or they would
-      // come back as duplicate real rows alongside the freshly derived ones.
-      for (const ac of (state.actions || []).filter(x => !x.suggested)) {
-        if (cancelled) return;
-        try {
-          await sync.upsertAction({ id: ac.id, text: ac.text, bucket: ac.bucket, courseId: ac.courseId, done: ac.done });
-          pushed++;
-        } catch (e) { failed++; console.error("[StudyDesk] initial push action failed:", ac.id, e); }
-      }
-      if (failed === 0) {
-        try { localStorage.removeItem("studydesk-needs-initial-push"); } catch {}
-        if (pushed > 0) showFlash(t('av.flash.syncedLegacy', { n: pushed }));
-      } else {
-        showFlash(t('av.flash.syncedFailed', { pushed, failed }));
-      }
-    })();
-    return () => { cancelled = true; };
+    if (!session || !pulledOnce) return;
+    // The first pull failed, so what the server holds is unknown. The flag
+    // stays, and the next launch tries again.
+    if (!remoteStampsRef.current) return;
+    const queued = runLegacyPush(state, remoteStampsRef.current);
+    if (queued > 0) showFlash(t('av.flash.queuedLegacy', { count: queued }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user?.id]);
+  }, [session?.user?.id, pulledOnce]);
 
   // ── v1.7 push reconciler for assignments / exams / actions (StudyDesk#6) ────
   //

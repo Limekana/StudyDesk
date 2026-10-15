@@ -90,6 +90,9 @@ function saveItems(items) {
   try {
     window.dispatchEvent(new CustomEvent(CHANGE_EVENT));
   } catch { /* SSR / non-window environments */ }
+  // v1.18.1 (StudyDesk#146): reported, so a caller that must not forget work
+  // it handed over (the one-off legacy push) can tell whether it landed.
+  return ok;
 }
 
 function loadMeta() {
@@ -110,10 +113,16 @@ function saveMeta(meta) {
   cachedStatus = null;
 }
 
+// v1.18.1 (StudyDesk#146): `enqueueMany` mints a whole batch inside one
+// millisecond, and two items sharing an id would leave together when either
+// one succeeds. The counter keeps ids from one session distinct.
+let idSeq = 0;
+
 function makeId() {
   // Cheap unique-ish ID — outbox items live briefly; collision risk is nil
   // and we don't need crypto strength here.
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  idSeq += 1;
+  return `${Date.now().toString(36)}-${idSeq.toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 // ── Public API ─────────────────────────────────────────────────────────────
@@ -259,10 +268,39 @@ function coalesceOnto(item, payload) {
   };
 }
 
-export function enqueue(kind, payload) {
+/** v1.18.1 (StudyDesk#143): a clear supersedes every mark queued before it
+ *  for the same lesson, so those marks leave the queue with it.
+ *
+ *  Kept, a queued mark could land AFTER the clear. Mark then clear offline:
+ *  on reconnect the mark fails once, the clear runs and matches nothing (the
+ *  row does not exist yet), and the mark's retry then inserts the row the
+ *  user had cleared. `reviveFkChildren` could do the same to a mark
+ *  quarantined on its timetable entry, once the entry landed. A dropped mark
+ *  cannot come back either way, and the clear carries the user's last word.
+ *
+ *  Matched by the natural key (the server's identity for the row) and by id
+ *  (a clear queued by an older build carries only that). The mark being
+ *  pushed right now is dropped too: `drain` only rewrites an item it can
+ *  still find, so if that push fails the mark is not put back, and if it
+ *  succeeds the clear, queued behind it, removes it. Mutates `items`. */
+function dropSupersededMarks(items, clear) {
+  const entry = clear?.timetableEntryId;
+  const date = clear?.date;
+  const id = typeof clear?.id === 'string' && clear.id ? clear.id : null;
+  for (let i = items.length - 1; i >= 0; i -= 1) {
+    const it = items[i];
+    if (it.kind !== 'upsert_attendance') continue;
+    const p = it.payload || {};
+    const sameLesson = (entry && date && p.timetableEntryId === entry && p.date === date) || (id && p.id === id);
+    if (sameLesson) items.splice(i, 1);
+  }
+}
+
+/** Fold one mutation into `items`, in memory. False for an unknown kind. */
+function addItem(items, kind, payload) {
   if (!KIND_DISPATCH[kind]) {
     console.error('[outbox] unknown kind:', kind);
-    return;
+    return false;
   }
   // v1.16 (limecore#27, registry P6): stamp the EDIT, here, on every enqueue.
   // The push used to stamp the moment it was SENT, so a snapshot edited
@@ -272,7 +310,7 @@ export function enqueue(kind, payload) {
   // not the first edit's. See src/lib/editStamp.js.
   const stamp = editStamp(kind, payload);
   if (stamp) payload = { ...payload, updatedAt: stamp };
-  const items = loadItems();
+  if (kind === 'delete_attendance') dropSupersededMarks(items, payload);
   const key = identityOf(kind, payload);
   const rowId = payload?.id;
   if (key && typeof rowId === 'string' && rowId) {
@@ -304,9 +342,7 @@ export function enqueue(kind, payload) {
     }
     if (at !== -1 && identityOf(items[at].kind, items[at].payload) === key) {
       items[at] = coalesceOnto(items[at], payload);
-      saveItems(items);
-      void drain();
-      return;
+      return true;
     }
   }
   items.push({
@@ -316,10 +352,39 @@ export function enqueue(kind, payload) {
     payload,
     attempts: 0,
   });
+  return true;
+}
+
+export function enqueue(kind, payload) {
+  const items = loadItems();
+  if (!addItem(items, kind, payload)) return;
   saveItems(items);
   // Fire-and-forget drain. Single-flight inside drain() coalesces overlapping
   // calls so this is safe even if many enqueues land in quick succession.
   void drain();
+}
+
+/**
+ * Queue many mutations at once: one read of the queue, one write, one drain.
+ * Each `{kind, payload}` is stamped and coalesced exactly as `enqueue` would.
+ * Returns whether the queue write landed (false on a full or blocked store;
+ * true when there was nothing to add).
+ *
+ * v1.18.1 (StudyDesk#146). `enqueue` parses and re-serialises the whole queue
+ * on every call, so queueing N rows one by one costs O(N²): a migrated
+ * dataset of 1,820 rows took 7 s, on the main thread, at launch. Reconcile
+ * and the one-off legacy push both hand over their rows here.
+ */
+export function enqueueMany(entries) {
+  const items = loadItems();
+  let added = 0;
+  for (const { kind, payload } of entries || []) {
+    if (addItem(items, kind, payload)) added += 1;
+  }
+  if (!added) return true;
+  const ok = saveItems(items);
+  void drain();
+  return ok;
 }
 
 // ── Dependency ranking ─────────────────────────────────────────────────────
@@ -378,6 +443,11 @@ const KIND_RANK = {
 
   upsert_attendance: 2,
   upsert_note_attachment: 2,
+  // v1.18.1 (StudyDesk#143): the one delete that IS ranked. Attendance is a
+  // toggle on one natural key, so its upsert and delete must drain in the
+  // order the user tapped them; at the default rank 1 the delete ran ahead of
+  // an earlier upsert and the server ended up marked after a clear.
+  delete_attendance: 2,
 };
 
 function rankOf(kind) {
@@ -710,7 +780,7 @@ const KIND_DISPATCH = {
   // Semester archive/restore: stored as a single batch op so a retry doesn't
   // re-fire one course per item if the user archived a 6-course semester.
   // `courses` snapshot is captured at enqueue time so the batch is stable.
-  archive_semester: (p) => sync.archiveSemester(p.courses, p.semester),
+  archive_semester: (p) => sync.archiveSemester(p.courses, p.semester, p.stamp),
   restore_semester: (p) => sync.restoreSemester(p.courses, p.semester),
   // v1.10 — planned study blocks, the academic-term tree and the weekly
   // timetable. Same snapshot-not-patch contract as the assignments above.
@@ -734,7 +804,7 @@ const KIND_DISPATCH = {
   delete_commitment: (p) => sync.deleteCommitment(p.id),
   // v1.13 Tier 2 — lesson attendance (#31).
   upsert_attendance: (p) => sync.upsertAttendance(p),
-  delete_attendance: (p) => sync.deleteAttendance(p.id),
+  delete_attendance: (p) => sync.deleteAttendance(p),
   // v1.13 Item 1b — the notebook. A note is queued like any other entity;
   // its ATTACHMENT UPLOAD is not, for the same reason assignment uploads are
   // not — a File cannot survive the JSON round trip this queue is persisted

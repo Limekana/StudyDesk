@@ -442,7 +442,7 @@ export default function App() {
     }
   }, [state.view]);
 
-  useCloudPushers({ session, state, pulledOnceRef, remoteStampsRef, showFlash, t });
+  useCloudPushers({ session, state, pulledOnce, pulledOnceRef, remoteStampsRef, showFlash, t });
 
   // NOTE: the sign-out handler lives in SettingsView.onSignOut (identical logic
   // incl. the guestMode=true anti-auto-re-sign-in fix). An earlier duplicate

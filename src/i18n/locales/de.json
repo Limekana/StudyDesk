@@ -741,8 +741,8 @@
       "assignmentAdded": "Aufgabe hinzugefügt",
       "examAdded": "Prüfung hinzugefügt",
       "logged": "{{n}} Min erfasst",
-      "syncedLegacy": "{{n}} Altdaten synchronisiert",
-      "syncedFailed": "{{pushed}} synchronisiert, {{failed}} fehlgeschlagen — wird wiederholt"
+      "queuedLegacy_one": "{{count}} älteres To-do wartet auf Synchronisierung",
+      "queuedLegacy_other": "{{count}} ältere To-dos warten auf Synchronisierung"
     }
   },
   "widget": {

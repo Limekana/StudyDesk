@@ -741,8 +741,8 @@
       "assignmentAdded": "असाइनमेंट जोड़ा गया",
       "examAdded": "परीक्षा जोड़ी गई",
       "logged": "{{n}} मिनट दर्ज",
-      "syncedLegacy": "{{n}} पुराने आइटम सिंक हुए",
-      "syncedFailed": "{{pushed}} सिंक हुए, {{failed}} विफल — फिर कोशिश होगी"
+      "queuedLegacy_one": "{{count}} पुराना काम सिंक होने की प्रतीक्षा में",
+      "queuedLegacy_other": "{{count}} पुराने काम सिंक होने की प्रतीक्षा में"
     }
   },
   "widget": {

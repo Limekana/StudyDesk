@@ -746,8 +746,9 @@
       "assignmentAdded": "Tarea añadida",
       "examAdded": "Examen añadido",
       "logged": "Registrado {{n}} min",
-      "syncedLegacy": "{{n}} elementos antiguos sincronizados",
-      "syncedFailed": "{{pushed}} sincronizados, {{failed}} fallidos — se reintentará"
+      "queuedLegacy_one": "{{count}} pendiente antiguo esperando sincronización",
+      "queuedLegacy_many": "{{count}} pendientes antiguos esperando sincronización",
+      "queuedLegacy_other": "{{count}} pendientes antiguos esperando sincronización"
     }
   },
   "widget": {

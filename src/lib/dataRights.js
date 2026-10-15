@@ -37,11 +37,21 @@ const EXPORT_SCHEMA_VERSION = 1;
  */
 export const SERVER_ONLY_TABLES = ['feedback', 'client_errors'];
 
+// v1.18.1 (StudyDesk#153): the columns a signed-in user may read. `feedback`
+// lost its table-wide SELECT in the v1.17 status-columns migration; only
+// these are granted, so `select('*')` (and a filter on user_id) failed as a
+// whole and the export held "permission denied" instead of the user's
+// feedback. RLS already limits the rows to the user's own. `client_errors`
+// still has every column granted, user_id included.
+const FEEDBACK_EXPORT_COLUMNS = 'id, app, app_version, category, rating, message, status, shipped_in, created_at';
+
 export async function serverOnlyData(userId) {
   const out = {};
   for (const table of SERVER_ONLY_TABLES) {
     try {
-      const { data, error } = await selectAll(supabase, table, { filter: (q) => q.eq('user_id', userId) });
+      const { data, error } = table === 'feedback'
+        ? await selectAll(supabase, table, { columns: FEEDBACK_EXPORT_COLUMNS })
+        : await selectAll(supabase, table, { filter: (q) => q.eq('user_id', userId) });
       out[table] = error ? { error: error.message } : (data ?? []);
     } catch (e) {
       out[table] = { error: e.message };
