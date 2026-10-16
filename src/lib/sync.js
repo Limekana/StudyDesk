@@ -56,7 +56,7 @@ export async function recordAppOpen({ app, appVersion, platform, openedOn }) {
 
 // `insertOnly` (v1.18.1, StudyDesk#145) creates the row if the server lacks
 // it and leaves an existing row untouched; see setArchivedAt.
-export async function upsertSubject({ id, name, credits, semester, color, archivedAt, schoolYear, updatedAt }, { insertOnly = false } = {}) {
+export async function upsertSubject({ id, name, credits, semester, color, archivedAt, archivedEditedAt, schoolYear, updatedAt }, { insertOnly = false } = {}) {
   const userId = await currentUserId();
   const row = {
     id,
@@ -73,6 +73,10 @@ export async function upsertSubject({ id, name, credits, semester, color, archiv
     // individually here. archivedAt === undefined preserves prior value
     // (don't pass through to the upsert), null/ISO string sets it.
     ...(archivedAt !== undefined ? { archived_at: archivedAt } : {}),
+    // v1.18.1 (StudyDesk#163) — when the user archived/restored, sent only by
+    // setArchivedAt. Same preserve-on-undefined rule: no other caller knows
+    // it, and a server without the column would reject the write.
+    ...(archivedEditedAt !== undefined ? { archived_edited_at: archivedEditedAt } : {}),
     // v1.5 — school_year groups periods/jaksot for the history view. Same
     // preserve-on-undefined semantics as archived_at: callers that don't know
     // about it (e.g. NCC, the add-course path) won't clobber an existing value.
@@ -103,20 +107,22 @@ export async function archiveSemester(courses, semester, stamp) {
   const targets = Object.values(courses || {}).filter(
     (c) => !c.deletedAt && !c.archivedAt && c.semester === semester,
   );
-  const results = await Promise.allSettled(targets.map((c) => setArchivedAt(c, archivedAt)));
+  const results = await Promise.allSettled(targets.map((c) => setArchivedAt(c, archivedAt, stamp || null)));
   const failed = results.filter((r) => r.status === 'rejected').length;
   return { archived: targets.length - failed, failed };
 }
 
 /**
  * Restore every archived subject tagged with the given semester. Inverse
- * of archiveSemester. Same per-row semantics.
+ * of archiveSemester. Same per-row semantics. `stamp` is when the user
+ * restored (v1.18.1, StudyDesk#163); an item queued by an older build has
+ * none and is written as that build would have.
  */
-export async function restoreSemester(courses, semester) {
+export async function restoreSemester(courses, semester, stamp) {
   const targets = Object.values(courses || {}).filter(
     (c) => !c.deletedAt && c.archivedAt && c.semester === semester,
   );
-  const results = await Promise.allSettled(targets.map((c) => setArchivedAt(c, null)));
+  const results = await Promise.allSettled(targets.map((c) => setArchivedAt(c, null, stamp || null)));
   const failed = results.filter((r) => r.status === 'rejected').length;
   return { restored: targets.length - failed, failed };
 }
@@ -136,7 +142,30 @@ export async function restoreSemester(courses, semester) {
 // newer) and when zz_skip_noop_update dropped it (archived_at already had
 // this value). A plain upsert of the snapshot then overwrote the newer row,
 // rename and all, which is the loss this function exists to prevent.
-async function setArchivedAt(course, archivedAt) {
+//
+// v1.18.1 (StudyDesk#163) — the push-time stamp let a stale archive win: an
+// offline archive from 10:00 pushed at 12:00 undid a restore made elsewhere
+// at 11:00, and then declined that device's 11:30 rename. The archive now
+// carries its own stamp, `archived_edited_at` = `editedAt`, the moment the
+// user pressed the button. The server keeps whichever archive change is newer
+// by that stamp and moves `updated_at` by 1 ms only, so the row's content
+// keeps last-writer-wins (20261016_archive_edit_stamp.sql). `updated_at` is
+// therefore not sent. An item queued by an older build has no `editedAt`,
+// and a server without the column (migration not yet applied) refuses the
+// write: both are written the 1.18.0 way below.
+async function setArchivedAt(course, archivedAt, editedAt = null) {
+  if (editedAt) {
+    const { data, error } = await supabase
+      .from('subjects')
+      .update({ archived_at: archivedAt, archived_edited_at: editedAt })
+      .eq('id', course.id)
+      .select('id');
+    if (!error) {
+      if (data && data.length > 0) return course.id;
+      return insertArchivedCourse(course, archivedAt, editedAt);
+    }
+    if (!lacksArchiveStamp(error)) throw error;
+  }
   const { data, error } = await supabase
     .from('subjects')
     .update({ archived_at: archivedAt, updated_at: pushStamp() })
@@ -144,6 +173,10 @@ async function setArchivedAt(course, archivedAt) {
     .select('id');
   if (error) throw error;
   if (data && data.length > 0) return course.id;
+  return insertArchivedCourse(course, archivedAt, undefined);
+}
+
+function insertArchivedCourse(course, archivedAt, archivedEditedAt) {
   return upsertSubject({
     id: course.id,
     name: course.name,
@@ -152,8 +185,16 @@ async function setArchivedAt(course, archivedAt) {
     schoolYear: course.schoolYear,
     color: course.color,
     archivedAt,
+    archivedEditedAt,
     updatedAt: course.updatedAt,
   }, { insertOnly: true });
+}
+
+// PostgREST's answer to a column it does not know (PGRST204), or Postgres's
+// (42703) behind it.
+function lacksArchiveStamp(error) {
+  return (error.code === 'PGRST204' || error.code === '42703')
+    && /archived_edited_at/.test(error.message || '');
 }
 
 export async function deleteSubject(id) {

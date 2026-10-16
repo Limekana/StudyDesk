@@ -192,7 +192,9 @@ export default function GradesView({ state, dispatch, showFlash, session }) {
     const stamp = stampNow();
     dispatch({ type: 'RESTORE_SEMESTER', semester, stamp });
     showFlash(t('gv.restored', { name: semester }));
-    if (session) outbox.enqueue('restore_semester', { courses: state.courses, semester });
+    // v1.18.1 (StudyDesk#163) — the stamp goes up as the restore's own edit
+    // time, so an older archive pushed late from another device cannot undo it.
+    if (session) outbox.enqueue('restore_semester', { courses: state.courses, semester, stamp });
   }
 
   // Group subjects by semester for the archive controls. Subjects with no

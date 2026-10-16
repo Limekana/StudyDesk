@@ -4,7 +4,8 @@ import { makeLwwServer } from '../test/lwwServer.js';
 // v1.18.1 — sync against a stand-in that applies the server's
 // last-writer-wins rules (set_updated_at) and its no-op guard
 // (zz_skip_noop_update): StudyDesk#143 (attendance clear and re-mark),
-// StudyDesk#145 (semester archive overwriting newer edits) and StudyDesk#146
+// StudyDesk#145 (semester archive overwriting newer edits), StudyDesk#163
+// (the archive stamped at the edit, not the push) and StudyDesk#146
 // (the one-off legacy push).
 
 const H = vi.hoisted(() => ({ server: null }));
@@ -20,6 +21,8 @@ const { applyRemotePull } = await import('./merge.js');
 const { reconcileUnsynced } = await import('./reconcile.js');
 const { runLegacyPush } = await import('./legacyPush.js');
 const { stampsFromPull } = await import('./syncStamps.js');
+const sync = await import('./sync.js');
+const { reducer } = await import('./appReducer.js');
 
 function storage() {
   const m = new Map();
@@ -205,10 +208,12 @@ describe('semester archive offline (StudyDesk#145)', () => {
     expect(outbox.getStatus().pending).toBe(0);
   });
 
-  it('an archive the server declines (its row is newer) leaves that row alone', async () => {
+  // v1.18.1 (StudyDesk#163): a newer CONTENT edit no longer declines an
+  // archive (the archive has its own stamp); a newer archive change does.
+  it('an archive the server declines (its archive change is newer) leaves that row alone', async () => {
     // This device's clock is an hour slow and has not learned the offset yet.
     H.server = makeLwwServer({
-      subjects: [{ id: 'm', user_id: 'u1', name: 'Mathematics', credits: 5, semester: 'Fall', archived_at: null, deleted_at: null, updated_at: '2026-10-12T11:30:00.000Z' }],
+      subjects: [{ id: 'm', user_id: 'u1', name: 'Mathematics', credits: 5, semester: 'Fall', archived_at: null, archived_edited_at: '2026-10-12T11:30:00.000Z', deleted_at: null, updated_at: '2026-10-12T11:30:00.000Z' }],
     }, { clockAheadMs: 3600_000 });
     online(true);
     at('2026-10-12T11:00:00Z');
@@ -219,6 +224,21 @@ describe('semester archive offline (StudyDesk#145)', () => {
     expect(H.server.tables.subjects).toEqual([expect.objectContaining({ name: 'Mathematics', archived_at: null, updated_at: '2026-10-12T11:30:00.000Z' })]);
   });
 
+  it('an archive older than a rename lands without declining or undoing it (slow clock)', async () => {
+    H.server = makeLwwServer({
+      subjects: [{ id: 'm', user_id: 'u1', name: 'Mathematics', credits: 5, semester: 'Fall', archived_at: null, deleted_at: null, updated_at: '2026-10-12T11:30:00.000Z' }],
+    }, { clockAheadMs: 3600_000 });
+    online(true);
+    at('2026-10-12T11:00:00Z');
+    const courses = { m: { id: 'm', name: 'Math', credits: 5, semester: 'Fall', archivedAt: null } };
+    outbox.enqueue('archive_semester', { courses, semester: 'Fall', stamp: '2026-10-12T11:00:00.000Z' });
+    await outbox.drain();
+    await settle();
+    expect(H.server.tables.subjects).toEqual([expect.objectContaining({
+      name: 'Mathematics', archived_at: '2026-10-12T11:00:00.000Z', archived_edited_at: '2026-10-12T11:00:00.000Z', updated_at: '2026-10-12T11:30:00.001Z',
+    })]);
+  });
+
   it('a course the server has never seen is created, archived', async () => {
     online(true);
     at('2026-10-12T12:00:00Z');
@@ -227,6 +247,204 @@ describe('semester archive offline (StudyDesk#145)', () => {
     await outbox.drain();
     await settle();
     expect(H.server.tables.subjects).toEqual([expect.objectContaining({ id: 'm', name: 'Math', archived_at: '2026-10-12T10:00:00.000Z' })]);
+  });
+});
+
+describe('semester archive stamped at the edit (StudyDesk#163)', () => {
+  const T0 = '2026-10-12T09:00:00.000Z';
+  const row = (extra = {}) => ({ id: 'm', user_id: 'u1', name: 'Math', credits: 5, semester: 'Fall', archived_at: null, deleted_at: null, updated_at: T0, ...extra });
+  const course = (extra = {}) => ({ id: 'm', name: 'Math', credits: 5, semester: 'Fall', archivedAt: null, updatedAt: T0, ...extra });
+  const pullOf = () => ({ subjects: H.server.tables.subjects.map((r) => ({ ...r })), grades: [], sessions: [] });
+  const local = (courses) => ({ courses, grades: [], studySessions: [] });
+
+  it('the issue: B restores at 11:00, A\'s offline 10:00 archive pushes at 12:00, B\'s 11:30 rename pushes at 12:30', async () => {
+    H.server = makeLwwServer({ subjects: [row({ archived_at: '2026-10-12T08:00:00.000Z', archived_edited_at: '2026-10-12T08:00:00.000Z' })] });
+    // A, offline, archives at 10:00 (its copy shows the course active).
+    online(false);
+    at('2026-10-12T10:00:00Z');
+    let a = local({ m: course() });
+    a = reducer(a, { type: 'ARCHIVE_SEMESTER', semester: 'Fall', stamp: '2026-10-12T10:00:00.000Z' });
+    outbox.enqueue('archive_semester', { courses: { m: course() }, semester: 'Fall', stamp: '2026-10-12T10:00:00.000Z' });
+    // B, online, restores at 11:00.
+    at('2026-10-12T11:00:00Z');
+    await sync.restoreSemester({ m: course({ archivedAt: '2026-10-12T08:00:00.000Z' }) }, 'Fall', '2026-10-12T11:00:00.000Z');
+    // A comes back online at 12:00.
+    at('2026-10-12T12:00:00Z');
+    online(true);
+    await outbox.drain();
+    await settle();
+    expect(H.server.tables.subjects[0]).toMatchObject({ archived_at: null, archived_edited_at: '2026-10-12T11:00:00.000Z' });
+    // B's rename, made offline at 11:30, pushes at 12:30.
+    at('2026-10-12T12:30:00Z');
+    await sync.upsertSubject({ id: 'm', name: 'Mathematics', credits: 5, semester: 'Fall', updatedAt: '2026-10-12T11:30:00.000Z' });
+    expect(H.server.tables.subjects[0]).toMatchObject({ name: 'Mathematics', archived_at: null, updated_at: '2026-10-12T11:30:00.000Z' });
+    // A pulls: the restore and the rename both reach it.
+    const merged = applyRemotePull(a, pullOf()).courses.m;
+    expect(merged).toMatchObject({ name: 'Mathematics', archivedAt: null });
+  });
+
+  it('an offline archive pushed late does not decline renames made before its push, before or after the archive', async () => {
+    H.server = makeLwwServer({ subjects: [row()] });
+    online(false);
+    at('2026-10-12T10:00:00Z');
+    outbox.enqueue('archive_semester', { courses: { m: course() }, semester: 'Fall', stamp: '2026-10-12T10:00:00.000Z' });
+    at('2026-10-12T12:00:00Z');
+    online(true);
+    await outbox.drain();
+    await settle();
+    expect(H.server.tables.subjects[0]).toMatchObject({ archived_at: '2026-10-12T10:00:00.000Z', updated_at: '2026-10-12T09:00:00.001Z' });
+    at('2026-10-12T12:30:00Z');
+    await sync.upsertSubject({ id: 'm', name: 'Maths', credits: 5, semester: 'Fall', updatedAt: '2026-10-12T09:30:00.000Z' });
+    expect(H.server.tables.subjects[0]).toMatchObject({ name: 'Maths', archived_at: '2026-10-12T10:00:00.000Z' });
+    await sync.upsertSubject({ id: 'm', name: 'Mathematics', credits: 5, semester: 'Fall', updatedAt: '2026-10-12T11:30:00.000Z' });
+    expect(H.server.tables.subjects[0]).toMatchObject({ name: 'Mathematics', archived_at: '2026-10-12T10:00:00.000Z' });
+  });
+
+  it('archive then restore offline, drained in order: the restore wins', async () => {
+    H.server = makeLwwServer({ subjects: [row()] });
+    online(false);
+    at('2026-10-12T10:00:00Z');
+    outbox.enqueue('archive_semester', { courses: { m: course() }, semester: 'Fall', stamp: '2026-10-12T10:00:00.000Z' });
+    at('2026-10-12T10:05:00Z');
+    outbox.enqueue('restore_semester', { courses: { m: course({ archivedAt: '2026-10-12T10:00:00.000Z' }) }, semester: 'Fall', stamp: '2026-10-12T10:05:00.000Z' });
+    at('2026-10-12T12:00:00Z');
+    online(true);
+    await outbox.drain();
+    await settle();
+    expect(H.server.tables.subjects[0]).toMatchObject({ archived_at: null, archived_edited_at: '2026-10-12T10:05:00.000Z' });
+  });
+
+  it('pull merges the archive on its own stamp, whichever side wins the row', () => {
+    // Local copy is newer (an unpushed rename) but the remote restore is newer than its archive.
+    const mine = course({ name: 'Mine', updatedAt: '2026-10-12T12:00:00.000Z', archivedAt: '2026-10-12T10:00:00.000Z', archivedEditedAt: '2026-10-12T10:00:00.000Z' });
+    let pulled = { subjects: [row({ updated_at: '2026-10-12T11:00:00.000Z', archived_edited_at: '2026-10-12T11:00:00.000Z' })], grades: [], sessions: [] };
+    expect(applyRemotePull(local({ m: mine }), pulled).courses.m).toMatchObject({ name: 'Mine', archivedAt: null, archivedEditedAt: '2026-10-12T11:00:00.000Z' });
+    // Remote is newer (a rename) but this device's archive has not landed yet.
+    const archivedHere = course({ archivedAt: '2026-10-12T10:00:00.000Z', archivedEditedAt: '2026-10-12T10:00:00.000Z' });
+    pulled = { subjects: [row({ name: 'Theirs', updated_at: '2026-10-12T09:30:00.000Z' })], grades: [], sessions: [] };
+    expect(applyRemotePull(local({ m: archivedHere }), pulled).courses.m).toMatchObject({ name: 'Theirs', archivedAt: '2026-10-12T10:00:00.000Z' });
+    // No stamp on either side (rows only older builds touched): the row's winner, as before.
+    pulled = { subjects: [row({ name: 'Theirs', updated_at: '2026-10-12T09:30:00.000Z', archived_at: '2026-10-12T09:30:00.000Z' })], grades: [], sessions: [] };
+    expect(applyRemotePull(local({ m: course() }), pulled).courses.m).toMatchObject({ name: 'Theirs', archivedAt: '2026-10-12T09:30:00.000Z' });
+  });
+
+  it('archiving locally leaves the course\'s content stamp alone', () => {
+    const s = reducer(local({ m: course() }), { type: 'ARCHIVE_SEMESTER', semester: 'Fall', stamp: '2026-10-12T10:00:00.000Z' });
+    expect(s.courses.m).toMatchObject({ archivedAt: '2026-10-12T10:00:00.000Z', archivedEditedAt: '2026-10-12T10:00:00.000Z', updatedAt: T0 });
+    const r = reducer(s, { type: 'RESTORE_SEMESTER', semester: 'Fall', stamp: '2026-10-12T10:05:00.000Z' });
+    expect(r.courses.m).toMatchObject({ archivedAt: null, archivedEditedAt: '2026-10-12T10:05:00.000Z', updatedAt: T0 });
+  });
+});
+
+describe('archive edit stamp and shipped builds (StudyDesk#163, P1)', () => {
+  const T0 = '2026-10-12T09:00:00.000Z';
+  const row = (extra = {}) => ({ id: 'm', user_id: 'u1', name: 'Math', credits: 5, semester: 'Fall', archived_at: null, deleted_at: null, updated_at: T0, ...extra });
+
+  it('a restore queued by an older build (no stamp) is written as 1.18.0 wrote it', async () => {
+    H.server = makeLwwServer({ subjects: [row({ archived_at: '2026-10-12T08:00:00.000Z' })] });
+    online(true);
+    at('2026-10-12T12:00:00Z');
+    const courses = { m: { id: 'm', name: 'Math', credits: 5, semester: 'Fall', archivedAt: '2026-10-12T08:00:00.000Z' } };
+    outbox.enqueue('restore_semester', { courses, semester: 'Fall' });
+    await outbox.drain();
+    await settle();
+    const update = H.server.log.find(([op, t]) => op === 'update' && t === 'subjects');
+    expect(update[3]).toEqual({ archived_at: null, updated_at: '2026-10-12T12:00:00.000Z' });
+    expect(H.server.tables.subjects[0]).toMatchObject({ archived_at: null, archived_edited_at: '2026-10-12T12:00:00.000Z', updated_at: '2026-10-12T12:00:00.000Z' });
+  });
+
+  it('writes that never send the stamp keep today\'s last-writer-wins outcomes', async () => {
+    H.server = makeLwwServer({ subjects: [row()] });
+    at('2026-10-12T12:00:00Z');
+    const upd = (patch) => H.server.from('subjects').update(patch).eq('id', 'm').select('id').then((r) => r.data.length);
+    expect(await upd({ archived_at: '2026-10-12T10:00:00.000Z', updated_at: '2026-10-12T10:00:00.000Z' })).toBe(1);
+    expect(await upd({ archived_at: null, updated_at: '2026-10-12T09:30:00.000Z' })).toBe(0);
+    expect(await upd({ name: 'Maths', archived_at: null, updated_at: '2026-10-12T11:00:00.000Z' })).toBe(1);
+    expect(H.server.tables.subjects[0]).toMatchObject({ name: 'Maths', archived_at: null, updated_at: '2026-10-12T11:00:00.000Z' });
+  });
+
+  it('a shipped build\'s restore at 11:00, then a 1.18.1 archive from 10:00: the restore stays', async () => {
+    H.server = makeLwwServer({ subjects: [row({ archived_at: '2026-10-12T08:00:00.000Z' })] });
+    online(false);
+    at('2026-10-12T10:00:00Z');
+    outbox.enqueue('archive_semester', { courses: { m: { id: 'm', name: 'Math', credits: 5, semester: 'Fall', archivedAt: null, updatedAt: T0 } }, semester: 'Fall', stamp: '2026-10-12T10:00:00.000Z' });
+    // The old build's restore, push-time stamped, as 1.18.0 sends it.
+    at('2026-10-12T11:00:00Z');
+    await H.server.from('subjects').update({ archived_at: null, updated_at: '2026-10-12T11:00:00.000Z' }).eq('id', 'm');
+    at('2026-10-12T12:00:00Z');
+    online(true);
+    await outbox.drain();
+    await settle();
+    expect(H.server.tables.subjects[0]).toMatchObject({ archived_at: null, updated_at: '2026-10-12T11:00:00.000Z' });
+  });
+
+  it('a shipped build pushing the whole course with a stale archived_at keeps the newer archive (NCC)', async () => {
+    H.server = makeLwwServer({ subjects: [row()] });
+    online(true);
+    at('2026-10-12T11:00:00Z');
+    outbox.enqueue('archive_semester', { courses: { m: { id: 'm', name: 'Math', credits: 5, semester: 'Fall', archivedAt: null, updatedAt: T0 } }, semester: 'Fall', stamp: '2026-10-12T11:00:00.000Z' });
+    await outbox.drain();
+    await settle();
+    at('2026-10-12T12:00:00Z');
+    await H.server.from('subjects').upsert(row({ name: 'Maths', archived_at: null, updated_at: '2026-10-12T10:30:00.000Z' }));
+    expect(H.server.tables.subjects[0]).toMatchObject({ name: 'Maths', archived_at: '2026-10-12T11:00:00.000Z' });
+  });
+
+  // The server before 20261016_archive_edit_stamp.sql: no column, no guard.
+  function withoutArchiveColumn(initial) {
+    H.server = makeLwwServer(initial, { archiveColumn: false });
+    const real = H.server.from;
+    const refusal = { code: 'PGRST204', message: "Could not find the 'archived_edited_at' column of 'subjects' in the schema cache" };
+    H.server.from = (t) => {
+      const api = real(t);
+      if (t !== 'subjects') return api;
+      const refused = { eq: () => refused, select: () => refused, then: (res, rej) => Promise.resolve({ data: null, error: refusal }).then(res, rej) };
+      return {
+        ...api,
+        update: (patch) => ('archived_edited_at' in patch ? refused : api.update(patch)),
+        upsert: (payload, opts) => ('archived_edited_at' in payload ? Promise.resolve({ error: refusal }) : api.upsert(payload, opts)),
+      };
+    };
+  }
+
+  it('a server without the column (migration not yet applied): the 1.18.0 write, and the archive lands', async () => {
+    withoutArchiveColumn({ subjects: [row({ name: 'Mathematics', updated_at: '2026-10-12T11:00:00.000Z' })] });
+    online(true);
+    at('2026-10-12T12:00:00Z');
+    outbox.enqueue('archive_semester', { courses: { m: { id: 'm', name: 'Math', credits: 5, semester: 'Fall', archivedAt: null, updatedAt: T0 } }, semester: 'Fall', stamp: '2026-10-12T10:00:00.000Z' });
+    await outbox.drain();
+    await settle();
+    expect(H.server.tables.subjects[0]).toMatchObject({ name: 'Mathematics', archived_at: '2026-10-12T10:00:00.000Z', updated_at: '2026-10-12T12:00:00.000Z' });
+    expect(outbox.getStatus().pending).toBe(0);
+  });
+
+  // Review of v1.18.1 (StudyDesk#163): a missing remote stamp counted as
+  // "oldest", so this device kept its own archive after anyone restored it.
+  it('archived here without the column, then restored by a build that sends no stamp: the pull restores it', async () => {
+    withoutArchiveColumn({ subjects: [row()] });
+    online(false);
+    at('2026-10-12T10:00:00Z');
+    const mine = reducer({ courses: { m: { id: 'm', name: 'Math', credits: 5, semester: 'Fall', archivedAt: null, updatedAt: T0 } }, grades: [], studySessions: [] },
+      { type: 'ARCHIVE_SEMESTER', semester: 'Fall', stamp: '2026-10-12T10:00:00.000Z' });
+    outbox.enqueue('archive_semester', { courses: { m: { id: 'm', name: 'Math', credits: 5, semester: 'Fall', archivedAt: null, updatedAt: T0 } }, semester: 'Fall', stamp: '2026-10-12T10:00:00.000Z' });
+    at('2026-10-12T12:00:00Z');
+    online(true);
+    await outbox.drain();
+    await settle();
+    const pull = () => ({ subjects: H.server.tables.subjects.map((r) => ({ ...r })), grades: [], sessions: [] });
+    const synced = applyRemotePull(mine, pull());
+    expect(synced.courses.m.archivedAt).toBe('2026-10-12T10:00:00.000Z');
+    // Another device on an older build restores at 13:00.
+    at('2026-10-12T13:00:00Z');
+    await H.server.from('subjects').update({ archived_at: null, updated_at: '2026-10-12T13:00:00.000Z' }).eq('id', 'm');
+    expect(applyRemotePull(synced, pull()).courses.m.archivedAt).toBeNull();
+    expect(applyRemotePull(mine, pull()).courses.m.archivedAt).toBeNull();
+  });
+
+  it('a pending local archive still beats a remote row that predates it', () => {
+    const mine = { id: 'm', name: 'Math', credits: 5, semester: 'Fall', archivedAt: '2026-10-12T10:00:00.000Z', archivedEditedAt: '2026-10-12T10:00:00.000Z', updatedAt: T0 };
+    const pulled = { subjects: [row({ updated_at: '2026-10-12T09:30:00.000Z' })], grades: [], sessions: [] };
+    expect(applyRemotePull({ courses: { m: mine }, grades: [], studySessions: [] }, pulled).courses.m.archivedAt).toBe('2026-10-12T10:00:00.000Z');
   });
 });
 

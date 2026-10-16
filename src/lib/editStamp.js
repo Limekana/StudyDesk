@@ -110,7 +110,8 @@ export function recordPull(remote) {
 /**
  * The stamp this edit should carry, or null for a kind not stamped here
  * (feedback, app opens; the bulk semester archive writes only archived_at
- * with a push-time stamp, see sync.setArchivedAt) or a payload with no row
+ * with its own edit stamp, archived_edited_at, see sync.setArchivedAt —
+ * v1.18.1, StudyDesk#163) or a payload with no row
  * identity. Records the result, so the next edit of the same row on
  * this device is newer again even if the clock steps backwards.
  */

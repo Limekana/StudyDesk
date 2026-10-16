@@ -781,7 +781,8 @@ const KIND_DISPATCH = {
   // re-fire one course per item if the user archived a 6-course semester.
   // `courses` snapshot is captured at enqueue time so the batch is stable.
   archive_semester: (p) => sync.archiveSemester(p.courses, p.semester, p.stamp),
-  restore_semester: (p) => sync.restoreSemester(p.courses, p.semester),
+  // v1.18.1 (StudyDesk#163): a restore carries its edit stamp too.
+  restore_semester: (p) => sync.restoreSemester(p.courses, p.semester, p.stamp),
   // v1.10 — planned study blocks, the academic-term tree and the weekly
   // timetable. Same snapshot-not-patch contract as the assignments above.
   upsert_planned: (p) => sync.upsertPlannedSession(p),

@@ -52,9 +52,10 @@ function mergeSubject(localCourse, remoteRow) {
     // v1.5 — school_year groups periods for the history view (nullable).
     schoolYear: remoteRow.school_year ?? null,
     color: remoteRow.color || null,
-    // v1.2 — archived_at piggybacks on updated_at like every other column.
-    // Null means active; ISO string means archived at that moment.
+    // v1.2 — Null means active; ISO string means archived at that moment.
     archivedAt: remoteRow.archived_at || null,
+    // v1.18.1 (StudyDesk#163) — when it was last archived or restored.
+    archivedEditedAt: remoteRow.archived_edited_at || null,
     updatedAt: remoteRow.updated_at || null,
     deletedAt: remoteRow.deleted_at || null,
   };
@@ -62,8 +63,8 @@ function mergeSubject(localCourse, remoteRow) {
     // New subject discovered remotely — use remote color if set, gray default otherwise.
     return { ...remote, color: remote.color || '#7a7570', notes: [] };
   }
-  if (remoteWins(remote, localCourse)) {
-    return {
+  const merged = remoteWins(remote, localCourse)
+    ? {
       ...localCourse,
       ...remote,
       // If remote is newer but didn't include a color value, fall back to local
@@ -71,9 +72,31 @@ function mergeSubject(localCourse, remoteRow) {
       // edit that didn't touch color).
       color: remote.color || localCourse.color,
       notes: localCourse.notes ?? [],
-    };
-  }
-  return localCourse;
+    }
+    : localCourse;
+  return withNewerArchive(merged, remote, localCourse);
+}
+
+// v1.18.1 (StudyDesk#163) — the archive is last-writer-wins on its own stamp,
+// as on the server: an archive or restore no longer moves `updatedAt`, so the
+// row's winner says nothing about which archive state is newer. A REMOTE row
+// with no archive stamp dates its archive by `updated_at`, which is what
+// every writer that sends no stamp (older builds, NCC, a server without the
+// column) carries it on. Taking a missing stamp as "oldest" instead left a
+// device on its own stale archive for good once anyone else restored the
+// course that way. A LOCAL copy without a stamp has not archived or restored
+// it here, so it never outranks the remote. Equal times: the row's winner
+// keeps its archive, as before. A local archive older than a remote content
+// edit shows the remote state until its queued push lands and is pulled back.
+function withNewerArchive(merged, remote, local) {
+  const ms = (iso) => (iso ? new Date(iso).getTime() : -Infinity);
+  const r = ms(remote.archivedEditedAt || remote.updatedAt);
+  const l = ms(local.archivedEditedAt);
+  if (r === l) return merged;
+  const src = r > l ? remote : local;
+  if ((merged.archivedAt || null) === (src.archivedAt || null)
+    && (merged.archivedEditedAt || null) === (src.archivedEditedAt || null)) return merged;
+  return { ...merged, archivedAt: src.archivedAt || null, archivedEditedAt: src.archivedEditedAt || null };
 }
 
 function mergeGrade(localGrade, remoteRow) {

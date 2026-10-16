@@ -70,14 +70,19 @@ export function reducer(state, action) {
     // every active course matching the semester string; RESTORE_SEMESTER
     // clears it. Per-course variants for the case where the user wants
     // to hide just one course without archiving its whole semester
-    // (e.g. dropped a class mid-term). Updating archivedAt bumps
-    // updatedAt so LWW wins against any concurrent stale write.
+    // (e.g. dropped a class mid-term).
+    // v1.18.1 (StudyDesk#163) — the archive has its own stamp,
+    // `archivedEditedAt`, and no longer moves `updatedAt`: that stamp is the
+    // course's CONTENT version. Bumping it made a pull ignore a rename made
+    // elsewhere before the archive, because the local copy looked newer. The
+    // server keeps the archive apart the same way (20261016_archive_edit_stamp.sql)
+    // and merge.js merges it on its own stamp.
     case "ARCHIVE_SEMESTER": {
       const stamp = action.stamp || stampNow();
       const next = { ...state.courses };
       for (const c of Object.values(state.courses || {})) {
         if (!c.deletedAt && !c.archivedAt && c.semester === action.semester) {
-          next[c.id] = { ...c, archivedAt: stamp, updatedAt: stamp };
+          next[c.id] = { ...c, archivedAt: stamp, archivedEditedAt: stamp };
         }
       }
       return { ...state, courses: next };
@@ -87,7 +92,7 @@ export function reducer(state, action) {
       const next = { ...state.courses };
       for (const c of Object.values(state.courses || {})) {
         if (!c.deletedAt && c.archivedAt && c.semester === action.semester) {
-          next[c.id] = { ...c, archivedAt: null, updatedAt: stamp };
+          next[c.id] = { ...c, archivedAt: null, archivedEditedAt: stamp };
         }
       }
       return { ...state, courses: next };
@@ -96,13 +101,13 @@ export function reducer(state, action) {
       const stamp = action.stamp || stampNow();
       const c = state.courses[action.id];
       if (!c) return state;
-      return { ...state, courses: { ...state.courses, [action.id]: { ...c, archivedAt: stamp, updatedAt: stamp } } };
+      return { ...state, courses: { ...state.courses, [action.id]: { ...c, archivedAt: stamp, archivedEditedAt: stamp } } };
     }
     case "RESTORE_COURSE": {
       const stamp = action.stamp || stampNow();
       const c = state.courses[action.id];
       if (!c) return state;
-      return { ...state, courses: { ...state.courses, [action.id]: { ...c, archivedAt: null, updatedAt: stamp } } };
+      return { ...state, courses: { ...state.courses, [action.id]: { ...c, archivedAt: null, archivedEditedAt: stamp } } };
     }
     case "DELETE_COURSE":{
       // Soft-delete the course in local state (mirrors what we push to Supabase).
