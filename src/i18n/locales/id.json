@@ -411,7 +411,8 @@
     "fdroidCheck": "Periksa pembaruan di F-Droid",
     "fdroidCheckNote": "Sekali sehari, StudyDesk menanyakan versi terbaru ke f-droid.org. Tidak ada data tentang Anda yang dikirim. Jika dimatikan, permintaan ini tidak dikirim sama sekali.",
     "otherAccountCleared": "Kamu masuk ke akun lain, jadi data akun sebelumnya dihapus dari perangkat ini.",
-    "otherAccountClearedUnsent_other": "Kamu masuk ke akun lain, jadi data akun sebelumnya dihapus dari perangkat ini, termasuk {{count}} perubahan yang belum tersinkron."
+    "otherAccountClearedUnsent_other": "Kamu masuk ke akun lain, jadi data akun sebelumnya dihapus dari perangkat ini, termasuk {{count}} perubahan yang belum tersinkron.",
+    "otherTabReloaded": "Kamu masuk atau keluar di tab lain, jadi tab ini dimuat ulang."
   },
   "sdob": {
     "brand": "Berhenti menimbang. Mulai belajar.",

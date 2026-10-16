@@ -419,7 +419,8 @@
     "otherAccountCleared": "Você entrou com outra conta, então os dados da conta anterior foram removidos deste dispositivo.",
     "otherAccountClearedUnsent_one": "Você entrou com outra conta, então os dados da conta anterior foram removidos deste dispositivo, incluindo {{count}} alteração não sincronizada.",
     "otherAccountClearedUnsent_many": "Você entrou com outra conta, então os dados da conta anterior foram removidos deste dispositivo, incluindo {{count}} alterações não sincronizadas.",
-    "otherAccountClearedUnsent_other": "Você entrou com outra conta, então os dados da conta anterior foram removidos deste dispositivo, incluindo {{count}} alterações não sincronizadas."
+    "otherAccountClearedUnsent_other": "Você entrou com outra conta, então os dados da conta anterior foram removidos deste dispositivo, incluindo {{count}} alterações não sincronizadas.",
+    "otherTabReloaded": "Você entrou ou saiu da conta em outra aba, então esta aba foi recarregada."
   },
   "sdob": {
     "brand": "Pare de decidir. Comece a estudar.",

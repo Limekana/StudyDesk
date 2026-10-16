@@ -419,7 +419,8 @@
     "otherAccountCleared": "Iniciaste sesión con otra cuenta, así que los datos de la cuenta anterior se eliminaron de este dispositivo.",
     "otherAccountClearedUnsent_one": "Iniciaste sesión con otra cuenta, así que los datos de la cuenta anterior se eliminaron de este dispositivo, incluido {{count}} cambio sin sincronizar.",
     "otherAccountClearedUnsent_many": "Iniciaste sesión con otra cuenta, así que los datos de la cuenta anterior se eliminaron de este dispositivo, incluidos {{count}} cambios sin sincronizar.",
-    "otherAccountClearedUnsent_other": "Iniciaste sesión con otra cuenta, así que los datos de la cuenta anterior se eliminaron de este dispositivo, incluidos {{count}} cambios sin sincronizar."
+    "otherAccountClearedUnsent_other": "Iniciaste sesión con otra cuenta, así que los datos de la cuenta anterior se eliminaron de este dispositivo, incluidos {{count}} cambios sin sincronizar.",
+    "otherTabReloaded": "Iniciaste o cerraste sesión en otra pestaña, así que esta pestaña se recargó."
   },
   "sdob": {
     "brand": "Deja de decidir. Empieza a estudiar.",

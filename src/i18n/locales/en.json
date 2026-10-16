@@ -415,7 +415,8 @@
     "fdroidCheckNote": "Once a day, StudyDesk asks f-droid.org for its newest version. Nothing about you is sent. Turning this off stops the request entirely.",
     "otherAccountCleared": "You signed in to a different account, so the previous account's data was removed from this device.",
     "otherAccountClearedUnsent_one": "You signed in to a different account, so the previous account's data was removed from this device, including {{count}} change that had not synced.",
-    "otherAccountClearedUnsent_other": "You signed in to a different account, so the previous account's data was removed from this device, including {{count}} changes that had not synced."
+    "otherAccountClearedUnsent_other": "You signed in to a different account, so the previous account's data was removed from this device, including {{count}} changes that had not synced.",
+    "otherTabReloaded": "You signed in or out in another tab, so this tab was reloaded to match."
   },
   "sdob": {
     "brand": "Stop deciding. Start studying.",

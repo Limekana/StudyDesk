@@ -415,7 +415,8 @@
     "fdroidCheckNote": "StudyDesk kysyy kerran päivässä f-droid.orgilta uusinta versiota. Sinusta ei lähetetä mitään. Kun tämä on pois päältä, kyselyä ei tehdä lainkaan.",
     "otherAccountCleared": "Kirjauduit toiselle tilille, joten edellisen tilin tiedot poistettiin tältä laitteelta.",
     "otherAccountClearedUnsent_one": "Kirjauduit toiselle tilille, joten edellisen tilin tiedot poistettiin tältä laitteelta, mukaan lukien {{count}} synkronoimaton muutos.",
-    "otherAccountClearedUnsent_other": "Kirjauduit toiselle tilille, joten edellisen tilin tiedot poistettiin tältä laitteelta, mukaan lukien {{count}} synkronoimatonta muutosta."
+    "otherAccountClearedUnsent_other": "Kirjauduit toiselle tilille, joten edellisen tilin tiedot poistettiin tältä laitteelta, mukaan lukien {{count}} synkronoimatonta muutosta.",
+    "otherTabReloaded": "Kirjauduit sisään tai ulos toisessa välilehdessä, joten tämä välilehti ladattiin uudelleen."
   },
   "sdob": {
     "brand": "Lopeta miettiminen. Aloita opiskelu.",

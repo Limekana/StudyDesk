@@ -419,7 +419,8 @@
     "otherAccountCleared": "Connexion à un autre compte : les données du compte précédent ont été supprimées de cet appareil.",
     "otherAccountClearedUnsent_one": "Connexion à un autre compte : les données du compte précédent ont été supprimées de cet appareil, dont {{count}} modification non synchronisée.",
     "otherAccountClearedUnsent_many": "Connexion à un autre compte : les données du compte précédent ont été supprimées de cet appareil, dont {{count}} modifications non synchronisées.",
-    "otherAccountClearedUnsent_other": "Connexion à un autre compte : les données du compte précédent ont été supprimées de cet appareil, dont {{count}} modifications non synchronisées."
+    "otherAccountClearedUnsent_other": "Connexion à un autre compte : les données du compte précédent ont été supprimées de cet appareil, dont {{count}} modifications non synchronisées.",
+    "otherTabReloaded": "Connexion ou déconnexion dans un autre onglet : cet onglet a été rechargé."
   },
   "sdob": {
     "brand": "Arrête de choisir. Commence à réviser.",

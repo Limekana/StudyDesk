@@ -7,7 +7,7 @@ import { setLanguage, SUPPORTED_LANGS, LANGUAGE_NAMES } from '../../i18n/index.j
 import { useScrollSelectedIntoView } from '../../lib/useScrollSelectedIntoView.js';
 import { requestNoteFlush } from '../../lib/noteFlush.js';
 import { supabase, clearStoredSession } from '../../lib/supabase.js';
-import { clearOwner } from '../../lib/deviceOwner.js';
+import { clearOwner, isPageStale, reloadStalePage } from '../../lib/deviceOwner.js';
 import { setGuestMode } from '../../lib/guestMode.js';
 import PeriodHistory from '../grades/PeriodHistory.jsx';
 import * as sync from '../../lib/sync.js';
@@ -496,6 +496,10 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
   }, [fbMessage, fbCategory, fbRating, session, showFlash, t]);
 
   const onSignOut = useCallback(async () => {
+    // v1.18.1 (StudyDesk#169): another tab has replaced the data this page
+    // shows. Its wipe would clear the other account's outbox and session and
+    // mark this stale page current again; reload instead.
+    if (isPageStale()) return reloadStalePage();
     // v1.18.1 (StudyDesk#139): the wipe below drops whatever has not reached
     // the cloud yet. Say how much, rather than a confirm that promises the
     // data "stays in the cloud".
@@ -570,6 +574,8 @@ export default function SettingsView({ state, dispatch, showFlash, session }) {
   // Two confirmations, because this is irreversible and there is no recovery
   // window: the account row is gone and every cascade has fired.
   const onDeleteAccount = useCallback(async () => {
+    // v1.18.1 (StudyDesk#169): never act on another tab's account (see onSignOut).
+    if (isPageStale()) return reloadStalePage();
     if (!(await confirm(t('settings.deleteAccountConfirm1')))) return;
     if (!(await confirm(t('settings.deleteAccountConfirm2')))) return;
     setDeleting(true);

@@ -6,7 +6,7 @@ import { Capacitor } from "@capacitor/core";
 import { supabase, readStoredSession } from "./lib/supabase.js";
 import { startSessionBoot } from "./lib/sessionBoot.js";
 import { otherAccountClearedMessage, requestNoteFlush } from "./lib/noteFlush.js";
-import { claimForUser, readOwner } from "./lib/deviceOwner.js";
+import { claimForUser, readOwner, isPageStale, watchPageStale, reloadStalePage, takeStaleReloadNotice, STALE_RELOAD_FALLBACK_MS } from "./lib/deviceOwner.js";
 import AuthGate from "./features/auth/AuthGate.jsx";
 import SetPasswordScreen from "./features/auth/SetPasswordScreen.jsx";
 import { isRecoveryPending, subscribeRecovery } from "./lib/passwordRecovery.js";
@@ -271,6 +271,13 @@ export default function App() {
   useEffect(() => {
     otherAccountNoticeRef.current = (unsent) => setAccountNotice(otherAccountClearedMessage(t, unsent));
   });
+  // v1.18.1 (StudyDesk#169): this tab was reloaded because another tab
+  // changed the account; say so once, in the same banner.
+  useEffect(() => {
+    if (takeStaleReloadNotice()) setAccountNotice(t('settings.otherTabReloaded'));
+  // Mount only: the flag is taken once.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => {
     // v1.18.1 (limecore#59 §1): one place every session passes through. When
     // it belongs to a different account than the local data, that data (and
@@ -278,6 +285,18 @@ export default function App() {
     // session; otherwise the second account would see the first account's
     // courses, grades and notes, and upload its unsynced rows as its own.
     const applySession = (s, event) => {
+      // v1.18.1 (StudyDesk#169): another tab wiped the local data (a
+      // different account signed in there, or a sign-out), so what this tab
+      // holds in memory is the previous account's. claimForUser cannot see
+      // it: the other tab already wrote the new owner. Wiping from here would
+      // also remove what that tab has since written for the new account, so
+      // this tab starts again from storage instead. Writes from it are
+      // already refused (isPageStale in localStore, outbox and sync), and the
+      // session is not applied, so no pull, reconcile or push runs for it.
+      if (isPageStale()) {
+        reloadStalePage();
+        return;
+      }
       if (claimForUser(s?.user?.id)) {
         console.warn("[studydesk] a different account signed in; clearing the previous account's local data");
         // v1.18.1 (StudyDesk#161): and say so, with what never synced. The
@@ -337,6 +356,16 @@ export default function App() {
 
     // v1.18.1 (StudyDesk#142): see src/lib/sessionBoot.js.
     const boot = startSessionBoot({ auth: supabase.auth, readStoredSession, inherit, apply: applySession });
+    // v1.18.1 (StudyDesk#169): told the moment another tab wipes the data.
+    // The reload waits for this tab's next auth event (the other tab's
+    // sign-in or sign-out, which auth-js relays), so it starts on the new
+    // session rather than the one a sign-out is still removing. A fallback
+    // covers a sign-out that could not reach the server, which relays
+    // nothing; until then this tab writes nothing.
+    let staleFallback = 0;
+    const unwatchStale = watchPageStale(() => {
+      staleFallback = setTimeout(reloadStalePage, STALE_RELOAD_FALLBACK_MS);
+    });
     // A sign-out that could not reach the server (SettingsView) removes the
     // stored session itself; auth-js then emits nothing, so it says so here.
     // Held until SettingsView reports the signOut call settled, so a refresh
@@ -347,6 +376,8 @@ export default function App() {
     window.addEventListener("studydesk:sign-out-settled", onSignOutSettled);
     return () => {
       boot.cancel();
+      unwatchStale();
+      clearTimeout(staleFallback);
       window.removeEventListener("studydesk:signed-out-local", onLocalSignOut);
       window.removeEventListener("studydesk:sign-out-settled", onSignOutSettled);
     };

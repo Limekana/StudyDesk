@@ -8,6 +8,7 @@
 import * as outbox from './outbox.js';
 import { clearEntitlement } from './entitlement.js';
 import { clearAvatarCache } from './profile.js';
+import { markLocalDataReplaced } from './deviceOwner.js';
 
 export const ACCOUNT_LOCAL_KEYS = [
   'studydesk-calendar-feeds',
@@ -22,4 +23,11 @@ export function wipeAccountLocalData() {
   for (const k of ACCOUNT_LOCAL_KEYS) {
     try { localStorage.removeItem(k); } catch { /* private mode */ }
   }
+  // v1.18.1 (StudyDesk#169): the stored copy of the reducer state goes now,
+  // not when the caller's RESET_AFTER_SIGNOUT is persisted on the next
+  // render. Another tab that reloads in between would read the previous
+  // account's data back from it. Then other tabs are told their copy is gone;
+  // last, so a tab that sees that also sees the data removed.
+  try { localStorage.removeItem('studydesk-v1'); } catch { /* private mode */ }
+  markLocalDataReplaced();
 }

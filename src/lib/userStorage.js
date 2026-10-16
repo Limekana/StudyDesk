@@ -17,6 +17,7 @@
 // id is refused by RLS.
 
 import { supabase } from './supabase.js';
+import { isPageStale } from './deviceOwner.js';
 
 /** Free-tier storage is 1 GB total. 5 MB per user across all buckets is far
  *  more than the avatar (256 KB) needs and leaves headroom for Notebook
@@ -24,6 +25,9 @@ import { supabase } from './supabase.js';
 export const DEFAULT_USER_QUOTA_BYTES = 5 * 1024 * 1024;
 
 async function currentUserId() {
+  // v1.18.1 (StudyDesk#169): as in sync.js. A tab whose local data another
+  // tab wiped must not upload the previous account's files under the next.
+  if (isPageStale()) throw new Error('another tab replaced the local data; this tab is reloading');
   const { data: { session } } = await supabase.auth.getSession();
   const id = session?.user?.id;
   if (!id) throw new Error('not-signed-in');

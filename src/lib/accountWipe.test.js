@@ -32,4 +32,21 @@ describe('wipeAccountLocalData', () => {
     expect(ACCOUNT_LOCAL_KEYS.filter((k) => store.has(k))).toEqual([]);
     expect(store.get('studydesk-grade-mode')).toBe('custom');
   });
+
+  it('removes the stored state now and tells other tabs, last (StudyDesk#169)', async () => {
+    const { wipeAccountLocalData } = await import('./accountWipe.js');
+    const { isPageStale } = await import('./deviceOwner.js');
+    store.set('studydesk-v1', '{"courses":{"a":{}}}');
+    const order = [];
+    const removeItem = localStorage.removeItem;
+    const setItem = localStorage.setItem;
+    localStorage.removeItem = (k) => { order.push(`-${k}`); removeItem(k); };
+    localStorage.setItem = (k, v) => { order.push(`+${k}`); setItem(k, v); };
+    wipeAccountLocalData();
+    expect(store.has('studydesk-v1')).toBe(false);
+    expect(order.at(-1)).toBe('+studydesk.localDataEpoch');
+    expect(order.indexOf('-studydesk-v1')).toBeLessThan(order.length - 1);
+    // The tab that wiped is not stale itself.
+    expect(isPageStale()).toBe(false);
+  });
 });

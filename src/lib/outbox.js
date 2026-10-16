@@ -44,6 +44,7 @@
 import * as sync from './sync.js';
 import { writeJson } from './localStore.js';
 import { editStamp } from './editStamp.js';
+import { isPageStale } from './deviceOwner.js';
 
 const STORAGE_KEY = 'studydesk-outbox';
 const META_KEY = 'studydesk-outbox-meta'; // { lastSuccessAt }
@@ -260,6 +261,10 @@ function coalesceOnto(item, payload) {
 }
 
 export function enqueue(kind, payload) {
+  // v1.18.1 (StudyDesk#169): this tab holds the previous account's data
+  // (another tab wiped it), and the queue it would write to is the next
+  // account's. The note flush on the reload's `pagehide` lands here too.
+  if (isPageStale()) return;
   if (!KIND_DISPATCH[kind]) {
     console.error('[outbox] unknown kind:', kind);
     return;
@@ -471,6 +476,10 @@ const MAX_PASSES = 5;
  *  Returns the new queue depth so callers can decide whether to flash a
  *  result message. */
 export async function drain(opts = {}) {
+  // v1.18.1 (StudyDesk#169): see enqueue. The queue belongs to whoever the
+  // other tab signed in, and this tab's client may still hold the previous
+  // account's token.
+  if (isPageStale()) return loadItems().length;
   if (draining) { rerunRequested = true; return loadItems().length; }
   // Skip if offline — items stay queued. `online` event will re-trigger.
   const offline = () => typeof navigator !== 'undefined' && navigator.onLine === false;

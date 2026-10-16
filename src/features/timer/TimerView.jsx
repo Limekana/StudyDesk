@@ -15,6 +15,7 @@ import { fmtTime } from '../../lib/dates.js';
 import { startFocus, stopFocus } from '../../lib/focusMode.js';
 import { enterSubmit } from '../../lib/imeSubmit.js';
 import { TIMER_CHANGE_EVENT } from '../../lib/timerSnapshot.js';
+import { isPageStale } from '../../lib/deviceOwner.js';
 import { pastSessionDraft } from '../../lib/pastSession.js';
 import { preferredDayStart, studyDayKey, todayStudyDayKey, dayKeyToDate } from '../../lib/studyDay.js';
 import '../../styles/timer.css';
@@ -163,6 +164,9 @@ export default function TimerView({ state, onTimerComplete }) {
 
   // Persist timer state to localStorage so tab-switching preserves it
   useEffect(() => {
+    // v1.18.1 (StudyDesk#169): the timer is the previous account's once
+    // another tab has wiped the local data; do not write it back.
+    if (isPageStale()) return;
     try {
       localStorage.setItem('sd-timer', JSON.stringify({
         customFocus, phase, secsLeft, running, session, focusDone, task, lockedIn, mode,

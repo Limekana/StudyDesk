@@ -17,6 +17,7 @@
 // says the image changed.
 
 import { supabase } from './supabase.js';
+import { isPageStale } from './deviceOwner.js';
 import { encodeAvatar } from './imageEncode.js';
 import { uploadForUser, removeForUser, signedUrlForUser } from './userStorage.js';
 
@@ -58,6 +59,9 @@ function readCache() {
 }
 
 function writeCache(rec) {
+  // v1.18.1 (StudyDesk#169): a stale tab's late refresh must not put the
+  // previous account's cache back after another tab's wipe.
+  if (isPageStale()) return;
   try {
     if (rec) localStorage.setItem(CACHE_KEY, JSON.stringify(rec));
     else localStorage.removeItem(CACHE_KEY);

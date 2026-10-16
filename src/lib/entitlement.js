@@ -19,6 +19,7 @@
 // working offline, and lapses correctly. Treat it as UX plumbing, not a lock.
 
 import { supabase } from "./supabase";
+import { isPageStale } from "./deviceOwner.js";
 
 const CACHE_KEY = "studydesk.entitlement";
 
@@ -74,6 +75,9 @@ export function entitlementTier() {
 export const ENTITLEMENT_CHANGE_EVENT = "studydesk-entitlement-change";
 
 function writeCache(rec) {
+  // v1.18.1 (StudyDesk#169): a stale tab's late refresh must not put the
+  // previous account's cache back after another tab's wipe.
+  if (isPageStale()) return;
   try {
     if (rec) localStorage.setItem(CACHE_KEY, JSON.stringify(rec));
     else localStorage.removeItem(CACHE_KEY);

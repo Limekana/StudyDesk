@@ -12,10 +12,15 @@ import { supabase } from './supabase.js';
 import { selectAll } from './selectAll.js';
 import { pushStamp, recordPull } from './editStamp.js';
 import { dueTimeToSql } from './dueAt.js';
+import { isPageStale } from './deviceOwner.js';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 async function currentUserId() {
+  // v1.18.1 (StudyDesk#169): every read and write passes through here. A tab
+  // whose local data another tab wiped holds the previous account's rows,
+  // while the session in shared storage is already the next account's.
+  if (isPageStale()) throw new Error('another tab replaced the local data; this tab is reloading');
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not signed in');
   return user.id;

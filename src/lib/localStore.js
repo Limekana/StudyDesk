@@ -54,6 +54,8 @@
 // value in place, so "do not clear on failure" is a real guarantee rather
 // than an aspiration.
 
+import { isPageStale } from './deviceOwner.js';
+
 const LISTENERS = new Set();
 
 // Caches that may be dropped to make room for user data. Every key here must
@@ -138,6 +140,12 @@ function evictRecoverable() {
  * @returns {{ok: boolean, error?: Error, evicted?: number}}
  */
 export function writeJson(key, value, { critical = false } = {}) {
+  // v1.18.1 (StudyDesk#169): another tab wiped the local data, so what this
+  // tab holds belongs to the previous account. Writing it would put that
+  // account's data back under the next one. Not a storage failure: no alarm.
+  if (isPageStale()) {
+    return { ok: false, error: new Error('another tab replaced the local data; this tab is reloading') };
+  }
   let serialised;
   try {
     serialised = JSON.stringify(value);
