@@ -1,0 +1,72 @@
+StudyDesk#165: stop yesterday's reminders firing after a reboot.
+
+Applied by patch-package from the `postinstall` script on every `npm ci` /
+`npm install`. The Android build compiles this plugin straight out of
+node_modules (android/capacitor.settings.gradle), so the patch is in the APK.
+
+Upstream LocalNotificationRestoreReceiver runs on BOOT_COMPLETED and moves every
+overdue one-shot `schedule.at` to "now + 15 s", however late it is. This drops an
+overdue one-shot once it is past its own cutoff, `extra.sa` (epoch ms, set by
+src/lib/planNotifications.js: the end of the day for day reminders, the deadline
+for due-today, the block's start for a plan lead), and deletes it from the
+plugin's NOTIFICATION_STORE. A one-shot without `sa` may be at most 5 minutes
+late. Repeating schedules (`on`, `every`, `repeats`) keep the upstream behaviour.
+
+Pinned to 8.0.2. postinstall runs with --error-on-fail --error-on-warn, so an
+upgraded plugin fails `npm ci` until someone re-checks the receiver upstream and
+regenerates or drops this patch.
+
+diff --git a/node_modules/@capacitor/local-notifications/android/src/main/java/com/capacitorjs/plugins/localnotifications/LocalNotificationRestoreReceiver.java b/node_modules/@capacitor/local-notifications/android/src/main/java/com/capacitorjs/plugins/localnotifications/LocalNotificationRestoreReceiver.java
+index 8e0390f..d47c16f 100644
+--- a/node_modules/@capacitor/local-notifications/android/src/main/java/com/capacitorjs/plugins/localnotifications/LocalNotificationRestoreReceiver.java
++++ b/node_modules/@capacitor/local-notifications/android/src/main/java/com/capacitorjs/plugins/localnotifications/LocalNotificationRestoreReceiver.java
+@@ -5,12 +5,21 @@ import android.content.Context;
+ import android.content.Intent;
+ import android.os.UserManager;
+ import com.getcapacitor.CapConfig;
++import com.getcapacitor.JSObject;
+ import java.util.ArrayList;
+ import java.util.Date;
+ import java.util.List;
+ 
+ public class LocalNotificationRestoreReceiver extends BroadcastReceiver {
+ 
++    // StudyDesk#165 — upstream re-fires every overdue one-shot 15 s after boot however
++    // late it is, so a "study block in 30 min" from yesterday arrived the next morning.
++    // Each StudyDesk reminder carries `extra.sa`, the time after which it stops being
++    // true (end of the day for "exam today", the plan's start for a lead reminder).
++    // A one-shot past that is dropped instead. One without `sa` (scheduled by an older
++    // build) may be at most STALE_AFTER_MS late.
++    private static final long STALE_AFTER_MS = 5 * 60 * 1000;
++
+     @Override
+     public void onReceive(Context context, Intent intent) {
+         UserManager um = context.getSystemService(UserManager.class);
+@@ -30,6 +39,14 @@ public class LocalNotificationRestoreReceiver extends BroadcastReceiver {
+             LocalNotificationSchedule schedule = notification.getSchedule();
+             if (schedule != null) {
+                 Date at = schedule.getAt();
++                // StudyDesk#165 — drop a one-shot (`at` with no repeats/every/on) whose
++                // moment has passed, and forget it in storage so a later boot does not find
++                // it again. Repeating schedules and still-true one-shots keep the upstream
++                // behaviour below.
++                if (at != null && schedule.isRemovable() && new Date().getTime() > staleAt(notification, at)) {
++                    storage.deleteNotification(id);
++                    continue;
++                }
+                 if (at != null && at.before(new Date())) {
+                     // modify the scheduled date in order to show notifications that would have been delivered while device was off.
+                     long newDateTime = new Date().getTime() + 15 * 1000;
+@@ -51,4 +68,12 @@ public class LocalNotificationRestoreReceiver extends BroadcastReceiver {
+ 
+         localNotificationManager.schedule(null, notifications);
+     }
++
++    // StudyDesk#165 — the reminder's own cutoff from `extra.sa` (epoch ms), else
++    // STALE_AFTER_MS after it fell due.
++    private static long staleAt(LocalNotification notification, Date at) {
++        JSObject extra = notification.getExtra();
++        long sa = extra != null ? extra.optLong("sa", 0L) : 0L;
++        return sa > 0L ? sa : at.getTime() + STALE_AFTER_MS;
++    }
+ }

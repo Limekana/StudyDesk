@@ -86,6 +86,12 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- v1.18.1 — lets the WebView see network changes, so navigator.onLine
+         and the 'online' event (outbox drain, useAppEvents) follow the real
+         connection. Without it Chromium's WebView doesn't watch connectivity
+         and reports online throughout. A normal permission: granted at
+         install, no prompt. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Required for scheduled local notifications on Android 13+ (API 33+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <!-- Required for exact-time alarms (study reminders, deadline warnings) -->

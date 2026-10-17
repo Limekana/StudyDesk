@@ -1,7 +1,7 @@
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { parseLocalDate, addDays, fmtTime } from "./dates.js";
 import { DIFFICULTY_DAYS } from "./examDifficulty.js";
-import { dueDayReminderAt } from "./dueAt.js";
+import { dueDayReminderAt, dueMoment } from "./dueAt.js";
 import { studyStartDate } from "./deadlines.js";
 
 // ── Notifications ─────────────────────────────────────────────────────────────
@@ -99,7 +99,14 @@ export function reminderId(key) {
 /** Bumped when something a pending reminder carries but getPending does not
  *  report (icon, allow-while-idle, action type) changes, so the next run
  *  re-sends every reminder once with it. */
-const REMINDER_FORMAT = 1;
+const REMINDER_FORMAT = 2; // 2: `extra.sa` (StudyDesk#165)
+
+/** StudyDesk#165 — the end of the local day `d` falls on, as epoch ms. */
+function endOfDay(d) {
+  const e = new Date(d.getTime());
+  e.setHours(23, 59, 59, 999);
+  return e.getTime();
+}
 
 /** Give each note its ID from its key, and its fingerprint. Two keys hashing
  *  alike in one batch are told apart by probing upward; vanishingly rare, and
@@ -121,7 +128,12 @@ function assignIds(notes, actionLabel) {
     delete n.key;
     const at = n.schedule.at.getTime();
     const fp = [REMINDER_FORMAT, n.title, n.body, at, n.actionTypeId ? actionLabel : ''].join('\u241f');
-    n.extra = { ...(n.extra || {}), rk: fp, ra: at };
+    // StudyDesk#165 — `sa`: when the reminder stops being true. The patched
+    // plugin (patches/) drops an overdue one past it after a reboot instead of
+    // firing it late. Default: the end of the day it fires on.
+    const sa = Number.isFinite(n.staleAt) ? n.staleAt : endOfDay(n.schedule.at);
+    delete n.staleAt;
+    n.extra = { ...(n.extra || {}), rk: fp, ra: at, sa };
   }
   return notes;
 }
@@ -236,7 +248,7 @@ export function buildReminders(exams, assignments, courses, plannedSessions, pla
     // deadline is early enough that an hour's warning lands yesterday, where
     // the 6pm reminder above already covers it.
     const dueDay = dueDayReminderAt(asgn.dueDate, asgn.dueTime);
-    if (dueDay && dueDay.getTime() > now) notes.push({ key: `asgn-due:${asgn.id}`, title: t('notif.dueTodayTitle'), body: label, schedule: { at: dueDay }, ...style, actionTypeId: ASSIGNMENT_ACTION_TYPE, extra: { assignmentId: asgn.id } });
+    if (dueDay && dueDay.getTime() > now) notes.push({ key: `asgn-due:${asgn.id}`, title: t('notif.dueTodayTitle'), body: label, schedule: { at: dueDay }, staleAt: dueMoment(asgn.dueDate, asgn.dueTime)?.getTime(), ...style, actionTypeId: ASSIGNMENT_ACTION_TYPE, extra: { assignmentId: asgn.id } });
   });
 
   // ── Planned study sessions (v1.10) ──────────────────────────────────
@@ -269,6 +281,8 @@ export function buildReminders(exams, assignments, courses, plannedSessions, pla
           notes.push({
             key: `plan-lead:${p.id}`, title: planLeadTitle(t, at), body: label,
             schedule: { at: new Date(leadAt) },
+            // StudyDesk#165 — "starts in N min" is no longer true once it starts.
+            staleAt: at,
             ...style,
             extra: { view: "timer" },
           });
@@ -279,6 +293,8 @@ export function buildReminders(exams, assignments, courses, plannedSessions, pla
         notes.push({
           key: `plan-start:${p.id}`, title: t('notif.planNowTitle'), body: label,
           schedule: { at: new Date(at) },
+          // StudyDesk#165 — "starting now", with the same grace as DUE_GRACE_MS.
+          staleAt: at + DUE_GRACE_MS,
           ...style,
           extra: { view: "timer" },
         });

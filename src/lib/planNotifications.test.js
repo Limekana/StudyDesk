@@ -270,3 +270,62 @@ describe('rescheduling, edge cases', () => {
     expect(holder.cancelled).toHaveLength(1);
   });
 });
+
+// StudyDesk#165 — every reminder carries `extra.sa`, when it stops being true.
+// The patched plugin (patches/) drops an overdue one past that after a reboot
+// instead of firing it late, and fires the ones still true.
+describe('stale-after cutoff', () => {
+  const endOfDay = (ms) => { const e = new Date(ms); e.setHours(23, 59, 59, 999); return e.getTime(); };
+  const notes = () => {
+    const start = blockStart();
+    const due = iso(new Date(Date.now() + 5 * DAY));
+    return {
+      start,
+      list: buildReminders(
+        [{ id: 'e1', title: 'Final', dueDate: due }],
+        [{ id: 'a1', title: 'Essay', dueDate: due, dueTime: '17:00' }, { id: 'a2', title: 'Lab', dueDate: due }],
+        {},
+        [{ id: 'p1', title: 'Block', startsAt: start.toISOString() }],
+        { lead: 30, atStart: true },
+        t,
+      ),
+    };
+  };
+  const byTitle = (list, key) => list.filter((n) => n.title === t(key));
+
+  it('every reminder has one, never before it fires, and no stray field reaches the plugin', () => {
+    const { list } = notes();
+    expect(list.length).toBeGreaterThan(5);
+    for (const n of list) {
+      expect(Number.isFinite(n.extra.sa)).toBe(true);
+      expect(n.extra.sa).toBeGreaterThanOrEqual(n.schedule.at.getTime());
+      expect('staleAt' in n).toBe(false);
+    }
+  });
+
+  it('day reminders stay true to the end of their day', () => {
+    const { list } = notes();
+    for (const key of ['notif.examTodayTitle', 'notif.digestTitle', 'notif.dueTomorrowTitle']) {
+      const found = byTitle(list, key);
+      expect(found.length).toBeGreaterThan(0);
+      for (const n of found) expect(n.extra.sa).toBe(endOfDay(n.schedule.at.getTime()));
+    }
+  });
+
+  it('due-today lasts until the deadline: its time, or 23:59 without one', () => {
+    const { list } = notes();
+    const [essay, lab] = ['Essay', 'Lab'].map((w) => byTitle(list, 'notif.dueTodayTitle').find((n) => n.body.startsWith(w)));
+    const deadline = new Date(essay.schedule.at.getTime()); deadline.setHours(17, 0, 0, 0);
+    expect(essay.extra.sa).toBe(deadline.getTime());
+    const lastMinute = new Date(lab.schedule.at.getTime()); lastMinute.setHours(23, 59, 0, 0); // dueMoment's END_OF_DAY
+    expect(lab.extra.sa).toBe(lastMinute.getTime());
+  });
+
+  it('a plan lead reminder ends when the block starts; the at-start one 15 minutes after', () => {
+    const { list, start } = notes();
+    const lead = list.find((n) => n.title === planLeadTitle(t, start.getTime()));
+    const now = byTitle(list, 'notif.planNowTitle')[0];
+    expect(lead.extra.sa).toBe(start.getTime());
+    expect(now.extra.sa).toBe(start.getTime() + 15 * 60 * 1000);
+  });
+});

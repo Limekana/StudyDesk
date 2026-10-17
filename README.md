@@ -86,6 +86,8 @@ npx cap sync android
 npx cap open android
 ```
 
+**Patched native dependency.** `patches/` holds [patch-package](https://github.com/ds300/patch-package) patches, applied by the `postinstall` script on every `npm install` / `npm ci` (so never install with `--ignore-scripts`). Today there is one: `@capacitor/local-notifications@8.0.2`, so that after a reboot a one-shot reminder past its own cutoff (`extra.sa`, set in `src/lib/planNotifications.js`: the end of the day for day reminders, the block's start for a plan lead) is dropped instead of firing late (StudyDesk#165). The patch is pinned to that version: upgrading the plugin makes `postinstall` fail until the patch is re-checked against the new receiver.
+
 The Supabase publishable key in `src/lib/supabase.js` is the **anon/publishable key** (safe to ship client-side). RLS gates all data; the service-role key is never exposed.
 
 
